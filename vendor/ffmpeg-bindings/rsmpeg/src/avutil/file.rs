@@ -28,8 +28,12 @@ impl AVMmap {
     pub fn new(filename: &CStr) -> Result<Self> {
         let mut bufptr = null_mut();
         let mut size = 0;
-        unsafe { ffi::av_file_map(filename.as_ptr(), &mut bufptr, &mut size, 0, null_mut()) }.upgrade()?;
-        Ok(Self { bufptr: NonNull::new(bufptr).unwrap(), size })
+        unsafe { ffi::av_file_map(filename.as_ptr(), &mut bufptr, &mut size, 0, null_mut()) }
+            .upgrade()?;
+        Ok(Self {
+            bufptr: NonNull::new(bufptr).unwrap(),
+            size,
+        })
     }
 }
 

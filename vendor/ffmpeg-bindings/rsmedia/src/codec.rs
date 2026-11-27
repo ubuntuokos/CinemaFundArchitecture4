@@ -74,7 +74,9 @@ pub struct CodecConfig {
 
 impl CodecConfig {
     pub fn new(id: ffi::AVCodecID) -> Result<Self> {
-        let codec = AVCodec::find_encoder(id).or_else(|| AVCodec::find_decoder(id)).ok_or_else(|| RsmediaError::codec_not_found(format!("{id}")))?;
+        let codec = AVCodec::find_encoder(id)
+            .or_else(|| AVCodec::find_decoder(id))
+            .ok_or_else(|| RsmediaError::codec_not_found(format!("{id}")))?;
         #[cfg(feature = "ffmpeg6")]
         {
             Ok(Self { codec })
@@ -89,7 +91,9 @@ impl CodecConfig {
     pub fn new_with_name(codec_name: &CStr) -> Result<Self> {
         let codec = AVCodec::find_encoder_by_name(codec_name)
             .or_else(|| AVCodec::find_decoder_by_name(codec_name))
-            .ok_or_else(|| RsmediaError::codec_not_found(codec_name.to_string_lossy().into_owned()))?;
+            .ok_or_else(|| {
+                RsmediaError::codec_not_found(codec_name.to_string_lossy().into_owned())
+            })?;
         #[cfg(feature = "ffmpeg6")]
         {
             Ok(Self { codec })
@@ -203,15 +207,34 @@ impl CodecConfig {
                 // ffmpeg6 无 `AV_CODEC_CONFIG_CHANNEL_LAYOUT` 能力接口，改用旧式
                 // `AVCodec.ch_layouts` 字段（`*const AVChannelLayout`，以 zeroed layout 结尾）。
                 // `build_array` 依赖字节相等性判断终止，zeroed layout 即终止哨兵。
-                unsafe { rsmpeg::build_array::<ffi::AVChannelLayout>(self.codec.ch_layouts, std::mem::zeroed())? }
+                unsafe {
+                    rsmpeg::build_array::<ffi::AVChannelLayout>(
+                        self.codec.ch_layouts,
+                        std::mem::zeroed(),
+                    )?
+                }
             }
             #[cfg(any(feature = "ffmpeg7", feature = "ffmpeg8", feature = "ffmpeg9"))]
             {
-                unsafe { self.context.get_supported_config::<ffi::AVChannelLayout>(Some(&self.codec), ffi::AV_CODEC_CONFIG_CHANNEL_LAYOUT) }.ok()?
+                unsafe {
+                    self.context.get_supported_config::<ffi::AVChannelLayout>(
+                        Some(&self.codec),
+                        ffi::AV_CODEC_CONFIG_CHANNEL_LAYOUT,
+                    )
+                }
+                .ok()?
             }
         };
-        let counts: Vec<i32> = layouts.iter().map(|l| l.nb_channels).filter(|n| *n > 0).collect();
-        if counts.is_empty() { None } else { Some(counts) }
+        let counts: Vec<i32> = layouts
+            .iter()
+            .map(|l| l.nb_channels)
+            .filter(|n| *n > 0)
+            .collect();
+        if counts.is_empty() {
+            None
+        } else {
+            Some(counts)
+        }
     }
 
     ///////////////
@@ -238,7 +261,9 @@ impl CodecConfig {
     pub(crate) fn is_support_frame_rates(&self, frame_rate: ffi::AVRational) -> bool {
         match self.supported_frame_rates() {
             Ok(None) | Err(_) => true,
-            Ok(Some(rates)) => rates.iter().any(|r| r.num == frame_rate.num && r.den == frame_rate.den),
+            Ok(Some(rates)) => rates
+                .iter()
+                .any(|r| r.num == frame_rate.num && r.den == frame_rate.den),
         }
     }
 
@@ -286,7 +311,10 @@ impl CodecConfig {
             }
             while (*p).profile != ffi::AV_PROFILE_UNKNOWN {
                 let name = strutils::c_char_to_str((*p).name);
-                out.push(Profile { id: (*p).profile, name });
+                out.push(Profile {
+                    id: (*p).profile,
+                    name,
+                });
                 p = p.add(1);
             }
         }
@@ -299,7 +327,11 @@ impl CodecConfig {
     /// returns an empty list.
     pub fn profile_name(&self, profile_id: i32) -> Option<String> {
         let p = unsafe { ffi::avcodec_profile_name(self.codec.id, profile_id) };
-        if p.is_null() { None } else { Some(unsafe { CStr::from_ptr(p) }.to_string_lossy().into_owned()) }
+        if p.is_null() {
+            None
+        } else {
+            Some(unsafe { CStr::from_ptr(p) }.to_string_lossy().into_owned())
+        }
     }
 
     /// All codecs registered in this FFmpeg build (encoders and decoders).
@@ -321,12 +353,18 @@ impl CodecConfig {
     /// `AV_CODEC_ID_H264` this typically lists `libx264`, `h264_nvenc`,
     /// `h264_videotoolbox`, ... depending on the FFmpeg build and platform.
     pub fn encoders_for(id: ffi::AVCodecID) -> Vec<Self> {
-        Self::encoders().into_iter().filter(|c| c.id() == id).collect()
+        Self::encoders()
+            .into_iter()
+            .filter(|c| c.id() == id)
+            .collect()
     }
 
     /// All decoder implementations for one codec id.
     pub fn decoders_for(id: ffi::AVCodecID) -> Vec<Self> {
-        Self::decoders().into_iter().filter(|c| c.id() == id).collect()
+        Self::decoders()
+            .into_iter()
+            .filter(|c| c.id() == id)
+            .collect()
     }
 }
 
@@ -341,7 +379,11 @@ pub struct Profile {
 
 impl fmt::Display for Profile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.name.is_empty() { write!(f, "{}", self.id) } else { write!(f, "{}", self.name) }
+        if self.name.is_empty() {
+            write!(f, "{}", self.id)
+        } else {
+            write!(f, "{}", self.name)
+        }
     }
 }
 
@@ -364,7 +406,11 @@ impl FormatInfo {
         self.name.split(',').next().unwrap_or(&self.name)
     }
 
-    fn new_info(name: impl AsRef<CStr>, long_name: impl AsRef<CStr>, extensions: *const std::os::raw::c_char) -> Self {
+    fn new_info(
+        name: impl AsRef<CStr>,
+        long_name: impl AsRef<CStr>,
+        extensions: *const std::os::raw::c_char,
+    ) -> Self {
         Self {
             name: name.as_ref().to_string_lossy().into_owned(),
             long_name: long_name.as_ref().to_string_lossy().into_owned(),
@@ -374,12 +420,16 @@ impl FormatInfo {
 
     /// All muxers (output container formats) in this FFmpeg build.
     pub fn muxers() -> Vec<Self> {
-        rsmpeg::avformat::AVOutputFormat::iterate().map(|outfmt| Self::new_info(outfmt.name(), outfmt.long_name(), outfmt.extensions)).collect()
+        rsmpeg::avformat::AVOutputFormat::iterate()
+            .map(|outfmt| Self::new_info(outfmt.name(), outfmt.long_name(), outfmt.extensions))
+            .collect()
     }
 
     /// All demuxers (input container formats) in this FFmpeg build.
     pub fn demuxers() -> Vec<Self> {
-        rsmpeg::avformat::AVInputFormat::iterate().map(|infmt| Self::new_info(infmt.name(), infmt.long_name(), infmt.extensions)).collect()
+        rsmpeg::avformat::AVInputFormat::iterate()
+            .map(|infmt| Self::new_info(infmt.name(), infmt.long_name(), infmt.extensions))
+            .collect()
     }
 
     /// Whether a short name (or one of its aliases) matches `short_name`.
@@ -393,12 +443,16 @@ impl FormatInfo {
     /// Look up a muxer by its short name (or one of its aliases),
     /// e.g. "mp4", "mkv", "matroska".
     pub fn find_muxer(short_name: &str) -> Option<Self> {
-        Self::muxers().into_iter().find(|f| Self::name_matches(&f.name, short_name))
+        Self::muxers()
+            .into_iter()
+            .find(|f| Self::name_matches(&f.name, short_name))
     }
 
     /// Look up a demuxer by its short name (or one of its aliases).
     pub fn find_demuxer(short_name: &str) -> Option<Self> {
-        Self::demuxers().into_iter().find(|f| Self::name_matches(&f.name, short_name))
+        Self::demuxers()
+            .into_iter()
+            .find(|f| Self::name_matches(&f.name, short_name))
     }
 }
 
@@ -410,33 +464,58 @@ mod tests {
     /// 若 FFmpeg 返回 `None`（表示"所有值均支持"）则视为通过。
     fn assert_video_config(config: &CodecConfig, name: &str) -> Result<()> {
         let pix = config.supported_pixel_formats()?;
-        assert!(pix.map(|v| !v.is_empty()).unwrap_or(true), "{name}: expected non-empty supported pixel formats");
+        assert!(
+            pix.map(|v| !v.is_empty()).unwrap_or(true),
+            "{name}: expected non-empty supported pixel formats"
+        );
         Ok(())
     }
 
     /// 断言音频编码/解码器支持的采样率、采样格式列表非空。
     fn assert_audio_config(config: &CodecConfig, name: &str) -> Result<()> {
         let rates = config.supported_sample_rates()?;
-        assert!(rates.map(|v| !v.is_empty()).unwrap_or(true), "{name}: sample rates should be non-empty if specified");
+        assert!(
+            rates.map(|v| !v.is_empty()).unwrap_or(true),
+            "{name}: sample rates should be non-empty if specified"
+        );
 
         let fmts = config.supported_sample_formats()?;
-        assert!(fmts.map(|v| !v.is_empty()).unwrap_or(true), "{name}: expected non-empty supported sample formats");
+        assert!(
+            fmts.map(|v| !v.is_empty()).unwrap_or(true),
+            "{name}: expected non-empty supported sample formats"
+        );
         Ok(())
     }
 
     #[test]
     fn test_supported_video_codec() -> Result<()> {
-        for id in [ffi::AV_CODEC_ID_H264, ffi::AV_CODEC_ID_MPEG4, ffi::AV_CODEC_ID_VP8, ffi::AV_CODEC_ID_VP9, ffi::AV_CODEC_ID_HEVC, ffi::AV_CODEC_ID_AV1] {
+        for id in [
+            ffi::AV_CODEC_ID_H264,
+            ffi::AV_CODEC_ID_MPEG4,
+            ffi::AV_CODEC_ID_VP8,
+            ffi::AV_CODEC_ID_VP9,
+            ffi::AV_CODEC_ID_HEVC,
+            ffi::AV_CODEC_ID_AV1,
+        ] {
             let config = CodecConfig::new(id)?;
             assert_video_config(&config, &format!("video codec {id}"))?;
-            assert!(config.is_encoder() || config.is_decoder(), "video codec {id} should be encoder or decoder");
+            assert!(
+                config.is_encoder() || config.is_decoder(),
+                "video codec {id} should be encoder or decoder"
+            );
         }
         Ok(())
     }
 
     #[test]
     fn test_supported_video_codec_name() -> Result<()> {
-        for name in [c"libx264", c"libx265", c"mpeg4", c"mpeg1video", c"mpeg2video"] {
+        for name in [
+            c"libx264",
+            c"libx265",
+            c"mpeg4",
+            c"mpeg1video",
+            c"mpeg2video",
+        ] {
             let config = CodecConfig::new_with_name(name)?;
             assert_video_config(&config, &format!("video codec {name:?}"))?;
         }
@@ -445,10 +524,19 @@ mod tests {
 
     #[test]
     fn test_supported_audio_codec() -> Result<()> {
-        for id in [ffi::AV_CODEC_ID_AAC, ffi::AV_CODEC_ID_FLAC, ffi::AV_CODEC_ID_MP3, ffi::AV_CODEC_ID_OPUS, ffi::AV_CODEC_ID_VORBIS] {
+        for id in [
+            ffi::AV_CODEC_ID_AAC,
+            ffi::AV_CODEC_ID_FLAC,
+            ffi::AV_CODEC_ID_MP3,
+            ffi::AV_CODEC_ID_OPUS,
+            ffi::AV_CODEC_ID_VORBIS,
+        ] {
             let config = CodecConfig::new(id)?;
             assert_audio_config(&config, &format!("audio codec {id}"))?;
-            assert!(config.is_encoder() || config.is_decoder(), "audio codec {id} should be encoder or decoder");
+            assert!(
+                config.is_encoder() || config.is_decoder(),
+                "audio codec {id} should be encoder or decoder"
+            );
         }
         Ok(())
     }
@@ -499,9 +587,18 @@ mod tests {
         };
         let config = CodecConfig::from_codec(config);
         // 常见合法组合必须被认定为支持。
-        assert!(config.is_support_channel_count(2), "aac should support stereo (2 channels)");
-        assert!(config.is_support_sample_rate(44100), "aac should support 44100 Hz");
-        assert!(!config.is_support_sample_rate(-1), "aac must not report support for negative sample rate");
+        assert!(
+            config.is_support_channel_count(2),
+            "aac should support stereo (2 channels)"
+        );
+        assert!(
+            config.is_support_sample_rate(44100),
+            "aac should support 44100 Hz"
+        );
+        assert!(
+            !config.is_support_sample_rate(-1),
+            "aac must not report support for negative sample rate"
+        );
     }
 
     #[test]
@@ -512,7 +609,10 @@ mod tests {
         if let Some(sw) = encoders.iter().find(|c| c.name() == c"libx264") {
             assert!(!sw.is_hardware(), "libx264 must not be hardware");
         }
-        let names: Vec<_> = encoders.iter().map(|c| c.name().to_string_lossy().into_owned()).collect();
+        let names: Vec<_> = encoders
+            .iter()
+            .map(|c| c.name().to_string_lossy().into_owned())
+            .collect();
         println!("h264 encoders: {names:?}");
     }
 
@@ -522,12 +622,21 @@ mod tests {
         let demuxers = FormatInfo::demuxers();
         assert!(!muxers.is_empty() && !demuxers.is_empty());
 
-        assert!(muxers.iter().any(|f| f.name == "matroska"), "matroska muxer missing");
+        assert!(
+            muxers.iter().any(|f| f.name == "matroska"),
+            "matroska muxer missing"
+        );
         assert!(muxers.iter().any(|f| f.name == "mp4"), "mp4 muxer missing");
         // The mov demuxer's short-name field is the full alias list
         // ("mov,mp4,m4a,3gp,3g2,mj2"), so look it up by alias.
-        assert!(FormatInfo::find_demuxer("mov").is_some(), "mov demuxer missing");
-        assert!(FormatInfo::find_demuxer("matroska").is_some(), "matroska demuxer missing");
+        assert!(
+            FormatInfo::find_demuxer("mov").is_some(),
+            "mov demuxer missing"
+        );
+        assert!(
+            FormatInfo::find_demuxer("matroska").is_some(),
+            "matroska demuxer missing"
+        );
 
         let mp4 = FormatInfo::find_muxer("mp4").expect("mp4 muxer lookup failed");
         assert_eq!(mp4.name, "mp4");
@@ -548,11 +657,16 @@ mod tests {
         if profiles.is_empty() {
             // FFmpeg 9: AVCodec.profiles is NULL for FFCodec-based encoders;
             // fall back to the profile-id lookup which works everywhere.
-            let high = config.profile_name(ffi::AV_PROFILE_H264_HIGH as i32).expect("h264 High profile name lookup failed");
+            let high = config
+                .profile_name(ffi::AV_PROFILE_H264_HIGH as i32)
+                .expect("h264 High profile name lookup failed");
             assert_eq!(high, "High");
         } else {
             assert!(names.contains(&"high".to_string()), "profiles: {names:?}");
-            assert!(names.contains(&"baseline".to_string()), "profiles: {names:?}");
+            assert!(
+                names.contains(&"baseline".to_string()),
+                "profiles: {names:?}"
+            );
         }
         assert_eq!(config.media_type(), MediaType::VIDEO);
         assert!(!config.is_hardware());

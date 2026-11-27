@@ -44,7 +44,13 @@ impl HWDeviceConfig {
         device_id: Option<String>,
         options: Option<Options>,
     ) -> Self {
-        Self { device_type, hw_pixel_format, sw_pixel_format, device_id, options }
+        Self {
+            device_type,
+            hw_pixel_format,
+            sw_pixel_format,
+            device_id,
+            options,
+        }
     }
 
     /// build CUDA HWDeviceConfig
@@ -52,22 +58,46 @@ impl HWDeviceConfig {
     /// `device_id` 为 GPU 编号字符串（如 `"0"`、`"1"`），与其他设备构造器
     /// 的类型保持一致（VAAPI 传 DRM 设备路径、QSV 传设备序号等）。
     pub fn cuda(device_id: Option<String>) -> Self {
-        Self::new(HWDeviceType::CUDA, PixelFormat::CUDA, PixelFormat::NV12, device_id, None)
+        Self::new(
+            HWDeviceType::CUDA,
+            PixelFormat::CUDA,
+            PixelFormat::NV12,
+            device_id,
+            None,
+        )
     }
 
     /// build VAAPI HWDeviceConfig
     pub fn vaapi(device_id: Option<String>) -> Self {
-        Self::new(HWDeviceType::VAAPI, PixelFormat::VAAPI, PixelFormat::NV12, device_id, None)
+        Self::new(
+            HWDeviceType::VAAPI,
+            PixelFormat::VAAPI,
+            PixelFormat::NV12,
+            device_id,
+            None,
+        )
     }
 
     /// build VULKAN HWDeviceConfig
     pub fn vulkan(device_id: Option<String>) -> Self {
-        Self::new(HWDeviceType::VULKAN, PixelFormat::VULKAN, PixelFormat::NV12, device_id, None)
+        Self::new(
+            HWDeviceType::VULKAN,
+            PixelFormat::VULKAN,
+            PixelFormat::NV12,
+            device_id,
+            None,
+        )
     }
 
     /// build QSV (Intel Quick Sync Video) HWDeviceConfig
     pub fn qsv(device_id: Option<String>) -> Self {
-        Self::new(HWDeviceType::QSV, PixelFormat::QSV, PixelFormat::NV12, device_id, None)
+        Self::new(
+            HWDeviceType::QSV,
+            PixelFormat::QSV,
+            PixelFormat::NV12,
+            device_id,
+            None,
+        )
     }
 
     /// build AMD AMF HWDeviceConfig（Windows 平台，基于 D3D11 设备）。
@@ -77,7 +107,13 @@ impl HWDeviceConfig {
     /// 先上传到 D3D11 surface，再由 AMF 编码。
     #[cfg(target_os = "windows")]
     pub fn amf(device_id: Option<String>) -> Self {
-        Self::new(HWDeviceType::D3D11VA, PixelFormat::D3D11, PixelFormat::NV12, device_id, None)
+        Self::new(
+            HWDeviceType::D3D11VA,
+            PixelFormat::D3D11,
+            PixelFormat::NV12,
+            device_id,
+            None,
+        )
     }
 
     /// 按当前平台自动选择最佳可用的硬件加速配置。
@@ -197,12 +233,21 @@ impl HWContext {
         let hw_device_ctx = {
             let device = strutils::str_to_cstring_opt(config.device_id.as_ref());
             let opts = config.options.as_ref().and_then(|opts| opts.to_dict());
-            AVHWDeviceContext::create(config.device_type.into(), device.as_deref(), opts.as_ref(), 0).context("Failed to create hardware device context")?
+            AVHWDeviceContext::create(
+                config.device_type.into(),
+                device.as_deref(),
+                opts.as_ref(),
+                0,
+            )
+            .context("Failed to create hardware device context")?
         };
 
         log::debug!("Created hardware device context successfully. config:{config}");
 
-        let ctx = Arc::new(Self { config: config.clone(), device_ctx: hw_device_ctx });
+        let ctx = Arc::new(Self {
+            config: config.clone(),
+            device_ctx: hw_device_ctx,
+        });
         // Insert into cache (lock-free write)
         HW_CTX_CACHE.insert(config, ctx.clone());
         // 超过容量上限时自动驱逐未使用的旧条目（本条目刚插入、且被局部
@@ -227,7 +272,12 @@ impl HWContext {
     /// * `codec_ctx` - The decoder codec context to initialize
     /// * `width` - The width of the decoded frames
     /// * `height` - The height of the decoded frames
-    pub(crate) fn setup_decoder_frames(&self, codec_ctx: &mut AVCodecContext, width: i32, height: i32) -> Result<()> {
+    pub(crate) fn setup_decoder_frames(
+        &self,
+        codec_ctx: &mut AVCodecContext,
+        width: i32,
+        height: i32,
+    ) -> Result<()> {
         let hw_frames_ctx = self.create_hw_frames_ctx(width, height)?;
         codec_ctx.set_hw_frames_ctx(hw_frames_ctx);
         codec_ctx.set_pix_fmt(self.get_format(true));
@@ -256,7 +306,12 @@ impl HWContext {
     /// * `codec_ctx` - The encoder codec context to initialize
     /// * `width` - The width of the frames to encode
     /// * `height` - The height of the frames to encode
-    pub(crate) fn setup_encoder_frames(&self, codec_ctx: &mut AVCodecContext, width: i32, height: i32) -> Result<()> {
+    pub(crate) fn setup_encoder_frames(
+        &self,
+        codec_ctx: &mut AVCodecContext,
+        width: i32,
+        height: i32,
+    ) -> Result<()> {
         let hw_frames_ctx = self.create_hw_frames_ctx(width, height)?;
         codec_ctx.set_hw_frames_ctx(hw_frames_ctx);
         codec_ctx.set_pix_fmt(self.get_format(true));
@@ -268,7 +323,11 @@ impl HWContext {
     ///
     /// 仅共享访问 device_ctx：`hwframe_ctx_alloc` 内部只做 av_buffer_ref（原子），
     /// 每次调用都新建独立的 AVHWFramesContext，由调用方（codec_ctx）独占持有。
-    fn create_hw_frames_ctx(&self, width: i32, height: i32) -> Result<rsmpeg::avutil::AVHWFramesContext> {
+    fn create_hw_frames_ctx(
+        &self,
+        width: i32,
+        height: i32,
+    ) -> Result<rsmpeg::avutil::AVHWFramesContext> {
         let mut hw_frames_ctx = self.device_ctx.hwframe_ctx_alloc();
         hw_frames_ctx.data().format = self.get_format(true);
         hw_frames_ctx.data().sw_format = self.get_format(false);
@@ -276,7 +335,9 @@ impl HWContext {
         hw_frames_ctx.data().height = height;
         hw_frames_ctx.data().initial_pool_size = 20;
 
-        hw_frames_ctx.init().context("Failed to initialize hardware frame context")?;
+        hw_frames_ctx
+            .init()
+            .context("Failed to initialize hardware frame context")?;
         Ok(hw_frames_ctx)
     }
 
@@ -309,10 +370,14 @@ impl HWContext {
         sw_frame.set_width(hw_frame.width);
         sw_frame.set_height(hw_frame.height);
         sw_frame.set_format(self.get_format(false));
-        sw_frame.alloc_buffer().context("Failed to allocate software frame buffer")?;
+        sw_frame
+            .alloc_buffer()
+            .context("Failed to allocate software frame buffer")?;
 
         // 从硬件帧传输数据到软件帧
-        sw_frame.hwframe_transfer_data(hw_frame).context("Failed to transfer data from hardware frame to software frame")?;
+        sw_frame
+            .hwframe_transfer_data(hw_frame)
+            .context("Failed to transfer data from hardware frame to software frame")?;
 
         // 复制帧属性
         self.copy_frame_props(hw_frame, &mut sw_frame)?;
@@ -340,7 +405,11 @@ impl HWContext {
     ///
     /// # Returns
     /// * `Result<AVFrame>` - A new frame in hardware memory with transferred data
-    pub(crate) fn hw_upload(&self, encoder: &mut AVCodecContext, sw_frame: &AVFrame) -> Result<AVFrame> {
+    pub(crate) fn hw_upload(
+        &self,
+        encoder: &mut AVCodecContext,
+        sw_frame: &AVFrame,
+    ) -> Result<AVFrame> {
         let hw_up_start = std::time::Instant::now();
 
         // Check if input frame format matches our software format
@@ -352,7 +421,9 @@ impl HWContext {
         }
 
         // 确保编码器上下文有硬件帧上下文
-        let mut hw_frames_ctx = encoder.hw_frames_ctx_mut().ok_or_else(|| RsmediaError::msg("Encoder has no hardware frames context"))?;
+        let mut hw_frames_ctx = encoder
+            .hw_frames_ctx_mut()
+            .ok_or_else(|| RsmediaError::msg("Encoder has no hardware frames context"))?;
 
         // 创建硬件帧
         let mut hw_frame = AVFrame::new();
@@ -365,10 +436,14 @@ impl HWContext {
         // 造成编码器 hw_frames_ctx 悬空 → double-free。
 
         // 分配硬件缓冲区
-        hw_frames_ctx.get_buffer(&mut hw_frame).context("Failed to allocate hardware frame buffer")?;
+        hw_frames_ctx
+            .get_buffer(&mut hw_frame)
+            .context("Failed to allocate hardware frame buffer")?;
 
         // 从软件帧传输数据到硬件帧
-        hw_frame.hwframe_transfer_data(sw_frame).context("Failed to transfer data from software frame to hardware frame")?;
+        hw_frame
+            .hwframe_transfer_data(sw_frame)
+            .context("Failed to transfer data from software frame to hardware frame")?;
 
         // 复制帧属性
         self.copy_frame_props(sw_frame, &mut hw_frame)?;
@@ -434,7 +509,11 @@ impl HWContext {
 
     /// Helper function to get the appropriate pixel format for a frame
     pub(crate) fn get_format(&self, is_hw: bool) -> ffi::AVPixelFormat {
-        if is_hw { self.config.hw_pixel_format.into() } else { self.config.sw_pixel_format.into() }
+        if is_hw {
+            self.config.hw_pixel_format.into()
+        } else {
+            self.config.sw_pixel_format.into()
+        }
     }
 }
 
@@ -510,8 +589,21 @@ impl HWDeviceType {
     pub fn platform_preference() -> Vec<HWDeviceType> {
         match std::env::consts::OS {
             "macos" => vec![HWDeviceType::VIDEOTOOLBOX, HWDeviceType::VULKAN],
-            "windows" => vec![HWDeviceType::D3D11VA, HWDeviceType::QSV, HWDeviceType::CUDA, HWDeviceType::VULKAN, HWDeviceType::DXVA2],
-            "linux" => vec![HWDeviceType::VAAPI, HWDeviceType::CUDA, HWDeviceType::VULKAN, HWDeviceType::VDPAU, HWDeviceType::OPENCL, HWDeviceType::DRM],
+            "windows" => vec![
+                HWDeviceType::D3D11VA,
+                HWDeviceType::QSV,
+                HWDeviceType::CUDA,
+                HWDeviceType::VULKAN,
+                HWDeviceType::DXVA2,
+            ],
+            "linux" => vec![
+                HWDeviceType::VAAPI,
+                HWDeviceType::CUDA,
+                HWDeviceType::VULKAN,
+                HWDeviceType::VDPAU,
+                HWDeviceType::OPENCL,
+                HWDeviceType::DRM,
+            ],
             "android" => vec![HWDeviceType::MEDIACODEC],
             _ => vec![],
         }
@@ -529,15 +621,31 @@ impl HWDeviceType {
             None => Self::platform_preference(),
         };
         if preference.is_empty() {
-            return Err(RsmediaError::unsupported(format!("No hardware acceleration preference defined for platform: {}", std::env::consts::OS)));
+            return Err(RsmediaError::unsupported(format!(
+                "No hardware acceleration preference defined for platform: {}",
+                std::env::consts::OS
+            )));
         }
         // 逐个候选探测可用性，避免只用首个候选的 available 集合去匹配其它候选，
         // 导致首个候选不可用但后续候选可用时误判为“无可用设备”。
-        let device = preference.iter().find(|ty| ty.is_available()).copied().ok_or_else(|| {
-            RsmediaError::unsupported(format!("No available hardware acceleration device on {} (candidates probed: {preference:?})", std::env::consts::OS))
-        })?;
+        let device = preference
+            .iter()
+            .find(|ty| ty.is_available())
+            .copied()
+            .ok_or_else(|| {
+                RsmediaError::unsupported(format!(
+                    "No available hardware acceleration device on {} (candidates probed: {preference:?})",
+                    std::env::consts::OS
+                ))
+            })?;
         log::info!("Auto-selected hardware device: {device:?}");
-        Ok(HWDeviceConfig::new(device, device.default_hw_pixel_format(), device.default_sw_pixel_format(), None, None))
+        Ok(HWDeviceConfig::new(
+            device,
+            device.default_hw_pixel_format(),
+            device.default_sw_pixel_format(),
+            None,
+            None,
+        ))
     }
 
     /// List available hardware acceleration device types on this system.
@@ -598,8 +706,12 @@ impl HWDeviceType {
                 let hw_config = ffi::avcodec_get_hw_config(codec.as_ptr(), i);
                 if !hw_config.is_null() {
                     #[allow(clippy::unnecessary_cast)]
-                    let hw_config_supports_codec = ((*hw_config).methods as i32 & ffi::AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX as i32) != 0;
-                    if hw_config_supports_codec && HWDeviceType::from((*hw_config).device_type) == *self {
+                    let hw_config_supports_codec = ((*hw_config).methods as i32
+                        & ffi::AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX as i32)
+                        != 0;
+                    if hw_config_supports_codec
+                        && HWDeviceType::from((*hw_config).device_type) == *self
+                    {
                         break Some((*hw_config).pix_fmt);
                     }
                 } else {
@@ -622,7 +734,10 @@ impl HWDeviceType {
 ///
 /// 该函数仅以函数指针形式安装到 codec context，无需导出符号，故不使用
 /// `#[no_mangle]`，避免污染全局符号表。
-unsafe extern "C" fn hwaccel_get_format(_ctx: *mut ffi::AVCodecContext, pix_fmts: *const ffi::AVPixelFormat) -> ffi::AVPixelFormat {
+unsafe extern "C" fn hwaccel_get_format(
+    _ctx: *mut ffi::AVCodecContext,
+    pix_fmts: *const ffi::AVPixelFormat,
+) -> ffi::AVPixelFormat {
     unsafe {
         let mut p = pix_fmts;
         while *p != ffi::AV_PIX_FMT_NONE {
@@ -728,7 +843,11 @@ mod tests {
         ];
         for v in variants {
             let ffi_value: ffi::AVHWDeviceType = v.into();
-            assert_eq!(HWDeviceType::from(ffi_value), v, "roundtrip failed for {v:?}");
+            assert_eq!(
+                HWDeviceType::from(ffi_value),
+                v,
+                "roundtrip failed for {v:?}"
+            );
         }
     }
 
@@ -758,9 +877,18 @@ mod tests {
     /// `list_available` 与 `is_available` 的一致性；探测过程不应 panic。
     #[test]
     fn test_list_available_consistency() {
-        let variants = [HWDeviceType::CUDA, HWDeviceType::VAAPI, HWDeviceType::VIDEOTOOLBOX, HWDeviceType::D3D11VA, HWDeviceType::VULKAN];
+        let variants = [
+            HWDeviceType::CUDA,
+            HWDeviceType::VAAPI,
+            HWDeviceType::VIDEOTOOLBOX,
+            HWDeviceType::D3D11VA,
+            HWDeviceType::VULKAN,
+        ];
         for v in variants {
-            assert_eq!(v.is_available(), HWDeviceType::list_available().contains(&v));
+            assert_eq!(
+                v.is_available(),
+                HWDeviceType::list_available().contains(&v)
+            );
         }
     }
 

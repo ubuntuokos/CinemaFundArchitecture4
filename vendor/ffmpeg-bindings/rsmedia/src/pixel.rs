@@ -348,21 +348,33 @@ ffi_enum_wrap_from!(
 /// [`PixelFormat::is_plane_storable`] turn on this one predicate, so the two
 /// cannot disagree about which formats are storable.
 fn has_no_sample_planes(desc: &AVPixFmtDescriptorRef) -> bool {
-    const UNSUPPORTED: u32 = ffi::AV_PIX_FMT_FLAG_BITSTREAM | ffi::AV_PIX_FMT_FLAG_PAL | ffi::AV_PIX_FMT_FLAG_HWACCEL;
+    const UNSUPPORTED: u32 =
+        ffi::AV_PIX_FMT_FLAG_BITSTREAM | ffi::AV_PIX_FMT_FLAG_PAL | ffi::AV_PIX_FMT_FLAG_HWACCEL;
     desc.flags as u32 & UNSUPPORTED != 0
 }
 
 impl PixelFormat {
     /// 获取像素格式描述符；未知/无效格式返回错误而非 panic。
     pub fn descriptor(&self) -> Result<AVPixFmtDescriptorRef> {
-        AVPixFmtDescriptorRef::get((*self).into()).ok_or_else(|| RsmediaError::msg(format!("No pix_fmt descriptor for {}", self.get_pix_fmt_name())))
+        AVPixFmtDescriptorRef::get((*self).into()).ok_or_else(|| {
+            RsmediaError::msg(format!(
+                "No pix_fmt descriptor for {}",
+                self.get_pix_fmt_name()
+            ))
+        })
     }
 
     /// 获取像素格式名称（FFmpeg 返回静态字符串，借用即可，避免每次分配 String）
     pub fn get_pix_fmt_name(&self) -> String {
         unsafe {
             let name = ffi::av_get_pix_fmt_name((*self).into());
-            if name.is_null() { "unknown".to_string() } else { std::ffi::CStr::from_ptr(name).to_string_lossy().into_owned() }
+            if name.is_null() {
+                "unknown".to_string()
+            } else {
+                std::ffi::CStr::from_ptr(name)
+                    .to_string_lossy()
+                    .into_owned()
+            }
         }
     }
 
@@ -370,7 +382,9 @@ impl PixelFormat {
     pub fn count_planes(&self) -> Result<i32> {
         let cnt = unsafe { ffi::av_pix_fmt_count_planes((*self).into()) };
         if cnt < 0 {
-            return Err(RsmediaError::msg(format!("Failed to get plane count:{cnt}")));
+            return Err(RsmediaError::msg(format!(
+                "Failed to get plane count:{cnt}"
+            )));
         }
         Ok(cnt)
     }
@@ -433,23 +447,35 @@ impl PixelFormat {
             // Interleaved: one plane, `bytes_per_pixel` elements per pixel. The
             // largest component step spans one pixel per `2^log2_chroma_w` columns
             // for a horizontally subsampled format (`yuyv422`: 4 >> 1 = 2 bytes).
-            let max_step = (0..components).map(|c| desc.comp[c].step.max(0) as usize).max()?;
+            let max_step = (0..components)
+                .map(|c| desc.comp[c].step.max(0) as usize)
+                .max()?;
             let bytes_per_pixel = max_step >> desc.log2_chroma_w;
             if bytes_per_pixel == 0 || !bytes_per_pixel.is_multiple_of(element_bytes) {
                 return None;
             }
-            Some(DataLayout::Interleaved { rows: height, cols: width, components: bytes_per_pixel / element_bytes })
+            Some(DataLayout::Interleaved {
+                rows: height,
+                cols: width,
+                components: bytes_per_pixel / element_bytes,
+            })
         } else {
             let plane_count = self.count_planes().ok()? as usize;
             let mut planes = Vec::with_capacity(plane_count);
             for plane in 0..plane_count {
                 // Elements this plane stores per luma column, e.g. 1 for a planar
                 // Y/U/V plane and 2 for a semi-planar `NV12` chroma plane.
-                let plane_bytes: usize = (0..components).filter(|&c| desc.comp[c].plane.max(0) as usize == plane).map(|c| component_bytes(&desc, c)).sum();
+                let plane_bytes: usize = (0..components)
+                    .filter(|&c| desc.comp[c].plane.max(0) as usize == plane)
+                    .map(|c| component_bytes(&desc, c))
+                    .sum();
                 if plane_bytes == 0 || !plane_bytes.is_multiple_of(element_bytes) {
                     return None;
                 }
-                planes.push((ceil_shift(height, h_shift(plane)), ceil_shift(width, w_shift(plane)) * (plane_bytes / element_bytes)));
+                planes.push((
+                    ceil_shift(height, h_shift(plane)),
+                    ceil_shift(width, w_shift(plane)) * (plane_bytes / element_bytes),
+                ));
             }
             Some(DataLayout::Planar(planes))
         }
@@ -477,20 +503,38 @@ fn component_bytes(desc: &ffi::AVPixFmtDescriptor, component: usize) -> usize {
 
 /// Bytes one element of `desc`'s format occupies, i.e. its widest component.
 fn element_bytes(desc: &ffi::AVPixFmtDescriptor) -> Option<usize> {
-    (0..desc.nb_components as usize).map(|component| component_bytes(desc, component)).max().filter(|&bytes| bytes > 0)
+    (0..desc.nb_components as usize)
+        .map(|component| component_bytes(desc, component))
+        .max()
+        .filter(|&bytes| bytes > 0)
 }
 
 /// 返回最佳像素格式，或错误
-pub fn find_best_pix_fmt(dst_pix_fmt1: PixelFormat, dst_pix_fmt2: PixelFormat, src_pix_fmt: PixelFormat, has_alpha: bool) -> Result<PixelFormat> {
+pub fn find_best_pix_fmt(
+    dst_pix_fmt1: PixelFormat,
+    dst_pix_fmt2: PixelFormat,
+    src_pix_fmt: PixelFormat,
+    has_alpha: bool,
+) -> Result<PixelFormat> {
     let alpha = if has_alpha { 1 } else { 0 };
 
     // 返回的是**选中的像素格式**（`AV_PIX_FMT_NONE` 表示无法选择）。`loss_ptr`
     // 才承载"会损失什么"的位掩码，这里不需要，故传 NULL。
-    let best = unsafe { ffi::av_find_best_pix_fmt_of_2(dst_pix_fmt1.into(), dst_pix_fmt2.into(), src_pix_fmt.into(), alpha, std::ptr::null_mut()) };
+    let best = unsafe {
+        ffi::av_find_best_pix_fmt_of_2(
+            dst_pix_fmt1.into(),
+            dst_pix_fmt2.into(),
+            src_pix_fmt.into(),
+            alpha,
+            std::ptr::null_mut(),
+        )
+    };
 
     match PixelFormat::from_ffi_checked(best) {
         // 返回 `AV_PIX_FMT_NONE`（或本 crate 未收录的值）都表示"没有可用的目标格式"。
-        None | Some(PixelFormat::NONE) => Err(RsmediaError::msg(format!("Failed to find a best pixel format among the candidates (got {best})"))),
+        None | Some(PixelFormat::NONE) => Err(RsmediaError::msg(format!(
+            "Failed to find a best pixel format among the candidates (got {best})"
+        ))),
         Some(fmt) => Ok(fmt),
     }
 }
@@ -498,12 +542,25 @@ pub fn find_best_pix_fmt(dst_pix_fmt1: PixelFormat, dst_pix_fmt2: PixelFormat, s
 /// Find the best pixel format to convert to given a certain source pixel format.
 /// this function searches which of the given pixel formats should be used to suffer the least amount of loss.
 /// The pixel formats from which it chooses one, are determined by the pix_fmt_list parameter.
-pub fn find_codec_best_pix_fmt(pix_fmt_list: &[PixelFormat], src_pix_fmt: PixelFormat, has_alpha: bool) -> Result<PixelFormat> {
+pub fn find_codec_best_pix_fmt(
+    pix_fmt_list: &[PixelFormat],
+    src_pix_fmt: PixelFormat,
+    has_alpha: bool,
+) -> Result<PixelFormat> {
     let pix_fmts = pix_fmt_list.as_ptr() as *const _;
     let alpha = if has_alpha { 1 } else { 0 };
-    let ret = unsafe { ffi::avcodec_find_best_pix_fmt_of_list(pix_fmts, src_pix_fmt.into(), alpha, std::ptr::null_mut()) };
+    let ret = unsafe {
+        ffi::avcodec_find_best_pix_fmt_of_list(
+            pix_fmts,
+            src_pix_fmt.into(),
+            alpha,
+            std::ptr::null_mut(),
+        )
+    };
     if ret < 0 {
-        return Err(RsmediaError::msg(format!("Failed to find codec best pix fmt, ret: {ret}")));
+        return Err(RsmediaError::msg(format!(
+            "Failed to find codec best pix fmt, ret: {ret}"
+        )));
     }
     Ok(PixelFormat::from(ret))
 }
@@ -517,11 +574,19 @@ pub fn find_codec_best_pix_fmt(pix_fmt_list: &[PixelFormat], src_pix_fmt: PixelF
 ///
 /// # 返回值
 /// 返回非负损失值，或错误
-pub fn get_pix_fmt_loss(dst_pix_fmt: PixelFormat, src_pix_fmt: PixelFormat, has_alpha: bool) -> Result<i32> {
-    let loss = unsafe { ffi::av_get_pix_fmt_loss(dst_pix_fmt.into(), src_pix_fmt.into(), has_alpha as i32) };
+pub fn get_pix_fmt_loss(
+    dst_pix_fmt: PixelFormat,
+    src_pix_fmt: PixelFormat,
+    has_alpha: bool,
+) -> Result<i32> {
+    let loss = unsafe {
+        ffi::av_get_pix_fmt_loss(dst_pix_fmt.into(), src_pix_fmt.into(), has_alpha as i32)
+    };
 
     if loss < 0 {
-        return Err(RsmediaError::msg(format!("Failed to get pix fmt loss, ret: {loss}")));
+        return Err(RsmediaError::msg(format!(
+            "Failed to get pix fmt loss, ret: {loss}"
+        )));
     }
 
     Ok(loss)
@@ -534,11 +599,19 @@ mod tests {
     #[test]
     fn test_pixel_format() -> Result<()> {
         // 9. 测试最佳像素格式查找
-        let best_fmt = find_best_pix_fmt(PixelFormat::RGB24, PixelFormat::BGR24, PixelFormat::YUV420P, false)?;
+        let best_fmt = find_best_pix_fmt(
+            PixelFormat::RGB24,
+            PixelFormat::BGR24,
+            PixelFormat::YUV420P,
+            false,
+        )?;
         assert_ne!(best_fmt, PixelFormat::NONE);
         // 在候选集中选出最佳格式，其结果一定属于候选集
         assert!(
-            matches!(best_fmt, PixelFormat::RGB24 | PixelFormat::BGR24 | PixelFormat::YUV420P),
+            matches!(
+                best_fmt,
+                PixelFormat::RGB24 | PixelFormat::BGR24 | PixelFormat::YUV420P
+            ),
             "best pixel format should be one of the candidates, got {best_fmt:?}"
         );
 
@@ -555,14 +628,22 @@ mod tests {
 
     #[test]
     fn test_format_conversion() -> Result<()> {
-        let formats = vec![PixelFormat::RGB24, PixelFormat::BGR24, PixelFormat::YUV420P, PixelFormat::RGBA];
+        let formats = vec![
+            PixelFormat::RGB24,
+            PixelFormat::BGR24,
+            PixelFormat::YUV420P,
+            PixelFormat::RGBA,
+        ];
 
         // 测试所有格式组合的转换
         for &src_fmt in &formats {
             for &dst_fmt in &formats {
                 if src_fmt != dst_fmt {
                     let loss = get_pix_fmt_loss(dst_fmt, src_fmt, true)?;
-                    assert!(loss >= 0, "loss for {src_fmt:?}->{dst_fmt:?} should be non-negative");
+                    assert!(
+                        loss >= 0,
+                        "loss for {src_fmt:?}->{dst_fmt:?} should be non-negative"
+                    );
                 } else {
                     // 不同格式但相等的情况不存在；此处保证自身转换无损失
                     let loss = get_pix_fmt_loss(dst_fmt, src_fmt, true)?;

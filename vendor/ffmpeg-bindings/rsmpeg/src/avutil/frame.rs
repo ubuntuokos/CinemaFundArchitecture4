@@ -68,7 +68,9 @@ impl AVFrame {
         if self.is_allocated() {
             return Err(RsmpegError::AVFrameDoubleAllocatingError);
         }
-        unsafe { ffi::av_frame_get_buffer(self.as_mut_ptr(), 0) }.upgrade().map_err(RsmpegError::AVFrameInvalidAllocatingError)?;
+        unsafe { ffi::av_frame_get_buffer(self.as_mut_ptr(), 0) }
+            .upgrade()
+            .map_err(RsmpegError::AVFrameInvalidAllocatingError)?;
         Ok(())
     }
 
@@ -108,8 +110,25 @@ impl AVFrame {
     /// The buffer src points to cannot outlive the AVFrame. Recommend using
     /// fill_image_buffer() instead. And don't fill thread-local buffer in,
     /// since `AVFrame` is `Send`.
-    pub unsafe fn fill_arrays(&mut self, src: *const u8, pix_fmt: AVPixelFormat, width: i32, height: i32) -> Result<()> {
-        unsafe { av_image_fill_arrays(self.data_mut().as_mut_ptr(), self.linesize_mut().as_mut_ptr(), src, pix_fmt, width, height, 1) }.upgrade()?;
+    pub unsafe fn fill_arrays(
+        &mut self,
+        src: *const u8,
+        pix_fmt: AVPixelFormat,
+        width: i32,
+        height: i32,
+    ) -> Result<()> {
+        unsafe {
+            av_image_fill_arrays(
+                self.data_mut().as_mut_ptr(),
+                self.linesize_mut().as_mut_ptr(),
+                src,
+                pix_fmt,
+                width,
+                height,
+                1,
+            )
+        }
+        .upgrade()?;
         Ok(())
     }
 
@@ -178,7 +197,10 @@ impl AVFrame {
     /// assert_eq!(frame.image_get_buffer_size(8).unwrap(), 32 * 10);
     /// ```
     pub fn image_get_buffer_size(&self, align: i32) -> Result<usize> {
-        let size = unsafe { ffi::av_image_get_buffer_size(self.format, self.width, self.height, align) }.upgrade().map_err(RsmpegError::AVError)?;
+        let size =
+            unsafe { ffi::av_image_get_buffer_size(self.format, self.width, self.height, align) }
+                .upgrade()
+                .map_err(RsmpegError::AVError)?;
 
         let size = usize::try_from(size)?;
 
@@ -248,7 +270,9 @@ impl AVFrame {
 
 impl Clone for AVFrame {
     fn clone(&self) -> Self {
-        let new_frame = unsafe { ffi::av_frame_clone(self.as_ptr()) }.upgrade().unwrap();
+        let new_frame = unsafe { ffi::av_frame_clone(self.as_ptr()) }
+            .upgrade()
+            .unwrap();
         unsafe { Self::from_raw(new_frame) }
     }
 }
@@ -260,7 +284,10 @@ impl Default for AVFrame {
 }
 
 impl<'frame> AVFrame {
-    pub fn get_side_data(&'frame self, side_data_type: ffi::AVFrameSideDataType) -> Option<AVFrameSideDataRef<'frame>> {
+    pub fn get_side_data(
+        &'frame self,
+        side_data_type: ffi::AVFrameSideDataType,
+    ) -> Option<AVFrameSideDataRef<'frame>> {
         unsafe { ffi::av_frame_get_side_data(self.as_ptr(), side_data_type) }
             .upgrade()
             .map(|side_data_ptr| unsafe { AVFrameSideDataRef::from_raw(side_data_ptr) })
@@ -331,7 +358,12 @@ impl<'frame> AVFrameSideDataRef<'frame> {
     ///
     /// You should only call this function when you ensure side data is motion vector.
     pub unsafe fn as_motion_vectors(&self) -> &'frame [AVMotionVector] {
-        unsafe { slice::from_raw_parts(self.data as *const _ as *const ffi::AVMotionVector, self.size / size_of::<ffi::AVMotionVector>()) }
+        unsafe {
+            slice::from_raw_parts(
+                self.data as *const _ as *const ffi::AVMotionVector,
+                self.size / size_of::<ffi::AVMotionVector>(),
+            )
+        }
     }
 }
 
@@ -356,7 +388,10 @@ mod test {
     #[test]
     fn test_get_buffer_without_setting() {
         let mut frame = AVFrame::new();
-        assert!(matches!(frame.alloc_buffer(), Err(RsmpegError::AVFrameInvalidAllocatingError(_))));
+        assert!(matches!(
+            frame.alloc_buffer(),
+            Err(RsmpegError::AVFrameInvalidAllocatingError(_))
+        ));
     }
 
     #[test]
@@ -367,7 +402,10 @@ mod test {
         frame.set_ch_layout(AVChannelLayout::from_nb_channels(2).into_inner());
         frame.set_format(first_supported_sample_fmt(&encoder));
         frame.alloc_buffer().unwrap();
-        assert!(matches!(frame.alloc_buffer(), Err(RsmpegError::AVFrameDoubleAllocatingError)));
+        assert!(matches!(
+            frame.alloc_buffer(),
+            Err(RsmpegError::AVFrameDoubleAllocatingError)
+        ));
     }
 
     #[test]
@@ -384,6 +422,10 @@ mod test {
 
     #[cfg(feature = "ffmpeg7_1")]
     fn first_supported_sample_fmt(encoder: &AVCodec) -> i32 {
-        AVCodecContext::new(encoder).get_supported_sample_fmts(None).ok().and_then(|fmts| fmts.first().copied()).unwrap_or(ffi::AV_SAMPLE_FMT_FLTP)
+        AVCodecContext::new(encoder)
+            .get_supported_sample_fmts(None)
+            .ok()
+            .and_then(|fmts| fmts.first().copied())
+            .unwrap_or(ffi::AV_SAMPLE_FMT_FLTP)
     }
 }

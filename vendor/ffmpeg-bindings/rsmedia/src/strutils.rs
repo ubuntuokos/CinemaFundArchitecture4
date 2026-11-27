@@ -165,7 +165,11 @@ pub unsafe fn c_char_to_str_list(ptr: *const c_char) -> Vec<String> {
         return Vec::new();
     }
     let cstr = unsafe { CStr::from_ptr(ptr) };
-    cstr.to_string_lossy().split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect()
+    cstr.to_string_lossy()
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect()
 }
 
 #[cfg(test)]
@@ -177,7 +181,11 @@ mod tests {
     #[test]
     fn test_path_conversion() {
         // 使用平台无关的路径分隔符
-        let path_str = if cfg!(unix) { "/usr/local/bin" } else { r"C:\Users\local\bin" };
+        let path_str = if cfg!(unix) {
+            "/usr/local/bin"
+        } else {
+            r"C:\Users\local\bin"
+        };
 
         // 从 &str 路径
         let cstring = path_to_cstring(Path::new(path_str));
@@ -189,7 +197,11 @@ mod tests {
         assert_eq!(cstring.to_str().unwrap(), path_str);
 
         // UTF-8 中文路径 (使用平台特定分隔符)
-        let chinese_path = if cfg!(unix) { "测试/文件.txt" } else { r"测试\文件.txt" };
+        let chinese_path = if cfg!(unix) {
+            "测试/文件.txt"
+        } else {
+            r"测试\文件.txt"
+        };
         let chinese = CString::new(chinese_path).unwrap();
         let utf8_path = cstr_to_path(&chinese);
         assert_eq!(utf8_path.to_str().unwrap(), chinese_path);
@@ -200,7 +212,10 @@ mod tests {
             use std::os::unix::ffi::OsStrExt;
             let gbk = CString::new(vec![0xB2, 0xE2, 0xCA, 0xD4, 0x2E, 0x74, 0x78, 0x74]).unwrap();
             let gbk_path = cstr_to_path(&gbk);
-            assert_eq!(gbk_path.as_os_str().as_bytes(), &[0xB2, 0xE2, 0xCA, 0xD4, 0x2E, 0x74, 0x78, 0x74]);
+            assert_eq!(
+                gbk_path.as_os_str().as_bytes(),
+                &[0xB2, 0xE2, 0xCA, 0xD4, 0x2E, 0x74, 0x78, 0x74]
+            );
         }
 
         #[cfg(not(unix))]
@@ -252,18 +267,28 @@ mod tests {
     #[test]
     fn test_c_char_to_str_list() {
         let c = CString::new("mkv,mka,mks").unwrap();
-        assert_eq!(unsafe { c_char_to_str_list(c.as_ptr()) }, vec!["mkv".to_string(), "mka".to_string(), "mks".to_string()]);
+        assert_eq!(
+            unsafe { c_char_to_str_list(c.as_ptr()) },
+            vec!["mkv".to_string(), "mka".to_string(), "mks".to_string()]
+        );
         // null pointer
         assert!(unsafe { c_char_to_str_list(std::ptr::null()) }.is_empty());
         // single value
         let c = CString::new("mp4").unwrap();
-        assert_eq!(unsafe { c_char_to_str_list(c.as_ptr()) }, vec!["mp4".to_string()]);
+        assert_eq!(
+            unsafe { c_char_to_str_list(c.as_ptr()) },
+            vec!["mp4".to_string()]
+        );
     }
 
     #[test]
     fn test_optional_conversion() {
         // 使用平台特定的路径
-        let test_path = if cfg!(unix) { "/usr/local" } else { r"C:\Users\local" };
+        let test_path = if cfg!(unix) {
+            "/usr/local"
+        } else {
+            r"C:\Users\local"
+        };
 
         // Optional Path
         let path: Option<&Path> = Some(Path::new(test_path));

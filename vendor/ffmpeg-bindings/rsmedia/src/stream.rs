@@ -40,7 +40,9 @@ ffi_enum_wrap_from!(
 
 impl MediaType {
     pub fn get_media_name(&self) -> String {
-        avutil::get_media_type_string(*self as _).map_or("Unknown".to_string(), |s| strutils::cstr_to_string(s).unwrap())
+        avutil::get_media_type_string(*self as _).map_or("Unknown".to_string(), |s| {
+            strutils::cstr_to_string(s).unwrap()
+        })
     }
 }
 
@@ -170,13 +172,25 @@ impl StreamInfo {
     /// * `reader` - Reader to find stream information from.
     /// * `stream_index` - Index of stream in reader.
     pub fn from_reader<R: Reader>(reader: &R, stream_index: usize) -> Result<Self> {
-        let stream = reader.input().streams().get(stream_index).ok_or(RsmediaError::msg(format!("reader stream: {stream_index} not found!")))?;
+        let stream = reader
+            .input()
+            .streams()
+            .get(stream_index)
+            .ok_or(RsmediaError::msg(format!(
+                "reader stream: {stream_index} not found!"
+            )))?;
 
         Self::from_stream(stream)
     }
 
     pub fn from_writer<W: Writer>(writer: &W, stream_index: usize) -> Result<Self> {
-        let stream = writer.output().streams().get(stream_index).ok_or(RsmediaError::msg(format!("writer stream: {stream_index} not found!")))?;
+        let stream = writer
+            .output()
+            .streams()
+            .get(stream_index)
+            .ok_or(RsmediaError::msg(format!(
+                "writer stream: {stream_index} not found!"
+            )))?;
 
         Self::from_stream(stream)
     }
@@ -184,7 +198,9 @@ impl StreamInfo {
     pub fn from_stream(stream: &AVStream) -> Result<Self> {
         let codecpar = stream.codecpar();
         let codec_type = codecpar.codec_type();
-        let metadata = stream.metadata().map_or_else(Metadata::new, |d| Metadata::from_dict(&d));
+        let metadata = stream
+            .metadata()
+            .map_or_else(Metadata::new, |d| Metadata::from_dict(&d));
         // 统一格式：视频 → 像素格式，音频 → 采样格式，其他 → NONE 占位。
         //
         // 这里的值来自**任意媒体文件**，因此用 `from_ffi_checked` 而不是会 panic
@@ -204,10 +220,16 @@ impl StreamInfo {
             });
             FrameFormat::Pixel(pix_fmt)
         } else if codec_type.is_audio() {
-            FrameFormat::Sample(SampleFormat::from_ffi_checked(codecpar.format).unwrap_or_else(|| {
-                log::warn!("Stream {} has an unsupported sample format {}; reporting it as unknown", stream.index, codecpar.format);
-                SampleFormat::NONE
-            }))
+            FrameFormat::Sample(
+                SampleFormat::from_ffi_checked(codecpar.format).unwrap_or_else(|| {
+                    log::warn!(
+                        "Stream {} has an unsupported sample format {}; reporting it as unknown",
+                        stream.index,
+                        codecpar.format
+                    );
+                    SampleFormat::NONE
+                }),
+            )
         } else {
             FrameFormat::Pixel(PixelFormat::NONE)
         };
@@ -228,11 +250,19 @@ impl StreamInfo {
             let bits_sample = ffi::av_get_bits_per_sample(codecpar.codec_id);
             let exact_bits_sample = ffi::av_get_exact_bits_per_sample(codecpar.codec_id);
             let (bits_pixel, padded_bits_pixel) = if let Some(pix_fmt_desc) = pix_fmt_desc {
-                (ffi::av_get_bits_per_pixel(pix_fmt_desc.deref()), ffi::av_get_padded_bits_per_pixel(pix_fmt_desc.deref()))
+                (
+                    ffi::av_get_bits_per_pixel(pix_fmt_desc.deref()),
+                    ffi::av_get_padded_bits_per_pixel(pix_fmt_desc.deref()),
+                )
             } else {
                 (0, 0)
             };
-            (bits_sample, exact_bits_sample, bits_pixel, padded_bits_pixel)
+            (
+                bits_sample,
+                exact_bits_sample,
+                bits_pixel,
+                padded_bits_pixel,
+            )
         };
 
         Ok(Self {
@@ -240,7 +270,11 @@ impl StreamInfo {
             index: stream.index as usize,
             // 同样来自外部数据：未列出的媒体类型退化为 `UNKNOWN` 而不是 panic。
             media_type: MediaType::from_ffi_checked(codecpar.codec_type).unwrap_or_else(|| {
-                log::warn!("Stream {} has an unsupported media type {}; reporting it as unknown", stream.index, codecpar.codec_type);
+                log::warn!(
+                    "Stream {} has an unsupported media type {}; reporting it as unknown",
+                    stream.index,
+                    codecpar.codec_type
+                );
                 MediaType::UNKNOWN
             }),
             #[allow(clippy::unnecessary_cast)]
@@ -268,7 +302,11 @@ impl StreamInfo {
             pts_wrap_bits: stream.pts_wrap_bits,
             video_delay: codecpar.video_delay,
             sample_aspect_ratio: codecpar.sample_aspect_ratio,
-            display_aspect_ratio: Self::compute_display_aspect_ratio(codecpar.sample_aspect_ratio, codecpar.width, codecpar.height),
+            display_aspect_ratio: Self::compute_display_aspect_ratio(
+                codecpar.sample_aspect_ratio,
+                codecpar.width,
+                codecpar.height,
+            ),
             color_space: codecpar.color_space,
             color_range: codecpar.color_range,
             color_transfer: codecpar.color_trc,
@@ -300,7 +338,11 @@ impl StreamInfo {
     ///
     /// SAR 未知（0/1，FFmpeg 惯例按方形像素处理）时退化为 width/height。
     /// 用 `av_reduce` 规约分数（与 FFmpeg 内部一致），避免溢出且得到最简比。
-    fn compute_display_aspect_ratio(sample_aspect_ratio: ffi::AVRational, width: i32, height: i32) -> ffi::AVRational {
+    fn compute_display_aspect_ratio(
+        sample_aspect_ratio: ffi::AVRational,
+        width: i32,
+        height: i32,
+    ) -> ffi::AVRational {
         if width <= 0 || height <= 0 {
             return ffi::AVRational { num: 0, den: 1 };
         }
@@ -308,12 +350,21 @@ impl StreamInfo {
         let (sar_num, sar_den) = if sample_aspect_ratio.num <= 0 || sample_aspect_ratio.den <= 0 {
             (1, 1)
         } else {
-            (sample_aspect_ratio.num as i64, sample_aspect_ratio.den as i64)
+            (
+                sample_aspect_ratio.num as i64,
+                sample_aspect_ratio.den as i64,
+            )
         };
         let mut num: i32 = 0;
         let mut den: i32 = 1;
         unsafe {
-            ffi::av_reduce(&mut num, &mut den, sar_num * width as i64, sar_den * height as i64, i32::MAX as i64);
+            ffi::av_reduce(
+                &mut num,
+                &mut den,
+                sar_num * width as i64,
+                sar_den * height as i64,
+                i32::MAX as i64,
+            );
         }
         ffi::AVRational { num, den }
     }
@@ -343,13 +394,20 @@ impl StreamInfo {
         }
 
         // 2. rotate metadata 标签（旧 demuxer 回退）
-        map.get("rotate").and_then(|v| v.parse::<f64>().ok()).unwrap_or(0.0)
+        map.get("rotate")
+            .and_then(|v| v.parse::<f64>().ok())
+            .unwrap_or(0.0)
     }
 
     fn get_extra_data(stream: &AVStream) -> Option<Vec<u8>> {
         let codecpar = stream.codecpar();
         if codecpar.extradata_size > 0 && !codecpar.extradata.is_null() {
-            let extra_data = unsafe { std::slice::from_raw_parts(codecpar.extradata as *const _, codecpar.extradata_size as usize) };
+            let extra_data = unsafe {
+                std::slice::from_raw_parts(
+                    codecpar.extradata as *const _,
+                    codecpar.extradata_size as usize,
+                )
+            };
             Some(extra_data.to_vec())
         } else {
             None
@@ -371,16 +429,19 @@ impl StreamInfo {
     pub fn find_decoder_name(&self, hw_device_type: Option<HWDeviceType>) -> Option<String> {
         let codec_id = self.codec_id as ffi::AVCodecID;
         let codec_name = strutils::cstr_to_string_lossy(AVCodec::find_decoder(codec_id)?.name());
-        let hw_codec_name = hw_device_type.and_then(|hw| hw_decoder_name(hw, codec_id)).filter(|name| {
-            let exists = AVCodec::find_decoder_by_name(&strutils::str_to_cstring(name)).is_some();
-            if !exists {
-                log::debug!(
-                    "HW decoder '{name}' not registered in this FFmpeg build, \
+        let hw_codec_name = hw_device_type
+            .and_then(|hw| hw_decoder_name(hw, codec_id))
+            .filter(|name| {
+                let exists =
+                    AVCodec::find_decoder_by_name(&strutils::str_to_cstring(name)).is_some();
+                if !exists {
+                    log::debug!(
+                        "HW decoder '{name}' not registered in this FFmpeg build, \
                          falling back to software decoder '{codec_name}'"
-                );
-            }
-            exists
-        });
+                    );
+                }
+                exists
+            });
         Some(hw_codec_name.unwrap_or(codec_name))
     }
 
@@ -391,16 +452,19 @@ impl StreamInfo {
     pub fn find_encoder_name(&self, hw_device_type: Option<HWDeviceType>) -> Option<String> {
         let codec_id = self.codec_id as ffi::AVCodecID;
         let codec_name = strutils::cstr_to_string_lossy(AVCodec::find_encoder(codec_id)?.name());
-        let hw_codec_name = hw_device_type.and_then(|hw| hw_encoder_name(hw, codec_id)).filter(|name| {
-            let exists = AVCodec::find_encoder_by_name(&strutils::str_to_cstring(name)).is_some();
-            if !exists {
-                log::debug!(
-                    "HW encoder '{name}' not registered in this FFmpeg build, \
+        let hw_codec_name = hw_device_type
+            .and_then(|hw| hw_encoder_name(hw, codec_id))
+            .filter(|name| {
+                let exists =
+                    AVCodec::find_encoder_by_name(&strutils::str_to_cstring(name)).is_some();
+                if !exists {
+                    log::debug!(
+                        "HW encoder '{name}' not registered in this FFmpeg build, \
                          falling back to software encoder '{codec_name}'"
-                );
-            }
-            exists
-        });
+                    );
+                }
+                exists
+            });
         Some(hw_codec_name.unwrap_or(codec_name))
     }
 }
@@ -550,28 +614,49 @@ mod tests {
         let eq_ar = |a: ffi::AVRational, b: ffi::AVRational| a.num == b.num && a.den == b.den;
 
         // SAR 未知（0/1）→ 方形像素，DAR = W/H
-        assert!(eq_ar(StreamInfo::compute_display_aspect_ratio(ar(0, 1), 1920, 1080), ar(16, 9)));
+        assert!(eq_ar(
+            StreamInfo::compute_display_aspect_ratio(ar(0, 1), 1920, 1080),
+            ar(16, 9)
+        ));
         // SAR 1/1 → DAR = W/H
-        assert!(eq_ar(StreamInfo::compute_display_aspect_ratio(ar(1, 1), 1920, 1080), ar(16, 9)));
+        assert!(eq_ar(
+            StreamInfo::compute_display_aspect_ratio(ar(1, 1), 1920, 1080),
+            ar(16, 9)
+        ));
         // 变形宽银幕：SAR 2/1 + 720x576(5/4) → DAR = 5/2
-        assert!(eq_ar(StreamInfo::compute_display_aspect_ratio(ar(2, 1), 720, 576), ar(5, 2)));
+        assert!(eq_ar(
+            StreamInfo::compute_display_aspect_ratio(ar(2, 1), 720, 576),
+            ar(5, 2)
+        ));
         // 分数需规约：SAR 118/81 + 1920x1080 → 118*16/(81*9) = 1888/729（已最简）
-        assert!(eq_ar(StreamInfo::compute_display_aspect_ratio(ar(118, 81), 1920, 1080), ar(1888, 729)));
+        assert!(eq_ar(
+            StreamInfo::compute_display_aspect_ratio(ar(118, 81), 1920, 1080),
+            ar(1888, 729)
+        ));
         // 非视频流（W/H 为 0）→ 0/1
-        assert!(eq_ar(StreamInfo::compute_display_aspect_ratio(ar(1, 1), 0, 0), ar(0, 1)));
+        assert!(eq_ar(
+            StreamInfo::compute_display_aspect_ratio(ar(1, 1), 0, 0),
+            ar(0, 1)
+        ));
     }
 
     /// VAAPI 必须回退到通用软件解码器（`h264_vaapi` 是编码器名，
     /// 若返回会导致 Demuxer 构建失败）。
     #[test]
     fn test_find_decoder_name_vaapi_falls_back() {
-        let reader = StreamReader::new(std::path::Path::new("assets/mp4.mp4")).expect("open test asset");
+        let reader =
+            StreamReader::new(std::path::Path::new("assets/mp4.mp4")).expect("open test asset");
         let info = StreamInfo::from_reader(&reader, 0).expect("read stream 0");
         assert_eq!(info.media_type, MediaType::VIDEO);
 
         let generic = info.find_decoder_name(None).expect("generic decoder");
-        let vaapi = info.find_decoder_name(Some(HWDeviceType::VAAPI)).expect("vaapi lookup");
-        assert_eq!(vaapi, generic, "VAAPI must fall back to the generic decoder");
+        let vaapi = info
+            .find_decoder_name(Some(HWDeviceType::VAAPI))
+            .expect("vaapi lookup");
+        assert_eq!(
+            vaapi, generic,
+            "VAAPI must fall back to the generic decoder"
+        );
         assert_ne!(vaapi, "h264_vaapi");
     }
 
@@ -583,13 +668,20 @@ mod tests {
         let info = StreamInfo::from_reader(&reader, 0)?;
 
         for hw in [HWDeviceType::CUDA, HWDeviceType::VULKAN, HWDeviceType::QSV] {
-            let name = info.find_decoder_name(Some(hw)).ok_or_else(|| RsmediaError::msg(format!("lookup for {hw:?} failed")))?;
-            let registered = if let Some(codec) = AVCodec::find_decoder_by_name(&strutils::str_to_cstring(&name)) {
+            let name = info
+                .find_decoder_name(Some(hw))
+                .ok_or_else(|| RsmediaError::msg(format!("lookup for {hw:?} failed")))?;
+            let registered = if let Some(codec) =
+                AVCodec::find_decoder_by_name(&strutils::str_to_cstring(&name))
+            {
                 strutils::cstr_to_string(codec.name()).unwrap() == name
             } else {
                 false
             };
-            assert!(registered, "find_decoder_name({hw:?}) returned '{name}' which is not registered");
+            assert!(
+                registered,
+                "find_decoder_name({hw:?}) returned '{name}' which is not registered"
+            );
         }
         Ok(())
     }
