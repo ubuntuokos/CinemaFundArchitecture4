@@ -3154,6 +3154,8 @@
 	Broadcast	Μετάδοση
 	Cancel Dynamic Trim	Ακύρωση δυναμικού ψαλιδίσματος
 	Cancel Queued Export	Ακύρωση εξαγωγής στην ουρά
+	Pause Queued Export	Παύση εξαγωγής στην ουρά
+	Resume Queued Export	Συνέχιση εξαγωγής στην ουρά
 	Center align text	Στοίχιση κειμένου στο κέντρο
 	Change Mask	Αλλαγή μάσκας
 	Clear All Events	Εκκαθάριση όλων των συμβάντων

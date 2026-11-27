@@ -3179,6 +3179,8 @@
 	Broadcast	Yayın
 	Cancel Dynamic Trim	Dinamik Kırpmayı İptal Et
 	Cancel Queued Export	Kuyruktaki Dışa Aktarmayı İptal Et
+	Pause Queued Export	Kuyruktaki Dışa Aktarmayı Duraklat
+	Resume Queued Export	Kuyruktaki Dışa Aktarmayı Sürdür
 	Center align text	Metni ortaya hizala
 	Change Mask	Maskeyi Değiştir
 	Clear All Events	Tüm Olayları Temizle

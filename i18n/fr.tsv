@@ -3028,6 +3028,8 @@
 	CBR	CBR
 	Cancel Dynamic Trim	Annuler le rognage dynamique
 	Cancel Queued Export	Annuler l'exportation en file d'attente
+	Pause Queued Export	Suspendre l'exportation en file d'attente
+	Resume Queued Export	Reprendre l'exportation en file d'attente
 	Center Left	Centre gauche
 	Center Right	Centre droit
 	Center align text	Centrer le texte

@@ -3113,6 +3113,8 @@
 	Broadcast	Vysílání
 	Cancel Dynamic Trim	Zrušit dynamický ořez
 	Cancel Queued Export	Zrušit export ve frontě
+	Pause Queued Export	Pozastavit export ve frontě
+	Resume Queued Export	Obnovit export ve frontě
 	Center align text	Zarovnat text na střed
 	Change Mask	Změnit masku
 	Clear All Events	Vymazat všechny události

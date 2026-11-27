@@ -3156,6 +3156,8 @@
 	Broadcast	廣播電視
 	Cancel Dynamic Trim	取消動態修剪
 	Cancel Queued Export	取消排隊的匯出
+	Pause Queued Export	暫停排隊的匯出
+	Resume Queued Export	繼續排隊的匯出
 	Center align text	置中對齊文字
 	Change Mask	更改遮罩
 	Clear All Events	清除所有事件

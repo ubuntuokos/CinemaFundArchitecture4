@@ -3022,6 +3022,8 @@
 	CBR	CBR
 	Cancel Dynamic Trim	ダイナミックトリムをキャンセル
 	Cancel Queued Export	キュー内の書き出しをキャンセル
+	Pause Queued Export	キュー内の書き出しを一時停止
+	Resume Queued Export	キュー内の書き出しを再開
 	Center Left	左中央
 	Center Right	右中央
 	Center align text	テキストを中央揃え

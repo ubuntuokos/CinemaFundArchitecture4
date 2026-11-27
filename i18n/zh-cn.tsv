@@ -3016,6 +3016,8 @@
 	CBR	CBR
 	Cancel Dynamic Trim	取消动态修剪
 	Cancel Queued Export	取消排队的导出
+	Pause Queued Export	暂停排队的导出
+	Resume Queued Export	继续排队的导出
 	Center Left	中心左侧
 	Center Right	中心右侧
 	Center align text	居中对齐文本

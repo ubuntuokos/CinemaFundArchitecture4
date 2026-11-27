@@ -3502,6 +3502,8 @@
 	Broadcast	Ringhääling
 	Cancel Dynamic Trim	Tühista dünaamiline kärpimine
 	Cancel Queued Export	Tühista järjekorras eksport
+	Pause Queued Export	Peata järjekorras eksport
+	Resume Queued Export	Jätka järjekorras eksporti
 	Center align text	Joonda tekst keskele
 	Change Mask	Muuda maski
 	Clear All Events	Tühjenda kõik sündmused

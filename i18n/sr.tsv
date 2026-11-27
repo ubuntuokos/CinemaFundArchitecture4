@@ -3197,6 +3197,8 @@
 	Broadcast	Емитовање
 	Cancel Dynamic Trim	Откажи динамичко скраћивање
 	Cancel Queued Export	Откажи извоз у реду
+	Pause Queued Export	Паузирај извоз у реду
+	Resume Queued Export	Настави извоз у реду
 	Center align text	Поравнај текст по средини
 	Change Mask	Промени маску
 	Clear All Events	Обриши све догађаје

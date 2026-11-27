@@ -490,6 +490,8 @@
 	Cancel	취소
 	Cancel Dynamic Trim	동적 트림 취소
 	Cancel Queued Export	대기 중인 내보내기 취소
+	Pause Queued Export	대기 중인 내보내기 일시 중지
+	Resume Queued Export	대기 중인 내보내기 다시 시작
 	Cancelled	취소됨
 	Cannot open {dir}: {e}	{dir}을(를) 열 수 없음: {e}
 	Capitalisation	대소문자

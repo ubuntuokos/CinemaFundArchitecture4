@@ -3303,6 +3303,8 @@
 	Broadcast	Lähetys
 	Cancel Dynamic Trim	Peruuta dynaaminen trimmaus
 	Cancel Queued Export	Peruuta jonossa oleva vienti
+	Pause Queued Export	Keskeytä jonossa oleva vienti
+	Resume Queued Export	Jatka jonossa olevaa vientiä
 	Center align text	Keskitä teksti
 	Change Mask	Vaihda maski
 	Clear All Events	Tyhjennä kaikki tapahtumat

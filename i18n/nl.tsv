@@ -3174,6 +3174,8 @@
 	Broadcast	Uitzending
 	Cancel Dynamic Trim	Dynamisch trimmen annuleren
 	Cancel Queued Export	Export in wachtrij annuleren
+	Pause Queued Export	Export in wachtrij onderbreken
+	Resume Queued Export	Export in wachtrij hervatten
 	Center align text	Tekst centreren
 	Change Mask	Masker wijzigen
 	Clear All Events	Alle gebeurtenissen wissen

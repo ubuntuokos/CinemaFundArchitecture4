@@ -3030,6 +3030,8 @@
 	CBR	CBR
 	Cancel Dynamic Trim	Cancelar aparagem dinâmica
 	Cancel Queued Export	Cancelar exportação na fila
+	Pause Queued Export	Pausar exportação na fila
+	Resume Queued Export	Retomar exportação na fila
 	Center Left	Centro à esquerda
 	Center Right	Centro à direita
 	Center align text	Centralizar texto

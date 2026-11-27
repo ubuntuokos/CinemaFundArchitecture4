@@ -3033,6 +3033,8 @@
 	CBR	CBR
 	Cancel Dynamic Trim	Batalkan Pangkas Dinamis
 	Cancel Queued Export	Batalkan Ekspor dalam Antrean
+	Pause Queued Export	Jeda Ekspor dalam Antrean
+	Resume Queued Export	Lanjutkan Ekspor dalam Antrean
 	Center Left	Kiri Tengah
 	Center Right	Kanan Tengah
 	Center align text	Rata tengah teks

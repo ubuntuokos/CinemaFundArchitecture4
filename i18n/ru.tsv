@@ -3041,6 +3041,8 @@
 	CBR	CBR
 	Cancel Dynamic Trim	Отменить динамическую подрезку
 	Cancel Queued Export	Отменить экспорт в очереди
+	Pause Queued Export	Приостановить экспорт в очереди
+	Resume Queued Export	Возобновить экспорт в очереди
 	Center Left	Слева по центру
 	Center Right	Справа по центру
 	Center align text	Выровнять текст по центру

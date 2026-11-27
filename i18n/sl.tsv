@@ -3534,6 +3534,8 @@
 	Broadcast	Oddajanje
 	Cancel Dynamic Trim	Prekliči dinamično obrezovanje
 	Cancel Queued Export	Prekliči izvoz v čakalni vrsti
+	Pause Queued Export	Začasno ustavi izvoz v čakalni vrsti
+	Resume Queued Export	Nadaljuj izvoz v čakalni vrsti
 	Center align text	Poravnaj besedilo na sredino
 	Change Mask	Spremeni masko
 	Clear All Events	Počisti vse dogodke
