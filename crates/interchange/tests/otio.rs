@@ -527,6 +527,46 @@ fn foreign_metadata_round_trips() {
     check(&String::from_utf8(bytes).unwrap());
 }
 
+/// OTIO-2.6 (H6): a standard `Effect` another program wrote becomes the CFA4 effect of that name; one
+/// CFA4 has no equivalent of is kept whole and written back, also after a second trip through CFA4.
+#[test]
+fn foreign_effects_are_mapped_or_kept() {
+    let rt = |v: i64| format!(r#"{{"OTIO_SCHEMA": "RationalTime.1", "rate": 25, "value": {v}}}"#);
+    let tr = |s: i64, d: i64| format!(r#"{{"OTIO_SCHEMA": "TimeRange.1", "start_time": {}, "duration": {}}}"#, rt(s), rt(d));
+    let doc = format!(
+        r#"{{"OTIO_SCHEMA": "Timeline.1", "name": "Fx", "tracks": {{"OTIO_SCHEMA": "Stack.1", "children": [
+            {{"OTIO_SCHEMA": "Track.1", "kind": "Video", "name": "V1", "children": [
+              {{"OTIO_SCHEMA": "Clip.2", "name": "a", "source_range": {}, "effects": [
+                  {{"OTIO_SCHEMA": "Effect.1", "name": "Gaussian Blur", "effect_name": "Gaussian Blur", "metadata": {{}}}},
+                  {{"OTIO_SCHEMA": "Effect.1", "name": "Glow", "effect_name": "Vendor Glow", "metadata": {{"vendor": {{"radius": 4}}}}}}],
+                "media_references": {{"DEFAULT_MEDIA": {{"OTIO_SCHEMA": "ExternalReference.1", "target_url": "/m/a.mov", "available_range": {}}}}},
+                "active_media_reference_key": "DEFAULT_MEDIA"}}]}}]}}}}"#,
+        tr(0, 50),
+        tr(0, 500),
+    );
+    let check = |text: &str| {
+        let out: serde_json::Value = serde_json::from_str(text).unwrap();
+        let clip = &out["tracks"]["children"][0]["children"][0];
+        let fx = clip["effects"].as_array().unwrap();
+        assert!(fx.iter().any(|e| e["effect_name"] == "Gaussian Blur"), "the mapped effect is written by its name: {fx:?}");
+        let glow: Vec<_> = fx.iter().filter(|e| e["effect_name"] == "Vendor Glow").collect();
+        assert_eq!(glow.len(), 1, "the unknown effect comes back once: {fx:?}");
+        assert_eq!(glow[0]["metadata"]["vendor"]["radius"], 4);
+        assert!(clip["metadata"].get("cfa4").is_some_and(|c| c["effects"].as_array().is_some_and(|e| e.iter().any(|x| x["effect"] == "gaussian_blur"))));
+    };
+    let (imp, rep) = import(doc.as_bytes(), Format::Otio, None).unwrap();
+    assert!(rep.to_string().contains("Vendor Glow"), "the kept effect is reported: {rep}");
+    let sid = only_seq(&imp);
+    let it = &imp.project.sequence(sid).unwrap().tracks(TrackKind::Video)[0].items[0];
+    assert!(it.effects.iter().any(|e| e.effect == "gaussian_blur"));
+    assert!(!it.effects.iter().any(|e| e.effect.contains("glow")));
+    let export = |p: &Project, s| String::from_utf8(cfa4_interchange::export(p, s, Format::Otio, &ExportOptions::default()).unwrap().0).unwrap();
+    let text = export(&imp.project, sid);
+    check(&text);
+    let (again, _) = import(text.as_bytes(), Format::Otio, None).unwrap();
+    check(&export(&again.project, only_seq(&again)));
+}
+
 /// OTIO-2.1: foreign metadata is kept only up to a per-import budget, so a file with a huge foreign
 /// value is not cloned whole into the project; small keys next to it are still kept, with a warning.
 #[test]
