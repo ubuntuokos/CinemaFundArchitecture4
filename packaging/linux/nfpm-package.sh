@@ -20,6 +20,10 @@ NFPM="$(bash "$HERE/check-nfpm.sh")"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 cp "$template" "$work/nfpm.yaml"
+# The pinned FFmpeg version (packaging/ffmpeg-version.env) replaces ${CFA4_FFMPEG_VERSION} in every template.
+# shellcheck source=packaging/ffmpeg-version.env
+. "$ROOT/packaging/ffmpeg-version.env"
+set -- "CFA4_FFMPEG_VERSION=$CFA4_FFMPEG_VERSION" "$@"
 for pair in "$@"; do
   name="${pair%%=*}" value="${pair#*=}"
   if [[ ! "$name" =~ ^[A-Z][A-Z0-9_]*$ || "$pair" != *=* ]]; then

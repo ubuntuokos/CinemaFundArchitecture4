@@ -3,7 +3,7 @@ name: CFA4 CI cache warm-up (main only)
 # GitHub Actions caches are scoped by branch: a run sees caches saved on its own
 # ref and on the default branch, nothing else. Full validation runs only in the
 # merge queue, on labeled pull requests and on workflow_dispatch, so a cache it
-# saves is never visible to the next run, and the pinned FFmpeg 9.0.2 oracle and
+# saves is never visible to the next run, and the pinned FFmpeg oracle and
 # the Rust release dependencies were rebuilt from source every time.
 # This workflow builds both on main and saves them there; the rust-release-tests
 # job in ci-linux.yml only restores them. Nothing here is a merge gate.
@@ -11,7 +11,8 @@ on:
   push:
     branches: [main]
     paths:
-      - scripts/ci/install-ffmpeg-9.0.2.sh
+      - scripts/ci/install-ffmpeg.sh
+      - packaging/ffmpeg-version.env
       - scripts/ci/install-ffmpeg-oracle-deps.sh
       - Cargo.lock
       - "**/Cargo.toml"
@@ -32,7 +33,7 @@ concurrency:
 jobs:
   release-oracle-cache:
     if: github.ref == 'refs/heads/main'
-    name: Warm FFmpeg 9.0.2 and Rust release caches
+    name: Warm FFmpeg oracle and Rust release caches
     runs-on: ubuntu-26.04
     timeout-minutes: 150
     # Must stay identical to the rust-release-tests job env in ci-linux.yml:
@@ -48,13 +49,19 @@ jobs:
           persist-credentials: false
       - name: Native Linux dependencies and test oracles
         run: bash scripts/ci/install-ffmpeg-oracle-deps.sh
-      - name: Cache FFmpeg 9.0.2
+      - name: Pinned FFmpeg version (packaging/ffmpeg-version.env)
+        id: ffv
+        run: |
+          . packaging/ffmpeg-version.env
+          echo "version=$CFA4_FFMPEG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "cache_rev=$CFA4_FFMPEG_CACHE_REV" >> "$GITHUB_OUTPUT"
+      - name: Cache the FFmpeg oracle
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v8
-          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v8
-      - name: Build (or verify cached) FFmpeg 9.0.2
-        run: bash scripts/ci/install-ffmpeg-9.0.2.sh
+          path: ~/.cache/cfa4/ffmpeg-${{ steps.ffv.outputs.version }}-linux-x86_64-${{ steps.ffv.outputs.cache_rev }}
+          key: cfa4-ffmpeg-${{ steps.ffv.outputs.version }}-ubuntu-26.04-linux-x86_64-${{ steps.ffv.outputs.cache_rev }}
+      - name: Build (or verify cached) FFmpeg oracle
+        run: bash scripts/ci/install-ffmpeg.sh
       - name: Rust toolchain from rust-toolchain.toml
         run: |
           rustup show

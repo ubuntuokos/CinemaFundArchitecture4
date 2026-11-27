@@ -481,7 +481,7 @@ fn rawl(data: &[u8], planes: &[(usize, u8, bool)]) -> Vec<Vec<i32>> {
 /// Skipped without the tools.
 #[test]
 fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
-    use cfa4_j2k::{EncodeOptions, Image, Plane, Progression};
+    use cfa4_j2k::{EncodeOptions, Image, ImfProfile, Plane, Progression};
     let ff = cfa4_testkit::require_ffmpeg!();
     let Some(dec) = opj("opj_decompress") else {
         eprintln!("skipped: OpenJPEG tools (libopenjp2-tools) not installed");
@@ -551,6 +551,10 @@ fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
         ("ht_wide_blocks", &rgb8, EncodeOptions { ht: true, code_block: (10, 2), levels: 2, mct: false, ..EncodeOptions::lossless() }, true),
         ("ht_lossy", &rgb8, EncodeOptions { ht: true, ..EncodeOptions::lossy(2.0) }, false),
         ("ht_lossy_12bit", &rgb12, EncodeOptions { ht: true, ..EncodeOptions::lossy(0.5) }, false),
+        // IMF App 2E HTJ2K (ST 2067-21 Annex I: APP2.HT.REV, APP2.HT.IRV)
+        ("ht_imf_rev_12bit", &rgb12, EncodeOptions::imf_ht(ImfProfile::select(203, 117, 3, 24, 1, true, 0).unwrap(), 203, 117, 24, 1), true),
+        ("ht_imf_irv_8bit", &rgb8, EncodeOptions::imf_ht(ImfProfile::select(203, 117, 3, 24, 1, false, 200_000_000).unwrap(), 203, 117, 24, 1), false),
+        ("ht_imf_irv_12bit", &rgb12, EncodeOptions::imf_ht(ImfProfile::select(203, 117, 3, 24, 1, false, 200_000_000).unwrap(), 203, 117, 24, 1), false),
         // HTJ2K under a byte limit: cleanup passes at coarser planes (fewer missing MSBs signalled)
         ("ht_lossy_budget", &rgb8, EncodeOptions { ht: true, max_bytes: Some(6_000), ..EncodeOptions::lossy(0.5) }, false),
         (

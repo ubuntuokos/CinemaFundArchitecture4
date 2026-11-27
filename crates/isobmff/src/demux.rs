@@ -417,10 +417,34 @@ struct Trex {
     flags: u32,
 }
 
+/// QuickTime Macintosh language codes 0–138 (QuickTime File Format, "Language Code Values") as
+/// three-letter ISO 639-2 codes (the ones ffmpeg reports; where ffmpeg gives a two-letter code,
+/// its three-letter form), so that a muxer writes them back unchanged; `""` for codes that have
+/// none.
+const MAC_LANGUAGES: [&str; 139] = [
+    "eng", "fra", "ger", "ita", "dut", "sve", "spa", "dan", "por", "nor", // 0
+    "heb", "jpn", "ara", "fin", "gre", "ice", "mlt", "tur", "hrv", "chi", // 10
+    "urd", "hin", "tha", "kor", "lit", "pol", "hun", "est", "lav", "", // 20
+    "fao", "", "rus", "chi", "", "iri", "alb", "ron", "ces", "slk", // 30
+    "slv", "yid", "srp", "mac", "bul", "ukr", "bel", "uzb", "kaz", "aze", // 40
+    "aze", "arm", "geo", "mol", "kir", "tgk", "tuk", "mon", "", "pus", // 50
+    "kur", "kas", "snd", "tib", "nep", "san", "mar", "ben", "asm", "guj", // 60
+    "pan", "ori", "mal", "kan", "tam", "tel", "", "bur", "khm", "lao", // 70
+    "vie", "ind", "tgl", "may", "may", "amh", "tir", "orm", "som", "swa", // 80
+    "", "run", "", "mlg", "epo", "", "", "", "", "", // 90
+    "", "", "", "", "", "", "", "", "", "", // 100
+    "", "", "", "", "", "", "", "", "", "", // 110
+    "", "", "", "", "", "", "", "", "wel", "baq", // 120
+    "cat", "lat", "que", "grn", "aym", "tat", "uig", "dzo", "jav", // 130
+];
+
 fn parse_language(code: u16) -> String {
     if code < 0x400 {
         // QuickTime Macintosh language code.
-        return if code == 0 { "eng".into() } else { "und".into() };
+        return match MAC_LANGUAGES.get(usize::from(code)) {
+            Some(l) if !l.is_empty() => (*l).into(),
+            _ => "und".into(),
+        };
     }
     let c = |s: u16| (((code >> s) & 0x1F) as u8 + 0x60) as char;
     let s: String = [c(10), c(5), c(0)].into_iter().collect();
@@ -662,7 +686,10 @@ fn parse_stbl(stbl: &[u8], t: &mut Track, is_qt: bool, file_len: u64) -> Result<
                     sample_count = n;
                 } else {
                     // Samples of constant size must fit in the file: clamp absurd counts.
-                    sample_count = (n as u64).min(file_len / const_size as u64) as usize;
+                    // A size of 1 counts sample frames of packed audio (`ima4`, MACE: up to 6 frames per
+                    // byte); such tables are grouped per chunk, so the count allocates nothing.
+                    let per_byte = if const_size == 1 { 64 } else { 1 };
+                    sample_count = (n as u64).min(file_len.saturating_mul(per_byte) / const_size as u64) as usize;
                 }
             }
             b"stz2" => {
@@ -740,7 +767,7 @@ fn parse_stbl(stbl: &[u8], t: &mut Track, is_qt: bool, file_len: u64) -> Result<
     if stsc[0].0 == 0 || stsc.windows(2).any(|w| w[1].0 <= w[0].0) {
         return invalid("stsc first_chunk values are not increasing from 1");
     }
-    // Tables that count single sample frames (QuickTime PCM, and `ulaw` / `alaw` / `ima4` with a
+    // Tables that count single sample frames (QuickTime PCM, and `ulaw` / `alaw` / `ima4` / `MAC3` / `MAC6` with a
     // sample size of 1) are grouped into one sample per chunk: (bytes, frames) of the smallest unit
     // when the sound description gives no packet sizes.
     let pcm = match t.entries.first().map(|e| &e.codec) {
@@ -750,6 +777,8 @@ fn parse_stbl(stbl: &[u8], t: &mut Track, is_qt: bool, file_len: u64) -> Result<
             match &fourcc.0 {
                 b"ulaw" | b"alaw" => Some((ch, 1)),
                 b"ima4" => Some((34 * ch, 64)),
+                b"MAC3" => Some((2 * ch, 6)),
+                b"MAC6" => Some((ch, 6)),
                 _ => None,
             }
         }
@@ -1034,6 +1063,11 @@ mod tests {
         // "und" = 0x55C4
         assert_eq!(parse_language(0x55C4), "und");
         assert_eq!(parse_language(0), "eng");
+        assert_eq!(parse_language(26), "hun");
+        assert_eq!(parse_language(29), "und");
+        assert_eq!(parse_language(0x3FF), "und");
+        // every mapped code packs back into `mdhd` unchanged (a strict copy re-reads it)
+        assert!(MAC_LANGUAGES.iter().filter(|l| !l.is_empty()).all(|l| l.len() == 3 && l.bytes().all(|c| c.is_ascii_lowercase())));
         assert_eq!(parse_language(0x15C7), "eng");
     }
 

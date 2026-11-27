@@ -180,6 +180,8 @@ pub struct Preferences {
     pub voice_over: crate::voiceover::VoiceOverPrefs,
     /// Settings ▸ Timecode Sync (LTC / MIDI Timecode chase and generate).
     pub timecode_sync: crate::timecode_sync::TimecodeSyncPrefs,
+    /// Settings ▸ Control Surfaces (MIDI controllers, jog/shuttle devices).
+    pub control_surfaces: crate::control_surfaces::ControlSurfacePrefs,
     /// Project panel: view, List view columns and sort, view presets, Freeform options.
     pub project_panel: crate::project_panel::ProjectPanelPrefs,
     /// Media Browser: Favorites, recent directories, file types, view, columns.
@@ -211,6 +213,7 @@ impl Default for Preferences {
             guides: Default::default(),
             voice_over: Default::default(),
             timecode_sync: Default::default(),
+            control_surfaces: Default::default(),
             project_panel: Default::default(),
             media_browser: Default::default(),
         }
@@ -403,6 +406,7 @@ impl AudioPrefs {
 impl Preferences {
     fn clamp(&mut self) {
         self.auto_save.clamp();
+        self.control_surfaces.clamp();
         self.audio.clamp();
         let secs = |v: f64| if v.is_finite() { v.clamp(0.0, 60.0) } else { 0.0 };
         self.playback.preroll_seconds = secs(self.playback.preroll_seconds);
@@ -451,9 +455,23 @@ impl Preferences {
     /// Set one key (type-checked against the schema, values clamped to their ranges).
     pub fn set(&mut self, key: &str, value: Value) -> Result<(), String> {
         let mut v = self.to_value();
+        let parts: Vec<&str> = key.split('.').filter(|k| !k.is_empty()).collect();
+        if parts.is_empty() {
+            return Err(format!("unknown preference `{key}`"));
+        }
+        // Leaves omitted while they hold their default (`skip_serializing_if`) stay settable from
+        // Settings OK. Unknown keys still fail, so agents cannot invent preference paths.
+        const OMITTED_DEFAULTS: &[&str] = &["controlSurfaces.learnFirstMs", "controlSurfaces.learnSilenceMs"];
         let mut slot = &mut v;
-        for k in key.split('.') {
-            slot = slot.get_mut(k).ok_or_else(|| format!("unknown preference `{key}`"))?;
+        for (i, k) in parts.iter().enumerate() {
+            let last = i + 1 == parts.len();
+            if last && slot.get(*k).is_none() && OMITTED_DEFAULTS.contains(&key) {
+                let Some(obj) = slot.as_object_mut() else {
+                    return Err(format!("unknown preference `{key}`"));
+                };
+                obj.insert((*k).to_string(), Value::Null);
+            }
+            slot = slot.get_mut(*k).ok_or_else(|| format!("unknown preference `{key}`"))?;
         }
         if slot.is_object() {
             return Err(format!("`{key}` is a group; set one of its keys"));

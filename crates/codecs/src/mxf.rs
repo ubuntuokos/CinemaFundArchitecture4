@@ -62,6 +62,8 @@ pub struct MxfSource {
     unsupported: Option<String>,
     /// MPEG-2: the first sequence header (primes decoders that start without one).
     mpeg2_header: Vec<u8>,
+    /// MPEG-4 Simple Studio Profile: the headers before the first picture (prime every decoder).
+    sstp_header: Vec<u8>,
     /// How the JPEG 2000 picture track's components are read.
     j2k_hints: crate::j2k::J2kHints,
     /// Uncompressed pictures (ST 384): the stored layout, the descriptor and the frames' colour.
@@ -400,7 +402,7 @@ impl MxfSource {
             let order = |codec: Codec, heads: &[Vec<u8>]| if matches!(codec, Codec::Avc { .. }) { avc_presentation_order(heads) } else { None };
             match cfa4_mxf::open_with_order(&bytes, &order) {
                 Ok(f) => {
-                    for w in &f.warnings {
+                    for w in f.warnings.iter().cloned().chain(conformance_warnings(&f)) {
                         log::warn!("{name}: {w}");
                     }
                     members.push((bytes, f));
@@ -477,6 +479,7 @@ impl MxfSource {
         let (mut vpts, mut vorder, mut vfirst, mut vcount) = (Vec::new(), Vec::new(), 0, 0);
         let mut explicit_color = None;
         let mut mpeg2_header = Vec::new();
+        let mut sstp_header = Vec::new();
         let mut j2k_hints = crate::j2k::J2kHints::default();
         let mut raw = None;
         if let Some(vi) = vtrack {
@@ -528,11 +531,14 @@ impl MxfSource {
                 });
             // DV: format, coded size, sampling, aspect and colour are in the first frame's header and VAUX packs
             let dv = (t.codec == Codec::Dv).then(|| file.read_sample(&bytes, vi, 0).ok()).flatten().and_then(|s| crate::video::dv_stream_info(&s));
+            // MPEG-4 Visual: decoded when it is the Simple Studio Profile (Sony SR)
+            let sstp = (t.codec == Codec::Mpeg4Visual).then(|| file.read_sample(&bytes, vi, 0).ok()).flatten().and_then(|s| crate::sstp::stream_headers(&s));
             let (w, h) = match (&mpeg, &j2k) {
                 (Some((info, _, _)), _) => (info.width, info.height),
                 // DVCPRO HD descriptors give the display size (1920x1080); frames are coded smaller
                 _ if dv.as_ref().is_some_and(|d| d.profile.is_supported()) => dv.as_ref().map_or((0, 0), |d| (d.profile.width, d.profile.height)),
                 (_, Some((_, hd))) => (hd.width(), if j2k_hints.separate_fields { hd.height().saturating_mul(2) } else { hd.height() }),
+                _ if sstp.is_some() => sstp.as_ref().map_or((0, 0), |(_, i)| (u32::try_from(i.width).unwrap_or(0), u32::try_from(i.height).unwrap_or(0))),
                 _ => (p.frame_width(), p.frame_height()),
             };
             let par = if p.aspect_ratio.is_valid() && w > 0 && h > 0 {
@@ -553,6 +559,7 @@ impl MxfSource {
                     .unwrap_or_else(|| "DNxHD/DNxHR".into()),
                 Codec::ProRes { profile } => prores_name(profile).into(),
                 c @ Codec::Avc { .. } => c.name().into(),
+                Codec::Mpeg4Visual if sstp.is_some() => crate::sstp::NAME.into(),
                 Codec::Mpeg2 if mpeg.is_some() => mpeg.as_ref().map(|m| m.0.codec_name()).unwrap_or_default(),
                 Codec::Uncompressed => match cfa4_mxf::uncompressed::Layout::of(&p) {
                     Ok(l) => {
@@ -602,6 +609,10 @@ impl MxfSource {
                 });
                 pixel_format = crate::video::mpeg2_pixel_format(info, fo);
                 mpeg2_header = header.clone();
+            }
+            if let Some((header, si)) = &sstp {
+                pixel_format = crate::sstp::pixel_format(si);
+                sstp_header = header.clone();
             }
             let mut color = cfa4_color::ColorInfo { matrix: cfa4_frame::default_matrix(w, h), ..cfa4_color::ColorInfo::REC709 };
             if let Some((Ok(c), hd)) = &j2k {
@@ -767,6 +778,7 @@ impl MxfSource {
             video: GopCache::new(explicit_color),
             unsupported,
             mpeg2_header,
+            sstp_header,
             j2k_hints,
             raw,
             atracks: combined,
@@ -916,6 +928,7 @@ impl VideoSamples for MxfVideo<'_> {
             Codec::ProRes { profile } => make_video_decoder(&SampleEntry::prores(prores_fourcc(profile), w, h)),
             Codec::Jpeg2000 => Ok(Box::new(crate::j2k::J2kDecoder::new(self.src.j2k_hints))),
             Codec::Dv => Ok(Box::new(crate::video::DvDecoder::default())),
+            Codec::Mpeg4Visual => Ok(Box::new(crate::sstp::SstpDecoder::new(self.src.sstp_header.clone()))),
             Codec::Uncompressed => match &self.src.raw {
                 Some((layout, info, color)) => Ok(Box::new(RawDecoder { layout: layout.clone(), info: info.clone(), color: *color })),
                 None => Err(CodecError::Unsupported("uncompressed video in MXF without a known layout".into())),
@@ -1055,12 +1068,52 @@ pub fn reader_opener(name: &str, head: &[u8], reader: &cfa4_media::SharedReader)
     Some(MxfSource::open_reader(name, reader.clone()).map(|s| Arc::new(s) as SharedSource).map_err(Into::into))
 }
 
+/// Where a file that carries the DMS-AS-03 framework (and so says it is an AMWA AS-03 program
+/// delivery file) breaks AS-03: the import logs them next to the demuxer's own warnings.
+fn conformance_warnings(f: &MxfFile) -> Vec<String> {
+    if f.as11.as_ref().is_some_and(|a| !a.as03.is_empty()) {
+        cfa4_mxf::as03::file_problems(f).into_iter().map(|p| format!("AS-03: {p}")).collect()
+    } else {
+        Vec::new()
+    }
+}
+
 #[cfg(test)]
 mod iab_tests;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A file with the DMS-AS-03 framework is checked against AS-03; other files are not.
+    #[test]
+    fn as03_files_get_conformance_warnings() {
+        use cfa4_mxf::as11::As11;
+        use cfa4_mxf::{FrameInfo, MxfWriter, PackageIds, Pattern, PictureCoding, PictureDesc, Rational, UncompressedLayout, WriterConfig};
+        let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| ((*k).to_string(), (*v).to_string())).collect() };
+        let layout = UncompressedLayout::V210;
+        let build = |as11: Option<As11>| {
+            let mut cfg = WriterConfig::new(Pattern::Op1a, Rational::new(25, 1), PackageIds::from_seed("as03", "AS-03 clip"));
+            cfg.picture = Some(PictureDesc::new(PictureCoding::Uncompressed { layout }, 48, 4));
+            cfg.as11 = as11;
+            let mut w = MxfWriter::new(std::io::Cursor::new(Vec::new()), cfg).unwrap();
+            let (sx, sy) = layout.subsampling();
+            let n = (48 / sx * 4 / sy) as usize;
+            let p = layout.pack(48, 4, [&[16u16; 192], &vec![100u16; n], &vec![200u16; n]]);
+            w.push_picture(&p, FrameInfo::intra()).unwrap();
+            cfa4_mxf::open(&w.finish().unwrap().into_inner()[..]).unwrap()
+        };
+        let as03 = kv(&[
+            ("IdentifierKind", "ISAN"),
+            ("Identifier", "ISAN 0000-0001-8947-0000-8-0000-0000-D"),
+            ("ShimName", "PBS NGIS HD Playout"),
+            ("SignalStandard", "1920/1080/25i/16:9"),
+            ("IntendedAFD", "1000 FullHD"),
+        ]);
+        let w = conformance_warnings(&build(Some(As11 { as03, ..Default::default() })));
+        assert!(!w.is_empty() && w.iter().all(|m| m.starts_with("AS-03: ")), "{w:?}");
+        assert!(conformance_warnings(&build(None)).is_empty());
+    }
 
     #[test]
     fn timecode_frames_at_the_media_rate() {

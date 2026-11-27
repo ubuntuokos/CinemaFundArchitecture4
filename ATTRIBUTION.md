@@ -21,6 +21,7 @@ iconography, images or other Adobe assets; open licences only; every asset attri
 | `assets/cfa4/hicolor/256x256/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
 | `assets/cfa4/hicolor/512x512/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
 | `assets/cfa4/hicolor/scalable/apps/io.github.ubuntuokos.cfa4.svg` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
+| `crates/cinema-pkg/data/isdcf-registry.json` | InterSociety Digital Cinema Forum (ISDCF) | ISDCF metadata registries, <https://github.com/ISDCF/registries> commit `497d40ed`, reduced to the codes the naming convention uses (CINECERT WP09) | CC BY 4.0 (changed: reduced, contact details removed) |
 | `i18n/it.tsv` | Upstream contributors (see NOTICE); CFA4 contributors for the Qt GUI section | Original work: clean-room Italian interface translations | MIT OR Apache-2.0; the Qt GUI section GPL-3.0-or-later |
 | `i18n/id.tsv` | Upstream contributors (see NOTICE); CFA4 contributors for the Qt GUI section | Original work: clean-room Indonesian interface translations | MIT OR Apache-2.0; the Qt GUI section GPL-3.0-or-later |
 | `i18n/ko.tsv` | Upstream contributors (see NOTICE); CFA4 contributors for the Qt GUI section | Original work: clean-room Korean interface translations | MIT OR Apache-2.0; the Qt GUI section GPL-3.0-or-later |
@@ -97,6 +98,8 @@ procedural demo footage (`crates/media/src/generators.rs`); no external media. R
 | Data | Author | Source | Licence |
 |---|---|---|---|
 | `crates/interchange/tests/data/kdenlive/*.otio` | Jean-Baptiste Mardelle, Eric Jiang (Kdenlive) | Kdenlive `tests/dataset/*.otio`, unchanged; details in `crates/interchange/tests/data/kdenlive/README.md` | CC0-1.0 |
+| `crates/engine/src/camera_proxies.rs` (rule table `FAMILIES`) | Kdenlive contributors | Kdenlive `data/externalproxies.rc` (camera proxy naming rules), re-expressed as a Rust table | CC0-1.0 |
+| `crates/interchange/tests/data/kdenlive-mlt/*.kdenlive` | Jean-Baptiste Mardelle, Eric Jiang (Kdenlive) | Kdenlive `tests/dataset/*.kdenlive`, unchanged; details in `crates/interchange/tests/data/kdenlive-mlt/README.md` | CC0-1.0 |
 
 ## Third-party media shown in screenshots
 

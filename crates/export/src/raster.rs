@@ -62,6 +62,30 @@ pub(crate) fn tga(rgba: &[u8], w: u32, h: u32, alpha: bool) -> Result<Vec<u8>> {
 /// Header size of the DPX files we write (file + image + orientation + film + TV headers).
 const DPX_HEADER: usize = 2048;
 
+/// What a DPX file holds: component bit depth (10, 12 or 16) and whether it carries alpha
+/// (RGBA, 12 and 16 bits only: at 10 bits the components fill words of three).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct DpxFormat {
+    pub depth: u8,
+    pub alpha: bool,
+}
+
+impl Default for DpxFormat {
+    fn default() -> Self {
+        DpxFormat { depth: 10, alpha: false }
+    }
+}
+
+impl DpxFormat {
+    fn components(self) -> usize {
+        if self.alpha { 4 } else { 3 }
+    }
+    /// Bytes of one scan line, which starts on a 32-bit boundary (ST 268).
+    fn line_bytes(self, w: usize) -> usize {
+        if self.depth == 10 { w * 4 } else { (w * self.components() * 2).next_multiple_of(4) }
+    }
+}
+
 /// A DPX file: 10-bit RGB (8-bit values widened by bit replication, so 0 → 0 and 255 → 1023).
 #[cfg(test)]
 pub(crate) fn dpx(rgba: &[u8], w: u32, h: u32) -> Result<Vec<u8>> {
@@ -73,15 +97,27 @@ fn code(v: f32, max: f32) -> u32 {
     if v.is_finite() { (v.clamp(0.0, 1.0) * max).round() as u32 } else { 0 }
 }
 
+#[cfg(test)]
 /// [`dpx`] from the frame's R'G'B' floats (3 per pixel) when there are any, so that deep sources
 /// keep their 10 bits; `rgba` sets the frame's size either way. With `timing`, the television
 /// header gets the time code (SMPTE ST 12-1 BCD, hours in the high byte, no user bits) and both
 /// headers the frame rate (ST 268: film 1724, television 1940).
 pub(crate) fn dpx_deep(rgba: &[u8], float: Option<&[f32]>, w: u32, h: u32, timing: Option<StillTiming>) -> Result<Vec<u8>> {
+    dpx_with(rgba, float, w, h, timing, DpxFormat::default())
+}
+
+/// [`dpx_deep`] at the bit depth (and with the alpha channel) of `fmt`: 10-bit RGB in one
+/// 32-bit word per pixel (packing method A), 12-bit components left-justified in 16-bit words
+/// (method A), 16-bit components in 16-bit words; RGBA is descriptor 51. Alpha comes from the
+/// 8-bit `rgba` (straight, widened by bit replication).
+pub(crate) fn dpx_with(rgba: &[u8], float: Option<&[f32]>, w: u32, h: u32, timing: Option<StillTiming>, fmt: DpxFormat) -> Result<Vec<u8>> {
+    if !matches!(fmt.depth, 10 | 12 | 16) || (fmt.alpha && fmt.depth == 10) {
+        return Err(ExportError::Unsupported(format!("DPX {}-bit{}", fmt.depth, if fmt.alpha { " RGBA" } else { "" })));
+    }
     let n = checked_len(rgba, w, h)?;
     let float = float.filter(|f| f.len() >= n / 4 * 3);
-    // one 32-bit word per pixel; `n` is already `w * h * 4`
-    let size = n.checked_add(DPX_HEADER).ok_or_else(|| ExportError::Encode("frame size".into()))?;
+    let data_len = fmt.line_bytes(w as usize).checked_mul(h as usize).ok_or_else(|| ExportError::Encode("frame size".into()))?;
+    let size = data_len.checked_add(DPX_HEADER).ok_or_else(|| ExportError::Encode("frame size".into()))?;
     let file_size = u32::try_from(size).map_err(|_| ExportError::Unsupported(format!("a {w}×{h} DPX frame exceeds 4 GB")))?;
     // SMPTE ST 268: undefined numeric fields are all ones, undefined text fields are NUL
     let mut hd = vec![0xFF_u8; DPX_HEADER];
@@ -121,12 +157,12 @@ pub(crate) fn dpx_deep(rgba: &[u8], float: Option<&[f32]>, w: u32, h: u32, timin
     let el = 780;
     put32(&mut hd, el, 0); // unsigned
     put32(&mut hd, el + 4, 0); // reference low data code
-    put32(&mut hd, el + 12, 1023); // reference high data code
-    hd[el + 20] = 50; // descriptor: RGB
+    put32(&mut hd, el + 12, (1u32 << fmt.depth) - 1); // reference high data code
+    hd[el + 20] = if fmt.alpha { 51 } else { 50 }; // descriptor: RGBA / RGB
     hd[el + 21] = 6; // transfer: ITU-R BT.709
     hd[el + 22] = 6; // colorimetric: ITU-R BT.709
-    hd[el + 23] = 10; // bit depth
-    put16(&mut hd, el + 24, 1); // packing: filled to 32-bit words, method A
+    hd[el + 23] = fmt.depth; // bit depth
+    put16(&mut hd, el + 24, if fmt.depth == 16 { 0 } else { 1 }); // packing: filled, method A (16-bit words are full)
     put16(&mut hd, el + 26, 0); // no encoding (uncompressed)
     put32(&mut hd, el + 28, DPX_HEADER as u32); // offset to the element's data
     put32(&mut hd, el + 32, 0); // end-of-line padding
@@ -153,19 +189,44 @@ pub(crate) fn dpx_deep(rgba: &[u8], float: Option<&[f32]>, w: u32, h: u32, timin
     }
     let mut out = Vec::with_capacity(size);
     out.extend_from_slice(&hd);
-    let ten = |v: u8| (u32::from(v) << 2) | (u32::from(v) >> 6);
-    match float {
-        Some(f) => {
-            for p in f[..n / 4 * 3].as_chunks::<3>().0 {
-                let [r, g, b] = p.map(|v| code(v, 1023.0));
-                out.extend_from_slice(&((r << 22) | (g << 12) | (b << 2)).to_be_bytes());
+    if fmt.depth == 10 {
+        let ten = |v: u8| (u32::from(v) << 2) | (u32::from(v) >> 6);
+        match float {
+            Some(f) => {
+                for p in f[..n / 4 * 3].as_chunks::<3>().0 {
+                    let [r, g, b] = p.map(|v| code(v, 1023.0));
+                    out.extend_from_slice(&((r << 22) | (g << 12) | (b << 2)).to_be_bytes());
+                }
+            }
+            None => {
+                for &[r, g, b, _] in rgba[..n].as_chunks::<4>().0 {
+                    out.extend_from_slice(&((ten(r) << 22) | (ten(g) << 12) | (ten(b) << 2)).to_be_bytes());
+                }
             }
         }
-        None => {
-            for &[r, g, b, _] in rgba[..n].as_chunks::<4>().0 {
-                out.extend_from_slice(&((ten(r) << 22) | (ten(g) << 12) | (ten(b) << 2)).to_be_bytes());
+        return Ok(out);
+    }
+    // 12 bits: the code in the high 12 bits of the word; 16 bits: the code itself
+    let (max, shift) = if fmt.depth == 12 { (4095.0, 4) } else { (65535.0, 0) };
+    let widen = |v: u8| if fmt.depth == 12 { (u32::from(v) << 4) | (u32::from(v) >> 4) } else { u32::from(v) * 257 };
+    let pad = fmt.line_bytes(w as usize) - w as usize * fmt.components() * 2;
+    let put = |out: &mut Vec<u8>, c: u32| out.extend_from_slice(&((c << shift) as u16).to_be_bytes());
+    for y in 0..h as usize {
+        for x in 0..w as usize {
+            let i = y * w as usize + x;
+            let px = &rgba[i * 4..i * 4 + 4];
+            for c in 0..3 {
+                let v = match float {
+                    Some(f) => code(f[i * 3 + c], max),
+                    None => widen(px[c]),
+                };
+                put(&mut out, v);
+            }
+            if fmt.alpha {
+                put(&mut out, widen(px[3]));
             }
         }
+        out.resize(out.len() + pad, 0);
     }
     Ok(out)
 }
@@ -438,6 +499,44 @@ mod tests {
         assert_eq!(be32(&f, 2048), 1023 << 22);
         let p = be32(&f, 2052);
         assert_eq!(((p >> 22) & 1023, (p >> 12) & 1023, (p >> 2) & 1023, p & 3), (4, 514, 1023, 0));
+    }
+
+    /// 12 and 16-bit DPX, RGB and RGBA: the header, the 32-bit line padding of odd widths, and our
+    /// DPX decoder reads the codes back (8-bit input widened by bit replication; floats scaled).
+    #[test]
+    fn dpx_deep_bit_depths_round_trip() {
+        use cfa4_frame::PixelData;
+        // 3×2, odd width: 18 bytes of RGB per line, padded to 20
+        let px: Vec<u8> = (0..6u8).flat_map(|i| [i * 51, 255 - i * 51, i * 7, 255 - i * 40]).collect();
+        for (depth, alpha) in [(12u8, false), (12, true), (16, false), (16, true)] {
+            let fmt = DpxFormat { depth, alpha };
+            let f = dpx_with(&px, None, 3, 2, None, fmt).unwrap();
+            let line = if alpha { 24 } else { 20 };
+            assert_eq!(f.len(), 2048 + 2 * line, "{depth}-bit alpha {alpha}");
+            assert_eq!(be32(&f, 16), f.len() as u32);
+            assert_eq!((f[800], f[803]), (if alpha { 51 } else { 50 }, depth));
+            assert_eq!(be32(&f, 792), (1u32 << depth) - 1, "reference high data code");
+            let d = cfa4_media::dpx::decode_deep("t.dpx", &f).unwrap();
+            let PixelData::Rgb16 { planes, bits, alpha: a } = &d.frame.data else { panic!("not Rgb16") };
+            assert_eq!((*bits, a.is_some()), (u32::from(depth), alpha));
+            let widen = |v: u8| if depth == 12 { (u16::from(v) << 4) | (u16::from(v) >> 4) } else { u16::from(v) * 257 };
+            for i in 0..6 {
+                for c in 0..3 {
+                    assert_eq!(planes[c][i], widen(px[i * 4 + c]), "{depth}-bit pixel {i} component {c}");
+                }
+                if let Some(a) = a {
+                    assert_eq!(a[i], widen(px[i * 4 + 3]), "{depth}-bit alpha {i}");
+                }
+            }
+        }
+        // floats keep more than the 8-bit picture has: 0.5 + a hair is 16-bit code 32768
+        let fl = [0.5f32, 1.0, 0.25];
+        let f = dpx_with(&[0; 4], Some(&fl), 1, 1, None, DpxFormat { depth: 16, alpha: false }).unwrap();
+        let PixelData::Rgb16 { planes, .. } = cfa4_media::dpx::decode_deep("t.dpx", &f).unwrap().frame.data else { panic!() };
+        assert_eq!((planes[0][0], planes[1][0], planes[2][0]), (32768, 65535, 16384));
+        // only the depths of the format, and alpha only above 10 bits
+        assert!(dpx_with(&[0; 4], None, 1, 1, None, DpxFormat { depth: 8, alpha: false }).is_err());
+        assert!(dpx_with(&[0; 4], None, 1, 1, None, DpxFormat { depth: 10, alpha: true }).is_err());
     }
 
     /// The time code and frame rate fields; ffmpeg (an external oracle, skipped when missing)

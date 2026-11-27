@@ -13,7 +13,7 @@
 - **Van PostgreSQL-döntés, de csak a BacklotHubra.** A CFA4 fő repójának
   `docs/adr/ADR-0006-backlothub-postgresql.md` döntése (elfogadva 2026-11-02): a BacklotHub
   adattárolója minden működési módban, az egygépes M1-ben is a PostgreSQL, az Ubuntu `postgresql`
-  rendszercsomagjából, saját klaszterrel, UUIDv7 azonosítókkal, offline-first. A K17
+  rendszercsomagjából, saját klaszterrel, UUIDv7 azonosítókkal, offline-first. A KDN-17
   nyilvántartást kifejezetten nem érinti, a kliensmeghajtóról a BacklotHub G2 kapuja dönt.
 - **A feladatsorra, az ütemezésre, az AI-jobokra és a Media Intelligence-re nem volt
   PostgreSQL-terv.** A kódban adatbázis-crate sincs. Ez a dokumentum ezt a hiányt pótolja.
@@ -40,7 +40,7 @@
    projektfájl (a CFA4 saját formátuma marad).
 4. **A Media Intelligence** (médiaindex, átirat- és vektoros keresés) ugyanebbe a klaszterbe kerül,
    saját `mi` sémával és a pgvector bővítménnyel (4. pont, PG-4). A tulajdonos 2026-11-07-én úgy
-   döntött, hogy ez most kerüljön a tervbe, ne később. A K17 nyilvántartás külön döntéssel
+   döntött, hogy ez most kerüljön a tervbe, ne később. A KDN-17 nyilvántartás külön döntéssel
    csatlakozhat.
 5. **Közös klaszter a BacklotHubbal**, külön sémákkal és szerepekkel (tulajdonosi döntés,
    2026-11-07).
@@ -220,3 +220,13 @@ keverhet.
   fájlrendszeren marad, a DB-ben csak hivatkozás és SHA-256.
 - **ADR-számozás:** az AI-réteg ADR-je 2026-11-07-én 0006-ról 0008-ra változott (CFA4-AI_modules #32), mert
   itt a 0006 a BacklotHub PostgreSQL-döntése, a 0007 a Media Services.
+
+## 13. Lezárt kérdések (tulajdonosi válaszok, 2026-11-22)
+
+1. és 2. kérdés: a terv javaslata szerint, a terv szövege változatlan.
+3. kérdés: a `cfa4-store` (PG-1, PG-2) **most** kerül a CFA4 főágba, mert egyes projektek a hiánya
+   miatt állnak. Az átvétel nem várja meg az AI-workereket; a feladatok a motorban memóriában
+   maradnak (a vágás és a lejátszás nem függhet az adatbázistól), a tartós tár az adatbázis
+   mellé kerül, és az alkalmazás bekötése külön lépés.
+4. kérdés: az írási jog megvan a CFA4 repóban, de a hatékonyság miatt az átvételt **külön szál**
+   viszi, nem az AI-réteg szála.

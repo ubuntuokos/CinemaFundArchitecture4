@@ -17,8 +17,13 @@
 //! - The muxer is payload-opaque: the bytes of an access unit go out unchanged. H.264 / HEVC
 //!   units must already be Annex B with their access unit delimiter, AAC already ADTS framed
 //!   (CFA4-SCE-001 §12.3/3: any conversion happens before, in a bitstream adapter).
-//! - The T-STD buffer model is not enforced: every stream may be sent up to [`Muxer::DELAY`]
-//!   early, which overruns the small audio buffers of a strict T-STD reading.
+//! - Transport streams: the T-STD buffer model is not enforced: every stream may be sent up to
+//!   [`Muxer::DELAY`] early, which overruns the small audio buffers of a strict T-STD reading.
+//! - Program streams keep the P-STD model (H.222.0 §2.5.2.4): each stream id has a buffer of the
+//!   size its system header bound announces (video [`Muxer::DEFAULT_VIDEO_BUFFER`], audio 4 KB,
+//!   private stream 1 shared by its sub-streams 7424 bytes); a pack's payload arrives at the end
+//!   of the pack and leaves at the decode time of its access unit, and a pack that would overfill
+//!   its buffer waits (the SCR jumps ahead) until earlier units have left.
 //! - Program streams: 2048-byte packs at most (a pack header before every PES packet, the system
 //!   header in the first), the program end code at the end; DVD LPCM in private stream 1.
 
@@ -105,6 +110,14 @@ struct StreamState {
     cc: u8,
     /// Decode time of the last unit queued (with the delay), `None` before the first.
     last_dts: Option<i64>,
+    /// Program streams: the P-STD buffer this stream fills (streams of one PES stream id share).
+    pstd: usize,
+}
+
+/// One P-STD buffer: its size and what it holds as (removal time in 27 MHz ticks, bytes).
+struct Pstd {
+    size: usize,
+    held: Vec<(i64, usize)>,
 }
 
 /// A transport or program stream being written.
@@ -123,12 +136,24 @@ pub struct Muxer<W: Write> {
     psi_cc: u8,
     /// Program stream packs written.
     packs: u64,
+    /// P-STD buffers of a program stream.
+    pstd: Vec<Pstd>,
+    /// The video P-STD buffer size in bytes (a multiple of 1024).
+    video_buffer: usize,
+    /// DVD-Video VOB layout (see [`Muxer::new_dvd`]).
+    dvd: bool,
+    /// DVD: video has been written since the last navigation pack.
+    nav_has_video: bool,
 }
 
 impl<W: Write> Muxer<W> {
     /// Decode times are offset by this much (90 kHz: 0.7 s), and data goes out at most this long
     /// before its decode time.
     pub const DELAY: i64 = 63_000;
+
+    /// The video P-STD buffer of a program stream unless [`Muxer::set_video_buffer`] says
+    /// otherwise: 232 KB, what DVD-Video uses (MPEG-2 MP@ML's VBV is 224 KB).
+    pub const DEFAULT_VIDEO_BUFFER: usize = 232 * 1024;
 
     /// Start a stream with `streams` (in PID / stream-id order) at `mux_rate` bits per second, the
     /// peak rate of everything together (transport or pack overhead included).
@@ -157,14 +182,103 @@ impl<W: Write> Muxer<W> {
                 (_, MuxCodec::Ac3) => ac3 += 1,
                 _ => {}
             }
-            states.push(StreamState { codec, pid: FIRST_ES_PID + k as u16, cc: 0, last_dts: None });
+            // streams of one PES stream id (private stream 1) share a buffer
+            let key = |c: MuxCodec| stream_id(c);
+            let pstd = match (key(codec) == 0xBD).then(|| states.iter().position(|s: &StreamState| key(s.codec) == 0xBD)).flatten() {
+                Some(g) => states.get(g).map_or(0, |s| s.pstd),
+                None => states.iter().map(|s| s.pstd + 1).max().unwrap_or(0),
+            };
+            states.push(StreamState { codec, pid: FIRST_ES_PID + k as u16, cc: 0, last_dts: None, pstd });
         }
         if video > 16 || lpcm > 8 || mpa > 16 || ac3 > 8 {
             return Err(MuxError::Unsupported("too many streams of one kind".into()));
         }
         // the program_mux_rate field counts 50 bytes/s in 22 bits
         let rate = (mux_rate / 8).clamp(50 * 64, 50 * ((1 << 22) - 1));
-        Ok(Muxer { out, format, streams: states, rate, queue: Vec::new(), queued_bytes: 0, clock: 0, last_psi: None, last_pcr: None, psi_cc: 0, packs: 0 })
+        let mut m = Muxer {
+            out,
+            format,
+            streams: states,
+            rate,
+            queue: Vec::new(),
+            queued_bytes: 0,
+            clock: 0,
+            last_psi: None,
+            last_pcr: None,
+            psi_cc: 0,
+            packs: 0,
+            pstd: Vec::new(),
+            video_buffer: Self::DEFAULT_VIDEO_BUFFER,
+            dvd: false,
+            nav_has_video: false,
+        };
+        m.build_pstd();
+        Ok(m)
+    }
+
+    /// A DVD-Video VOB (program stream, 10.08 Mbit/s): every pack is exactly 2048 bytes (short
+    /// ones padded with PES header stuffing or a padding packet), the system header is only in the
+    /// navigation packs, and an empty navigation pack (private stream 2: a PCI and a DSI packet of
+    /// zeros) starts the VOB and every video unit written with `key` (the first picture of a GOP,
+    /// which must carry its sequence header): that is where a VOBU begins. The caller fills the packets in
+    /// afterwards (`cfa4-dvd`). No program end code. `streams[0]` is the video, the others AC-3,
+    /// DVD LPCM or MPEG audio.
+    pub fn new_dvd(out: W, streams: &[MuxCodec]) -> MuxResult<Self> {
+        if streams.first() != Some(&MuxCodec::Mpeg2Video) || streams.iter().skip(1).any(|c| c.is_video() || *c == MuxCodec::AacAdts) || streams.len() > 9 {
+            return Err(MuxError::Unsupported("a DVD-Video VOB has one MPEG-2 video stream and up to 8 AC-3, LPCM or MPEG audio streams".into()));
+        }
+        let mut m = Self::new(out, MuxFormat::Ps, streams, 10_080_000)?;
+        m.dvd = true;
+        Ok(m)
+    }
+
+    /// The video P-STD buffer of a program stream, in bytes (rounded up to 1024; the system
+    /// header bound field allows up to 16 MB). Call before the first `write`; use the VBV size of
+    /// the video stream (1194 KB for MP@HL).
+    pub fn set_video_buffer(&mut self, bytes: usize) {
+        self.video_buffer = bytes.div_ceil(1024).clamp(1, 0x1FFF) * 1024;
+        self.build_pstd();
+    }
+
+    /// One P-STD buffer per distinct `Stream::pstd`, sized by the stream id.
+    fn build_pstd(&mut self) {
+        let n = self.streams.iter().map(|s| s.pstd + 1).max().unwrap_or(0);
+        self.pstd = (0..n)
+            .map(|g| {
+                let first = self.streams.iter().find(|s| s.pstd == g).map(|s| s.codec);
+                let size = match first.map(stream_id) {
+                    Some(0xE0) => self.video_buffer,
+                    Some(0xBD) => 58 * 128,
+                    _ => 32 * 128,
+                };
+                Pstd { size, held: Vec::new() }
+            })
+            .collect();
+    }
+
+    /// Hold the clock back until `bytes` arriving `arrival` ticks from now fit the P-STD buffer of
+    /// `stream`, then book them as leaving at `removal`.
+    fn pstd_admit(&mut self, stream: usize, removal: i64, bytes: usize, arrival: i64) {
+        let Some(g) = self.streams.get(stream).map(|s| s.pstd) else { return };
+        let Some(buf) = self.pstd.get_mut(g) else { return };
+        loop {
+            let at = self.clock + arrival;
+            buf.held.retain(|&(t, _)| t > at);
+            let held: usize = buf.held.iter().map(|e| e.1).sum();
+            if held + bytes <= buf.size {
+                break;
+            }
+            // wait for the next removal before this unit's own (a unit bigger than the buffer goes
+            // out regardless)
+            match buf.held.iter().map(|e| e.0).filter(|&t| t < removal).min() {
+                Some(t) => self.clock = t - arrival,
+                None => break,
+            }
+        }
+        match buf.held.last_mut() {
+            Some(last) if last.0 == removal => last.1 += bytes,
+            _ => buf.held.push((removal, bytes)),
+        }
     }
 
     /// Queue an access unit of `stream`: `pts` and `dts` (`None`: the same) in 90 kHz from the
@@ -206,7 +320,7 @@ impl<W: Write> Muxer<W> {
     /// Write everything still queued (and the program end code of a program stream).
     pub fn finish(mut self) -> MuxResult<W> {
         self.flush_until(i64::MAX, true)?;
-        if self.format == MuxFormat::Ps {
+        if self.format == MuxFormat::Ps && !self.dvd {
             self.out.write_all(&[0, 0, 1, 0xB9])?;
         }
         self.out.flush()?;
@@ -271,7 +385,7 @@ impl<W: Write> Muxer<W> {
         }
         let Some(st) = self.streams.get(u.stream) else { return Ok(()) };
         let (pid, codec) = (st.pid, st.codec);
-        let pes = pes_packet(stream_id(codec), u, true, &[]);
+        let pes = pes_packet(stream_id(codec), u, true, &[], 0);
         let pcr_pid = self.pcr_pid();
         let mut at = 0;
         let mut first = true;
@@ -409,10 +523,19 @@ impl<W: Write> Muxer<W> {
         let video_index = self.streams.iter().take(u.stream).filter(|s| s.codec == MuxCodec::Mpeg2Video).count() as u8;
         let mpa_index = self.streams.iter().take(u.stream).filter(|s| s.codec == MuxCodec::MpegAudio).count() as u8;
         let ac3_index = self.streams.iter().take(u.stream).filter(|s| s.codec == MuxCodec::Ac3).count() as u8;
+        if self.dvd {
+            // the VOB starts with a navigation pack, and a GOP's first picture follows one
+            // (audio that precedes the first picture stays in the first VOBU)
+            if self.packs == 0 || (u.key && codec.is_video() && self.nav_has_video) {
+                self.write_nav_pack()?;
+                self.nav_has_video = false;
+            }
+            self.nav_has_video |= codec.is_video();
+        }
         let mut at = 0;
         let mut first = true;
         while at < u.data.len() || first {
-            let system = self.packs == 0;
+            let system = self.packs == 0 && !self.dvd;
             let fixed = 14 + if system { self.system_header_len() } else { 0 };
             // PES header: 6 + 3 + PTS (5) or PTS + DTS (10)
             let ts_len = if first { if u.dts != u.pts { 10 } else { 5 } } else { 0 };
@@ -430,6 +553,16 @@ impl<W: Write> Muxer<W> {
                     take -= take % frame.max(1);
                 }
             }
+            // the payload (sub-stream header included) arrives with the pack and leaves when the
+            // unit is decoded (video: DTS; audio: PTS)
+            let removal = (if codec.is_video() { u.dts } else { u.pts }) * SYS_PER_90K;
+            // a DVD pack is a whole sector: a gap of 6 bytes or more becomes a padding packet,
+            // a smaller one stuffing bytes in the PES header
+            let fill = if self.dvd { room - take } else { 0 };
+            let (stuffing, padding) = if fill >= 6 { (0, fill) } else { (fill, 0) };
+            // the payload is in by the end of its PES packet; padding behind it only takes time
+            let pack_len = fixed + 9 + ts_len + sub_len + take + stuffing;
+            self.pstd_admit(u.stream, removal, sub_len + take, self.ticks(pack_len));
             let mut pack = Vec::with_capacity(PACK_SIZE);
             self.pack_header(&mut pack);
             if system {
@@ -454,7 +587,11 @@ impl<W: Write> Muxer<W> {
                 _ => sid,
             };
             // continuation packets carry no timestamps
-            pack.extend_from_slice(&pes_packet(id, &unit, first, &sub));
+            pack.extend_from_slice(&pes_packet(id, &unit, first, &sub, stuffing));
+            if padding > 0 {
+                pack.extend_from_slice(&[0, 0, 1, 0xBE, ((padding - 6) >> 8) as u8, (padding - 6) as u8]);
+                pack.resize(pack.len() + padding - 6, 0xFF);
+            }
             self.out.write_all(&pack)?;
             self.clock += self.ticks(pack.len());
             self.packs += 1;
@@ -464,6 +601,25 @@ impl<W: Write> Muxer<W> {
                 break;
             }
         }
+        Ok(())
+    }
+
+    /// An empty DVD navigation pack: pack header, system header, a PCI and a DSI packet of zeros.
+    fn write_nav_pack(&mut self) -> MuxResult<()> {
+        let mut p = Vec::with_capacity(PACK_SIZE);
+        self.pack_header(&mut p);
+        let bound = (self.rate / 50) as u32;
+        // the system header of every DVD navigation pack: video 232 KB, MPEG audio 4 KB, private
+        // stream 1 (AC-3, LPCM, subpictures) 58 KB, private stream 2 2 KB
+        p.extend_from_slice(&[0, 0, 1, 0xBB, 0, 0x12, 0x80 | (bound >> 15) as u8, (bound >> 7) as u8, ((bound << 1) & 0xFE) as u8 | 1, 0x04, 0xE1, 0x7F]);
+        p.extend_from_slice(&[0xE0, 0xE0, 0xE8, 0xC0, 0xC0, 0x20, 0xBD, 0xE0, 0x3A, 0xBF, 0xE0, 0x02]);
+        p.extend_from_slice(&[0, 0, 1, 0xBF, 0x03, 0xD4, 0x00]);
+        p.resize(0x400, 0);
+        p.extend_from_slice(&[0, 0, 1, 0xBF, 0x03, 0xFA, 0x01]);
+        p.resize(PACK_SIZE, 0);
+        self.out.write_all(&p)?;
+        self.clock += self.ticks(PACK_SIZE);
+        self.packs += 1;
         Ok(())
     }
 
@@ -489,9 +645,10 @@ impl<W: Write> Muxer<W> {
         let bound = (self.rate / 50) as u32;
         let audio = self.streams.iter().filter(|s| s.codec != MuxCodec::Mpeg2Video).count() as u8;
         let video = self.streams.iter().filter(|s| s.codec == MuxCodec::Mpeg2Video).count() as u8;
-        // P-STD buffer bounds, one per stream id: 1194 × 1024 bytes for video (the largest MP@HL
-        // VBV), 58 × 128 for private stream 1 (shared by every LPCM and AC-3 sub-stream)
-        let mut entries: Vec<[u8; 3]> = (0..video).map(|v| [0xE0 + v, 0xE0 | (1194 >> 8) as u8, 1194u16 as u8]).collect();
+        // P-STD buffer bounds, one per stream id: the video buffer in 1024-byte units, 58 × 128
+        // for private stream 1 (shared by every LPCM and AC-3 sub-stream)
+        let units = (self.video_buffer / 1024) as u16;
+        let mut entries: Vec<[u8; 3]> = (0..video).map(|v| [0xE0 + v, 0xE0 | (units >> 8) as u8, units as u8]).collect();
         // MPEG audio: 32 × 128 bytes per stream id
         let mpa = self.streams.iter().filter(|s| s.codec == MuxCodec::MpegAudio).count() as u8;
         entries.extend((0..mpa).map(|a| [0xC0 + a, 0xC0, 32]));
@@ -581,7 +738,7 @@ fn timestamp(prefix: u8, t: i64) -> [u8; 5] {
 
 /// A PES packet of `u` (its timestamps when `stamped`), `prefix` bytes before the payload. The
 /// length field is 0 (unbounded) for a video packet too long for it.
-fn pes_packet(id: u8, u: &Unit, stamped: bool, prefix: &[u8]) -> Vec<u8> {
+fn pes_packet(id: u8, u: &Unit, stamped: bool, prefix: &[u8], stuffing: usize) -> Vec<u8> {
     let mut h = Vec::with_capacity(19);
     let both = stamped && u.dts != u.pts;
     // data_alignment_indicator: a video packet starting a picture
@@ -593,19 +750,23 @@ fn pes_packet(id: u8, u: &Unit, stamped: bool, prefix: &[u8]) -> Vec<u8> {
     } else {
         0
     });
-    h.push(if both {
-        10
-    } else if stamped {
-        5
-    } else {
-        0
-    });
+    h.push(
+        stuffing as u8
+            + if both {
+                10
+            } else if stamped {
+                5
+            } else {
+                0
+            },
+    );
     if both {
         h.extend_from_slice(&timestamp(3, u.pts));
         h.extend_from_slice(&timestamp(1, u.dts));
     } else if stamped {
         h.extend_from_slice(&timestamp(2, u.pts));
     }
+    h.extend(std::iter::repeat_n(0xFF, stuffing));
     let len = h.len() + prefix.len() + u.data.len();
     let len = if len > 0xFFFF { 0 } else { len as u16 };
     let mut p = Vec::with_capacity(6 + h.len() + prefix.len() + u.data.len());

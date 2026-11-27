@@ -32,8 +32,24 @@ cfa4-iab = { workspace = true }
 cfa4-mpegts = { workspace = true }
 cfa4-mpeg2v = { workspace = true }
 cfa4-ac3 = { workspace = true }
+cfa4-thp = { workspace = true }
+cfa4-mobiclip = { workspace = true }
 cfa4-tta = { workspace = true }
+cfa4-qdm2 = { workspace = true }
+cfa4-nstream = { workspace = true }
+cfa4-shorten = { workspace = true }
+cfa4-adx = { workspace = true }
+cfa4-twinvq = { workspace = true }
+cfa4-hca = { workspace = true }
+cfa4-tak = { workspace = true }
+cfa4-smacker = { workspace = true }
+cfa4-acm = { workspace = true }
+cfa4-roq = { workspace = true }
+cfa4-amv = { workspace = true }
+cfa4-mve = { workspace = true }
 cfa4-g729 = { workspace = true }
+cfa4-mace = { workspace = true }
+cfa4-truespeech = { workspace = true }
 cfa4-ilbc = { workspace = true }
 cfa4-dts = { workspace = true }
 cfa4-truehd = { workspace = true }
@@ -54,13 +70,34 @@ cfa4-av1 = { workspace = true }
 cfa4-apv = { workspace = true }
 cfa4-hap = { workspace = true }
 cfa4-canopus = { workspace = true }
+cfa4-theora = { workspace = true }
+cfa4-realmedia = { workspace = true }
+cfa4-bink = { workspace = true }
+cfa4-realvideo = { workspace = true }
+cfa4-realaudio = { workspace = true }
 cfa4-utvideo = { workspace = true }
 cfa4-huffyuv = { workspace = true }
+cfa4-lagarith = { workspace = true }
+cfa4-svq3 = { workspace = true }
+cfa4-svq1 = { workspace = true }
+cfa4-indeo45 = { workspace = true }
+cfa4-indeo3 = { workspace = true }
+cfa4-flic = { workspace = true }
+cfa4-indeo = { workspace = true }
+cfa4-cinepak = { workspace = true }
+cfa4-magicyuv = { workspace = true }
+cfa4-msvideo = { workspace = true }
 cfa4-ffv1 = { workspace = true }
 cfa4-dirac = { workspace = true }
+cfa4-sstp = { workspace = true }
+cfa4-evc = { workspace = true }
+cfa4-avs2 = { workspace = true }
+cfa4-avs3 = { workspace = true }
+cfa4-cavs = { workspace = true }
 cfa4-aac = { workspace = true }
 cfa4-opus = { workspace = true }
 rayon = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 log = { workspace = true }
 # Decode timing counters (`gop_stats`); std's Instant panics on wasm32.
@@ -73,6 +110,8 @@ symphonia = { version = "0.6.1", default-features = false, features = ["aac", "m
 cfa4-ac3 = { workspace = true, features = ["test-util"] }
 cfa4-mxf = { workspace = true, features = ["test-util"] }
 cfa4-auro = { workspace = true }
+cfa4-cavs = { workspace = true, features = ["synth"] }
+cfa4-flic = { workspace = true, features = ["synth"] }
 cfa4-testkit = { workspace = true }
 serde_json = { workspace = true }
 

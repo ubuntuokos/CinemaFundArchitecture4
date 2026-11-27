@@ -13,9 +13,11 @@ name: CFA4 four-format build on a hosted Ubuntu 26.04 runner (no publication)
 #     scripts/release/install-nfpm.sh, which checks the module hash and the binary SHA-256 (#220);
 #   - appimagetool 1.9.1 (tagged GitHub release, SHA-256 pinned below);
 #   - Flatpak org.freedesktop.Platform and Sdk 25.08 from Flathub (user installation);
+#   - the sources the Flatpak bundle manifest pins (the krb5 tarball; SHA-256 from the manifest,
+#     scripts/release/fetch-flatpak-sources.sh), since flatpak-builder runs with --disable-download;
 #   - the PySide6 6.12.0 wheels pinned in requirements/linux-amd64.txt (pip download; their
 #     SHA-256 is checked against the pins when packaging/linux/stage-pyside6.py stages them);
-#   - CFA4's FFmpeg 9.0.2 prebuilt by cfa4-ffmpeg-prebuilt.yml (scripts/dev/fetch-ffmpeg-9.0.2.sh).
+#   - CFA4's FFmpeg (packaging/ffmpeg-version.env) prebuilt by cfa4-ffmpeg-prebuilt.yml (scripts/dev/fetch-ffmpeg.sh).
 #
 # RELEASE HOLD: no package leaves the runner. The job publishes only the SHA256SUMS and the F5
 # staged runtime report in the job summary; nothing is uploaded, released or signed.
@@ -26,11 +28,17 @@ on:
   pull_request:
     paths:
       - '.github/workflows/cfa4-four-formats-hosted.yml'
-      - 'scripts/dev/fetch-ffmpeg-9.0.2.sh'
+      - 'scripts/dev/fetch-ffmpeg.sh'
+      - 'packaging/ffmpeg-version.env'
       - 'scripts/release/install-nfpm.sh'
       # the staged runtime audit, with the Smart Cut smoke of every package (WP-10)
       - 'scripts/release/f5_staged_runtime.py'
       - 'packaging/linux/nfpm.lock'
+      # the Flatpak bundle and the sources its offline flatpak-builder run needs
+      - 'packaging/linux/flatpak-bundle.sh'
+      - 'packaging/linux/flatpak-sources.py'
+      - 'packaging/linux/flatpak/io.github.ubuntuokos.cfa4.bundle.yml'
+      - 'scripts/release/fetch-flatpak-sources.sh'
 
 permissions:
   contents: read
@@ -52,9 +60,10 @@ jobs:
       APPIMAGETOOL: ${{ github.workspace }}/../tools/appimagetool-x86_64.AppImage
       # The hosted runner has no FUSE; the AppImage runtime extracts itself instead.
       APPIMAGE_EXTRACT_AND_RUN: '1'
-      CFA4_FFMPEG_BUILD: /opt/cfa4/ffmpeg-9.0.2
       # AppImage and Flatpak carry the Qt GUI's PySide6 (docs/development/linux.md, 2026-11-09).
       CFA4_PYSIDE6_WHEELS: ${{ github.workspace }}/../wheels
+      # The Flatpak bundle manifest's pinned sources (krb5), seeded into flatpak-builder's cache.
+      CFA4_FLATPAK_SOURCES: ${{ github.workspace }}/../flatpak-sources
       CARGO_TERM_COLOR: never
     steps:
       - name: Checkout CFA4 repository
@@ -101,13 +110,15 @@ jobs:
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak install --user -y --noninteractive --arch=x86_64 flathub \
             org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08
+      - name: Fetch the Flatpak manifest's pinned sources (krb5; SHA-256 from the manifest)
+        run: bash scripts/release/fetch-flatpak-sources.sh "$CFA4_FLATPAK_SOURCES"
       - name: Rust toolchain from rust-toolchain.toml
         run: |
           rustup show
           rustc --version
           cargo --version
-      - name: Install CFA4 FFmpeg 9.0.2 (prebuilt, SHA-256 pinned; GPL-3 base build)
-        run: bash scripts/dev/fetch-ffmpeg-9.0.2.sh
+      - name: Install CFA4 FFmpeg (prebuilt, SHA-256 pinned; GPL-3 base build)
+        run: bash scripts/dev/fetch-ffmpeg.sh
       - name: Fill the PySide6 wheelhouse (pinned wheels; stage-pyside6.py checks their SHA-256)
         run: |
           python3 -m pip download --no-deps --only-binary=:all: --platform manylinux_2_34_x86_64 \

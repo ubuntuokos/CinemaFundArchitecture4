@@ -150,7 +150,7 @@ pub enum Backend {
     Platform,
     /// The optional GStreamer backend (ADR 0002).
     Gstreamer,
-    /// The FFmpeg ≥ 9.0.2 backend of ADR 0005 (`cfa4-ffmpeg`, optional `ffmpeg` feature: probing
+    /// The FFmpeg backend of ADR 0005 (at least `cfa4_ffmpeg::MIN_VERSION`) (`cfa4-ffmpeg`, optional `ffmpeg` feature: probing
     /// and decoding only, no mux or encode). Not registered: Smart Cut / Smart Render runs on
     /// CFA4's own code, ffmpeg is its validation oracle (owner decision 2026-10-27,
     /// smart-edit-baseline §3).

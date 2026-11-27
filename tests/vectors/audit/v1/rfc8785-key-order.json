@@ -1,0 +1,7 @@
+{
+  "name": "rfc8785-key-order",
+  "input": "{\"\\u20ac\":\"Euro\",\"\\r\":\"CR\",\"\\ufb33\":\"Dalet\",\"1\":\"One\",\"\\ud83d\\ude00\":\"Emoji\",\"\\u0080\":\"Control\",\"\\u00f6\":\"o-diaeresis\"}",
+  "event": true,
+  "canonical": "{\"\\r\":\"CR\",\"1\":\"One\",\"\":\"Control\",\"ö\":\"o-diaeresis\",\"€\":\"Euro\",\"😀\":\"Emoji\",\"דּ\":\"Dalet\"}",
+  "hash": "58da00a6bedfaae5de1e102d357ad3d8269e97868d9d2042c3675f7520534b9b"
+}

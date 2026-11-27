@@ -17,7 +17,7 @@ Az M2 és az M3 igény szerint, később jön. A tervezett méret egygépes mód
 beépített méretkorlát nélkül.
 
 A `VISION.md` ma nem nevez meg adatbázist. A kódban sincs adatbázis-crate (`rusqlite`, `sqlx`,
-`postgres`). A tervezett K17 nyilvántartás (`docs/kdenlive-parity.md`) SQLite-sémamintát említ.
+`postgres`). A tervezett KDN-17 nyilvántartás (`docs/kdenlive-parity.md`) SQLite-sémamintát említ.
 
 Az elemzés két irányt vetett össze:
 
@@ -46,7 +46,7 @@ tesztelést hoz.
    műveletnaplója állítja vissza az állapotot. Cél: RPO ≤ 5 s, RTO ≤ 1 perc. Részleges írás és csendes
    felülírás nincs. A mentés módját (`pg_dump` vagy alapmentés + WAL-archívum) és a nyugalmi titkosítást
    a BacklotHub NFR-jei rögzítik. A titkosítás kapcsolható.
-5. **A K17 nyilvántartást ez az ADR nem érinti.** Hogy a BacklotHub és a K17 közös tárolót használjon-e,
+5. **A KDN-17 nyilvántartást ez az ADR nem érinti.** Hogy a BacklotHub és a KDN-17 közös tárolót használjon-e,
    külön, nyitott kérdés. Erről nem ez az ADR dönt.
 6. **Kliensmeghajtó.** Komponensenként az a nyelv, amelyben a megbízható működés ésszerűbben
    garantálható (Rust vagy Python, tulajdonosi döntés 2026-11-02). A meghajtó (pl. `tokio-postgres` /
@@ -102,6 +102,6 @@ Ez lezárja a fenti 2. és 6. pontot:
 
 - `VISION.md` – irányadó; `AGENTS.md` §0 – never crash
 - `docs/adr/ADR-0005-media-backends.md` – a rendszercsomag-minta (GStreamer)
-- `docs/kdenlive-parity.md` – K17 nyilvántartás (nem érintett)
+- `docs/kdenlive-parity.md` – KDN-17 nyilvántartás (nem érintett)
 - A BacklotHub-elemzések (SQL/offline elemzés, NFR-javaslat, döntési lista) a projekt munkaanyagai. A
   BacklotHub-terv `main`-re kerülésekor ide kerül a hivatkozásuk.

@@ -21,12 +21,16 @@
 //! 2. **Silence at the edges is trimmed.** Each word's start and end are moved inward past
 //!    frames below the threshold. A word keeps at least 60 ms.
 
+pub mod silero;
+
 use cfa4_project::Word;
 use cfa4_time::Tick;
 
 use crate::{SAMPLE_RATE, TICKS_PER_SAMPLE};
 
 const FRAME: usize = (SAMPLE_RATE / 100) as usize;
+/// Samples per 10 ms analysis frame (read audio in whole multiples of this).
+pub const FRAME_SAMPLES: usize = FRAME;
 const MIN_WORD_FRAMES: usize = 6;
 /// A run of silence this long (10 ms frames) inside a word's span is a pause between words.
 const MIN_PAUSE_FRAMES: usize = 20;
@@ -189,6 +193,98 @@ pub fn tighten_words(audio: &[f32], words: &mut [Word]) {
     trim_edges(&voiced, words, frame_ticks);
 }
 
+/// Parameters of [`silence_regions`]. Durations are `Tick`s (AGENTS.md: exact time is `Tick`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SilenceParams {
+    /// Fixed threshold in dBFS; `None` is the clip's own automatic one ([`threshold`]).
+    pub threshold_db: Option<f32>,
+    /// A silence shorter than this is not a region.
+    pub min_silence: Tick,
+    /// Silence kept on both sides of the speech: taken off both ends of every region.
+    pub padding: Tick,
+}
+
+impl Default for SilenceParams {
+    /// 0.5 s minimum silence, 0.1 s padding (plan CFA4-V1-SILENCE-REMOVAL-001, D5).
+    fn default() -> Self {
+        Self { threshold_db: None, min_silence: crate::seconds_tick(0.5), padding: crate::seconds_tick(0.1) }
+    }
+}
+
+/// The silent regions of `audio` (16 kHz mono) as `(start, duration)` in ticks from the start of
+/// the audio, in time order and non-overlapping, on the 10 ms frame grid.
+///
+/// A run of frames below the threshold that lasts at least `min_silence` is a region; `padding` is
+/// then taken off both ends, so a region never touches speech by less than the padding. Silence at
+/// the very start or end of the audio has no speech on its outer side, so no padding is taken
+/// there. A region that padding shrinks to nothing is dropped. A threshold or duration that is
+/// NaN, infinite or negative falls back to the automatic threshold, zero minimum and zero padding.
+/// Audio with no voiced frame at all (digital silence, a flat tone below the floor) gives no region:
+/// there is no speech to measure the silence against.
+pub fn silence_regions(audio: &[f32], p: &SilenceParams) -> Vec<(Tick, Tick)> {
+    silence_regions_from_db(&frame_db(audio), audio.len(), p)
+}
+
+/// [`silence_regions`] from the [`frame_db`] levels of `samples` samples of audio, so a long clip
+/// can be read in pieces (a multiple of [`FRAME_SAMPLES`] each) and only the levels kept.
+pub fn silence_regions_from_db(db: &[f32], samples: usize, p: &SilenceParams) -> Vec<(Tick, Tick)> {
+    if db.is_empty() {
+        return Vec::new();
+    }
+    let th = match p.threshold_db {
+        Some(t) if t.is_finite() => t,
+        _ => threshold(db),
+    };
+    let voiced: Vec<bool> = db.iter().map(|&v| v >= th).collect();
+    silence_regions_from_voiced(&voiced, FRAME, samples, p)
+}
+
+/// The silent regions from one voiced/unvoiced flag per frame of `frame_samples` samples (16 kHz),
+/// for `samples` samples of audio: the rules of [`silence_regions`] (minimum length, padding, no
+/// padding at the audio's edges, no region when nothing is voiced) for any detector, so the
+/// energy VAD and the Silero model share them. A `frame_samples` of zero gives no region.
+pub fn silence_regions_from_voiced(voiced: &[bool], frame_samples: usize, samples: usize, p: &SilenceParams) -> Vec<(Tick, Tick)> {
+    if frame_samples == 0 {
+        return Vec::new();
+    }
+    if !voiced.iter().any(|&v| v) {
+        return Vec::new();
+    }
+    let frame_ticks = TICKS_PER_SAMPLE * frame_samples as i64;
+    let frames = |t: Tick| (t.0.max(0) / frame_ticks) as usize;
+    let min_frames = frames(p.min_silence).max(1);
+    let pad = frames(p.padding);
+    let n = voiced.len();
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < n {
+        if voiced.get(i).copied().unwrap_or(true) {
+            i += 1;
+            continue;
+        }
+        let a = i;
+        while i < n && !voiced.get(i).copied().unwrap_or(true) {
+            i += 1;
+        }
+        let b = i;
+        if b - a < min_frames {
+            continue;
+        }
+        let from = if a == 0 { a } else { a.saturating_add(pad) };
+        let to = if b == n { b } else { b.saturating_sub(pad) };
+        if to > from {
+            let start = Tick((from as i64).saturating_mul(frame_ticks));
+            // the last frame can be partial: the region ends with the audio
+            let end_ticks = (samples as i64).saturating_mul(TICKS_PER_SAMPLE);
+            let end = Tick((to as i64).saturating_mul(frame_ticks)).min(Tick(end_ticks));
+            if end > start {
+                out.push((start, Tick(end.0 - start.0)));
+            }
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -311,5 +407,52 @@ mod tests {
         tighten_words(&[], &mut w);
         tighten_words(&[0.0; 16], &mut w);
         assert!(w.iter().all(|w| w.end >= w.start));
+    }
+
+    #[test]
+    fn silence_regions_are_the_gaps_between_speech_minus_the_padding() {
+        // tone 0.5–1.0 and 2.0–2.5 in 3.0 s: gaps 0–0.5, 1.0–2.0, 2.5–3.0
+        let a = audio(3.0, &[(0.5, 1.0), (2.0, 2.5)]);
+        let p = SilenceParams { threshold_db: None, min_silence: seconds_tick(0.4), padding: seconds_tick(0.1) };
+        let r: Vec<(f64, f64)> = silence_regions(&a, &p)
+            .iter()
+            .map(|(s, d)| (s.0 as f64 / cfa4_time::TICKS_PER_SECOND as f64, d.0 as f64 / cfa4_time::TICKS_PER_SECOND as f64))
+            .collect();
+        assert_eq!(r.len(), 3);
+        let near = |x: f64, y: f64| (x - y).abs() <= 0.032;
+        // outer edges get no padding on the audio's side
+        assert!(near(r[0].0, 0.0) && near(r[0].0 + r[0].1, 0.4), "{r:?}");
+        assert!(near(r[1].0, 1.1) && near(r[1].0 + r[1].1, 1.9), "{r:?}");
+        assert!(near(r[2].0, 2.6) && near(r[2].0 + r[2].1, 3.0), "{r:?}");
+    }
+
+    #[test]
+    fn short_gaps_and_padding_that_eats_the_gap_give_no_region() {
+        let a = audio(2.0, &[(0.0, 0.5), (0.8, 2.0)]);
+        // 0.3 s gap below the minimum
+        let p = SilenceParams { threshold_db: None, min_silence: seconds_tick(0.5), padding: Tick(0) };
+        assert!(silence_regions(&a, &p).is_empty());
+        // 0.3 s gap, padding 0.2 s on each side: nothing left
+        let p = SilenceParams { threshold_db: None, min_silence: seconds_tick(0.2), padding: seconds_tick(0.2) };
+        assert!(silence_regions(&a, &p).is_empty());
+    }
+
+    #[test]
+    fn all_speech_digital_silence_and_empty_audio_give_no_region() {
+        let p = SilenceParams::default();
+        assert!(silence_regions(&audio(1.0, &[(0.0, 1.0)]), &p).is_empty());
+        assert!(silence_regions(&[0.0; 16_000], &p).is_empty());
+        assert!(silence_regions(&[], &p).is_empty());
+    }
+
+    #[test]
+    fn hostile_silence_parameters_never_panic() {
+        let a = audio(2.0, &[(0.0, 0.5), (1.5, 2.0)]);
+        let p = SilenceParams { threshold_db: Some(f32::NAN), min_silence: Tick(i64::MIN), padding: Tick(i64::MAX) };
+        let _ = silence_regions(&a, &p);
+        let p = SilenceParams { threshold_db: Some(f32::INFINITY), min_silence: Tick(i64::MAX), padding: Tick(-5) };
+        assert!(silence_regions(&a, &p).is_empty());
+        let p = SilenceParams { threshold_db: Some(-40.0), min_silence: Tick(0), padding: Tick(0) };
+        assert!(!silence_regions(&a, &p).is_empty());
     }
 }

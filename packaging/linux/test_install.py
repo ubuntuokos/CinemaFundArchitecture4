@@ -12,6 +12,18 @@ import unittest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+
+
+def pinned_ffmpeg_version() -> str:
+    """CFA4_FFMPEG_VERSION from packaging/ffmpeg-version.env (CFA4-FFMPEG-9.1-001 R1)."""
+    for line in (HERE.parents[1] / "packaging/ffmpeg-version.env").read_text(encoding="utf-8").splitlines():
+        name, sep, value = line.partition("=")
+        if sep and name.strip() == "CFA4_FFMPEG_VERSION":
+            return value.strip()
+    raise KeyError("CFA4_FFMPEG_VERSION")
+
+
+FFMPEG_VERSION = pinned_ffmpeg_version()
 APP_ID = "io.github.ubuntuokos.cfa4"
 
 
@@ -28,10 +40,15 @@ class InstallTests(unittest.TestCase):
         shutil.copyfile(
             HERE / f"{APP_ID}.desktop", self.share / "applications" / f"{APP_ID}.desktop"
         )
-        for name in ("cfa4", "cfa4-cli"):
-            (self.bundle / "bin" / name).write_text(
-                '#!/bin/sh\nprintf \'%s\\n\' "$0" "$@" > "$(dirname "$0")/launched"\n'
-            )
+        # Stand-ins that record how they were started. As in a release tarball, bin/cfa4 is a copy of
+        # the Qt GUI's launcher (Q4.3: no package carries or starts egui).
+        recorder = '#!/bin/sh\nprintf \'%s\\n\' "$0" "$@" > "$(dirname "$0")/launched"\n'
+        for name in ("cfa4", "cfa4-cli", "cfa4-qt"):
+            (self.bundle / "bin" / name).write_text(recorder)
+        package = self.bundle / "lib/cfa4/python/cfa4_qt"
+        package.mkdir(parents=True)
+        (package / "__init__.py").write_text("")
+        (package / "__main__.py").write_text("def main():\n    return 0\n")
         for path in ("doc/cfa4/LICENSE-MIT", "icons/hicolor/test", "mime/packages/test.xml"):
             target = self.share / path
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -53,7 +70,7 @@ class InstallTests(unittest.TestCase):
             (self.bundle / "share/doc/cfa4/LICENSE-MIT").write_text(version)
             result = self.install("--prefix", prefix)
             self.assertEqual(result.returncode, 0, result.stderr)
-            for name in ("cfa4", "cfa4-cli"):
+            for name in ("cfa4", "cfa4-cli", "cfa4-qt"):
                 self.assertTrue(os.access(prefix / "bin" / name, os.X_OK))
                 self.assertEqual(
                     (prefix / "bin" / name).read_bytes(), (self.bundle / "bin" / name).read_bytes()
@@ -63,38 +80,59 @@ class InstallTests(unittest.TestCase):
             self.assertTrue((prefix / "share/mime/packages/test.xml").is_file())
             self.assertEqual(other.read_text(), "unrelated\n")
         desktop = prefix / "share/applications" / f"{APP_ID}.desktop"
-        self.assertIn(f'Exec="{prefix}/bin/cfa4" %F\n', desktop.read_text())
+        self.assertIn(f'Exec="{prefix}/bin/cfa4-qt" %F\n', desktop.read_text())
         if shutil.which("desktop-file-validate"):
             subprocess.run(["desktop-file-validate", str(desktop)], check=True)
-        # no Qt GUI in this bundle: no credits entry either
+        # this bundle has no credits entry: none is installed
         self.assertFalse((prefix / "share/applications" / f"{APP_ID}.credits.desktop").exists())
 
-    def test_menu_entry_starts_the_qt_gui_when_the_tarball_has_it(self):
-        """Owner decision 2026-11-12: the menu entry (and files opened with it) start the Qt 6 GUI;
-        a tarball without it keeps the egui editor, so the entry never points at a missing program."""
+    def test_menu_entry_and_cfa4_start_only_the_qt_gui(self):
+        """Owner decisions 2026-11-12 and 2026-11-14 (docs/plans/CFA4-QT6-FINISH-001.md Q4.3): the
+        menu entry (and files opened with it) and the `cfa4` command start the Qt 6 GUI, never egui."""
+        self.add_qt_gui("def main():\n    return 0\n")
         prefix = self.root / "menu"
         result = self.install("--prefix", prefix)
         self.assertEqual(result.returncode, 0, result.stderr)
-        desktop = prefix / "share/applications" / f"{APP_ID}.desktop"
-        self.assertIn(f'Exec="{prefix}/bin/cfa4" %F\n', desktop.read_text())
-        self.add_qt_gui("def main():\n    return 0\n")
-        result = self.install("--prefix", prefix)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        entry = desktop.read_text()
+        entry = (prefix / "share/applications" / f"{APP_ID}.desktop").read_text()
         self.assertIn(f'Exec="{prefix}/bin/cfa4-qt" %F\n', entry)
         self.assertIn(f"TryExec={prefix}/bin/cfa4-qt\n", entry)
+        self.assertEqual((prefix / "bin/cfa4").read_bytes(), (HERE / "cfa4-qt").read_bytes())
+        self.assertIn("Launch the Qt 6 GUI", result.stdout)
         if shutil.which("desktop-file-validate"):
-            subprocess.run(["desktop-file-validate", str(desktop)], check=True)
+            subprocess.run(["desktop-file-validate", str(prefix / "share/applications" / f"{APP_ID}.desktop")], check=True)
+
+    def test_a_tarball_without_the_qt_gui_does_not_install(self):
+        """No egui fallback any more (Q4.3): a tarball without the Qt GUI is incomplete."""
+        (self.bundle / "bin/cfa4-qt").unlink()
+        prefix = self.root / "destination"
+        result = self.install("--prefix", prefix)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("missing bin/cfa4-qt", result.stderr)
+        self.assertFalse(prefix.exists(), "refused before anything is written")
+
+    def test_a_native_cfa4_the_egui_editor_is_refused(self):
+        (self.bundle / "bin/cfa4").write_bytes(b"\x7fELF\x02\x01\x01" + bytes(57))
+        prefix = self.root / "destination"
+        result = self.install("--prefix", prefix)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("native program (the egui editor)", result.stderr)
+        self.assertFalse(prefix.exists(), "refused before anything is written")
+
+    def test_an_earlier_egui_cfa4_is_replaced_by_the_qt_launcher(self):
+        self.add_qt_gui("def main():\n    return 0\n")
+        prefix = self.root / "upgrade"
+        old = prefix / "bin/cfa4"
+        old.parent.mkdir(parents=True)
+        old.write_bytes(b"\x7fELF\x02\x01\x01" + bytes(57))
+        result = self.install("--prefix", prefix)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(old.read_bytes(), (HERE / "cfa4-qt").read_bytes())
 
     def test_credits_entry_points_at_the_installed_qt_gui(self):
         shutil.copyfile(
             HERE / f"{APP_ID}.credits.desktop", self.share / "applications" / f"{APP_ID}.credits.desktop"
         )
         prefix = self.root / "with qt"
-        result = self.install("--prefix", prefix)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertFalse((prefix / "share/applications" / f"{APP_ID}.credits.desktop").exists())
-        self.add_qt_gui("def main():\n    return 0\n")
         result = self.install("--prefix", prefix)
         self.assertEqual(result.returncode, 0, result.stderr)
         entry = (prefix / "share/applications" / f"{APP_ID}.credits.desktop").read_text()
@@ -116,19 +154,18 @@ class InstallTests(unittest.TestCase):
         launched = prefix / "bin/launched"
         for _ in range(100):
             if launched.exists() and launched.read_text().splitlines() == [
-                str(prefix / "bin/cfa4"), str(document)
+                str(prefix / "bin/cfa4-qt"), str(document)
             ]:
                 break
             time.sleep(0.01)
-        self.assertEqual(launched.read_text().splitlines(), [str(prefix / "bin/cfa4"), str(document)])
+        self.assertEqual(launched.read_text().splitlines(), [str(prefix / "bin/cfa4-qt"), str(document)])
 
     def add_qt_gui(self, main_body):
-        """The real cfa4-qt launcher and a stand-in cfa4_qt package whose main() runs main_body."""
-        shutil.copyfile(HERE / "cfa4-qt", self.bundle / "bin/cfa4-qt")
-        package = self.bundle / "lib/cfa4/python/cfa4_qt"
-        package.mkdir(parents=True)
-        (package / "__init__.py").write_text("")
-        (package / "__main__.py").write_text(main_body)
+        """The real cfa4-qt launcher (also as bin/cfa4, as package.sh stages it) and a stand-in
+        cfa4_qt package whose main() runs main_body."""
+        for name in ("cfa4-qt", "cfa4"):
+            shutil.copyfile(HERE / "cfa4-qt", self.bundle / "bin" / name)
+        (self.bundle / "lib/cfa4/python/cfa4_qt/__main__.py").write_text(main_body)
 
     def fake_pyside6(self, prefix, modules=("QtCore", "QtGui", "QtWidgets", "QtNetwork", "QtTest")):
         """A stand-in PySide6 with these modules, first on the installed launcher's path, so the
@@ -217,7 +254,7 @@ class InstallTests(unittest.TestCase):
         self.assertNotIn("apt install", started.stderr)
 
     def test_qt_launcher_without_its_package_does_not_install(self):
-        shutil.copyfile(HERE / "cfa4-qt", self.bundle / "bin/cfa4-qt")
+        shutil.rmtree(self.bundle / "lib/cfa4/python/cfa4_qt")
         prefix = self.root / "destination"
         result = self.install("--prefix", prefix)
         self.assertNotEqual(result.returncode, 0)
@@ -225,21 +262,42 @@ class InstallTests(unittest.TestCase):
         self.assertFalse(prefix.exists(), "refused before anything is written")
 
     def test_ffmpeg_libraries_install_beside_the_binaries_and_replace_older_ones(self):
-        ffmpeg = self.bundle / "lib/cfa4/ffmpeg-9.0.2"
+        ffmpeg = self.bundle / f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}"
         (ffmpeg / "lib").mkdir(parents=True)
         (ffmpeg / "share/doc/ffmpeg").mkdir(parents=True)
         (ffmpeg / "lib/libavcodec.so.62").write_text("new\n")
-        (ffmpeg / "share/doc/ffmpeg/BUILDINFO").write_text("FFmpeg 9.0.2\n")
+        (ffmpeg / "share/doc/ffmpeg/BUILDINFO").write_text(f"FFmpeg {FFMPEG_VERSION}\n")
         prefix = self.root / "destination"
-        stale = prefix / "lib/cfa4/ffmpeg-9.0.2/lib/libavcodec.so.61"
+        stale = prefix / f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}/lib/libavcodec.so.61"
         stale.parent.mkdir(parents=True)
         stale.write_text("old\n")
         result = self.install("--prefix", prefix)
         self.assertEqual(result.returncode, 0, result.stderr)
-        installed = prefix / "lib/cfa4/ffmpeg-9.0.2"
+        installed = prefix / f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}"
         self.assertEqual((installed / "lib/libavcodec.so.62").read_text(), "new\n")
         self.assertTrue((installed / "share/doc/ffmpeg/BUILDINFO").is_file())
         self.assertFalse(stale.exists(), "a library of an older release stays behind")
+
+    def test_an_older_bundled_ffmpeg_is_removed_on_upgrade(self):
+        ffmpeg = self.bundle / f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}"
+        (ffmpeg / "lib").mkdir(parents=True)
+        (ffmpeg / "lib/libavcodec.so.63").write_text("new\n")
+        prefix = self.root / "destination"
+        older = prefix / "lib/cfa4/ffmpeg-0.0.1"
+        (older / "lib").mkdir(parents=True)
+        (older / "lib/libavcodec.so.62").write_text("old\n")
+        result = self.install("--prefix", prefix)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((prefix / f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}/lib/libavcodec.so.63").is_file())
+        self.assertFalse(older.exists(), "the FFmpeg of an earlier release stays behind")
+        self.assertTrue((prefix / "lib/cfa4/python/cfa4_qt").is_dir())
+
+    def test_a_tarball_with_two_ffmpeg_builds_is_refused(self):
+        for name in (f"ffmpeg-{FFMPEG_VERSION}", "ffmpeg-0.0.1"):
+            (self.bundle / "lib/cfa4" / name / "lib").mkdir(parents=True)
+        result = self.install("--prefix", self.root / "destination")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("more than one FFmpeg", result.stderr)
 
     def test_release_package_refuses_without_ffmpeg_for_other_formats(self):
         result = subprocess.run(
@@ -275,10 +333,10 @@ class InstallTests(unittest.TestCase):
         target = self.root / "target"
         binaries = target / "release"
         binaries.mkdir(parents=True)
-        for name in ("cfa4", "cfa4-cli"):
-            binary = binaries / name
-            binary.write_text("#!/bin/sh\necho 'CFA4 fixture'\n")
-            binary.chmod(0o755)
+        # only the engine is built (Q4.3: no egui editor in the packages)
+        binary = binaries / "cfa4-cli"
+        binary.write_text("#!/bin/sh\necho 'CFA4 fixture'\n")
+        binary.chmod(0o755)
         dist = self.root / "dist"
         # stand-in binaries have no crate sources to list, so ship a stand-in notice file
         notices = self.root / "THIRD-PARTY-LICENSES.txt"
@@ -301,9 +359,11 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(installer.mode & 0o777, 0o755)
             self.assertEqual(archive.extractfile(installer).read(), (HERE / "install.sh").read_bytes())
             names = archive.getnames()
-            qt = next(m for m in archive.getmembers() if m.name.endswith("/bin/cfa4-qt"))
-            self.assertEqual(qt.mode & 0o777, 0o755)
-            self.assertEqual(archive.extractfile(qt).read(), (HERE / "cfa4-qt").read_bytes())
+            for launcher in ("/bin/cfa4-qt", "/bin/cfa4"):  # `cfa4` starts the Qt GUI too (Q4.3)
+                qt = next(m for m in archive.getmembers() if m.name.endswith(launcher))
+                self.assertTrue(qt.isfile(), launcher)
+                self.assertEqual(qt.mode & 0o777, 0o755)
+                self.assertEqual(archive.extractfile(qt).read(), (HERE / "cfa4-qt").read_bytes())
             for path in ("lib/cfa4/python/cfa4_qt/__main__.py", "lib/cfa4/python/cfa4_qt/i18n/hu.tsv",
                          "lib/cfa4/python/cfa4_qt/i18n/de.tsv",
                          "lib/cfa4/python/cfa4_qt/i18n/fr.tsv.attribution"):

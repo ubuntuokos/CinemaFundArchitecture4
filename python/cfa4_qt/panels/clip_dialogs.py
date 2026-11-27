@@ -447,9 +447,37 @@ class ClipDialog(QDialog):
         self.params["channels"] = sorted(chans)
 
     def _timecode(self) -> None:
-        self.text("timecode", N_("Set Timecode:"), 120)
+        tc = self.text("timecode", N_("Set Timecode:"), 120)
+        # LTC recorded on the clip's audio (a sync box on one channel): fills Set Timecode with
+        # the timecode of the clip's first frame; OK applies it
+        ltc = QPushButton(tr("Read from LTC Audio"), self)
+        ltc.setObjectName(f"{self.pre}.readLtc")
+        ltc.setToolTip(tr("Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame"))
+        ltc.clicked.connect(lambda: self._read_ltc(tc, ltc))
+        row = QHBoxLayout()
+        row.addStretch(1)
+        row.addWidget(ltc)
+        self.body_lay.addLayout(row)
         self.text("tapeName", N_("Tape Name:"), 200)
         self.check("reset", N_("Use the file's timecode"))
+
+    def _read_ltc(self, field: QLineEdit, button: QPushButton) -> None:
+        params: dict[str, Any] = {"apply": False}
+        if isinstance(self.params.get("item"), int):
+            params["item"] = self.params["item"]
+        button.setEnabled(False)
+
+        def done(error: str | None, result: Any = None) -> None:
+            button.setEnabled(True)
+            if error is not None:
+                self.fail(error)
+                return
+            tc = result.get("timecode") if isinstance(result, dict) else None
+            if isinstance(tc, str) and tc:
+                self.error.hide()
+                field.setText(tc)
+
+        self.run("clip.readLtcTimecode", params, done)
 
     def _frame_hold(self) -> None:
         self.check("enabled", N_("Hold On"))

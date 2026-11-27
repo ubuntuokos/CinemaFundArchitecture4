@@ -829,6 +829,19 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 fs("frequency", "Frequency", 1.0, (0.0, 25.0), (0.0, 25.0), "", 2),
             ],
         ),
+        // A real codec datamosh: one P picture of CFA4's H.264 encoder decoded again and again.
+        video(
+            "datamosh_bloom",
+            "Datamosh Bloom",
+            GLITCH,
+            vec![
+                fs("start", "Start Time (seconds)", 1.0, (0.0, 3600.0), (0.0, 30.0), "", 2),
+                fs("repeats", "Repeats", 12.0, (1.0, 120.0), (1.0, 60.0), "", 0),
+                pct("residual", "Residual", 20.0),
+                pct("dissolve", "Dissolve", 30.0),
+                b("clean", "Clean Blocks", true),
+            ],
+        ),
         video(
             "pixelate",
             "Pixelate",

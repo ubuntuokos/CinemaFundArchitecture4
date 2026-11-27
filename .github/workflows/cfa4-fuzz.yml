@@ -1,15 +1,20 @@
-name: CFA4 fuzzing (nightly)
+name: CFA4 fuzzing (every 4th night)
 
 # CFA4-SECURITY-001 B2: every L0 parser (containers, codecs) and the project, interchange, caption
-# and credits readers under libFuzzer, every night, in six shards. Not a PR check: automatic PR
-# checks stay quick (AGENTS.md CFA4 section); run it by hand with workflow_dispatch.
-# The corpus grows from night to night through the Actions cache; a finding fails the shard and the
+# and credits readers under libFuzzer, every 4th night (owner decision 2026-11-21), in six shards.
+# Not a PR check: automatic PR checks stay quick (AGENTS.md CFA4 section); run it by hand with
+# workflow_dispatch (that always runs, whatever the day).
+# The cron fires every night; the `due` job lets the fuzzing through only when the UTC day number
+# since 1970-01-01 is divisible by 4, so the gap is exactly 4 days across month and year ends
+# (a `*/4` day-of-month cron would restart on the 1st). 4 days stays inside the Actions cache's
+# 7-day eviction window, so the corpus is kept.
+# The corpus grows from run to run through the Actions cache; a finding fails the shard and the
 # crashing input is printed (base64, first 64 KiB) in the log and uploaded whole as an artifact,
 # to be turned into a regression test (AGENTS.md §0.8).
 
 on:
   schedule:
-    - cron: "17 1 * * *"   # nightly
+    - cron: "17 1 * * *"   # nightly trigger; the `due` job runs the fuzzing every 4th night only
   workflow_dispatch:
     inputs:
       seconds:
@@ -24,8 +29,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  due:
+    name: Fuzzing due tonight (every 4th day)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - name: Every 4th UTC day, or a manual run
+        id: check
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          day=$(( $(date -u +%s) / 86400 ))
+          if [ "$EVENT" != "schedule" ] || (( day % 4 == 0 )); then run=true; else run=false; fi
+          echo "event=$EVENT day=$day day%4=$(( day % 4 )) run=$run"
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+
   coverage:
     name: Every L0 parser has a fuzz target
+    needs: due
+    if: needs.due.outputs.run == 'true'
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
@@ -38,9 +62,10 @@ jobs:
       - name: cargo xtask fuzz-targets
         run: cargo xtask fuzz-targets
 
+  # Not `needs: coverage`: a new L0 crate without a target fails the coverage job, but the existing
+  # targets keep being fuzzed meanwhile (from 2026-11-15 a missing target skipped every shard).
   fuzz:
     name: Fuzz shard ${{ matrix.shard }}/6
-    needs: coverage
     runs-on: ubuntu-26.04
     timeout-minutes: 180
     strategy:
@@ -55,16 +80,22 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # Seeds are made with the pinned FFmpeg 9.0.2 test oracle, never Ubuntu's ffmpeg (docs/testing.md §2).
-      - name: Build tools and FFmpeg 9.0.2 oracle dependencies
+      - name: Pinned FFmpeg version (packaging/ffmpeg-version.env)
+        id: ffv
+        run: |
+          . packaging/ffmpeg-version.env
+          echo "version=$CFA4_FFMPEG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "cache_rev=$CFA4_FFMPEG_CACHE_REV" >> "$GITHUB_OUTPUT"
+      # Seeds are made with the pinned FFmpeg test oracle, never Ubuntu's ffmpeg (docs/testing.md §2).
+      - name: Build tools and FFmpeg oracle dependencies
         run: bash scripts/ci/install-ffmpeg-oracle-deps.sh
-      - name: Restore FFmpeg 9.0.2 (saved on main by ci-cache-warm.yml)
+      - name: Restore the FFmpeg oracle (saved on main by ci-cache-warm.yml)
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v8
-          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v8
-      - name: Install verified FFmpeg 9.0.2
-        run: bash scripts/ci/install-ffmpeg-9.0.2.sh
+          path: ~/.cache/cfa4/ffmpeg-${{ steps.ffv.outputs.version }}-linux-x86_64-${{ steps.ffv.outputs.cache_rev }}
+          key: cfa4-ffmpeg-${{ steps.ffv.outputs.version }}-ubuntu-26.04-linux-x86_64-${{ steps.ffv.outputs.cache_rev }}
+      - name: Install the verified FFmpeg oracle
+        run: bash scripts/ci/install-ffmpeg.sh
       - name: Nightly toolchain and cargo-fuzz
         run: |
           rustup toolchain install nightly --profile minimal
@@ -75,8 +106,10 @@ jobs:
           path: fuzz/corpus
           key: cfa4-fuzz-corpus-${{ matrix.shard }}-${{ github.run_id }}
           restore-keys: cfa4-fuzz-corpus-${{ matrix.shard }}-
-      - name: Seed corpus (FFmpeg 9.0.2)
-        run: CFA4_FFMPEG="$HOME/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v8/bin/ffmpeg" fuzz/seeds.sh
+      - name: Seed corpus (pinned FFmpeg oracle)
+        run: |
+          . packaging/ffmpeg-version.env
+          CFA4_FFMPEG="$HOME/.cache/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION-linux-x86_64-$CFA4_FFMPEG_CACHE_REV/bin/ffmpeg" fuzz/seeds.sh
       - name: Fuzz this shard's targets
         run: |
           mapfile -t all < <(sed -n 's/^name = "\([a-z0-9_]*\)"$/\1/p' fuzz/Cargo.toml | grep -v '^cfa4-fuzz$')

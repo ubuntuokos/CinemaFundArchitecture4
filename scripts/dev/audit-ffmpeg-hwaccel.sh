@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CFA4 R0 FFmpeg 9.0.2 hardware-media audit; Ubuntu 26.04 Linux AMD64.
+# CFA4 R0 hardware-media audit of the pinned FFmpeg (packaging/ffmpeg-version.env); Ubuntu 26.04 Linux AMD64.
 # Run locally on a physical NVIDIA GPU, not on a hosted CI software runner.
 # No installs, downloads or Rust builds. Uses eight standard-size frames only.
 set -euo pipefail
@@ -23,8 +23,10 @@ FFPROBE="${CFA4_FFPROBE_BIN:-$(dirname -- "$FFMPEG")/ffprobe}"
 [[ -x "$FFPROBE" ]] || die "matching ffprobe missing: $FFPROBE"
 version="$("$FFMPEG" -version | awk 'NR == 1 { print $3 }')"
 probe_version="$("$FFPROBE" -version | awk 'NR == 1 { print $3 }')"
-[[ "$version" == 9.0.2 && "$probe_version" == 9.0.2 ]] ||
-    die "requires ffmpeg and ffprobe 9.0.2; found $version and $probe_version"
+# shellcheck source=packaging/ffmpeg-version.env
+. "$ROOT/packaging/ffmpeg-version.env"
+[[ "$version" == "$CFA4_FFMPEG_VERSION" && "$probe_version" == "$CFA4_FFMPEG_VERSION" ]] ||
+    die "requires ffmpeg and ffprobe $CFA4_FFMPEG_VERSION; found $version and $probe_version"
 
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 OUT="${CFA4_FFMPEG_AUDIT_DIR:-$ROOT/target/audit/ffmpeg}/$STAMP"

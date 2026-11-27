@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import __version__, crash, dock_commands, theme
+from .gesture_hud import GestureLayer
 from .commands import Command, CommandRegistry, qt_shortcut
 from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
 from .dock_gutters import DockGutters
@@ -59,6 +60,7 @@ from .panels.export_dialogs import EXPORT_DIALOGS, ExportSettingsDialog
 from .panels.fx_editor import FxEditor, target_key
 from .panels.home import HomePage
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
+from .panels.dcp_validation import DcpValidationDialog
 from .panels.kdm_dialog import KdmDialog
 from .panels.live import LiveDialog
 from .panels.lumetri import LumetriColorPanel
@@ -144,7 +146,7 @@ LAYOUT_VERSION = 21  # 2: Source monitor; 3: Effect Controls; 4: Properties (egu
 # commands that can change which media an item shows, done or undone
 SOURCE_COMMANDS = frozenset({
     "media.relink", "media.replaceFootage", "media.makeOffline", "media.offlineAll", "media.autoRelink", "media.linkMedia",
-    "media.findMissing", "media.refreshChanged", "media.refreshGrowingFiles", "media.attachProxies", "media.detachProxies",
+    "media.findMissing", "media.refreshChanged", "media.refreshGrowingFiles", "media.attachProxies", "media.findCameraProxies", "media.detachProxies",
     "media.toggleProxies", "media.enableProxies", "media.reconnectFullRes", "clip.interpretFootage", "edit.undo", "edit.redo",
     "dcp.loadKdm", "dcp.clearKeys",
 })
@@ -276,7 +278,7 @@ def result_status(command: str, result: Any) -> str | None:
 
 
 SYNC_DIALOGS = {"clip.synchronize": "synchronize", "clip.mergeClips": "merge", "clip.createMulticam": "multicam"}
-EDITS_AT_PLAYHEAD = frozenset({"source.insert", "source.overwrite", "sequence.lift", "sequence.extract", "effects.eyedropper"})
+EDITS_AT_PLAYHEAD = frozenset({"source.insert", "source.overwrite", "sequence.lift", "sequence.extract", "effects.eyedropper", "effects.pickWhiteBalance"})
 
 class MainWindow(QMainWindow):
     def __init__(self, engine: EngineClient, settings: QSettings | None = None) -> None:
@@ -315,6 +317,11 @@ class MainWindow(QMainWindow):
         self.monitor = ProgramMonitor(engine, self)
         self.source_monitor = SourceMonitor(engine, self)
         self.timeline = TimelinePanel(self)
+        # SC-3: the waveform channel mode and channel zoom are kept between sessions
+        self.timeline.canvas.restore_waveform_display(
+            self.settings.value("timeline/waveformChannels"), self.settings.value("timeline/channelZoom")
+        )
+        self.timeline.canvas.display_changed.connect(self._save_waveform_display)
         self.timeline.canvas.media.attach(engine)  # clip thumbnails and waveforms
         self.tools = ToolsPanel(self)
         self.tools.tool_selected.connect(self.timeline.set_tool)
@@ -335,6 +342,7 @@ class MainWindow(QMainWindow):
         self.inspector.attach_settings(self.settings)
         self.effect_controls = EffectControlsPanel(self)
         self.effect_controls.attach(engine)
+        self.effect_controls.attach_settings(self.settings)
         self.history = HistoryPanel(self)
         self.markers = MarkersPanel(self)
         self.info = InfoPanel(self)
@@ -514,6 +522,8 @@ class MainWindow(QMainWindow):
         self.effect_controls.seek.connect(self._seek_program)
         self.monitor.overlay.pen_finished.connect(self.effect_controls.pen_done)
         self.effect_controls.eyedropper_armed.connect(self.monitor.overlay.arm_eyedropper)
+        self.effect_controls.eyedropper_armed.connect(self.lumetri.release_eyedropper)
+        self.lumetri.eyedropper_armed.connect(self.arm_wb_eyedropper)
         self.fx_editors: dict[tuple[Any, ...], FxEditor] = {}
         # an exception that escaped a slot or event handler (crash.py): shown, the session runs on
         self.error_dialog: ErrorDialog | None = None
@@ -521,6 +531,7 @@ class MainWindow(QMainWindow):
         self.effect_controls.fx_editor.connect(self.open_fx_editor)
         self.mixer.fx_editor.connect(self.open_fx_editor)
         self.monitor.overlay.eyedropper_done.connect(lambda: self.effect_controls.arm_eyedropper(None))
+        self.monitor.overlay.eyedropper_done.connect(lambda: self.lumetri.arm_eyedropper(None))
         self.tools.tool_selected.connect(lambda tool: setattr(self.monitor.overlay, "enabled", tool == "selection"))
         self.inspector.seek.connect(self._seek_program)
         self.inspector.run.connect(self.run_preset)
@@ -565,6 +576,7 @@ class MainWindow(QMainWindow):
 
         engine.started.connect(self._on_started)
         engine.event.connect(self._on_event)
+        self.gestures = GestureLayer(self, engine)
         engine.job.connect(self._job_started)
         engine.failure.connect(lambda m: self.events.log(m, error=True))
         engine.stopped.connect(self._on_engine_stopped)
@@ -882,6 +894,10 @@ class MainWindow(QMainWindow):
         self.load_kdm_action = QAction(tr("Load KDM…"), self)
         self.load_kdm_action.setObjectName("qt.file.loadKdm")
         self.load_kdm_action.triggered.connect(self.open_kdm)
+        self.dcp_validation_dialog: DcpValidationDialog | None = None
+        self.validate_dcp_action = QAction(tr("Validate DCP…"), self)
+        self.validate_dcp_action.setObjectName("qt.file.validateDcp")
+        self.validate_dcp_action.triggered.connect(self.open_dcp_validation)
         self.forget_keys_action = QAction(tr("Forget DCP Keys"), self)
         self.forget_keys_action.setObjectName("qt.file.forgetDcpKeys")
         self.forget_keys_action.triggered.connect(self.forget_dcp_keys)
@@ -1028,7 +1044,7 @@ class MainWindow(QMainWindow):
     def _build_menus(self) -> None:
         self.registry.build_menus(
             self.menuBar(), self, {
-                "File": [self.load_kdm_action, self.forget_keys_action, self.quit_action],
+                "File": [self.load_kdm_action, self.validate_dcp_action, self.forget_keys_action, self.quit_action],
                 "Sequence": [self.play_action, *(a for a, _k in self.shuttle_actions)],
                 "Edit": [self.shortcuts_action, self.preferences_menu.menuAction()],
                 "View": [self.fit_action, self.multicam_actions[0][0], self.dynamic_waveforms_action],
@@ -1732,10 +1748,12 @@ class MainWindow(QMainWindow):
         if error:
             self.events.log(text, error=True)
 
-    def open_settings(self, page: str = "general") -> PreferencesDialog:
-        """Edit ▸ Preferences ▸ <category> (egui's ``app.settings.<category>``)."""
+    def open_settings(self, page: str = "general", section: str = "") -> PreferencesDialog:
+        """Edit ▸ Preferences ▸ <category> (egui's ``app.settings.<category>``). ``section`` is an
+        object name on that page (Window ▸ MIDI Monitor, Window ▸ Learn Assignments)."""
         self.refresh_timecode_devices()  # for the next opening too: the reply comes after this one
-        dialog = PreferencesDialog(self, self.engine, page, devices=self.audio_devices, memory=self.memory_usage)
+        dialog = PreferencesDialog(self, self.engine, page, devices=self.audio_devices, memory=self.memory_usage,
+                                   commands=self.surface_commands, section=section)
         dialog.applied.connect(self._settings_applied)
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.settings_dialog = dialog
@@ -1922,6 +1940,11 @@ class MainWindow(QMainWindow):
         if self.engine.running:
             self.engine.call("engine.commands", on_reply=lambda r, _b: self.registry.update_enabled(r))
 
+    def _save_waveform_display(self) -> None:
+        canvas = self.timeline.canvas
+        self.settings.setValue("timeline/waveformChannels", canvas.waveform_channels)
+        self.settings.setValue("timeline/channelZoom", canvas.channel_zoom)
+
     def _on_engine_stopped(self, reason: str) -> None:
         self.status_engine.setText(tr("Engine stopped"))
         self.monitor.stop(notify=False)
@@ -2003,6 +2026,8 @@ class MainWindow(QMainWindow):
             self.schedule_refresh()
         elif kind == "revealInProject":
             self.docks["Project"].raise_()
+        elif kind == "surfaceAction":
+            self.run_surface_action(ev)
 
     # ----- state refresh -----
     def schedule_refresh(self) -> None:
@@ -2307,6 +2332,75 @@ class MainWindow(QMainWindow):
     def command_enabled(self, cid: str) -> bool:
         cmd = self.registry.commands.get(cid)
         return cmd is not None and cmd.enabled
+
+    # ----- control surfaces (Settings ▸ Control Surfaces ▸ Assignments) -----
+    def surface_commands(self) -> list[tuple[str, str]]:
+        """(id, label) of the commands a control surface button can run: the engine's that need no
+        parameters and the ones the Qt GUI runs itself (transport, docking, …)."""
+        out = {cid: tr(cmd.label) for cid, cmd in self.registry.commands.items() if not cmd.needs_params}
+        for cid, label, _menu, _key in self.local_commands():
+            out.setdefault(cid, tr(label))
+        return list(out.items())
+
+    def run_surface_action(self, ev: dict[str, Any]) -> None:
+        """A control surface button was pressed (``surfaceAction``): run its command as its key
+        would (a disabled command does nothing)."""
+        cid = str(ev.get("command") or "")
+        params = ev.get("params") if isinstance(ev.get("params"), dict) else {}
+        if cid in ("mixer.stripVolume", "mixer.stripPan"):
+            # a fader or knob: the Audio Track Mixer strip follows it
+            lane = "volume" if cid == "mixer.stripVolume" else "pan"
+            strip = str(params.get("strip") or "")
+            try:
+                if "delta" in params:
+                    # an endless encoder: a step from where the strip is now
+                    self.mixer.surface_value(lane, strip, None, float(params["delta"]))
+                else:
+                    self.mixer.surface_value(lane, strip, float(params.get("value")))
+            except (TypeError, ValueError):
+                return
+            return
+        if cid in ("playback.shuttleSpeed", "playhead.stepForward", "playhead.stepBack") and self.surface_trim(cid, params):
+            return
+        if cid == "playback.shuttleSpeed":
+            # the shuttle ring: a speed rather than a key's step (spec §4)
+            try:
+                speed = float(params.get("speed") or 0)
+            except (TypeError, ValueError):
+                return
+            monitor = self.focused_monitor()
+            monitor.surface_shuttle_mute = params.get("sound") == "mute"
+            monitor.shuttle_to(speed)
+            return
+        local = self.registry.local_actions.get(cid)
+        if local is not None and not params:
+            local.trigger()
+            return
+        cmd = self.registry.commands.get(cid)
+        if cmd is None:
+            self.statusBar().showMessage(fmt("A control surface asked for {command}, which does not exist.", command=cid), 5000)
+            return
+        if not cmd.enabled:
+            return
+        self.run_menu_command(cid, params)
+
+    def surface_trim(self, cid: str, params: dict[str, Any]) -> bool:
+        """Trim mode (as J/K/L): the shuttle ring trims dynamically at its speed, a jog click
+        nudges the edit point one frame (spec §4). False when not in trim mode."""
+        if self.focused_monitor() is self.source_monitor or not self.trim_mode():
+            return False
+        trim = self.monitor.trim
+        if cid == "playback.shuttleSpeed":
+            try:
+                speed = float(params.get("speed") or 0)
+            except (TypeError, ValueError):
+                return True
+            if speed:
+                self.monitor.stop()
+            trim.ring(speed)
+        else:
+            trim.command.emit("trim.nudge", {"frames": 1 if cid == "playhead.stepForward" else -1})
+        return True
 
     def run_menu_command(self, cid: str, params: dict[str, Any]) -> None:
         if params:
@@ -2652,6 +2746,7 @@ class MainWindow(QMainWindow):
             self.metadata.set_fields(it, data)
             self.item_info = data
             self.info.update_info(data, self.sequence, self.monitor.playhead)
+            self._update_voxels(it, data)
 
         if item is None:
             got(None, None)
@@ -2665,6 +2760,23 @@ class MainWindow(QMainWindow):
         self.update_clip_mixer()
         for editor in list(self.fx_editors.values()):
             editor.refresh()
+
+    def _update_voxels(self, item: int | None, data: dict[str, Any] | None) -> None:
+        """N1-10: a selected OpenVDB volume shows its grids in the Info panel (``vdb.inspect``)."""
+        volume = (data or {}).get("volume")
+        if item is None or not isinstance(volume, dict) or not volume.get("path"):
+            self.info.update_voxels(None)
+            return
+
+        def got(result: Any, _b: bytes | None) -> None:
+            if item == self.target_item and isinstance(result, dict):
+                self.info.update_voxels(result.get("inspection"))
+
+        def failed(message: str) -> None:
+            if item == self.target_item:
+                self.info.update_voxels(None, str(message))
+
+        self.engine.execute("vdb.inspect", {"path": volume["path"]}, on_reply=got, on_error=failed)
 
     def show_error(self, summary: str) -> None:
         """egui's error window: playback stops, the error is shown with its log file, the
@@ -2810,6 +2922,16 @@ class MainWindow(QMainWindow):
             self.essential_graphics.set_state(None)
 
         self.engine.call("graphics.inspect", {} if time is None else {"time": time}, on_reply=done, on_error=failed)
+
+    def arm_wb_eyedropper(self, target: Any) -> None:
+        """Lumetri's White Balance Selector arms the Program monitor's eyedropper; an Effect Controls
+        eyedropper armed before lets go (without disarming the overlay)."""
+        if target is not None:
+            self.effect_controls.eyedropper = None
+            for row in self.effect_controls.param_rows():
+                if row.eyedropper is not None:
+                    row.eyedropper.setChecked(False)
+        self.monitor.overlay.arm_eyedropper(target)
 
     def update_lumetri(self) -> None:
         """The Lumetri Color panel: the selected video clip's Lumetri values at the playhead."""
@@ -3054,6 +3176,7 @@ class MainWindow(QMainWindow):
             self.export_dialog = ExportDialog(self.engine, self)
             self.export_dialog.finished_export.connect(self._export_finished)
         path = (self.project or {}).get("path")
+        self.export_dialog.set_project_sequences(sequences_of((self.project or {}).get("root")))
         self.export_dialog.open_for(self.sequence, path if isinstance(path, str) else None)
 
     def _media_backends(self) -> MediaBackendsDialog:
@@ -3076,6 +3199,12 @@ class MainWindow(QMainWindow):
             self.kdm_dialog = KdmDialog(self.engine, self, changed=lambda: self._command_done("dcp.loadKdm"))
         self.kdm_dialog.show()
         self.kdm_dialog.raise_()
+
+    def open_dcp_validation(self) -> None:
+        """File ▸ Validate DCP…: the DCP Validation window (``dcp.validate``)."""
+        if self.dcp_validation_dialog is None:
+            self.dcp_validation_dialog = DcpValidationDialog(self.engine, self)
+        self.dcp_validation_dialog.open_for()
 
     def forget_dcp_keys(self) -> None:
         """File ▸ Forget DCP Keys: ``dcp.clearKeys``; encrypted clips go silent / black again."""

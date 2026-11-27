@@ -165,6 +165,7 @@ fn source_size(s: &Session, clip: ClipId) -> (f64, f64) {
         cfa4_project::ItemKind::Subclip { parent, .. } => {
             s.project.item(*parent).and_then(|pp| pp.as_media()).and_then(|m| m.info.video.as_ref()).map(|v| (v.width, v.height))
         }
+        cfa4_project::ItemKind::Volume(_) => None,
     });
     let (w, h) = dims.or_else(|| seq.map(|q| (q.settings.width, q.settings.height))).unwrap_or((1920, 1080));
     (w as f64, h as f64)
@@ -767,7 +768,7 @@ fn track(s: &mut Session, p: &Value) -> Result<Value> {
         run();
         poll(s);
     } else {
-        std::thread::Builder::new().name("cfa4-mask-track".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+        crate::background::start(s, id, crate::background::Need::background(512, 1), "cfa4-mask-track", run)?;
     }
     let st = s.jobs.iter().find(|j| j.id == id).map(crate::Job::to_json).unwrap_or(Value::Null);
     Ok(json!({"job": id, "frames": steps, "status": st}))

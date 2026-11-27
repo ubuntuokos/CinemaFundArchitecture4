@@ -3,7 +3,10 @@
 //! full `riff` crate (all BWF metadata, AIFF) will replace this.
 //!
 //! Compressed WAV: G.711 μ-law / A-law, G.722, IMA ADPCM and Microsoft ADPCM decode through
-//! `cfa4-adpcm`, still read in place (block by block; G.722 from periodic decoder checkpoints).
+//! `cfa4-adpcm`, ATRAC3 (format 0x0270), ATRAC3plus and ATRAC9 (`WAVE_FORMAT_EXTENSIBLE` with
+//! Sony's GUIDs; Sony's `.at3` and `.at9`) through `cfa4-realaudio`, still read in place (block by block; G.722
+//! and ATRAC from periodic decoder checkpoints). The ATRAC streams of OpenMG files
+//! ([`crate::oma`]) are read the same way.
 
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -33,6 +36,67 @@ const MAX_SPAN_BYTES: u64 = 4 << 20;
 const FMT_MAX: u64 = 1024;
 /// G.722 data bytes between two decoder checkpoints (2 s at 64 kbit/s).
 const G722_CHECKPOINT: u64 = 16_384;
+/// Bytes between Yamaha / OKI ADPCM decoder checkpoints.
+const YO_CHECKPOINT: u64 = 16_384;
+/// ATRAC packets between two decoder checkpoints (about 1.5 s of ATRAC3, 3 s of ATRAC3plus,
+/// 0.3 to 1.4 s of ATRAC9).
+const ATRAC_CHECKPOINT: u64 = 64;
+/// WAVE_FORMAT_SONY_SCX (ATRAC3).
+const TAG_ATRAC3: u16 = 0x0270;
+/// The WAVE format tag of DSP Group TrueSpeech.
+const TAG_TRUESPEECH: u16 = 0x0022;
+/// WAVE format tag of Voxware MetaSound (decoded whole when the file opens; they are small).
+const TAG_METASOUND: u16 = 0x0075;
+/// Largest MetaSound data chunk decoded at open.
+const METASOUND_MAX: u64 = 64 << 20;
+/// The `WAVE_FORMAT_EXTENSIBLE` sub-format of ATRAC3plus (E923AABF-CB58-4471-A119-FFFA01E4CE62).
+const ATRAC3P_GUID: [u8; 16] = [0xBF, 0xAA, 0x23, 0xE9, 0x58, 0xCB, 0x71, 0x44, 0xA1, 0x19, 0xFF, 0xFA, 0x01, 0xE4, 0xCE, 0x62];
+/// The `WAVE_FORMAT_EXTENSIBLE` sub-format of ATRAC9 (47E142D2-36BA-4D8D-88FC-61654F8C836C).
+const ATRAC9_GUID: [u8; 16] = [0xD2, 0x42, 0xE1, 0x47, 0xBA, 0x36, 0x8D, 0x4D, 0x88, 0xFC, 0x61, 0x65, 0x4F, 0x8C, 0x83, 0x6C];
+
+/// An ATRAC decoder state (cloned at checkpoints).
+#[derive(Clone)]
+pub(crate) enum Atrac {
+    One(Box<cfa4_realaudio::atrac1::Decoder>),
+    Three(Box<cfa4_realaudio::atrac3::Decoder>),
+    Plus(Box<cfa4_realaudio::atrac3p::Decoder>),
+    Nine(Box<cfa4_realaudio::atrac9::Decoder>),
+    /// DSP Group TrueSpeech: not an ATRAC, but a frame-based codec with memory that seeks the same way.
+    TrueSpeech(Box<cfa4_truespeech::Decoder>),
+}
+
+impl Atrac {
+    /// One frame as planar samples, `None` for a damaged one.
+    fn decode(&mut self, f: &[u8]) -> Option<Vec<Vec<f32>>> {
+        match self {
+            Atrac::One(d) => d.decode(f).ok(),
+            Atrac::Three(d) => d.decode(f).ok(),
+            Atrac::Plus(d) => d.decode(f).ok(),
+            Atrac::Nine(d) => d.decode(f).ok(),
+            Atrac::TrueSpeech(d) => d.decode(f).ok().map(|p| vec![p.into_iter().map(|s| f32::from(s) / 32768.0).collect()]),
+        }
+    }
+
+    fn samples_per_channel(&self) -> usize {
+        match self {
+            Atrac::One(d) => d.samples_per_channel(),
+            Atrac::Three(d) => d.samples_per_channel(),
+            Atrac::Plus(d) => d.samples_per_channel(),
+            Atrac::Nine(d) => d.samples_per_channel(),
+            Atrac::TrueSpeech(_) => cfa4_truespeech::FRAME_SAMPLES,
+        }
+    }
+
+    fn label(&self) -> &'static str {
+        match self {
+            Atrac::One(_) => "ATRAC1",
+            Atrac::Three(_) => "ATRAC3",
+            Atrac::Plus(_) => "ATRAC3plus",
+            Atrac::Nine(_) => "ATRAC9",
+            Atrac::TrueSpeech(_) => "TrueSpeech",
+        }
+    }
+}
 
 /// How the data chunk's samples are stored.
 enum Encoding {
@@ -44,6 +108,15 @@ enum Encoding {
     /// G.722 (mono, two frames per byte): decoder states at every [`G722_CHECKPOINT`] bytes,
     /// found as reads reach them.
     G722 { checkpoints: Mutex<Vec<cfa4_adpcm::g722::Decoder>> },
+    /// Yamaha or Dialogic OKI ADPCM (two frames per byte over the channels): decoder states at
+    /// every [`YO_CHECKPOINT`] bytes.
+    Yo { checkpoints: Mutex<Vec<cfa4_yamaha_oki::State>> },
+    /// ATRAC3, ATRAC3plus or ATRAC9 packets of `block` bytes (`spf` frames each): decoder states at every
+    /// [`ATRAC_CHECKPOINT`] frames, found as reads reach them (the overlap, gain control and
+    /// filter bank memories carry from frame to frame).
+    Atrac { block: u64, spf: u64, checkpoints: Mutex<Vec<Atrac>> },
+    /// Decoded when the file opened (MetaSound): one plane per channel.
+    Decoded(Vec<Vec<f32>>),
 }
 
 /// A WAV file read in place: opening it reads its chunk headers (not its samples), and
@@ -86,6 +159,8 @@ impl WavSource {
         let mut bext_tr = None;
         let mut ixml_tr = None;
         let mut ds64_data = None;
+        let mut atrac3p = false;
+        let mut atrac9 = false;
         for _ in 0..MAX_CHUNKS {
             let Some(body) = pos.checked_add(8).filter(|&b| b <= len) else { break };
             let mut hdr = [0u8; 8];
@@ -112,6 +187,8 @@ impl WavSource {
                     let align = le16(&b, 12);
                     let bits = le16(&b, 14);
                     if tag == 0xFFFE && clen >= 40 {
+                        atrac3p = b.get(24..40) == Some(&ATRAC3P_GUID[..]);
+                        atrac9 = b.get(24..40) == Some(&ATRAC9_GUID[..]);
                         tag = le16(&b, 24);
                     }
                     // cbSize bytes after the 18-byte WAVEFORMATEX
@@ -138,7 +215,7 @@ impl WavSource {
             }
             pos = body + clen + (clen & 1);
         }
-        let (tag, ch, rate, bits, align, extra) = fmt.ok_or_else(|| MediaError::Decode(format!("{name}: missing fmt chunk")))?;
+        let (tag, mut ch, mut rate, bits, align, extra) = fmt.ok_or_else(|| MediaError::Decode(format!("{name}: missing fmt chunk")))?;
         let (off, dlen) = data.ok_or_else(|| MediaError::Decode(format!("{name}: missing data chunk")))?;
         if ch == 0 || rate == 0 || u32::from(ch) > crate::MAX_AUDIO_CHANNELS || rate > crate::MAX_AUDIO_SAMPLE_RATE {
             return Err(MediaError::Unsupported(format!("{name}: WAV format tag {tag}, {ch} channels at {rate} Hz")));
@@ -148,6 +225,52 @@ impl WavSource {
             let frame_bytes = u64::from(ch) * u64::from(bits / 8);
             let label = if float { "PCM float" } else { "PCM" };
             (Encoding::Pcm { bits, float }, dlen / frame_bytes, label.to_string(), Some(u32::from(bits)))
+        } else if tag == TAG_ATRAC3 || atrac3p || atrac9 {
+            let unsupported = |e: cfa4_realaudio::Error| MediaError::Unsupported(format!("{name}: {e}"));
+            let d = if atrac9 {
+                // FFmpeg's extradata: what follows the 22 extensible bytes; the configuration
+                // names the layout and rate, which win over the header's
+                let e = extra.get(22..).unwrap_or(&[]);
+                let d = cfa4_realaudio::atrac9::Decoder::new(e, usize::from(align)).map_err(unsupported)?;
+                ch = u16::try_from(d.channels()).unwrap_or(ch);
+                rate = d.sample_rate();
+                Atrac::Nine(Box::new(d))
+            } else if atrac3p {
+                Atrac::Plus(Box::new(cfa4_realaudio::atrac3p::Decoder::new(ch, usize::from(align)).map_err(unsupported)?))
+            } else {
+                let p = cfa4_realaudio::atrac3::Params { channels: ch, block_align: usize::from(align), extradata: extra.clone() };
+                Atrac::Three(Box::new(cfa4_realaudio::atrac3::Decoder::new(&p).map_err(unsupported)?))
+            };
+            let (encoding, frames) = atrac_encoding(d, u64::from(align), dlen, |at, len| read_range(&*reader, off.saturating_add(at), len).unwrap_or_default());
+            let label = match &encoding {
+                Encoding::Atrac { checkpoints, .. } => checkpoints.lock().unwrap_or_else(PoisonError::into_inner).first().map_or("ATRAC", Atrac::label),
+                _ => "ATRAC",
+            };
+            (encoding, frames, label.to_string(), None)
+        } else if let Some(kind) = cfa4_yamaha_oki::Kind::from_wave_format(tag) {
+            let state = cfa4_yamaha_oki::State::new(kind, usize::from(ch))
+                .ok_or_else(|| MediaError::Unsupported(format!("{name}: {} with {ch} channels", kind.name())))?;
+            let frames = u64::try_from(cfa4_yamaha_oki::frames_in(usize::try_from(dlen).unwrap_or(usize::MAX), usize::from(ch))).unwrap_or(u64::MAX);
+            (Encoding::Yo { checkpoints: Mutex::new(vec![state]) }, frames, kind.name().to_string(), None)
+        } else if tag == TAG_TRUESPEECH {
+            if ch != 1 || rate != cfa4_truespeech::SAMPLE_RATE {
+                return Err(MediaError::Unsupported(format!("{name}: TrueSpeech with {ch} channels at {rate} Hz")));
+            }
+            let block = cfa4_truespeech::FRAME_BYTES as u64;
+            let (encoding, frames) = atrac_encoding(Atrac::TrueSpeech(Box::default()), block, dlen, |_, _| Vec::new());
+            (encoding, frames, "TrueSpeech".to_string(), None)
+        } else if tag == TAG_METASOUND {
+            let unsupported = |e: cfa4_twinvq::Error| MediaError::Unsupported(format!("{name}: {e}"));
+            if dlen > METASOUND_MAX {
+                return Err(MediaError::Unsupported(format!("{name}: MetaSound data of {dlen} bytes")));
+            }
+            let stream = cfa4_twinvq::parse_metasound(&extra, usize::from(align)).map_err(unsupported)?;
+            let raw = read_range(&*reader, off, usize::try_from(dlen).unwrap_or(0)).map_err(|e| MediaError::Io(format!("{name}: {e}")))?;
+            let d = cfa4_twinvq::decode(&raw, &stream);
+            ch = u16::try_from(stream.channels).unwrap_or(ch);
+            rate = stream.sample_rate;
+            let frames = d.channels.first().map_or(0, Vec::len) as u64;
+            (Encoding::Decoded(d.channels), frames, "Voxware MetaSound".to_string(), None)
         } else if let Some(codec) = Codec::from_wave_format(tag, align, bits, &extra) {
             let codec = codec.map_err(|e| MediaError::Unsupported(format!("{name}: {e}")))?;
             // a decoder for this layout must exist (G.722 is mono only)
@@ -245,7 +368,97 @@ impl WavSource {
                 let n = usize::try_from(count).unwrap_or(usize::MAX);
                 Ok(out.iter().skip(skip).take(n).map(|&s| f32::from(s) / 32768.0).collect())
             }
+            Encoding::Yo { checkpoints } => {
+                // `ch` frames per `ch` bytes' worth of nibbles: frame f lives in byte f·ch/2
+                let ch64 = ch as u64;
+                let (b0, b1) = (first.saturating_mul(ch64) / 2, last.saturating_mul(ch64) / 2 + 1);
+                let k = b0 / YO_CHECKPOINT;
+                let mut state = self.yo_checkpoint(checkpoints, k)?;
+                let from = k * YO_CHECKPOINT;
+                let raw = self.read_data(from, b1)?;
+                let mut planes = vec![Vec::new(); ch];
+                state.decode(&raw, &mut planes);
+                let skip = usize::try_from(first.saturating_sub(from.saturating_mul(2) / ch64)).unwrap_or(usize::MAX);
+                let n = usize::try_from(count).unwrap_or(usize::MAX);
+                let mut out = Vec::with_capacity(n.min(1 << 26).saturating_mul(ch));
+                for i in skip..skip.saturating_add(n) {
+                    for p in &planes {
+                        match p.get(i) {
+                            Some(&v) => out.push(f32::from(v) / 32768.0),
+                            None => return Ok(out),
+                        }
+                    }
+                }
+                Ok(out)
+            }
+            Encoding::Decoded(planes) => {
+                let (a, n) = (usize::try_from(first).unwrap_or(usize::MAX), usize::try_from(count).unwrap_or(usize::MAX));
+                let mut out = Vec::with_capacity(n.saturating_mul(ch).min(1 << 26));
+                for i in a..a.saturating_add(n) {
+                    out.extend(planes.iter().map(|p| p.get(i).copied().unwrap_or(0.0)));
+                }
+                Ok(out)
+            }
+            Encoding::Atrac { block, spf, checkpoints } => {
+                let spf = (*spf).max(1);
+                let (f0, f1) = (first / spf, last / spf);
+                let k = f0 / ATRAC_CHECKPOINT;
+                let mut d = self.atrac_checkpoint(checkpoints, *block, k)?;
+                let from = k * ATRAC_CHECKPOINT;
+                let raw = self.read_data(from.saturating_mul(*block), f1.saturating_add(1).saturating_mul(*block))?;
+                let ch = self.channels;
+                let sp = usize::try_from(spf).unwrap_or(usize::MAX);
+                let skip = usize::try_from(first - from * spf).unwrap_or(usize::MAX).saturating_mul(ch);
+                let n = usize::try_from(count).unwrap_or(usize::MAX).saturating_mul(ch);
+                let mut out = Vec::with_capacity(n.saturating_add(skip).min(1 << 26));
+                for f in raw.chunks(usize::try_from(*block).unwrap_or(usize::MAX).max(1)) {
+                    // a damaged frame is silence; the decoder goes on as ffmpeg's does
+                    match d.decode(f) {
+                        Some(p) => {
+                            for i in 0..sp {
+                                out.extend(p.iter().map(|c| c.get(i).copied().unwrap_or(0.0)));
+                            }
+                        }
+                        None => out.resize(out.len().saturating_add(sp.saturating_mul(ch)), 0.0),
+                    }
+                }
+                Ok(out.into_iter().skip(skip).take(n).collect())
+            }
         }
+    }
+
+    /// The ATRAC decoder state at checkpoint `k` (frame `k · ATRAC_CHECKPOINT`), decoding
+    /// forward from the last known one as far as needed.
+    fn atrac_checkpoint(&self, checkpoints: &Mutex<Vec<Atrac>>, block: u64, k: u64) -> Result<Atrac> {
+        let k = usize::try_from(k).map_err(|_| MediaError::Decode(format!("{}: ATRAC position", self.info.name)))?;
+        let mut cps = checkpoints.lock().unwrap_or_else(PoisonError::into_inner);
+        while cps.len() <= k {
+            let i = cps.len() - 1;
+            let Some(mut d) = cps.last().cloned() else { break };
+            let from = i as u64 * ATRAC_CHECKPOINT * block;
+            let raw = self.read_data(from, from + ATRAC_CHECKPOINT * block)?;
+            for f in raw.chunks(usize::try_from(block).unwrap_or(usize::MAX).max(1)) {
+                let _ = d.decode(f);
+            }
+            cps.push(d);
+        }
+        cps.get(k).or(cps.last()).cloned().ok_or_else(|| MediaError::Decode(format!("{}: ATRAC state", self.info.name)))
+    }
+
+    /// The Yamaha / OKI decoder state at checkpoint `k` (byte `k · YO_CHECKPOINT`).
+    fn yo_checkpoint(&self, checkpoints: &Mutex<Vec<cfa4_yamaha_oki::State>>, k: u64) -> Result<cfa4_yamaha_oki::State> {
+        let k = usize::try_from(k).map_err(|_| MediaError::Decode(format!("{}: ADPCM position", self.info.name)))?;
+        let mut cps = checkpoints.lock().unwrap_or_else(PoisonError::into_inner);
+        while cps.len() <= k {
+            let i = cps.len() - 1;
+            let Some(mut d) = cps.last().cloned() else { break };
+            let from = i as u64 * YO_CHECKPOINT;
+            let raw = self.read_data(from, from + YO_CHECKPOINT)?;
+            let mut sink = vec![Vec::new(); d.channels()];
+            d.decode(&raw, &mut sink);
+            cps.push(d);
+        }
+        cps.get(k).or(cps.last()).cloned().ok_or_else(|| MediaError::Decode(format!("{}: ADPCM state", self.info.name)))
     }
 
     /// The G.722 decoder state at checkpoint `k` (byte `k · G722_CHECKPOINT`), decoding forward
@@ -263,6 +476,58 @@ impl WavSource {
             cps.push(d);
         }
         cps.get(k).or(cps.last()).cloned().ok_or_else(|| MediaError::Decode(format!("{}: G.722 state", self.info.name)))
+    }
+}
+
+/// The encoding and frame count of an ATRAC stream of `dlen` bytes in `block`-byte frames
+/// (ATRAC3plus decodes a short last frame and ATRAC9 the whole frames of a short last packet, as
+/// FFmpeg's do); `tail` reads the short last packet.
+fn atrac_encoding(d: Atrac, block: u64, dlen: u64, tail: impl FnOnce(u64, usize) -> Vec<u8>) -> (Encoding, u64) {
+    let spf = d.samples_per_channel() as u64;
+    let frames = match &d {
+        Atrac::Plus(_) => dlen.div_ceil(block.max(1)).saturating_mul(spf),
+        Atrac::One(_) | Atrac::Three(_) | Atrac::TrueSpeech(_) => (dlen / block.max(1)).saturating_mul(spf),
+        // a short last packet: what the decoder makes of it (from the stream's start state)
+        Atrac::Nine(n) => {
+            let short = dlen % block.max(1);
+            let last = if short > 0 { n.samples_in_packet(&tail(dlen - short, usize::try_from(short).unwrap_or(0))) as u64 } else { 0 };
+            (dlen / block.max(1)).saturating_mul(spf).saturating_add(last)
+        }
+    };
+    (Encoding::Atrac { block, spf, checkpoints: Mutex::new(vec![d]) }, frames)
+}
+
+impl WavSource {
+    /// An ATRAC stream of `data_len` bytes at `data_off` in another container (OpenMG).
+    pub(crate) fn atrac_stream(name: &str, reader: SharedReader, data: (u64, u64), rate: u32, d: Atrac, container: &str) -> Self {
+        let (data_off, data_len) = data;
+        let channels = match &d {
+            Atrac::One(d) => d.channels(),
+            Atrac::Three(d) => d.channels(),
+            Atrac::Plus(d) => d.channels(),
+            Atrac::Nine(d) => d.channels(),
+            Atrac::TrueSpeech(_) => 1,
+        };
+        let block = match &d {
+            Atrac::One(d) => d.block_align(),
+            Atrac::Three(d) => d.block_align(),
+            Atrac::Plus(d) => d.block_align(),
+            Atrac::Nine(d) => d.block_align(),
+            Atrac::TrueSpeech(_) => cfa4_truespeech::FRAME_BYTES,
+        } as u64;
+        let codec = d.label().to_string();
+        let (encoding, frames) = atrac_encoding(d, block, data_len, |at, len| read_range(&*reader, data_off.saturating_add(at), len).unwrap_or_default());
+        let info = MediaInfo {
+            name: name.into(),
+            kind: MediaKind::AudioOnly,
+            duration: Tick::from_units(i64::try_from(frames).unwrap_or(i64::MAX), i64::from(rate.max(1))),
+            video: None,
+            audio_streams: vec![AudioStreamInfo { sample_rate: rate, channels: channels as u32, codec, bits_per_sample: None, speakers: Vec::new() }],
+            container: container.into(),
+            start_timecode: None,
+            file_size: Some(reader.len()),
+        };
+        Self { info, reader, data_off, data_len, frames, channels, encoding, rate, time_reference: None }
     }
 }
 
@@ -407,6 +672,44 @@ mod tests {
         assert_eq!(src.info().start_timecode, None);
     }
 
+    #[test]
+    fn metasound_wav_decodes_whole_blocks() {
+        // VX03: mono, 8 kHz, 6 kbit/s, 48-byte blocks of 512 samples (the first two blocks
+        // are the decoder's warm-up, as in FFmpeg)
+        let (block, blocks) = (48usize, 12usize);
+        let mut extra = vec![0u8; 12];
+        extra.extend_from_slice(b"VX03");
+        let mut fmt = Vec::new();
+        fmt.extend_from_slice(&0x0075u16.to_le_bytes());
+        fmt.extend_from_slice(&1u16.to_le_bytes());
+        fmt.extend_from_slice(&8000u32.to_le_bytes());
+        fmt.extend_from_slice(&750u32.to_le_bytes());
+        fmt.extend_from_slice(&(block as u16).to_le_bytes());
+        fmt.extend_from_slice(&0u16.to_le_bytes());
+        fmt.extend_from_slice(&(extra.len() as u16).to_le_bytes());
+        fmt.extend_from_slice(&extra);
+        let data = vec![0x11u8; block * blocks];
+        let mut f = b"RIFF\0\0\0\0WAVEfmt ".to_vec();
+        f.extend_from_slice(&(fmt.len() as u32).to_le_bytes());
+        f.extend_from_slice(&fmt);
+        f.extend_from_slice(b"data");
+        f.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        f.extend_from_slice(&data);
+        let n = (f.len() - 8) as u32;
+        f[4..8].copy_from_slice(&n.to_le_bytes());
+        let src = WavSource::parse("t.wav", f.into()).unwrap();
+        let info = src.info().audio().unwrap().clone();
+        assert_eq!((info.channels, info.sample_rate), (1, 8000));
+        assert_eq!(info.codec, "Voxware MetaSound");
+        assert_eq!(src.info().duration, Tick::from_units(10 * 512, 8000));
+        let a = src.audio(0, 1024, 8000).unwrap();
+        assert_eq!(a.channels[0].len(), 1024);
+        // a truncated or wrong-size layout is refused, never a panic
+        let mut bad = vec![0u8; 3];
+        bad.extend_from_slice(b"RIFF");
+        assert!(WavSource::parse("b.wav", bad.into()).is_err());
+    }
+
     /// Insert a chunk before `data`.
     fn with_chunk(wav: &[u8], id: &[u8; 4], body: &[u8]) -> Vec<u8> {
         let mut v = wav[..36].to_vec();
@@ -508,6 +811,34 @@ mod tests {
             assert_eq!(&part[..n], &whole[start..start + n], "from {start}");
             assert!(part[n..].iter().all(|&s| s == 0.0), "silence past the end");
         }
+    }
+
+    /// Yamaha / OKI ADPCM read from the middle (from a checkpoint) gives what a read from the
+    /// start does, mono and stereo.
+    #[test]
+    fn yamaha_oki_random_access_matches_sequential() {
+        for (tag, channels) in [(0x20u16, 1u16), (0x10, 1), (0x20, 2), (0x10, 2)] {
+            let data = noise(3 * YO_CHECKPOINT as usize + 1001);
+            let mk = || {
+                let mut w = compressed_wav(tag, 22_050, 1, &data);
+                w[22..24].copy_from_slice(&channels.to_le_bytes());
+                WavSource::parse("y.wav", w.into()).unwrap()
+            };
+            let total = data.len() * 2 / usize::from(channels);
+            assert_eq!(mk().info().duration, Tick::from_units(total as i64, 22_050));
+            let whole = mk().audio(0, total, 22_050).unwrap().channels;
+            for start in [total - 10, total / 2 + 3, 2 * YO_CHECKPOINT as usize + 1, 1] {
+                let part = mk().audio(start as i64, 600, 22_050).unwrap().channels;
+                let n = 600.min(total - start);
+                for c in 0..usize::from(channels) {
+                    assert_eq!(&part[c][..n], &whole[c][start..start + n], "tag {tag:#x} {channels}ch from {start}");
+                }
+            }
+        }
+        // more than two channels is refused
+        let mut w = compressed_wav(0x20, 22_050, 1, &[0; 64]);
+        w[22..24].copy_from_slice(&3u16.to_le_bytes());
+        assert!(WavSource::parse("y3.wav", w.into()).is_err());
     }
 
     /// Damaged ADPCM headers are refused at open; random blocks decode without failing.

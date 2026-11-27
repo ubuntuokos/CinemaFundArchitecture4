@@ -25,6 +25,7 @@ Apache-2.0 OR BSD-3-Clause); this crate has no `unsafe`. Layer L1: it depends on
 | `engine` | added media, fonts | project, cache, settings, the export files (only the files) | loopback TCP ports | its helpers |
 | `mediaHost` | the one opened file | nothing | none | none |
 | `studioHost` | scene sources, fonts | the recording file | any | its Chromium helper |
+| `ioHost` | – | the recording directory (`Context::recording_dir`) | none | none |
 | `browserSource` | – | – | any | confined by Chromium's sandbox + AppArmor (B6), not here |
 | `fetch` | – | download target | connect to 443 (and UDP for DNS) | none |
 | `pluginHost` | plug-in files | nothing | none | none |
@@ -32,7 +33,9 @@ Apache-2.0 OR BSD-3-Clause); this crate has no `unsafe`. Layer L1: it depends on
 
 "The system" is `SYSTEM_READ` (`/usr`, `/lib*`, `/etc`, `/opt/cfa4`, `/sys`, this process's own
 `/proc` entries, a few `/proc` summaries, the fontconfig cache), never `$HOME` or other processes'
-`/proc`. GPU processes also get `/dev/dri` and the NVIDIA nodes with device ioctls.
+`/proc`. `Profile::devices` (from `Context::capture_devices`) names character devices opened
+read-write with device ioctls, like `gpu` but only those nodes (a capture card, a V4L2 node); the `ioHost`
+uses it. GPU processes also get `/dev/dri` and the NVIDIA nodes with device ioctls.
 
 ## Use
 

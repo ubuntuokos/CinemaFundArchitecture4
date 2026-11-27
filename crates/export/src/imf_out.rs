@@ -6,13 +6,16 @@
 //!   an IMF image track file (ST 2067-5).
 //! - Sound: 24-bit 48 kHz PCM, mono, stereo or 5.1, clip-wrapped in an IMF audio track file with
 //!   the MCA labels of ST 2067-8 / ST 428-12 and the soundfield group titles of ST 2067-2.
+//! - Subtitles (#1234, `ExportSettings::dcp_subtitles`): the first caption track as an IMSC1 Text
+//!   Profile document in an IMF timed text track file (ST 2067-2 5.4), a subtitles, captions or
+//!   forced narrative virtual track.
 //! - One segment; composition playlist (ST 2067-3, with each track file's essence descriptor as
 //!   RegXML, [`cfa4_mxf::regxml`]), IMF packing list (ST 2067-2 Annex J), asset map (ST 429-9) and
 //!   volume index, with SHA-1 hashes and random (version 4) UUIDs.
 //!
 //! Unencrypted and unsigned. The composition edit rate is the App 2E rate nearest the export's.
 
-use std::io::{Read, Write};
+use std::io::Read;
 
 use cfa4_mxf::{
     FrameInfo, J2kSubDescriptor, McaLabel, McaTitles, MxfWriter, PackageIds, Pattern, PictureCoding, PictureDesc, Rational, SoundDesc, StartTimecode,
@@ -33,6 +36,23 @@ pub const IMF_RATES: [(i64, i64); 8] = [(24, 1), (24000, 1001), (25, 1), (30, 1)
 
 /// The largest App 2E picture (the 8K IMF profiles).
 pub const IMF_MAX_SIZE: (u32, u32) = (8192, 6224);
+
+/// Timed text kinds of the subtitles (`ExportSettings::imf_timed_text_kind`) and the CPL sequence
+/// each one writes (ST 2067-2 Table 14).
+pub const IMF_TIMED_TEXT_KINDS: [(&str, &str); 3] =
+    [("subtitles", "SubtitlesSequence"), ("captions", "HearingImpairedCaptionsSequence"), ("forcedNarrative", "ForcedNarrativeSequence")];
+
+/// The W3C IMSC1 Text Profile designator: the root namespace of the timed text descriptor
+/// (ST 2067-2 5.4.2).
+const IMSC1_TEXT: &str = "http://www.w3.org/ns/ttml/profile/imsc1/text";
+
+/// The CPL sequence element of the export's timed text kind (`subtitles` unless set), if the kind
+/// is one of [`IMF_TIMED_TEXT_KINDS`].
+pub fn imf_timed_text_sequence(s: &ExportSettings) -> Option<&'static str> {
+    let k = s.imf_timed_text_kind.trim();
+    let k = if k.is_empty() { "subtitles" } else { k };
+    IMF_TIMED_TEXT_KINDS.into_iter().find(|(name, _)| name.eq_ignore_ascii_case(k)).map(|(_, seq)| seq)
+}
 
 /// ST 2067-21 8.1, the 5th edition.
 const APPLICATION_ID: &str = "http://www.smpte-ra.org/ns/2067-21/5ED";
@@ -88,6 +108,16 @@ pub(crate) fn validate(s: &ExportSettings) -> Result<()> {
     }
     if crate::dcp_language(s).is_none() {
         return Err(ExportError::Unsupported(format!("IMF language {:?} is not an RFC 5646 tag such as en-US or hu-HU", s.dcp_language)));
+    }
+    if imf_timed_text_sequence(s).is_none() {
+        let kinds: Vec<&str> = IMF_TIMED_TEXT_KINDS.iter().map(|k| k.0).collect();
+        return Err(ExportError::Unsupported(format!("unknown IMF timed text kind {:?}: choose one of {}", s.imf_timed_text_kind, kinds.join(", "))));
+    }
+    if crate::dcp_subtitle_language(s).is_none() {
+        return Err(ExportError::Unsupported(format!("IMF subtitle language {:?} is not an RFC 5646 tag such as en-US or hu-HU", s.dcp_subtitle_language)));
+    }
+    if s.dcp_subtitles && crate::dcp_subtitle_language(s).is_none_or(str::is_empty) {
+        return Err(ExportError::Unsupported("IMF subtitles need a language: set the subtitle or the package language".into()));
     }
     Ok(())
 }
@@ -281,9 +311,8 @@ fn finish_track(out: Out, settings: &ExportSettings, path: &str) -> Result<(u64,
             let prefix = data.get(..data.len().min(HEADER_PREFIX)).unwrap_or_default().to_vec();
             Ok((crate::write_output(settings, path, data)?, hash, prefix))
         }
-        Out::File(mut w) => {
-            w.flush().map_err(io)?;
-            drop(w);
+        file @ (Out::File(_) | Out::Atomic(_)) => {
+            file.publish(path)?;
             let mut f = std::fs::File::open(path).map_err(|e| io(format!("{path}: {e}")))?;
             let mut s = Sha1::new();
             let mut buf = vec![0u8; 1 << 20];
@@ -315,6 +344,8 @@ pub(crate) struct ImfSetup<'a> {
     pub rate: FrameRate,
     /// Audio channels (1, 2 or 6), 0 without sound.
     pub channels: u32,
+    /// The subtitles (#1234), timed from the first exported frame.
+    pub subtitles: Option<cfa4_captions::Document>,
 }
 
 /// An IMF export in progress: the track files are written as the export runs; the XML at the end.
@@ -334,6 +365,8 @@ pub(crate) struct ImfMux {
     sound: Option<([u8; 16], String, MxfWriter<Out>, SoundDesc)>,
     frames: u64,
     samples: u64,
+    /// The subtitles, their language and their CPL sequence element.
+    subtitles: Option<(cfa4_captions::Document, String, &'static str)>,
 }
 
 impl ImfMux {
@@ -348,6 +381,14 @@ impl ImfMux {
         let t = Timestamp::from_unix(i64::try_from(now / 1_000_000_000).unwrap_or(0));
         let issued = format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}+00:00", t.year, t.month, t.day, t.hour, t.minute, t.second);
         let language = crate::dcp_language(settings).unwrap_or_default().to_string();
+        let subtitles = match s.subtitles {
+            Some(doc) => {
+                let lang = crate::dcp_subtitle_language(settings).unwrap_or_default().to_string();
+                let kind = imf_timed_text_sequence(settings).unwrap_or("SubtitlesSequence");
+                Some((doc, lang, kind))
+            }
+            None => None,
+        };
         let mut me = ImfMux {
             dir,
             seed,
@@ -363,6 +404,7 @@ impl ImfMux {
             sound: None,
             frames: 0,
             samples: 0,
+            subtitles,
         };
         me.picture_id = uuid(&format!("{}|picture", me.seed));
         if s.channels > 0 {
@@ -485,6 +527,20 @@ impl ImfMux {
             Some((id, name, w, _)) => Some(track(id, name, w, self.samples)?),
             None => None,
         };
+        let text = match self.text_track_file(played)? {
+            Some((id, data)) => {
+                let name = format!("TEXT_{}.mxf", uuid_text(&id));
+                let path = join(&dir, &name);
+                let hash = sha1(&data);
+                let descriptor =
+                    cfa4_mxf::regxml::essence_descriptor(&data[..]).map_err(|e| ExportError::Encode(format!("{name}: essence descriptor: {e}")))?;
+                let size = crate::write_output(settings, &path, data)?;
+                total += size;
+                files.push(path);
+                Some(Track { asset: Asset { id, name, size, hash, mime: "application/mxf" }, descriptor, units: played })
+            }
+            None => None,
+        };
         let mut write = |name: String, xml: String, id: [u8; 16]| -> Result<Asset> {
             let path = join(&dir, &name);
             let data = xml.into_bytes();
@@ -495,10 +551,11 @@ impl ImfMux {
             Ok(Asset { id, name, size, hash, mime: "text/xml" })
         };
         let cpl_id = uuid(&format!("{}|cpl", self.seed));
-        let cpl = write(format!("CPL_{}.xml", uuid_text(&cpl_id)), self.cpl(cpl_id, &picture, sound.as_ref(), played), cpl_id)?;
+        let cpl = write(format!("CPL_{}.xml", uuid_text(&cpl_id)), self.cpl(cpl_id, &picture, sound.as_ref(), text.as_ref(), played), cpl_id)?;
         let pkl_id = uuid(&format!("{}|pkl", self.seed));
         let mut assets = vec![&cpl, &picture.asset];
         assets.extend(sound.as_ref().map(|t| &t.asset));
+        assets.extend(text.as_ref().map(|t| &t.asset));
         let pkl = write(format!("PKL_{}.xml", uuid_text(&pkl_id)), self.pkl(pkl_id, &assets), pkl_id)?;
         assets.insert(0, &pkl);
         let am_id = uuid(&format!("{}|assetmap", self.seed));
@@ -507,6 +564,31 @@ impl ImfMux {
         let vol = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VolumeIndex xmlns=\"http://www.smpte-ra.org/schemas/429-9/2007/AM\">\n  <Index>1</Index>\n</VolumeIndex>\n";
         write("VOLINDEX.xml".into(), vol.into(), am_id)?;
         Ok((total, files))
+    }
+
+    /// The subtitles as an IMSC1 Text Profile document in an IMF timed text track file
+    /// (ST 2067-2 5.4) of `played` composition edit units: (track file id, bytes). Cues past the
+    /// last played frame are cut there; the font is a generic family (5.4.3), so the file holds
+    /// no resources.
+    fn text_track_file(&self, played: u64) -> Result<Option<([u8; 16], Vec<u8>)>> {
+        let Some((doc, language, _)) = &self.subtitles else { return Ok(None) };
+        let id = uuid(&format!("{}|text", self.seed));
+        let resource_id = uuid(&format!("{}|text-document", self.seed));
+        let end = self.rate.tick_of(i64::try_from(played).unwrap_or(i64::MAX));
+        let mut doc = doc.clone();
+        doc.cues.retain_mut(|c| {
+            c.end = c.end.min(end);
+            c.start < c.end
+        });
+        let xml = cfa4_captions::ttml::write(&doc, cfa4_captions::ttml::Flavor::Imsc1, Some(self.rate), language);
+        let mut c = self.config("text", id, self.edit_rate());
+        c.ids.file_name = format!("{} {}", self.title, if language.is_empty() { "subtitles".to_string() } else { format!("subtitles {language}") });
+        let mut cfg = cfa4_mxf::TimedTextConfig::new(self.edit_rate(), i64::try_from(played).unwrap_or(i64::MAX), resource_id, IMSC1_TEXT, c.ids);
+        cfg.modified = self.modified;
+        cfg.imf = true;
+        cfg.languages = language.clone();
+        let data = cfa4_mxf::write_timed_text(&cfg, xml.as_bytes(), &[]).map_err(io)?;
+        Ok(Some((id, data)))
     }
 
     fn header(&self, x: &mut String, id: [u8; 16], annotation_tag: &str) {
@@ -519,7 +601,7 @@ impl ImfMux {
 
     /// Composition playlist (ST 2067-3:2016 schema, ST 2067-2:2020 core constraints): one
     /// segment with the main image and main audio sequences.
-    fn cpl(&self, id: [u8; 16], picture: &Track, sound: Option<&Track>, played: u64) -> String {
+    fn cpl(&self, id: [u8; 16], picture: &Track, sound: Option<&Track>, text: Option<&Track>, played: u64) -> String {
         let rate = format!("{} {}", self.rate.num, self.rate.den);
         let mut x = String::from(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CompositionPlaylist xmlns=\"http://www.smpte-ra.org/schemas/2067-3/2016\" xmlns:cc=\"http://www.smpte-ra.org/ns/2067-2/2020\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n",
@@ -534,6 +616,7 @@ impl ImfMux {
         ));
         let mut tracks = vec![picture];
         tracks.extend(sound);
+        tracks.extend(text);
         let encoding = |t: &Track| uuid(&format!("{}|encoding|{}", self.seed, uuid_text(&t.asset.id)));
         x.push_str("  <EssenceDescriptorList>\n");
         for t in &tracks {
@@ -580,6 +663,10 @@ impl ImfMux {
         sequence(&mut x, "MainImageSequence", picture, rate.clone(), played);
         if let Some(t) = sound {
             sequence(&mut x, "MainAudioSequence", t, "48000 1".into(), self.samples_of(played));
+        }
+        // a timed text virtual track at the composition edit rate, from time 0 (ST 2067-2 6.3.3)
+        if let (Some(t), Some((_, _, kind))) = (text, &self.subtitles) {
+            sequence(&mut x, kind, t, rate.clone(), played);
         }
         x.push_str("      </SequenceList>\n    </Segment>\n  </SegmentList>\n</CompositionPlaylist>\n");
         x

@@ -6,7 +6,7 @@
 átdolgozva a CFA4 valós állapotára, a [`VISION.md`](../VISION.md) prioritásaira és a
 [GPL-3.0-or-later licencre](licensing.md).  
 **Kapcsolódó:** [ADR F10](adr/ADR-F10-CREDITS-SPREADSHEET-2026-10-23.md), [credits.md](credits.md), [ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) (GPL-3 források)  
-**Folytatás (jóváhagyva 2026-11-14):** [CFA4-TITLE-CREDITS-001 1.0](plans/CFA4-TITLE-CREDITS-001-1.0.md), a C1–C14-gyel való megfeleltetés és a nyitott kérdések a [CFA4-illesztési mellékletben](plans/CFA4-TITLE-CREDITS-001-1.0-CFA4-ILLESZTES.md)
+**Folytatás (jóváhagyva 2026-11-14):** [CFA4-TITLE-CREDITS-001 1.1](plans/CFA4-TITLE-CREDITS-001-1.1.md) (az 1.0 a döntésekkel; [1.0](plans/CFA4-TITLE-CREDITS-001-1.0.md)), a C1–C15-tel való megfeleltetés és a döntések (Q1–Q18) a [CFA4-illesztési mellékletben](plans/CFA4-TITLE-CREDITS-001-1.0-CFA4-ILLESZTES.md)
 
 ## 1. Miért kell módosítani
 
@@ -372,6 +372,29 @@ renderelőjében, Chrome nélkül, a stáblistában, a címekben és az élő gr
 - **Vezérlés:** motorparancsok és Qt6-felület, mint minden grafikánál.
 - **Ütemezés:** a jövő évi kiadás; részletes terve indulás előtt készül, a tulajdonos
   jóváhagyásával.
+
+### C16 – Címjelenetek a stáblista-dokumentumban (CFA4-TITLE-CREDITS-001, 0.3–0.4) – **KÉSZ (2026-11-14)**
+
+A CFA4-TITLE-CREDITS-001 terv illesztési melléklete szerint (0.3, 0.4, Q13–Q15, Q18).
+
+- **C16a – oldaltípusok (kész):** új `Behaviour`: `title`, `opening`, `chapter`, `lowerThird`
+  (`crates/credits/src/scene.rs`). Az ilyen oldal minden névsora egy `.fcgt` grafikasablont tölt ki
+  (`template`: azonosító, név vagy fájl; `fields`: vezérlő → fej / törzs / láb), és önálló
+  kártyaként kerül le; a fej a blokk első sorával megy. Beépített oldalstílusok `Title`, `Opening`,
+  `Chapter`, `LowerThird` (magyarul is: `Cím`, `Nyitó`, `Fejezetcím`, `Alsó sáv`), beépített
+  stáblista-sablon *Documentary*. A lánc többi része változatlanul működik: frissítés a
+  táblázatból a kézi módosítások megtartásával (a kulcs a blokkból és a sablonréteg azonosítójából),
+  ellenőrzés (kártyahossz, címbiztos terület), igazítás a zenéhez (kártyaként), élő cue (C10).
+  Qt6: az oldalak listájában és az idővonal-sávon az új fajták, minden nyelven (34 katalógus), az
+  engine új figyelmeztetései a `credits_messages.py` NOTES-ában. egui-felület nem készül (Q14).
+- **C16b – szinkronhangok (Q18, 0.7, kész):** `Voice` / `Hang` / `Szinkronhang` oszlop (a CFA4
+  minden nyelvén felismert oszlopnévvel), a hang saját oszlopban a nevek mellett (vízszintes
+  elrendezés) vagy alattuk (függőleges); beépített `Voices` tartalomstílus (*szereplő – színész –
+  hang*), `voice` betűstílus, `voiceLabel` címke (pl. „hangja: ”), `voiceGap`. Ellenőrzés: ugyanaz
+  a név a szereplő- és a hanglistában eltérő írásmóddal `name-spelling` jelzést kap. Alsó sávban
+  `voice` vezérlő, különben a szerep mellé kerül („Detective, hangja: …”). Beépített
+  stáblista-sablon *Dubbed Version* szinkronstáb-blokkal. Qt6: a blokk tulajdonságai között
+  „Hangok”, minden nyelven.
 
 ## 5. Sorrend és függőségek
 

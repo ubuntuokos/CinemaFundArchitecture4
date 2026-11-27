@@ -1,7 +1,11 @@
 # CFA4-QT6-FINISH-001 – a Qt6 GUI befejezése és az egui eltávolítása
 
-**Állapot:** TERVEZET 1.1 (2026-11-10; 1.0: 2026-11-08), tulajdonosi jóváhagyásra vár. Fejlesztés csak a jóváhagyott
-fázisokban indul. A 7. fejezet döntési pontjait a tulajdonos hozza meg.
+**Állapot:** FINAL 1.4 – az 1.4 (Q1b, a 4.14 sor) a tulajdonos 2026-11-23-i döntése (CFA4-QT6-UI-ELEMZES-001 D-Q1: „javaslat szerint”); 1.3: 2026-11-15-i jóváhagyás (1.2: 2026-11-14; 1.1: 2026-11-10;
+1.0: 2026-11-08). Az 1.3 változása: a Q4.3-ba bekerült a futásidejű függőségek mérése (a fejlesztő
+kérte, a tulajdonos jóváhagyta). Az 1.2 változásai: D2 és D3 eldőlt, a Q4.3 a tulajdonos 2026-11-12-i és 2026-11-14-i döntése szerint
+(a csomagok semmilyen úton nem indítanak egui-t), a Q2 és a Q5.3 ehhez igazítva. Fejlesztés csak e
+terv szerint folyik; a terv minden további módosítása után a munka a tulajdonos újabb jóváhagyásáig
+áll (`docs/coordination.md` §2.10).
 
 **Kapcsolódó dokumentumok:** döntés és fázisok: [`docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`](../adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md);
 pontonkénti lista: [`docs/qt-parity.md`](../qt-parity.md); technikai leírás: [`docs/qt-gui.md`](../qt-gui.md);
@@ -19,7 +23,7 @@ sem a `crates/ui-egui/src/i18n/`, sem a `python/cfa4_qt/i18n/` alá.
 
 ## 1. Kiinduló állapot (`main`, 2026-11-08)
 
-A `qt-parity.md` 63 sorából 59 ✅, 4 🟡, ❌ nincs.
+A `qt-parity.md` 63 sorából 59 ✅, 4 🟡, ❌ nincs. *(1.4: 2026-11-23-án a `main`-ben 67 sorból 62 ✅ és 5 🟡 van; az új 🟡 a 4.14, lásd Q1b.)*
 
 | Sor | Mi hiányzik a sor szerint | Jellege |
 |---|---|---|
@@ -48,14 +52,25 @@ bizonyítékkal lesz ✅ (teszt a `python/tests/`-ben vagy rögzített kézi ell
 
 **Átvétel:** a 4.2 sor ✅, bizonyítékkal; vagy 🟡 a hiány megnevezésével.
 
+### Q1b – QC: a jelölt időpontnál az export megtekintése (4.14), 1.4
+
+A 4.14 sor egyetlen hiánya: a Quality Check ablakban egy eseménynél vagy megállapításnál (finding) nem lehet megnézni az exportált fájl képét az adott időkódnál. **Döntés (D-Q1, 2026-11-23):** csak olvasható előnézet a QC-ablakban; az export **nem kerül be** a felhasználó projektjébe, a projekt érintetlen marad.
+
+1. **Gomb és előnézet** a QC-ablakban („Show Frame”, automation-id `qc.showFrame`, `qc.framePreview`): a kijelölt esemény vagy megállapítás időkódjához a fájl képkockáját mutatja. Nincs lejátszás, nincs Source-elem.
+2. **Motor:** a meglévő `mediaBrowser.thumbnail` (`serve_media_browser.rs`; projekten kívüli fájlra is működik). Az időpont → `fraction` átváltáshoz a fájl hosszát a `mediaBrowser.probe` adja. Ha a fraction-alapú kép nem találja el pontosan a képkockát, a `thumbnail` egy opcionális `tick` paramétert kap (kis, tesztelt motorváltozás, külön commit).
+3. **Hiba esetén** (fájl hiányzik, nincs kép, dekódolási hiba) az ablak üzenetet ír, nem omlik össze (AGENTS.md §0); az elavult válaszok eldobása a meglévő `_generation` szabály szerint.
+4. Fordítás csak az `i18n/` alá; `docs/qt-parity.md` 4.14 sora csak a kód és a teszt után lesz ✅.
+
+**Átvétel:** Qt-teszt (hamis motorral és valódi motorral), automation-id, a 4.14 sor ✅ bizonyítékkal.
+
 ### Q2 – Kézi asztali ellenőrzés (1.9)
 
 A tulajdonos gépén (gépeken) fut, mert valódi asztal kell hozzá. Egy fejlesztő munkamenet előkészíti:
 
 1. **Ellenőrzőlista** `docs/development/qt-desktop-checks.md` néven: asztalonként egy táblázat.
-   Asztalok: a 26.04 hivatalos változatainak asztalai (a lista a kiadási jegyzék szerint ellenőrizendő),
-   legalább GNOME (Ubuntu), KDE Plasma (Kubuntu), Xfce (Xubuntu), LXQt (Lubuntu), MATE, Budgie, Cinnamon;
-   Wayland- és X11-munkamenetben is, ahol az asztal mindkettőt kínálja.
+   **Első kör (D3): csak KDE Plasma (Kubuntu 26.04)**, Wayland- és X11-munkamenetben is: az X11-
+   kompatibilitás egyelőre marad (tulajdonosi döntés, 2026-11-14), ezért mindkettő kötelező. A többi asztal (GNOME, Xfce, LXQt, MATE, Budgie, Cinnamon; a lista a 26.04
+   kiadási jegyzéke szerint ellenőrizendő) csak a KDE sikeres próbaüzeme után, külön lépésben.
 2. **Pontok asztalonként:** indulás; a tálca neve és ikonja (asztali bejegyzés); 100 / 125 / 150 / 200 %
    skálázás; több monitor eltérő skálázással; panelek dokkolása, lebegtetése, fülek; natív fájlpárbeszédek
    (XDG portál); húzás a fájlkezelőből; vágólap; beviteli mód (ibus és fcitx5: magyar ékezetek, egy CJK
@@ -64,8 +79,9 @@ A tulajdonos gépén (gépeken) fut, mert valódi asztal kell hozzá. Egy fejles
    hogy a kézi munka rövidebb legyen.
 4. A talált hibák javítása témánként külön PR-ban.
 
-**Átvétel:** minden felsorolt asztal kitöltött sora a listában, a hibák javítva vagy a tulajdonos
-döntésével elfogadva; ezután az 1.9 Qt-oszlopa ✅.
+**Átvétel:** a KDE Plasma kitöltött sorai (Wayland és X11) a listában, a hibák javítva vagy a tulajdonos döntésével
+elfogadva, és a KDE-próbaüzem sikeresen lezárva; ezután az 1.9 Qt-oszlopa ✅. A többi asztal köre ezután
+külön lépés, amelynek indításáról a tulajdonos dönt.
 
 ### Q3 – GPU képút (5.5)
 
@@ -98,15 +114,31 @@ megszűnt, a Q4 ehhez igazodik:
    ellenőrzése valódi Ubuntu 26.04 asztalon (a Q2 listájával együtt is futhat).
 2. A beágyazás minden változása a `stage-pyside6.py`-n, a `test_qt_not_bundled.py`-n és az SBOM 4.
    fejezetén egyszerre megy át; más út a Qt bejuttatására nincs.
-3. Az asztali bejegyzés (`packaging/linux/io.github.ubuntuokos.cfa4.desktop`, most `Exec=cfa4`) átállítása
-   a Qt GUI-ra az egui eltávolításával együtt történik (Q5), nem előtte.
+3. **A csomagok semmilyen úton nem indítanak egui-t** (tulajdonosi döntés, 2026-11-12: minden csomag
+   menübejegyzése a Qt6 GUI-t indítja; 2026-11-14: „már ne indítson semmi egui-t”). Az asztali
+   bejegyzések a `main`-en már a `cfa4-qt`-t indítják. Ami még egui-t indít, és ami ezért változik:
+   - **AppImage** (`AppRun`): megszűnik a `--egui` kapcsoló, a `CFA4_GUI=egui` és az egui-tartalék
+     („python3 hiányzik, az egui indul”); python3 hiányában hibaüzenet, egui nélkül.
+   - **tar.gz** (`install.sh`): megszűnik a „Qt nélküli tarball az egui-t tartja” ág; a záró üzenet a
+     Qt GUI-t nevezi meg.
+   - **Flatpak**: a `--command=cfa4` (egui) út megszűnik.
+   - **.deb, tar.gz, AppImage, Flatpak**: a csomagok nem tartalmazzák az egui binárisát (`cfa4`);
+     a `cfa4` parancs megmarad, de a Qt6 GUI-t indítja (a `cfa4-qt` indítója), hogy a terminálból
+     megszokott parancs is működjön. A csomagépítés (`package.sh`) az egui-t nem fordítja.
+   - **Futásidejű függőségek mérése** (F2-01 / F9, `.github/workflows/cfa4-runtime-deps.yml`,
+     `scripts/dev/audit-runtime-deps.sh`; 1.3, tulajdonosi jóváhagyás 2026-11-15): csak azt méri, ami
+     a csomagokba kerül, vagyis a motort (`cfa4-cli`), a csomagolt funkciókkal; az egui-t nem fordítja
+     és nem méri.
+   - Az egui forrása (`apps/cfa4`, `crates/ui-egui`) ettől még a tárolóban marad a Q5-ig; fejlesztői
+     gépen `cargo run -p cfa4` továbbra is elérhető.
 
 **Átvétel:** a négy formátum telepítési teszttel, az AppImage és a Flatpak valódi asztalon ellenőrizve;
-az 1.10 ✅ (az asztali bejegyzés a Q5-tel).
+teszt, amely csomagonként ellenőrzi, hogy nincs benne egui-bináris, és hogy a menübejegyzés, a `cfa4`
+parancs és az AppImage minden indítási módja a Qt6 GUI-t indítja; az 1.10 ✅.
 
 ### Q5 – Az egui eltávolítása
 
-Csak akkor indul, ha minden sor ✅ **és** a tulajdonos jóváhagyása az ADR F8-ban rögzítve van.
+Csak akkor indul, ha minden sor ✅ (a 4.14 is, Q1b) **és** a tulajdonos jóváhagyása az ADR F8-ban rögzítve van.
 Előtte fel kell számolni azt, ami ma az egui forrására támaszkodik:
 
 1. **Fordítási katalógusok: a felső szintű `i18n/`.** A tulajdonos döntése (2026-11-09) szerint minden
@@ -121,8 +153,8 @@ Előtte fel kell számolni azt, ami ma az egui forrására támaszkodik:
    amely a #865 után is a `crates/ui-egui/` alatti fájlt nyit meg (a `test_qt_translations.py` és a
    `test_qt_installed_catalogs.py` a #865-tel már az `i18n/`-t olvassa). Az összevetést rögzített
    elvárt listára kell cserélni, mielőtt a forrás eltűnik.
-3. **Asztali bejegyzés és csomagok:** `Exec`/`TryExec` a `cfa4-qt`-ra; az `nfpm.yaml` és a csomagszkriptek
-   az egui binárisa nélkül.
+3. **Csomagok:** a Q4.3 már elvégzi (asztali bejegyzés, indítási utak, egui-bináris a csomagokból);
+   itt csak az ellenőrzés, hogy egyik csomagszkript sem hivatkozik a törölt forrásra.
 4. **A munkaterület:** az `apps/cfa4` és a `crates/ui-egui` törlése (a `members` glob miatt a
    `Cargo.toml`-ban nincs külön sor); a `Cargo.lock` frissítése `cargo`-val, nem kézzel.
 5. **Szabályfájlok és nyilvántartások:** `AGENTS.md` §0.7 (a pánikhorog most `crates/ui-egui/src/crash.rs`;
@@ -142,7 +174,7 @@ lezárul (ACCEPTED, QT6_GUI_DONE), a `qt-parity.md` archív dokumentum lesz.
 
 ## 3. Sorrend
 
-Q1 és Q2 előkészítése párhuzamosan indulhat (más fájlokat érintenek). Q3 független. Q4 bármikor indulhat (a D1 eldőlt), a valódi asztalon a Q2-vel együtt is futhat.
+Q1 és Q1b, valamint Q2 előkészítése párhuzamosan indulhat (más fájlokat érintenek). Q3 független. Q4 bármikor indulhat (a D1 eldőlt), a valódi asztalon a Q2-vel együtt is futhat.
 Q5 utolsó, minden ✅ és a tulajdonos jóváhagyása után.
 
 ## 4. Becslés
@@ -174,7 +206,11 @@ a Qt6 GUI elkészültét várják), valamint a csomagkiadás (F9) egésze.
 - **D1 – AppImage és Flatpak: eldőlt** (tulajdonosi döntés, 2026-11-09): a két formátum a saját
   PySide6 / Qt 6.12 példányát hordozza a `stage-pyside6.py`-n keresztül, a .deb és a tar.gz az
   Ubuntu PySide6-ját használja (lásd Q4; a #757 őre ezt rögzíti).
-- **D2 – 5.5 terjedelme:** az 1. lépés (textúrafeltöltés) elég-e a ✅-hoz, vagy a dmabuf is kell.
-  Javaslat: az 1. lépés és a mérés után döntsön a tulajdonos.
-- **D3 – 1.9 asztallistája:** melyik asztalok kötelezők a ✅-hoz. Javaslat: GNOME és KDE Plasma
-  Waylanden és X11-en kötelező, a többi ajánlott.
+- **D2 – 5.5 terjedelme: eldőlt** (tulajdonosi döntés, 2026-11-14): a GPU-mérés után dönt a
+  tulajdonos. Előbb a mérés és az 1. lépés (textúrafeltöltés), majd az eredmény alapján dől el,
+  kell-e a dmabuf is.
+- **D3 – 1.9 asztallistája: eldőlt** (tulajdonosi döntés, 2026-11-14): egyelőre csak KDE Plasma,
+  Waylanden és X11-en is (az X11-kompatibilitás egyelőre marad); a többi asztal csak akkor, ha a KDE
+  már túl van a sikeres próbaüzemen (lásd Q2).
+- **Q4.3: eldőlt** (tulajdonosi döntés, 2026-11-12 és 2026-11-14): a csomagok semmilyen úton nem
+  indítanak egui-t (lásd Q4.3).

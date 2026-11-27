@@ -8,6 +8,8 @@
 //!   (`CFA4_REQUIRE_AV2_ORACLE=1` turns its skips into failures).
 //! - [`golden`]: RGBA8 images, PNG I/O, image-difference metrics and golden-file checks
 //!   (`CFA4_BLESS=1` regenerates references).
+//! - [`smk`]: a writer of random Smacker (`.smk`) test files (header trees, palette updates, audio
+//!   tracks, random frame data), for `cfa4-smacker` and `cfa4-codecs`.
 //!
 //! ffmpeg/ffprobe are external test oracles and fixture generators only; they are never linked
 //! or shipped (AGENTS.md §2).
@@ -17,6 +19,7 @@ pub mod deadline;
 pub mod fixtures;
 pub mod golden;
 pub mod oracle;
+pub mod smk;
 pub mod wav;
 
 pub use deadline::{set_progress, with_deadline};

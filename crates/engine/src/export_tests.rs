@@ -850,6 +850,96 @@ fn queue_cancels_a_running_export_and_retries_a_failed_one() {
 }
 
 #[test]
+fn a_scheduled_queue_start_that_was_missed_asks_the_user() {
+    let mut s = demo();
+    let dir = Scratch::new("acs5");
+    s.execute(
+        "export.queue.add",
+        json!({"preset": "Waveform Audio 48 kHz 16-bit", "path": dir.path("a.wav"), "range": "custom", "startSeconds": 0, "endSeconds": 0.1}),
+    )
+    .unwrap();
+    let now = web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).unwrap().as_millis() as u64;
+    // ahead: nothing starts yet
+    let r = s.execute("export.queue.start", json!({"at": now + 3_600_000})).unwrap();
+    assert_eq!((r["running"].as_bool(), r["scheduledStart"]["state"].as_str()), (Some(false), Some("scheduled")), "{r}");
+    // stopping the queue drops the scheduled start
+    s.execute("export.queue.stop", json!({})).unwrap();
+    assert!(s.execute("export.queue.list", json!({})).unwrap()["scheduledStart"].is_null());
+    // the start time passed while the computer slept: the user decides
+    s.execute("export.queue.start", json!({"at": now - 600_000, "ifMissed": "askUser"})).unwrap();
+    let r = s.execute("export.queue.list", json!({})).unwrap();
+    assert_eq!((r["running"].as_bool(), r["scheduledStart"]["needsDecision"].as_bool()), (Some(false), Some(true)), "{r}");
+    assert_eq!(queue(&mut s)[0]["status"], "ready");
+    let task = r["scheduledStart"]["task"].as_str().unwrap().to_owned();
+    let listed = s.execute("tasks.list", json!({})).unwrap();
+    let row = listed.as_array().unwrap().iter().find(|t| t["id"] == task.as_str()).cloned().unwrap();
+    assert_eq!((row["label"].as_str(), row["needsDecision"].as_bool()), (Some("Start the export queue"), Some(true)), "{row}");
+    assert!(s.execute("tasks.decide", json!({"id": task, "action": "later"})).is_err());
+    assert!(s.execute("export.queue.start", json!({"at": now, "ifMissed": "never"})).is_err());
+    s.execute("tasks.decide", json!({"id": task, "action": "runNow"})).unwrap();
+    let t0 = std::time::Instant::now();
+    while queue(&mut s)[0]["status"] != "done" {
+        assert!(t0.elapsed() < std::time::Duration::from_secs(60), "{}", queue(&mut s)[0]);
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    assert!(s.execute("export.queue.list", json!({})).unwrap()["scheduledStart"].is_null());
+    assert_eq!(s.tasks.held(), 0);
+}
+
+#[test]
+fn a_queued_export_waits_for_memory_and_starts_once_there_is_room() {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    use cfa4_tasks::{Current, Nominal, Snapshot};
+    const GIB: u64 = 1 << 30;
+    let free = Arc::new(AtomicU64::new(GIB));
+    let reading = free.clone();
+    let mut s = demo();
+    s.tasks = crate::task_host::TaskHost::new(Arc::new(move || Snapshot {
+        nominal: Nominal { ram_physical_bytes: Some(16 * GIB), cpus_online: Some(8), ..Nominal::default() },
+        current: Current { ram_available_bytes: Some(reading.load(Ordering::Relaxed)), ..Current::default() },
+        notes: vec![],
+    }));
+    let dir = Scratch::new("acs6");
+    s.execute(
+        "export.queue.add",
+        json!({"preset": "Waveform Audio 48 kHz 16-bit", "path": dir.path("a.wav"), "range": "custom", "startSeconds": 0, "endSeconds": 0.1, "start": true}),
+    )
+    .unwrap();
+    // 1 GiB free is less than the desktop reserve: the item stays ready and says why
+    let it = &queue(&mut s)[0];
+    assert_eq!(it["status"], "ready", "{it}");
+    assert!(it["waitingFor"][0].as_str().unwrap().contains("memory"), "{it}");
+    assert_eq!(s.tasks.held(), 0);
+    // room again: it starts, finishes, and gives its reservation back
+    free.store(14 * GIB, Ordering::Relaxed);
+    s.tasks.resample();
+    let t0 = std::time::Instant::now();
+    while queue(&mut s)[0]["status"] != "done" {
+        assert!(t0.elapsed() < std::time::Duration::from_secs(60), "{}", queue(&mut s)[0]);
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    assert!(queue(&mut s)[0]["waitingFor"].as_array().unwrap().is_empty());
+    assert_eq!(s.tasks.held(), 0);
+    assert!(s.tasks.queue().tasks().iter().all(|t| t.state == cfa4_tasks::State::Succeeded));
+    let listed = s.execute("tasks.list", json!({})).unwrap();
+    assert_eq!(listed[0]["state"], "succeeded", "{listed}");
+    assert_eq!(listed[0]["class"], "finalRender", "{listed}");
+    assert!(listed[0]["label"].as_str().unwrap().starts_with("Export: "), "{listed}");
+    // ACS-5: before the next one starts, the user can ask whether it would
+    let check = s.execute("tasks.check", json!({"class": "finalRender", "ramBytes": GIB, "cpuMilli": 1000})).unwrap();
+    assert_eq!((check["verdict"].as_str(), check["ahead"].as_u64()), (Some("start"), Some(0)), "{check}");
+    free.store(0, Ordering::Relaxed);
+    s.tasks.resample();
+    let check = s.execute("tasks.check", json!({"class": "finalRender", "ramBytes": GIB})).unwrap();
+    assert_eq!(check["verdict"], "wait", "{check}");
+    assert!(check["reasons"][0].as_str().unwrap().contains("memory"), "{check}");
+    assert!(s.execute("tasks.check", json!({"class": "bogus"})).is_err());
+    assert_eq!(s.tasks.held(), 0, "a check reserves nothing");
+}
+
+#[test]
 fn jobs_and_queue_items_report_the_time_they_have_left() {
     use std::sync::atomic::Ordering;
     use std::time::Duration;
@@ -1292,9 +1382,16 @@ fn imf_params() {
     assert_eq!((st.format, st.imf_lossless, st.imf_content_kind.as_str(), st.dcp_language.as_str()), (cfa4_export::Format::Imf, true, "episode", "hu-HU"));
     let e = setting(&s, json!({"path": "pkg", "format": "imf", "imfContentKind": "policy"})).unwrap_err().to_string();
     assert!(e.contains("imfContentKind"), "{e}");
+    // #1234: IMF subtitles reuse the DCP subtitle switch and language, with a timed text kind
+    let st = setting(&s, json!({"path": "pkg", "format": "imf", "dcpSubtitles": true, "dcpSubtitleLanguage": "hu-HU", "imfTimedTextKind": "ForcedNarrative"}))
+        .unwrap();
+    assert_eq!((st.dcp_subtitles, st.dcp_subtitle_language.as_str(), st.imf_timed_text_kind.as_str()), (true, "hu-HU", "forcedNarrative"));
+    let e = setting(&s, json!({"path": "pkg", "format": "imf", "imfTimedTextKind": "karaoke"})).unwrap_err().to_string();
+    assert!(e.contains("imfTimedTextKind"), "{e}");
     let mut s = s;
-    let r = s.execute("export.resolve", json!({"format": "imf", "fps": 48.0})).unwrap();
+    let r = s.execute("export.resolve", json!({"format": "imf", "fps": 48.0, "imfTimedTextKind": "captions"})).unwrap();
     assert_eq!(r["settings"]["imfContentKind"], "");
+    assert_eq!(r["settings"]["imfTimedTextKind"], "captions");
     assert!(r["summary"]["video"].as_str().unwrap().contains("JPEG 2000 IMF lossy, 10-bit R'G'B' 4:4:4"), "{r}");
 }
 
@@ -1402,6 +1499,45 @@ fn mxf_op1a_writes_captions_as_anc_data() {
     s48.execute("captions.import", json!({"path": vtt})).unwrap();
     let err = s48.execute("file.exportMedia", p).unwrap_err().to_string();
     assert!(err.contains("59.94"), "{err}");
+}
+
+/// #1254: with no parts typed in, the AS-11 programme parts come from the sequence's segmentation
+/// markers with a duration, cut to the exported range and counted from its first frame.
+#[test]
+fn mxf_as11_parts_come_from_segmentation_markers() {
+    let dir = Scratch::new("mxf-as11-markers");
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name":"AS11", "fps":25, "width":320, "height":180, "video":1, "audio":1})).unwrap();
+    let rate = s.sequence_rate();
+    let add = |s: &mut Session, frame: i64, dur: i64, kind: &str| {
+        s.execute("markers.add", json!({"time": rate.tick_of(frame).0, "durationFrames": dur, "kind": kind})).unwrap()["marker"].as_u64().unwrap()
+    };
+    // part 2 first on purpose: parts are numbered in time order
+    add(&mut s, 40, 20, "segmentation");
+    add(&mut s, 10, 15, "Segmentation");
+    add(&mut s, 5, 10, "comment"); // not a part
+    add(&mut s, 30, 0, "segmentation"); // no duration: not a part
+    // a comment marker turned into a part that runs past the end of the range: cut there
+    let last = add(&mut s, 70, 30, "comment");
+    s.execute("markers.edit", json!({"marker": last, "kind": "segmentation"})).unwrap();
+    assert!(s.execute("markers.edit", json!({"marker": last, "kind": "part"})).unwrap_err().to_string().contains("segmentation"));
+    let out = dir.path("as11m.mxf");
+    let core = "SeriesTitle: Sorozat\nProgrammeTitle: Műsor\nEpisodeTitleNumber: 1\nShimName: UK DPP HD\nShimVersion: 1.1\nAudioTrackLayout: 3\nPrimaryAudioLanguage: hun\nClosedCaptionsPresent: false\n";
+    // the range starts at frame 5: parts count from there
+    s.execute(
+        "file.exportMedia",
+        json!({"format":"mxf-op1a", "path": out, "mxfAs11Core": core, "range":"custom", "startSeconds":0.2, "endSeconds":3.6, "wait":true}),
+    )
+    .unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    let m = cfa4_mxf::open(&bytes[..]).unwrap();
+    let parts: Vec<(i64, i64, u16, u16)> = m.as11.unwrap().segments.iter().map(|s| (s.start, s.duration, s.part_number, s.part_total)).collect();
+    assert_eq!(parts, vec![(5, 15, 1, 3), (35, 20, 2, 3), (65, 20, 3, 3)]);
+    // parts typed in win over the markers (typed times are timecodes: the range's first frame is 00:00:00:05)
+    s.execute("file.exportMedia", json!({"format":"mxf-op1a", "path": out, "mxfAs11Core": core, "mxfAs11Segments": "1/1 00:00:00:05 10\n", "range":"custom", "startSeconds":0.2, "endSeconds":3.6, "wait":true})).unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    let parts: Vec<(i64, i64)> = cfa4_mxf::open(&bytes[..]).unwrap().as11.unwrap().segments.iter().map(|s| (s.start, s.duration)).collect();
+    assert_eq!(parts, vec![(0, 10)]);
 }
 
 /// #96: MXF OP1a with AS-11 metadata (bmx's text forms): the Core and UK DPP frameworks and the
