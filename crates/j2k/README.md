@@ -50,6 +50,10 @@ let dcp = cfa4_j2k::encode(&xyz12, &cfa4_j2k::EncodeOptions::cinema_2k(24))?; //
   `ojph_block_common.cpp`, `table0.h`, `table1.h`) with byte-wise readers.
 - Reversible 5/3 in integers (lossless) and irreversible 9/7 in `f32`; RCT and ICT; scalar
   derived and expounded quantization; truncated streams reconstruct at the midpoint.
+- Reduced resolution (`decode_reduced(data, levels)`, B.5): the inverse wavelet stops
+  `levels` levels short and the code-blocks of the left-out resolutions are not decoded, as
+  OpenJPEG's `-r` (same size; 5/3 bit-exact, 9/7 within ±1, with tiles and image offsets).
+  `cfa4-codecs` uses it for draft (reduced-resolution) playback.
 - Hostile input: every size and count is checked, allocations are capped (`MAX_SAMPLES`,
   code-block count), and errors are returned, never a panic.
 
@@ -78,10 +82,13 @@ and decoder cannot disagree on them.
 - Tier-2: tag trees, Lblock, Table B.4 pass counts, bit stuffing; any progression and precincts;
   one tile-part per component (and per progression change); TLM.
 - Guard bits are chosen so that every subband's largest index fits; samples outside a
-  component's range are clamped.
+  component's range are clamped. The 2K Digital Cinema profile writes 1 guard bit, as libdcp's
+  encoder and `dcpverify` expect: the rare indices beyond the band's nominal range saturate at
+  the largest value 1 guard bit carries, and `encode_with_stats` counts them.
 - `EncodeOptions::cinema_2k(fps)` / `cinema_4k(fps)`: Rsiz 3 / 4, 12-bit X'Y'Z' (the caller
-  converts), 9/7, 5 / 6 levels, 32×32 code-blocks, CPRL, precincts 128 at resolution 0 and 256
-  above, a tile-part per component (4K: the 4K resolution in its own progression by POC, so six
+  converts), 9/7, 5 / 6 levels, the ICT on the three components (MCT = 1, which libdcp's
+  `dcpverify` requires; `mct: false` is still accepted), 32×32 code-blocks, CPRL, precincts 128 at
+  resolution 0 and 256 above, a tile-part per component (4K: the 4K resolution in its own progression by POC, so six
   tile-parts), TLM; at most 250 Mbit/s per frame and 200 Mbit/s per component (1 302 083 and
   1 041 666 bytes at 24 fps). The image and options are checked against the profile.
 
@@ -93,20 +100,40 @@ and decoder cannot disagree on them.
   most the sublevel's bit rate per frame (lossy). The MXF IMF track file writer takes its coding
   label from the Rsiz (#931).
 
+- `EncodeOptions::imf_ht(profile, …)`: the IMF App 2E HTJ2K profiles of SMPTE ST 2067-21:2023
+  Annex I (APP2.HT.REV with the 5/3 transform, APP2.HT.IRV with the 9/7), same sizes and
+  operating levels. One tile, CPRL, 32×32 code-blocks, precincts 128 / 256, one layer, a
+  tile-part per component, TLM, no POC, 1–5 / 6 / 7 decomposition levels up to 2048 / 4096 /
+  8192 samples (Table I.1; the Part 1 IMF reversible profile has its own width rule). Rsiz is
+  the Part 15 flag `0x4000` alone: Annex I names no Part 1 profile for HT, and the track file's
+  Picture Essence Coding is the HTJ2K label (`06.0E.2B.34.04.01.01.0D.04.01.02.02.03.01.08.01`,
+  §6.2.5), which carries no mainlevel. Ccap15 holds the constrained MAGBP set: parameter B from
+  Tables I.2 / I.3 by bit depth (8, 10, 12, 16; another depth takes the next row), transform
+  and level count, and the HTIRV bit for the 9/7. The reversible stream's actual subband
+  magnitude bits are checked against B; for the 9/7 the quantiser exponents are capped so that
+  guard bits + exponent - 1 never exceed B (Table I.3 makes high-quality steps a coarse-step
+  profile: 8-bit LL steps no finer than 1, HH no finer than 4). The sublevel's bit rate is
+  still the byte limit of the frame (lossy). Open: no external IMF validator has read these
+  streams yet (Photon, licence to be approved); OpenJPEG 2.5 and OpenJPH read them.
+
 - `EncodeOptions { ht: true, .. }`: HTJ2K (ITU-T T.814 | ISO/IEC 15444-15). Every code-block is
   one HT cleanup pass with all its bit-planes (missing MSBs Mb - 1), coded by the MEL, VLC and
   MagSgn writers ported from OpenJPH 0.28.1 (`ojph_block_encoder.cpp`, the VLC encoder tables
   built from the decoder's `ht_tables.rs`); Rsiz bit 14, the CAP marker (Pcap Part 15, Ccap15:
   HT only, one HT set, no ROI, the irreversible flag and Bp from the largest Mb) and code-block
-  style 0x40. Lossless and fixed-step lossy, Part 1 profile only; the IMF HTJ2K profiles
-  (ST 2067-21, edition to be decided) come later. With a byte limit (`max_bytes`,
+  style 0x40. Lossless and fixed-step lossy, with no profile or an IMF profile (below; DCI has
+  no HT). With a byte limit (`max_bytes`,
   `max_component_bytes`) each code-block is also coded with its `s` lowest bit-planes dropped,
   for every `s` up to its most significant one (missing MSBs Mb - 1 - s, the decoder puts the
   magnitudes back at plane `s`); those codings are the block's truncation points, and the same
-  convex-hull rate control as Part 1 picks one per block. Whole planes only (no SigProp / MagRef
-  passes), so at equal size it is a little below the Part 1 coder (≤ 1.7 dB in the tests).
+  convex-hull rate control as Part 1 picks one per block. Besides those, each plane `s ≥ 1` also
+  has the cleanup pass at plane `s + 1` followed by the SigProp pass, and by SigProp and MagRef,
+  of plane `s` (`encode_refined`, a mirror of the decoder's refinement; the refinement segment
+  is SigProp bytes, then the MagRef bytes reversed, and the packet header codes the cleanup
+  pass and the refinement passes as two codeword segments); at equal size the coder is then
+  within about 1 dB of the Part 1 coder in the tests (1.7 dB with whole planes only).
 
-Not yet (#117): several quality layers, tiles, HT refinement passes, other code-block styles, SOP /
+Not yet (#117): several quality layers, tiles, refinement passes in the unlimited (lossless) mode, other code-block styles, SOP /
 EPH / PLT, broadcast profiles. DCP / MXF export is #115, speed #116.
 
 In MXF the decoder runs through `cfa4-codecs` (`j2k.rs`): Y'CbCr, R'G'B' and gray components
@@ -166,6 +193,18 @@ development machine, a 2K DCI frame (`dci_2k.j2k`, 586 kB) decodes in about 150 
   strips, and the output planes run in parallel.
 
 Players also decode several frames at once, since every picture is intra coded.
+
+The bench also times `decode_reduced` one and two levels down. On the same 4-core machine, an
+encoder-made DCI frame (1.3 MB, filled to the 250 Mbit/s limit):
+
+| Frame | Full | 1 level down | 2 levels down |
+|---|---|---|---|
+| DCI 2K, 4 threads | 128 ms | 55 ms | 25 ms |
+| DCI 2K, 1 thread | 430 ms | 188 ms | 69 ms |
+| DCI 4K, 4 threads | 250 ms | 115 ms | 67 ms |
+
+Draft playback (`cfa4-codecs` `J2kDecoder::set_draft`) decodes down to about 960 samples
+across: 2K one level, 4K two, and repeats each sample back to the full size.
 
 `cargo run --release -p cfa4-j2k --example j2k_encode_bench -- 2k|4k` times the encoder on a
 synthetic 12-bit frame with grain: a DCI 2K frame takes about 0.75 s, a 4K frame about 3 s on

@@ -61,8 +61,40 @@ unchanged next to `cfa4` (OTIO-2.1). Where it is kept:
 | `Stack` inside a track | the nested sequence | the `Stack` |
 | (the clip instance of a nested sequence) | the clip | the `Stack`, under `cfa4.clip.interchange` |
 
-Not kept yet: metadata on markers, transitions, effects and media references. CFA4's own work has
+A clip's other media references (OTIO-2.4): CFA4 plays the active one of a `Clip.2`'s
+`media_references`. The others, and the active key when it is not `DEFAULT_MEDIA`, are kept in the
+clip's `interchange` under the `cfa4` entry (no other program's key) and written back unchanged
+under their own keys, with the same active key; that entry never goes into `metadata`. They count
+against the same 16 MB budget. A clip with only its default reference keeps nothing.
+
+Not kept yet: metadata on markers, transitions, effects and the active media reference. CFA4's own work has
 no such keys, and an empty field is not written to the project file.
+
+## Image sequences
+
+An OTIO `ImageSequenceReference` is CFA4 image-sequence media (OTIO-2.3). OTIO describes the frames
+as a pattern: `target_url_base` + `name_prefix` + the frame number padded to `frame_zero_padding`
+digits + `name_suffix`, from `start_frame`, at `rate`. CFA4 keeps the first frame's file, marks the
+media as an image sequence at that rate, and finds the other frames next to it when it plays (from
+that number up to the highest one present). The export writes the pattern back from that file name
+(the directory as the base, padding from the digits as written), so a reader without CFA4's
+metadata gets the same frames.
+
+Reported on import, because CFA4 does not do it: a `frame_step` other than 1 (every frame is
+played), `missing_frame_policy: "black"` (CFA4 shows the previous frame, which is `"hold"`; the
+export writes `"hold"`), and a pattern whose files are not numbered still images (imported as one
+file). A reference without a base is offline, as before.
+
+## Sequence size from the media
+
+OTIO has no picture size (OTIO-2.5). A CFA4 file stores its sequence settings in `metadata.cfa4`,
+and they are used as written. A sequence from another program's file starts at 1920×1080 and is
+listed in `Imported::size_from_media`. When the engine imports the file it opens the media, and
+such a sequence takes the picture size and pixel aspect of its first video clip: the file media
+clip that starts first, on the lowest track when several start together. That media is opened
+first, so clip anchors are placed in the final frame. The frame rate stays the document's. Without
+that media (offline, or a size the project cannot use) the sequence keeps 1920×1080.
+`first_video_media` and `size_from_media` do this for other hosts.
 
 ## Nested sequences
 
@@ -180,5 +212,6 @@ the available range); per clip whether it is enabled, its speed, reverse and hol
 points at (file path, generator, offline, or a nested sequence); and the import warnings that are
 expected (an unknown generator, an effect CFA4 does not know, a file reference without a path, a
 clip directly in a stack). Any other warning, or a missing expected one, fails the test. The rates
-are 23.976, 24, 25, 29.97, 30, 50, 59.94 and 60 fps. How an image sequence is kept is OTIO-2.3; its
-path is not compared yet. Relative media paths resolve under `/media`, the base the test passes.
+are 23.976, 24, 25, 29.97, 30, 50, 59.94 and 60 fps. An image sequence is checked by its first
+frame's path (as OTIO's `target_url_for_image_number(0)` gives it) and its media kind. Every clip
+also expects the keys of its references that are not active, which CFA4 keeps to write back. Relative media paths resolve under `/media`, the base the test passes.

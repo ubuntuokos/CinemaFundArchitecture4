@@ -1,0 +1,15 @@
+# Xencelabs Quick Keys (plan §2, M6). The library has no licence: no reuse until clarified.
+format = "cfa4-surface-catalog"
+version = 1
+family = "xencelabs"
+
+[[model]]
+id = "xencelabs.quick-keys"
+vendor = "Xencelabs"
+name = "Quick Keys"
+kind = "keypad_display"
+goal = "BEST_EFFORT"
+adapter = "xencelabs"
+phase = "M6"
+connection = ["usb", "wireless"]
+source = "xencelabs-quick-keys (no licence stated: reuse only after clarification)"

@@ -22,7 +22,7 @@ the control channel and MCP agents can do the same.
 
 | Command | What it does |
 |---|---|
-| `transcript.generate` | Transcribe media items (`items`, else the Project selection, else the media of the sequence's audio clips). Params: `model` (default `whisper-base`), `language` (`auto` = detect), `diarize`, `maxSpeakers`. One undo step. |
+| `transcript.generate` | Transcribe media items (`items`, else the Project selection, else the media of the sequence's audio clips). Params: `model` (default `whisper-base`), `language` (`auto` = detect), `diarize`, `maxSpeakers`, `vadFilter` (`off` by default; `energy` or `silero`: only the stretches a speech detector calls voice go to the recogniser, which is faster and stops Whisper inventing text in silence and room noise; the words keep their place in media time, speakers are labelled once on the whole audio, and `silero` needs the speech model of Remove Silence, with an error and no fall back to `energy` when it is missing). One undo step. |
 | `transcript.set` | Store a transcript you bring (JSON: `language`, `speakers`, `words` with `text`/`start`/`end`/`speaker`); it is sorted and made well formed. |
 | `transcript.delete` | Remove transcripts. |
 | `transcript.inspect` | The sequence transcript: words (index, text, sequence times, speaker, clip), paragraphs, speakers, the word at the playhead. |
@@ -51,8 +51,13 @@ Both are **optional features**, off by default and never built for the web:
 
 - `whisper` (on `cfa4-speech`, `cfa4-engine`, and the `cfa4` / `cfa4-cli`
   apps, where it also enables downloads): candle inference.
-- `download` (`speech-download` on the engine): HTTPS downloads with rustls + RustCrypto and the
-  operating system's certificate verifier.
+- `speech-download` (on the engine): model downloads. The engine has no network code: it starts
+  the `cfa4-fetch` program (`apps/cfa4-fetch`, found next to the running program or through
+  `CFA4_FETCH`), which confines itself with the `fetch` profile of `cfa4-sandbox` (writes only the
+  model directory, connects out only to port 443 or the configured HTTPS proxy, starts no
+  programs) and downloads over HTTPS with rustls and the operating system's certificate verifier
+  ([CFA4-SECURITY-001](plans/CFA4-SECURITY-001.md) D5). Build it with `cargo build -p cfa4-fetch`
+  next to `cfa4-cli`; without the kernel protections it refuses to download (plan D4).
 
 Without `whisper`, and with no recogniser installed, `transcript.generate` and Transcribe Sequence
 are disabled, with "speech-to-text is not available in this build" as the reason (`describe`,

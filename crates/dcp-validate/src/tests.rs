@@ -122,10 +122,13 @@ fn quick_scan_of_a_good_package_passes() {
 fn incomplete_checks_never_pass() {
     let d = dir("incomplete");
     package_with(&d, GOOD, Edit { picture: Some(good_track_file()), ..Edit::default() });
-    let r = validate(&d, "security");
+    // DCP.REF.001 is a reference-engine rule the native backend never implements
+    let mut p = Profile::builtin("quick-scan").unwrap();
+    p.rules.push(ProfileRule { rule: REF_ENGINE.into(), required: true });
+    let r = NativeValidator.validate(&ValidationRequest::new(&d, p), &ValidationControl::new()).unwrap();
     assert_eq!(r.verdict, Verdict::Incomplete, "{:?}", outcome(&r));
-    assert_eq!(statuses(&r, SIG_SIGNATURE), [Status::Unchecked]);
-    assert!(r.findings.iter().any(|f| f.rule == SIG_SIGNATURE && f.message.contains("DCP-10")));
+    assert_eq!(statuses(&r, REF_ENGINE), [Status::Unchecked]);
+    assert!(r.findings.iter().any(|f| f.rule == REF_ENGINE && f.message.contains("not implemented")));
     // every profile rule is reported
     let r = validate(&d, "smpte-cinema");
     let p = Profile::builtin("smpte-cinema").unwrap();
@@ -359,6 +362,24 @@ fn report_json_and_markdown() {
     let pass = md.lines().position(|l| l.starts_with("| Pass")).unwrap();
     assert!(first < pass, "failures first");
     assert!(r.by_rule().contains_key(AM_FILE_EXISTS));
+}
+
+#[test]
+fn report_html_is_escaped_and_self_contained() {
+    let d = dir("report-html");
+    package(&d, ["pkl.xml", "cpl.xml", "a.mxf"]);
+    let mut r = validate(&d, "full-integrity");
+    r.findings[0].message = "a<b>&\"x\".mxf".into();
+    r.findings[0].status = Status::Fail;
+    let html = r.to_html();
+    assert!(html.starts_with("<!doctype html>") && html.trim_end().ends_with("</html>"));
+    assert!(html.contains("a&lt;b&gt;&amp;&quot;x&quot;.mxf"), "the message is escaped");
+    assert!(!html.contains("a<b>"), "no raw markup from the package");
+    assert!(!html.contains("<script") && !html.contains("http://") && !html.contains("https://"), "no scripts, no external files");
+    assert!(html.contains("class=\"verdict FAIL\">FAIL"));
+    let fail = html.find("<tr class=\"FAIL\">").unwrap();
+    let pass = html.find("<tr class=\"PASS\">").unwrap();
+    assert!(fail < pass, "failures first");
 }
 
 #[test]
@@ -615,19 +636,11 @@ fn chunk_length_is_the_file_length() {
     assert_eq!(statuses(&r, AM_FILE_EXISTS), [Status::Pass]);
 }
 
-/// One 1998 × 1080 frame of the 2K DCI profile. `cfa4-j2k` writes 2 guard bits where the 2K
-/// profile has 1, so the QCD is set to 1 here, and it codes cinema frames without the multiple
-/// component transform, so the COD's MCT flag is set (the checks do not decode the samples).
+/// One 1998 × 1080 frame of the 2K DCI profile, as `cfa4-j2k` writes it (1 guard bit, the
+/// multiple component transform; plan CFA4-DCPVAL-LIBDCP-001 phases 4 and 6).
 fn frame_2k() -> Vec<u8> {
     static FRAME: std::sync::OnceLock<Vec<u8>> = std::sync::OnceLock::new();
-    FRAME
-        .get_or_init(|| {
-            let mut cs = encoded_2k();
-            set_marker_byte(&mut cs, 0xFF5C, 0, 1 << 5 | 2);
-            set_marker_byte(&mut cs, 0xFF52, 4, 1);
-            cs
-        })
-        .clone()
+    FRAME.get_or_init(encoded_2k).clone()
 }
 
 /// The frame as `cfa4-j2k` writes it.
@@ -732,8 +745,13 @@ fn track_files_must_match_their_reel_assets() {
 
 #[test]
 fn codestreams_follow_the_dci_profile() {
-    // as cfa4-j2k writes it: 2 guard bits
-    let r = media("j2k-guard", track_file(3, &[encoded_2k()], 24, (1998, 1080)), vec![]);
+    // as cfa4-j2k writes it: the profile holds
+    let r = media("j2k-cfa4", track_file(3, &[encoded_2k()], 24, (1998, 1080)), vec![]);
+    assert!(messages(&r, J2K_CODESTREAM, Status::Fail).is_empty(), "{:?}", outcome(&r));
+    // 2 guard bits (cfa4-j2k before plan CFA4-DCPVAL-LIBDCP-001 v1.1 phase 6)
+    let mut two = frame_2k();
+    set_marker_byte(&mut two, 0xFF5C, 0, 2 << 5 | 2);
+    let r = media("j2k-guard", track_file(3, &[two], 24, (1998, 1080)), vec![]);
     assert_eq!(messages(&r, J2K_CODESTREAM, Status::Fail), ["'picture.mxf' frame 0: 2 guard bits; the 2K profile has 1"]);
     assert_eq!(statuses(&r, MXF_TRACK_FILES), [Status::Pass]);
 

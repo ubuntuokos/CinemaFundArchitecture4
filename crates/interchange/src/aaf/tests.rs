@@ -111,19 +111,71 @@ fn the_meta_dictionary_has_its_class_and_type_definition_sets() {
         let cf = cfa4_cfb::CompoundFile::open(&bytes).unwrap();
         assert_eq!(cf.entries[cf.find("MetaDictionary-1").unwrap()].clsid, ids::META_DICTIONARY);
         for name in ["ClassDefinitions-3", "TypeDefinitions-4"] {
-            // u32 count, u32 first free key, u32 last free key, u16 key pid, u8 key size
+            // u32 count, u32 first free key, u32 last free key, u16 key pid, u8 key size, entries
             let index = cf.read_path(&format!("MetaDictionary-1/{name} index")).unwrap_or_else(|e| panic!("{name}: {e}"));
-            assert_eq!(index.len(), 15, "{name}: an empty set");
-            assert_eq!(index[0..4], 0u32.to_le_bytes(), "{name}: no entries");
+            assert!(u32::from_le_bytes([index[0], index[1], index[2], index[3]]) > 50, "{name}: the built-in definitions");
             assert_eq!(u16::from_le_bytes([index[12], index[13]]), pid::META_IDENTIFICATION, "{name}: keyed by the definition's AUID");
             assert_eq!(index[14], 16, "{name}: 16-byte keys");
         }
         let root = store::read(&bytes).unwrap();
         let meta = root.strong(pid::ROOT_META_DICTIONARY).unwrap();
-        for set in [pid::META_CLASS_DEFINITIONS, pid::META_TYPE_DEFINITIONS] {
-            assert!(matches!(meta.get(set), Some(Value::StrongSet(items, k)) if items.is_empty() && *k == pid::META_IDENTIFICATION), "{set:#06x}");
+        assert!(matches!(meta.get(pid::META_CLASS_DEFINITIONS), Some(Value::StrongSet(items, _)) if items.len() == 80));
+        assert!(matches!(meta.get(pid::META_TYPE_DEFINITIONS), Some(Value::StrongSet(items, _)) if items.len() == 122));
+        // Storage names fit a compound file entry (31 characters) in both sector sizes.
+        assert!(cf.entries.iter().all(|e| e.name.encode_utf16().count() <= 31));
+    }
+}
+
+/// Every object and property the exporter writes is defined in the meta-dictionary: the class by
+/// its AUID, the property by its local id on the class or one of its ancestors (the AAF SDK
+/// resolves the file's properties through these definitions).
+#[test]
+fn everything_written_is_defined_in_the_meta_dictionary() {
+    use std::collections::HashMap;
+    let (p, s) = project();
+    let (bytes, _) = export(&p, s, &AafOptions::default()).unwrap();
+    let root = store::read(&bytes).unwrap();
+    let meta = root.strong(pid::ROOT_META_DICTIONARY).unwrap();
+    let Some(Value::StrongSet(classes, _)) = meta.get(pid::META_CLASS_DEFINITIONS) else { panic!("no class definitions") };
+    // class AUID -> (parent AUID, local ids of its own properties)
+    let mut table: HashMap<store::Auid, (store::Auid, Vec<u16>)> = HashMap::new();
+    for c in classes {
+        let id = c.auid(0x0005).unwrap();
+        let parent = c.weak_key(0x0008).map(|k| k.try_into().unwrap()).unwrap();
+        let locals = match c.get(0x0009) {
+            Some(Value::StrongSet(ps, _)) => ps.iter().filter_map(|q| q.u16(0x000D)).collect(),
+            _ => Vec::new(),
+        };
+        table.insert(id, (parent, locals));
+    }
+    fn visit(o: &Obj, table: &HashMap<store::Auid, (store::Auid, Vec<u16>)>, bad: &mut Vec<String>) {
+        let mut chain = vec![o.class];
+        while let Some((parent, _)) = table.get(chain.last().unwrap()) {
+            if chain.contains(parent) {
+                break;
+            }
+            chain.push(*parent);
+        }
+        if !table.contains_key(&o.class) {
+            bad.push(format!("class {:02x?} is not defined", o.class));
+            return;
+        }
+        for (pid, v) in &o.props {
+            if !chain.iter().any(|c| table.get(c).is_some_and(|(_, l)| l.contains(pid))) {
+                bad.push(format!("property {pid:#06x} of class {:02x?} is not defined", o.class));
+            }
+            match v {
+                Value::Strong(c) => visit(c, table, bad),
+                Value::StrongVec(cs) | Value::StrongSet(cs, _) => cs.iter().for_each(|c| visit(c, table, bad)),
+                _ => {}
+            }
         }
     }
+    let mut bad = Vec::new();
+    visit(root.strong(pid::ROOT_HEADER).unwrap(), &table, &mut bad);
+    bad.sort();
+    bad.dedup();
+    assert!(bad.is_empty(), "{bad:#?}");
 }
 
 #[test]
@@ -400,4 +452,32 @@ fn premiere_style_layers_and_nested_compositions_are_read() {
     assert_eq!((nest.start, nest.duration, nest.source_in), (r.tick_of(10), r.tick_of(40), r.tick_of(12)));
     assert_eq!(nest.link, q.audio_tracks[0].items[0].link);
     assert!(nest.link.is_some());
+}
+
+/// Found with the AAF SDK as test oracle (#1367): the SDK takes a file for an AAF file only when
+/// the 16 bytes after the compound file signature carry the AAF label of its sector size.
+#[test]
+fn the_header_carries_the_aaf_label_of_the_sector_size() {
+    let (p, s) = project();
+    for (small, label) in [
+        (true, [0x41u8, 0x41, 0x46, 0x42, 0x0D, 0x00, 0x4F, 0x4D, 0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0xFF]),
+        (false, [0x01, 0x02, 0x01, 0x0D, 0x00, 0x02, 0x00, 0x00, 0x06, 0x0E, 0x2B, 0x34, 0x03, 0x02, 0x01, 0x01]),
+    ] {
+        let (bytes, _) = export(&p, s, &AafOptions { small_sectors: small, ..Default::default() }).unwrap();
+        assert_eq!(bytes.get(8..24), Some(&label[..]), "small_sectors {small}");
+        assert!(cfa4_cfb::CompoundFile::open(&bytes).is_ok());
+    }
+}
+
+/// Writes an export in both sector sizes into `$CFA4_AAF_ORACLE_DIR`, for `scripts/dev/aaf-oracle.sh`
+/// (the AAF SDK opens them as a test oracle; see docs/testing.md).
+#[test]
+#[ignore = "run by scripts/dev/aaf-oracle.sh"]
+fn export_for_the_sdk_oracle() {
+    let dir = std::path::PathBuf::from(std::env::var("CFA4_AAF_ORACLE_DIR").expect("CFA4_AAF_ORACLE_DIR"));
+    let (p, s) = project();
+    for (small, name) in [(true, "export-512.aaf"), (false, "export-4k.aaf")] {
+        let (bytes, _) = export(&p, s, &AafOptions { small_sectors: small, ..Default::default() }).unwrap();
+        std::fs::write(dir.join(name), bytes).unwrap();
+    }
 }

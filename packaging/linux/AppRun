@@ -1,23 +1,24 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-or-later
-# The CFA4 AppImage's entry point. It starts the egui app (bin/cfa4), as the desktop entry does
-# until egui is retired, or the Qt 6 GUI (bin/cfa4-qt, with the PySide6 and Qt the AppImage
-# carries in lib/cfa4/pyside6; docs/qt-parity.md 1.10) when asked:
+# The CFA4 AppImage's entry point. It starts the Qt 6 GUI (bin/cfa4-qt, with the PySide6 and Qt
+# the AppImage carries in lib/cfa4/pyside6; docs/qt-parity.md 1.10), and nothing else: the AppImage
+# starts no egui by any path (owner decisions 2026-11-12 and 2026-11-14,
+# docs/plans/CFA4-QT6-FINISH-001.md Q4.3), and carries no egui binary.
 #
-#   ./cfa4-<version>-linux-x86_64.AppImage --qt [cfa4-qt options]
-#   CFA4_GUI=qt ./cfa4-<version>-linux-x86_64.AppImage [cfa4-qt options]
+#   ./cfa4-<version>-linux-x86_64.AppImage [cfa4-qt options]
+#
+# `--qt` is still accepted and ignored, so older launchers keep working; `--egui` is refused with
+# a message, and CFA4_GUI is no longer read.
 here="$(dirname "$(readlink -f "$0")")"
-gui="${CFA4_GUI:-}"
 case "${1:-}" in
-  --qt) gui=qt; shift ;;
-  --egui) gui=egui; shift ;;
+  --qt) shift ;;
+  --egui)
+    echo "cfa4: the egui editor is no longer part of CFA4's packages; the AppImage starts the Qt 6 GUI" >&2
+    exit 2 ;;
 esac
-if [ "$gui" = qt ]; then
-  # Ubuntu 26.04 desktops have python3 (the PySide6 bundle is abi3: any Python 3.10 or newer)
-  if ! command -v python3 >/dev/null 2>&1; then
-    echo "cfa4: the Qt GUI needs python3 (sudo apt install python3)" >&2
-    exit 1
-  fi
-  exec python3 "$here/usr/bin/cfa4-qt" "$@"
+# Ubuntu 26.04 desktops have python3 (the PySide6 bundle is abi3: any Python 3.10 or newer)
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "cfa4: the Qt GUI needs python3 (sudo apt install python3)" >&2
+  exit 1
 fi
-exec "$here/usr/bin/cfa4" "$@"
+exec python3 "$here/usr/bin/cfa4-qt" "$@"

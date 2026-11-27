@@ -22,6 +22,8 @@ pub mod mask;
 pub mod mixer;
 pub mod multicam;
 pub mod narration;
+pub mod object;
+pub mod studio;
 pub mod text_animator;
 pub mod transcript;
 pub mod vtransition;
@@ -39,10 +41,11 @@ pub use essential::{AudioType, EssentialSound};
 pub use find::{FindOp, FindQuery, FindRow, SearchBin};
 pub use graphic_design::{CharStyle, CreditsLink, GraphicMeta, LayerExtra, LayerStamp, Pin, PinTarget, Roll, RollMode, SourceGraphic, StyleRun};
 pub use keyframe::{Interpolation, Keyframe, Param, ParamValue};
-pub use mask::{Mask, MaskMode, MaskPath, MaskVertex, TrackMethod, Tracker};
+pub use mask::{Mask, MaskMode, MaskPath, MaskSource, MaskVertex, TrackMethod, Tracker};
 pub use mixer::{AutomationMode, InputMap, MixerStrip, TrackSend};
 pub use multicam::{Camera, MergedClip, MulticamAudio, MulticamSel, MulticamSource};
 pub use narration::{Narration, VocalPitch};
+pub use studio::{LiveStudio, SourceKind, SourceTransform, StudioScene, StudioSource};
 pub use transcript::{Speaker, Transcript, Word};
 
 macro_rules! id_type {
@@ -267,6 +270,39 @@ impl MediaClip {
     }
 }
 
+/// A reference to OpenVDB data on disk. Only the reference is saved; the grids are read on demand.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct VolumeAsset {
+    /// The file, or the first file of a numbered sequence (`name.0001.vdb`).
+    pub path: String,
+    /// The paths of the sequence frames in order, `None` for a gap (so a missing frame is reported, not skipped);
+    /// empty for a single file.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub frames: Vec<Option<String>>,
+}
+
+impl VolumeAsset {
+    /// Whether this is a numbered sequence.
+    pub fn is_sequence(&self) -> bool {
+        !self.frames.is_empty()
+    }
+    /// The files that are missing on disk, as reported by `exists`: the relink report (N1-7).
+    pub fn missing(&self, exists: impl Fn(&str) -> bool) -> Vec<String> {
+        if self.frames.is_empty() {
+            return if exists(&self.path) { Vec::new() } else { vec![self.path.clone()] };
+        }
+        let mut gaps = Vec::new();
+        for (i, f) in self.frames.iter().enumerate() {
+            match f {
+                Some(p) if exists(p) => {}
+                Some(p) => gaps.push(p.clone()),
+                None => gaps.push(format!("frame #{} of {}", i + 1, self.path)),
+            }
+        }
+        gaps
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::large_enum_variant)]
 pub enum ItemKind {
@@ -289,6 +325,10 @@ pub enum ItemKind {
         rate: FrameRate,
         duration: Tick,
     },
+    /// An OpenVDB volume asset (`.vdb` file or numbered sequence), read by the separate worker (plan
+    /// CFA4-DNEG-TECHNOLOGY-ADAPTATION-001, N1). It carries no pixels: it is listed and inspected, never placed
+    /// on a timeline until a volume renders as plain media (N2).
+    Volume(VolumeAsset),
     /// The source of graphic clips: a transparent canvas of the sequence frame size. The clip's
     /// text and shape layers are effect instances on the track item (see [`graphic`]). Not shown
     /// in the Project panel; unlimited duration.
@@ -347,6 +387,8 @@ impl ProjectItem {
             ItemKind::Media(m) => m.info.has_video(),
             ItemKind::Sequence(_) | ItemKind::AdjustmentLayer { .. } | ItemKind::Graphic { .. } => true,
             ItemKind::Subclip { .. } => true,
+            // no pixels until a volume renders as plain media (N2)
+            ItemKind::Volume(_) => false,
         }
     }
     pub fn has_audio(&self) -> bool {
@@ -363,6 +405,7 @@ impl ProjectItem {
             ItemKind::Subclip { range, .. } => range.duration,
             ItemKind::AdjustmentLayer { duration, .. } => *duration,
             ItemKind::Graphic { .. } => Tick(3600 * TICKS_PER_SECOND),
+            ItemKind::Volume(_) => Tick(0),
         }
     }
     pub fn frame_rate(&self) -> FrameRate {
@@ -370,7 +413,7 @@ impl ProjectItem {
             ItemKind::Media(m) => m.frame_rate(),
             ItemKind::Sequence(s) => s.settings.frame_rate,
             ItemKind::AdjustmentLayer { rate, .. } | ItemKind::Graphic { rate, .. } => *rate,
-            ItemKind::Subclip { .. } => FrameRate::default(),
+            ItemKind::Subclip { .. } | ItemKind::Volume(_) => FrameRate::default(),
         }
     }
     /// Human-readable media type for the Project panel "Media Type" column.
@@ -389,6 +432,8 @@ impl ProjectItem {
             ItemKind::Subclip { .. } => "Subclip",
             ItemKind::AdjustmentLayer { .. } => "Adjustment Layer",
             ItemKind::Graphic { .. } => "Graphic",
+            ItemKind::Volume(v) if v.is_sequence() => "Volume Sequence (OpenVDB)",
+            ItemKind::Volume(_) => "Volume (OpenVDB)",
         }
     }
 }
@@ -1308,6 +1353,14 @@ pub struct Project {
     /// each `.cfa4credtpl`, owned by `cfa4-credits`). Optional: older projects have none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub credits_templates: Vec<String>,
+    /// The live studio's scenes and sources (CFA4-LIVE-STUDIO-001 S1; `live.studio.scene.*`).
+    /// Schema v16.
+    #[serde(default, skip_serializing_if = "LiveStudio::is_empty")]
+    pub studio: LiveStudio,
+    /// Tracked objects (Object Mask): the object tracks of each media item, keyed by the item;
+    /// sample times are media time. Schema v17.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub objects: BTreeMap<ItemId, Vec<object::ObjectTrack>>,
 }
 
 /// How a sequence is shown in the Timeline panel: its zoom, scroll position and track heights.
@@ -1413,6 +1466,8 @@ impl Project {
             narrations: BTreeMap::new(),
             notes: String::new(),
             credits_templates: Vec::new(),
+            studio: LiveStudio::default(),
+            objects: BTreeMap::new(),
         }
     }
 
@@ -1440,8 +1495,10 @@ impl Project {
             }
         }
         self.search_bins.iter().for_each(|b| see(b.id.0));
+        self.studio.ids().for_each(&mut see);
         // deleting an item leaves these entries behind: a new item taking that id would inherit them
-        self.transcripts.keys().chain(self.source_graphics.keys()).chain(self.narrations.keys()).for_each(|i| see(i.0));
+        self.transcripts.keys().chain(self.source_graphics.keys()).chain(self.narrations.keys()).chain(self.objects.keys()).for_each(|i| see(i.0));
+        self.objects.values().flatten().for_each(|t| see(t.id.0));
         // `lut.import` names LUTs `lut<id>`
         self.luts.iter().filter_map(|l| l.id.strip_prefix("lut")?.parse().ok()).for_each(&mut see);
         fn mixer(m: &MixerStrip) -> impl Iterator<Item = u64> + '_ {
@@ -1843,6 +1900,7 @@ impl Project {
                     id = *parent;
                     continue;
                 }
+                ItemKind::Volume(_) => None,
             };
         }
         None
@@ -1859,7 +1917,7 @@ impl Project {
             return match &self.item(id)?.kind {
                 ItemKind::Media(m) => Some(m.pixel_aspect()),
                 ItemKind::Sequence(q) => Some(sane_par(q.settings.par)),
-                ItemKind::AdjustmentLayer { .. } | ItemKind::Graphic { .. } => None,
+                ItemKind::AdjustmentLayer { .. } | ItemKind::Graphic { .. } | ItemKind::Volume(_) => None,
                 ItemKind::Subclip { parent, .. } => {
                     id = *parent;
                     continue;

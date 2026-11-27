@@ -87,10 +87,10 @@ class StagePyside6Tests(unittest.TestCase):
         requirements.write_text("other==1.0 \\\n    --hash=sha256:" + "1" * 64 + "\n" + "\n".join(pins) + "\n")
         return house, requirements
 
-    def stage(self, house: Path, requirements: Path):
+    def stage(self, house: Path, requirements: Path, *extra: str):
         return subprocess.run(
             ["python3", str(STAGE), "--wheels", str(house), "--dest", str(self.root / "dest"),
-             "--doc", str(self.root / "doc"), "--requirements", str(requirements)],
+             "--doc", str(self.root / "doc"), "--requirements", str(requirements), *extra],
             capture_output=True, text=True, timeout=60, check=False,
         )
 
@@ -117,6 +117,25 @@ class StagePyside6Tests(unittest.TestCase):
         self.assertIn("pyside6_essentials-6.12.0-cp310-abi3-manylinux_2_34_x86_64.whl  sha256:", notice)
         self.assertIn("download.qt.io", notice)
 
+    def test_licence_texts_from_another_directory(self):
+        """The from-source Flatpak's SDK has no /usr/share/common-licenses: `--licences` names the
+        directory with the pinned GNU texts; without them nothing is staged."""
+        house, requirements = self.wheels()
+        texts = self.root / "gnu"
+        texts.mkdir()
+        (texts / "LGPL-3").write_text("lgpl 3 text\n")
+        (texts / "LGPL-2.1").write_text("lgpl 2.1 text\n")
+        result = self.stage(house, requirements, "--licences", str(texts))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.root / "doc/LICENSE.LGPL-3.0").read_text(), "lgpl 3 text\n")
+        self.assertEqual((self.root / "doc/LICENSE.LGPL-2.1").read_text(), "lgpl 2.1 text\n")
+        shutil.rmtree(self.root / "dest")
+        (texts / "LGPL-2.1").unlink()
+        result = self.stage(house, requirements, "--licences", str(texts))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("LGPL-2.1 is missing", result.stderr)
+        self.assertFalse((self.root / "dest").exists(), "nothing staged")
+
     def test_refuses_a_wheel_whose_hash_is_not_pinned(self):
         house, requirements = self.wheels()
         with zipfile.ZipFile(next(house.glob("shiboken6-*.whl")), "a") as z:
@@ -134,7 +153,8 @@ class StagePyside6Tests(unittest.TestCase):
 
 
 class AppRunTests(unittest.TestCase):
-    """AppRun starts egui by default and the Qt GUI with --qt or CFA4_GUI=qt."""
+    """AppRun starts the Qt GUI and nothing else: no egui by any path (owner decisions 2026-11-12 and
+    2026-11-14, docs/plans/CFA4-QT6-FINISH-001.md Q4.3)."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="cfa4-apprun-")
@@ -143,21 +163,47 @@ class AppRunTests(unittest.TestCase):
         (self.appdir / "usr/bin").mkdir(parents=True)
         shutil.copyfile(HERE / "AppRun", self.appdir / "AppRun")
         (self.appdir / "AppRun").chmod(0o755)
+        # an egui binary planted where the old AppImage had it must never be started
         (self.appdir / "usr/bin/cfa4").write_text('#!/bin/sh\necho egui "$@"\n')
         (self.appdir / "usr/bin/cfa4").chmod(0o755)
         (self.appdir / "usr/bin/cfa4-qt").write_text('import sys\nprint("qt", *sys.argv[1:])\n')
 
-    def run_app(self, *args: str, **env: str) -> str:
+    def run_app(self, *args: str, check: bool = True, **env: str) -> subprocess.CompletedProcess[str]:
         clean = {k: v for k, v in os.environ.items() if k != "CFA4_GUI"}
-        result = subprocess.run([str(self.appdir / "AppRun"), *args], env={**clean, **env},
-                                capture_output=True, text=True, timeout=30, check=True)
-        return result.stdout.strip()
+        return subprocess.run([str(self.appdir / "AppRun"), *args], env={**clean, **env},
+                              capture_output=True, text=True, timeout=30, check=check)
 
-    def test_egui_by_default_and_qt_on_request(self):
-        self.assertEqual(self.run_app("film.fcproj"), "egui film.fcproj")
-        self.assertEqual(self.run_app("--qt", "--demo"), "qt --demo")
-        self.assertEqual(self.run_app("--demo", CFA4_GUI="qt"), "qt --demo")
-        self.assertEqual(self.run_app("--egui", "x", CFA4_GUI="qt"), "egui x")
+    def test_every_way_of_starting_it_starts_the_qt_gui(self):
+        self.assertEqual(self.run_app("film.fcproj").stdout.strip(), "qt film.fcproj")
+        self.assertEqual(self.run_app("--qt", "--demo").stdout.strip(), "qt --demo")
+        for value in ("egui", "qt", ""):  # CFA4_GUI is no longer read
+            with self.subTest(CFA4_GUI=value):
+                self.assertEqual(self.run_app("x", CFA4_GUI=value).stdout.strip(), "qt x")
+
+    def test_egui_is_refused_with_a_message(self):
+        for env in ({}, {"CFA4_GUI": "egui"}):
+            with self.subTest(env=env):
+                result = self.run_app("--egui", "x", check=False, **env)
+                self.assertEqual(result.returncode, 2)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("no longer part of CFA4's packages", result.stderr)
+
+    def test_without_python3_it_fails_instead_of_starting_egui(self):
+        """Only sh and the planted egui binary on PATH: no fallback, a message naming python3."""
+        bindir = Path(self.temp.name) / "bin"
+        bindir.mkdir()
+        for tool in ("sh", "dirname", "readlink"):
+            found = shutil.which(tool)
+            self.assertIsNotNone(found, tool)
+            (bindir / tool).symlink_to(found)
+        app = str(self.appdir / "AppRun")
+        for args in (["x"], ["--qt", "x"]):
+            with self.subTest(args=args):
+                result = subprocess.run([app, *args], env={"PATH": str(bindir)},
+                                        capture_output=True, text=True, timeout=30, check=False)
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("needs python3", result.stderr)
 
 
 if __name__ == "__main__":

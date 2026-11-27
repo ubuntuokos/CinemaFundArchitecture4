@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use web_time::Instant;
 
-use cfa4_credits::{Behaviour, PageOut};
+use cfa4_credits::PageOut;
 use cfa4_live::{AudioMode, FrameStore, LiveServer, ObsClient};
 use cfa4_project::{ClipId, ItemKind, MediaRef, TrackItem};
 use cfa4_time::Tick;
@@ -442,7 +442,7 @@ fn page_moment(s: &Session, cue: &Cue, page: usize, elapsed: Duration) -> (Tick,
     let d = cue.page_duration(page);
     let last = Tick(d.0.saturating_sub(fd.0).max(0));
     let t = rate.snap(ticks(elapsed));
-    let card = matches!(&cue.source, Source::Credits { .. }) && cue.pages.get(page).is_some_and(|p| p.behaviour == Behaviour::Card);
+    let card = matches!(&cue.source, Source::Credits { .. }) && cue.pages.get(page).is_some_and(|p| p.behaviour.is_card());
     if card && cue.hold_cards {
         // a card stays at its last full moment (before it fades out) until NEXT or OUT
         let fade_out = cue.pages.get(page).map_or(Tick::ZERO, |p| p.fade_out);
@@ -491,6 +491,35 @@ fn tick_program(s: &mut Session, at: Option<Duration>) -> Result<Option<(Vec<u8>
         publish_status(s);
         return Ok(Some((frame.0, frame.1, frame.2, o.page)));
     }
+}
+
+/// The size of the program picture at `width` (clamped to 16..=[`MAX_WIDTH`]), the sequence's
+/// aspect (16:9 without a sequence): the live studio's live graphics source (S1b).
+pub fn program_size(s: &Session, width: u32) -> (u32, u32) {
+    let w = width.clamp(16, MAX_WIDTH);
+    let (cw, ch) = s.active_sequence().map_or((1920, 1080), |q| (q.settings.width, q.settings.height));
+    let h = ((f64::from(w) * f64::from(ch) / f64::from(cw.max(1))).round() as u32).clamp(16, 8192);
+    (w, h)
+}
+
+/// The live program as on air now, straight RGBA8 at `width` ([`program_size`]), for the live
+/// studio's live graphics source; `None` while nothing is on air. A page that ran out moves on
+/// as it does on the page for OBS (the program is ticked then).
+pub fn program_picture(s: &mut Session, width: u32) -> Result<Option<(Vec<u8>, u32, u32)>> {
+    const CMD: &str = "live.studio";
+    for _ in 0..4 {
+        let Some(o) = s.live.program.clone().filter(|o| !o.finished) else { return Ok(None) };
+        let Some(cue) = s.live.cue(o.cue).cloned() else { return Ok(None) };
+        let (t, ran_out) = page_moment(s, &cue, o.page, page_elapsed(&o, None));
+        if ran_out && o.held.is_none() {
+            // the next page (or the end): the same steps as `live.tick`
+            tick_program(s, None)?;
+            continue;
+        }
+        let (w, _) = program_size(s, width);
+        return draw(s, CMD, &cue, o.page, t, w).map(Some);
+    }
+    Ok(None)
 }
 
 /// The output width: the setting, else the sequence's (at most [`MAX_WIDTH`]).
@@ -581,7 +610,7 @@ fn blit(dst: &mut [u8], dw: u32, dh: u32, src: &(u32, u32, Vec<u8>), rect: (f64,
 
 /// A card's fade at `t` for something that comes in `delay` after the page starts.
 fn card_alpha(pg: &PageOut, t: Tick, delay: Tick) -> f64 {
-    if pg.behaviour != Behaviour::Card {
+    if !pg.behaviour.is_card() {
         return 1.0;
     }
     let local = t.0 - delay.0;

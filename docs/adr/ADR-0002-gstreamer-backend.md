@@ -3,7 +3,7 @@
 **Dátum:** 2026-10-24 · **Állapot:** elfogadva (a tulajdonos, `ubuntuokos` jóváhagyta) ·
 **Érintett crate:** `crates/gstreamer` (`cfa4-gstreamer`, L5 réteg) ·
 **Kiegészítette:** [ADR 0005](ADR-0005-media-backends.md) (2026-10-25): a GStreamer az Ubuntu tárolóiból
-telepített rendszercsomag (alapértelmezés; elkülönített futtatókörnyezet csak újabb verziót igénylő funkcióhoz, lásd „GStreamer-verzió és frissítés”); az FFmpeg (≥ 9.0.2) is kiegészítő háttér; a hátterek között az
+telepített rendszercsomag (alapértelmezés; elkülönített futtatókörnyezet csak újabb verziót igénylő funkcióhoz, lásd „GStreamer-verzió és frissítés”); az FFmpeg (≥ `CFA4_FFMPEG_MIN_VERSION`, `packaging/ffmpeg-version.env`) is kiegészítő háttér; a hátterek között az
 automatikus útválasztó (`cfa4-route`, ADR 0004) választ, alapsorrend: saját → FFmpeg → GStreamer
 
 ## Háttér
@@ -55,7 +55,7 @@ A beépített megnyitók mindig elsők. A GStreamer csak akkor veszi át a fájl
 
 - a beépített megnyitók nem támogatottnak vagy dekódolhatatlannak jelzik (`Unsupported`, `Decode`;
   I/O-hiba és offline média változatlanul továbbmegy), vagy
-- egy videó-kiterjesztésű fájlt videó nélkül nyitnak meg (például az Ogg Theora + Vorbis fájlt
+- egy videó-kiterjesztésű fájlt videó nélkül nyitnak meg (például egy Ogg fájlt, amelynek videókodekjét a motor nem ismeri,
   csak hangként), és a GStreamer talál benne videót.
 
 Ha a GStreamer is elutasítja, a beépített eredmény marad, így a regisztráció soha nem ront el

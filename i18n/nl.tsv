@@ -54,6 +54,7 @@
 	Apply Video Transition	Video-overgang toepassen
 	Assembly	Montage
 	Attach Proxies…	Proxy's koppelen…
+	Find Camera Proxies	Cameraproxy's zoeken
 	Audio Channels…	Audiokanalen…
 	Audio Clip Mixer	Audioclipmixer
 	Audio Effects	Audio-effecten
@@ -1869,6 +1870,7 @@
 	Counter	Teller
 	Typewriter	Typemachine
 	Word by Word	Woord voor woord
+	Scramble	Husselen
 	Animator	Animator
 	Animator Duration	Animatorduur
 	Animator Delay	Animatorvertraging
@@ -2900,6 +2902,10 @@
 	Sharpen Amount	Mate van verscherping
 	Shift Center To	Midden verschuiven naar
 	Show Focus Area	Focusgebied tonen
+	Rack Focus	Focusverlegging
+	Focus Point A	Focuspunt A
+	Focus Point B	Focuspunt B
+	Rack	Verlegging
 	Show Only Noise	Alleen ruis tonen
 	Shrink	Krimpen
 	Shutter Angle	Sluiterhoek
@@ -3600,7 +3606,7 @@
 	Six-Point Pin	Zespuntsbevestiging
 	Upper Center	Midden boven
 	Lower Center	Midden onder
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	FFmpeg gebruiken voor bestanden die de CFA4-engine niet kan openen (FFmpeg 9.0.2 of later, GPL-3-build)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	FFmpeg gebruiken voor bestanden die de CFA4-engine niet kan openen (FFmpeg 9.1 of later, GPL-3-build)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	De GStreamer van het systeem gebruiken voor bestanden die de engine en FFmpeg niet kunnen openen
 	Analyze Source for Smart Cut	Bron analyseren voor slim knippen
 	Plan Smart Cut	Slim knippen plannen
@@ -4176,6 +4182,11 @@ export.summary	Low	laag
 	Burn Size	Brandgrootte
 	Ember Width	Breedte van gloeirand
 	Ember Color	Kleur van gloeirand
+	Tear Away	Afscheuren
+	Tear Roughness	Ruwheid van de scheur
+	Paper Edge Width	Breedte papierrand
+	Stamp Cut	Postzegeluitsnede
+	Perforations	Perforaties
 	Check Text Legibility	Leesbaarheid van tekst controleren
 	Clear Legibility Markers	Leesbaarheidsmarkeringen wissen
 	Text legibility: no problems found	Leesbaarheid van tekst: geen problemen gevonden
@@ -4215,6 +4226,9 @@ export.summary	Low	laag
 	Dither	Dithering
 	Pattern	Patroon
 	Cell Size	Celgrootte
+	Pixelate	Pixeleren
+	Cell Shape	Celvorm
+	LED	LED
 	Cyan Angle	Hoek cyaan
 	Magenta Angle	Hoek magenta
 	Yellow Angle	Hoek geel
@@ -4536,6 +4550,13 @@ export.summary	Low	laag
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	De sleutels blijven alleen in het geheugen, tot DCP-sleutels vergeten of het einde van de sessie.
 	DCP keys forgotten	DCP-sleutels vergeten
 	Choose the KDM file and the private key.	Kies het KDM-bestand en de privésleutel.
+	Load even if the certificate chain is not verified	Ook laden met een niet-geverifieerde certificaatketen
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Bundel: {loaded} van {total} KDM's geladen, {other} voor andere ontvangers
+	Not loaded: {path}: {problem}	Niet geladen: {path}: {problem}
+	Signature verified: {chain}	Handtekening geverifieerd: {chain}
+	Signature not verified: {problem}	Handtekening niet geverifieerd: {problem}
+	KDM required	KDM vereist
+	Encrypted: load the KDM with content key {keys}	Versleuteld: laad de KDM met inhoudssleutel {keys}
 
 # Settings ▸ Timecode Sync (TC-4)
 	Timecode Sync	Timecodesynchronisatie
@@ -4568,3 +4589,384 @@ export.summary	Low	laag
 	Chase External Timecode	Externe timecode volgen
 	Send LTC	LTC verzenden
 	Send MIDI Timecode	MIDI-timecode verzenden
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Voorbeeld livestudio
+	Live studio: stopped	Livestudio: gestopt
+	Live studio: {state}	Livestudio: {state}
+	Live studio: {error}	Livestudio: {error}
+	restarted after {count} crashes (last: {exit})	herstart na {count} crashes (laatste: {exit})
+	software backend: {reason}	software-backend: {reason}
+	Start studio	Studio starten
+	Stop studio	Studio stoppen
+	Add Studio Scene	Studioscène toevoegen
+	Live	Live
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Openingstitels
+	Chapter Title	Hoofdstuktitel
+	Lower Third	Onderbalk
+	page {page}: graphics template “{template}” was not found; “{used}” is used	pagina {page}: grafische sjabloon “{template}” is niet gevonden; “{used}” wordt gebruikt
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	pagina {page}: grafische sjabloon “{template}” heeft geen veld voor alle tekst van het blok; de rest wordt weggelaten
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	pagina {page}: sjabloonveld “{control}” → “{part}” wordt niet gebruikt (geen tekstbesturing met die naam, of geen kop, hoofdtekst of staart)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	pagina {page}: afbeeldingen worden weggelaten op titel-, openings-, hoofdstuk- en onderbalkpagina’s
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatische kleur
+	Auto Contrast	Automatisch contrast
+	Auto Levels	Automatische niveaus
+	Temporal Smoothing (seconds)	Tijdelijke afvlakking (seconden)
+	Scene Detect	Scènedetectie
+	Black Clip	Zwart afkappen
+	White Clip	Wit afkappen
+	Snap Neutral Midtones	Neutrale middentonen
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% linksboven
+	Picture-in-picture: 35 % scale in the upper left	Beeld-in-beeld: 35 % schaal linksboven
+	PiP 35% Lower Left	PiP 35% linksonder
+	Picture-in-picture: 35 % scale in the lower left	Beeld-in-beeld: 35 % schaal linksonder
+	PiP 35% Lower Right	PiP 35% rechtsonder
+	Picture-in-picture: 35 % scale in the lower right	Beeld-in-beeld: 35 % schaal rechtsonder
+	Split Screen Left	Gesplitst scherm links
+	Split screen: the middle half of the picture fills the left half of the frame	Gesplitst scherm: de middelste helft van het beeld vult de linkerhelft van het frame
+	Split Screen Right	Gesplitst scherm rechts
+	Split screen: the middle half of the picture fills the right half of the frame	Gesplitst scherm: de middelste helft van het beeld vult de rechterhelft van het frame
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Sterkte scanlijnen
+	Line Count	Aantal lijnen
+	Mask	Masker
+	Mask Strength	Maskersterkte
+	Corner Darkening	Hoeken verdonkeren
+	Aperture Grille	Aperture grille
+	Shadow Mask	Schaduwmasker
+	Slot Mask	Sleufmasker
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Olieverf
+	Detail	Detail
+	Texture	Textuur
+	Facet	Facetten
+	Daubs	Klodders
+	Dry Brush	Droge kwast
+	Fresco	Fresco
+	Knife	Paletmes
+	Sponge	Spons
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pixels sorteren
+	Sort By	Sorteren op
+	Lower Threshold	Ondergrens
+	Upper Threshold	Bovengrens
+	Ascending	Oplopend
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Tijdelijke ruisonderdrukking
+	Frames Each Side	Frames aan elke kant
+	Motion Threshold	Bewegingsdrempel
+	Show Motion	Beweging tonen
+	No signal	Geen signaal
+	Locating	Positioneren
+	Locked	Vergrendeld
+	Freewheel	Vrijloop
+	Scrubbing	Scrubben
+	Sending	Verzenden
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Ondertitels uit het eerste ondertitelspoor
+	The package language	De taal van het pakket
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (ingebouwd) of een OpenType-/TrueType-bestand
+	Subtitle language	Ondertiteltaal
+	Subtitle font	Ondertitellettertype
+	Fonts	Lettertypen
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11-delen
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Verbonden
+	Device	Apparaat
+	Devices	Apparaten
+	Disabled	Uitgeschakeld
+	HID jog/shuttle	HID-jog/shuttle
+	MIDI	MIDI
+	Not connected	Niet verbonden
+	OSC	OSC
+	Use	Gebruiken
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-monitor
+	Press Start Monitor, then move a control.	Klik op Monitor starten en beweeg daarna een bedieningselement.
+	Start Monitor	Monitor starten
+	Stop Monitor	Monitor stoppen
+	… {count} messages not shown (too many at once)	… {count} berichten niet getoond (te veel tegelijk)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Een bedieningsoppervlak vroeg om {command}, dat niet bestaat.
+	Assignments	Toewijzingen
+	Cancel Learn	Leren annuleren
+	Control	Bedieningselement
+	Learn	Leren
+	Remove this assignment	Deze toewijzing verwijderen
+	{control} runs {command}.	{control} voert {command} uit.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Knop {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panning (draaiknop)
+	{strip} Volume (fader)	{strip} volume (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Toewijzingen lopen bij een knopdruk (een fader of knop telt als ingedrukt voorbij de helft); een fader of knop op een mixerkanaal beweegt het volume of de pan. De shuttle-ring van een ShuttlePRO speelt op de snelheden van het profiel en het jog-wiel stapt per frame. Eindeloze encoders en terugmelding naar de controller (lampjes, motorfaders) komen in een latere versie.
+	First message (ms)	Eerste bericht (ms)
+	Silence (ms)	Stilte (ms)
+	Waiting for the control to settle…	Wachten tot de bediening tot rust komt…
+	Type: {hint}. Confirm this assignment.	Type: {hint}. Bevestig deze toewijzing.
+	That control is already assigned. Confirm replaces it.	Die bediening is al toegewezen. Bevestigen vervangt haar.
+	Learn timed out.	Leren duurde te lang.
+	Confirm	Bevestigen
+	Reject	Afwijzen
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Toont elk MIDI-bericht van de controllers zodra het binnenkomt, om te zien of een controller zendt en wat. MIDI-clock, Active Sensing en MIDI-timecode blijven weg.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Kies een opdracht (of een mixerkanaal voor een fader of knop), druk op Leren en dan op de knop, of beweeg de bediening voorbij de helft. Bevestigen houdt de toewijzing. OK bewaart de toewijzingen.
+	All devices	Alle apparaten
+	Builtin: {name}	Ingebouwd: {name}
+	Capturing	Vastleggen
+	Confirmed	Bevestigd
+	Conflict	Conflict
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Sluit een MIDI-controller of ShuttlePRO aan om het profiel te bewerken.
+	Control Surfaces…	Besturingsoppervlakken…
+	Filter messages	Berichten filteren
+	Idle	Inactief
+	Kernel dropped: {count}	Door de kernel verloren: {count}
+	Learn Assignments…	Toewijzingen leren…
+	Load profile	Profiel laden
+	MIDI Monitor…	MIDI-monitor…
+	Mute shuttle sound	Shuttle-geluid dempen
+	No conflicts.	Geen conflicten.
+	No profile warnings.	Geen profielwaarschuwingen.
+	No project profile is stored.	Er is geen projectprofiel opgeslagen.
+	OK writes the preferences and the profile file together.	OK schrijft de voorkeuren en het profielbestand samen.
+	Online	Online
+	Pending	In behandeling
+	Pickup (14-bit)	Oppakken (14-bit)
+	Pickup (7-bit)	Oppakken (7-bit)
+	Profile warnings	Profielwaarschuwingen
+	Rejected	Afgewezen
+	Show Active Sensing	Active Sensing tonen
+	Show MIDI Clock	MIDI-klok tonen
+	Show MIDI Time Code	MIDI-tijdcode tonen
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Het profielbestand is beschadigd. De voorkeuren en het ingebouwde profiel blijven in gebruik.
+	Timed out	Tijd verstreken
+	Type: {hint}	Type: {hint}
+	User profile file	Gebruikersprofielbestand
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} ontvangen, {dispatched} verzonden, {coalesced} samengevoegd, {stalls} wachttijden, {errors} fouten
+
+# Control Surfaces settings page (CS-1, #1187)
+	Looking for devices…	Apparaten zoeken…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Geen MIDI-controller of jog/shuttle-apparaat gevonden. Sluit er een aan en druk op Vernieuwen.
+	Control Surfaces	Bedieningspanelen
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Bedieningspanelen gebruiken (MIDI-controllers, jog/shuttle-apparaten)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Het koppelen van bedieningselementen aan opdrachten, MIDI Learn en de MIDI-monitor komen in een latere versie; tot dan worden de keuzes hier onthouden.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO in Kdenlive-stijl
+	Generic MIDI	Algemene MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Uit LTC-audio lezen
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	SMPTE LTC in de audio van de clip zoeken en de tijdcode gebruiken die het aan het eerste beeld geeft
+	Read Timecode from LTC Audio	Tijdcode uit LTC-audio lezen
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Stemmen
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: afspeelsnelheid aanpassen in plaats van te springen
+	User bits	Gebruikersbits
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentatie
+	Marker Type	Markeringstype
+	Chapter	Hoofdstuk
+	Segmentation (AS-11 programme part)	Segmentatie (AS-11-programmadeel)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3-converter
+	AT9/AT3 Converter…	AT9/AT3-converter…
+	Files to convert:	Te converteren bestanden:
+	Add Files	Bestanden toevoegen
+	Add Files…	Bestanden toevoegen…
+	Convert to:	Converteren naar:
+	Bit rate:	Bitrate:
+	Sample format:	Sampleformaat:
+	Output folder:	Uitvoermap:
+	Output Folder	Uitvoermap
+	Next to each source file	Naast elk bronbestand
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- en ATRAC3plus-bestanden worden naar WAV geconverteerd; coderen naar AT9, ATRAC3plus en MP3 is nog niet beschikbaar.
+	Convert	Converteren
+	Add the files to convert first.	Voeg eerst de te converteren bestanden toe.
+	Done: {n} file(s) converted.	Klaar: {n} bestand(en) geconverteerd.
+	Converting {name}…	{name} converteren…
+	Stopping…	Stoppen…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16-bits
+	24-bit	24-bits
+	32-bit float	32-bits drijvende komma
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Residu
+	Motion Boost	Bewegingsversterking
+	Recovery	Herstel
+	Encode Resolution	Coderingsresolutie
+	Half	Half
+	Quarter	Kwart
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-bloei
+	Start Time (seconds)	Begintijd (seconden)
+	Repeats	Herhalingen
+	Clean Blocks	Schone blokken
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Een onlangs gebruikt effect toepassen op de geselecteerde clips
+	Disable all effects	Alle effecten uitschakelen
+	Enable all effects	Alle effecten inschakelen
+	No recent effects	Geen recente effecten
+	Recent effects	Recente effecten
+	Switch every effect of the selected clips off	Schakelt elk effect van de geselecteerde clips uit
+	Switch every effect of the selected clips on	Schakelt elk effect van de geselecteerde clips in
+	Merged	Samengevoegd
+	Per Channel	Per kanaal
+	Channel Zoom	Kanaalzoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Witbalanskiezer (klik op een neutraal punt in de programmamonitor; Esc annuleert)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Taakbeheer
+	Background jobs	Achtergrondtaken
+	Exports	Exports
+	Shared task queue	Gedeelde taakwachtrij
+	Task	Taak
+	State	Status
+	Details	Details
+	Time left	Resterende tijd
+	Scheduled	Gepland
+	Queued	In de wachtrij
+	Waiting for resources	Wacht op bronnen
+	Blocked	Geblokkeerd
+	Running	Actief
+	Paused	Gepauzeerd
+	Cancelling	Annuleren
+	Interactive	Interactief
+	Speculative	Speculatief
+	Final render	Definitieve render
+	Show finished	Voltooide tonen
+	Nothing is running.	Er wordt niets uitgevoerd.
+	Not reported by this engine yet.	Nog niet gemeld door deze engine.
+	Not available: {why}	Niet beschikbaar: {why}
+	{name} waits: {why}	{name} wacht: {why}
+	{running} running · {waiting} waiting	{running} actief · {waiting} wachtend
+	{n} active	{n} actief
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Heeft uw beslissing nodig
+	Run now	Nu uitvoeren
+	Next slot	Volgende slot
+	Missed its start	Start gemist
+	Missed its start at {time}	Start om {time} gemist
+	Starts at {time}	Start om {time}
+	Subtitle kind	Soort ondertitels
+	Subtitles	Ondertitels
+	Captions for the hearing impaired	Ondertitels voor doven en slechthorenden
+	Forced narrative	Geforceerde vertelling (forced narrative)
+	Silence	Stilte
+	Detect Silence	Stilte detecteren
+	Remove Silence	Stilte verwijderen
+	Clear Silence Markers	Stiltemarkeringen wissen
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Kies de DCP-map.
+	DCP Validation	DCP-validatie
+	DCP folder	DCP-map
+	DCP folder (the one holding ASSETMAP)	DCP-map (de map met de ASSETMAP)
+	Evidence	Bewijs
+	How to fix	Hoe op te lossen
+	Interrupted	Onderbroken
+	Not applicable	Niet van toepassing
+	Report	Rapport
+	Report saved: {path}	Rapport opgeslagen: {path}
+	Required	Vereist
+	Rule	Regel
+	Rules	Regels
+	Save JSON…	JSON opslaan…
+	Save Markdown…	Markdown opslaan…
+	Save report	Rapport opslaan
+	Skipped	Overgeslagen
+	Standard: {standard}	Standaard: {standard}
+	Validate	Valideren
+	Validate DCP…	DCP valideren…
+	the engine sent no profiles	de engine stuurde geen profielen
+	{n} files checked	{n} bestanden gecontroleerd
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Een AS-02-bundel schrijven (het pad is een map)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Actieve voxels:
+	Bounds:	Grenzen:
+	Voxel attributes	Voxelattributen
+	Voxel size:	Voxelgrootte:
+	points	punten
+
+# WP3 DPX bit depth
+	Bit Depth	Bitdiepte
+
+# AS-02 versions
+	AS-02 Versions	AS-02-versies
+	Tick the sequences to write as further versions in the AS-02 bundle	Vink de sequenties aan die als extra versies in het AS-02-pakket worden geschreven
+	Delete Short Clips	Korte clips verwijderen
+	A stored combination does not run a command yet.	Een opgeslagen combinatie voert nog geen opdracht uit.
+	Action hint	Actiehint
+	Add combination	Combinatie toevoegen
+	Add mapping	Toewijzing toevoegen
+	Button Learn	Knop leren
+	Button Test	Knoptest
+	Button name	Knopnaam
+	Cancel feedback	Annuleringsmelding
+	Combination editor	Combinatiebewerker
+	Context	Context
+	Delete profile	Profiel verwijderen
+	Detected buttons	Gevonden knoppen
+	Draw the gesture with a button held.	Teken het gebaar met een ingedrukte knop.
+	Error feedback	Foutmelding
+	Evdev device	Evdev-apparaat
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev leest alleen het gekozen apparaat, en pas als een latere fase het aanzet. Deze versie blijft op het Qt-pad.
+	Execution feedback	Uitvoeringsmelding
+	Follow the system	Het systeem volgen
+	Gesture	Gebaar
+	Gesture Learn	Gebaar leren
+	Gesture editor	Gebarenbewerker
+	Gesture profiles	Gebaarprofielen
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gebaren blijven uit tot u ze aanzet. Aanzetten blokkeert het paneelmenu niet.
+	HUD	HUD
+	Hand	Hand
+	High contrast	Hoog contrast
+	Hold time	Vasthoudtijd
+	Input access	Ingangstoegang
+	Left-handed	Linkshandig
+	Mapping	Toewijzing
+	Maximum length	Grootste lengte
+	Maximum time	Grootste tijd
+	Minimum length	Kleinste lengte
+	Mirror ergonomic gestures	Ergonomische gebaren spiegelen
+	Mouse Gestures	Muisgebaren
+	Mouse Gestures…	Muisgebaren…
+	No buttons yet. Press one in Button Learn or Button Test.	Nog geen knop. Druk er een in Knop leren of Knoptest.
+	Press	Indrukken
+	Qt pointer (this application)	Qt-aanwijzer (deze toepassing)
+	Recognition preview	Herkenningsvoorbeeld
+	Reduced animation	Minder animatie
+	Right-handed	Rechtshandig
+	Roles	Rollen
+	Save gesture	Gebaar opslaan
+	Save profile	Profiel opslaan
+	Show the gesture HUD	Gebaren-HUD tonen
+	Slop	Speling
+	Spatial gesture	Ruimtelijk gebaar
+	Thresholds	Drempels
+	Trail	Spoor
+	Use gestures in the window	Gebaren in het venster gebruiken

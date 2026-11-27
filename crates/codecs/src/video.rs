@@ -43,7 +43,8 @@ pub trait VideoDecoder: Send {
     /// Draft decoding for reduced-resolution playback (off by default; see
     /// [`cfa4_media::cancel::with_draft`]): samples fed from now on may be decoded with
     /// shortcuts that only change pictures nothing references, which come out flagged
-    /// [`DecodedFrame::draft`]. Decoders without such a mode ignore it.
+    /// [`DecodedFrame::draft`]; an intra-only decoder may decode at a lower resolution and
+    /// scale the picture back up (JPEG 2000). Decoders without such a mode ignore it.
     fn set_draft(&mut self, _on: bool) {}
     /// Made with fewer worker threads than a decoder for playback gets, because it was made for
     /// background work ([`cfa4_media::cancel::with_background`]). A request for a monitor
@@ -1424,7 +1425,8 @@ impl RawFormat {
             (b"raw ", 24) => Some(RawFormat::Rgb24),
             (b"2vuy", _) => Some(RawFormat::Uyvy),
             (b"v210", _) => Some(RawFormat::V210),
-            _ => None,
+            // the YUV FourCCs of a Matroska `V_UNCOMPRESSED` track (`UncompressedFourCC`)
+            _ => Self::from_avi(fourcc, 0).filter(|f| !matches!(f, RawFormat::Bgr24 | RawFormat::Bgrx32)),
         }
     }
 

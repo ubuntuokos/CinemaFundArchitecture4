@@ -28,9 +28,117 @@ pub const DECODER_ENV: &str = "CFA4_VVC_DECODER";
 /// The VVC helper (`cfa4-vvc-decode`).
 pub static HELPER: HelperKind = HelperKind { magic: *b"CFA4VVCD", label: "VVC", decoder: "VVdeC", thread_name: "cfa4-vvc-helper" };
 
-/// The helper configured in [`DECODER_ENV`], if any.
+/// Where the `cfa4-restricted-extras` package installs the helper (ADR 0013 point 6).
+pub const INSTALLED_HELPER: &str = "/opt/cfa4/libexec/cfa4-vvc-decode";
+/// The package that brings the helper.
+pub const RESTRICTED_PACKAGE: &str = "cfa4-restricted-extras";
+/// The id of the VVC decoder in Settings ▸ Media Backends.
+pub const BACKEND_ID: &str = "vvdec";
+
+/// The helper to use: the one named in [`DECODER_ENV`] (development), else the one the
+/// restricted-extras package installs ([`INSTALLED_HELPER`]), if that file exists.
 pub fn configured_helper() -> Option<PathBuf> {
-    std::env::var_os(DECODER_ENV).filter(|v| !v.is_empty()).map(PathBuf::from)
+    if let Some(p) = std::env::var_os(DECODER_ENV).filter(|v| !v.is_empty()) {
+        return Some(PathBuf::from(p));
+    }
+    let installed = Path::new(INSTALLED_HELPER);
+    installed.is_file().then(|| installed.to_path_buf())
+}
+
+/// The VVdeC version the helper at `path` reports (`--version`), or why it cannot be used: the
+/// program must answer the protocol hello of the VVC helper, as for decoding. Starts the program
+/// for a moment; it is not the decoding path. The query is bounded: at most 256 bytes of output
+/// and two seconds, then the process is stopped.
+pub fn helper_version(path: &Path) -> std::result::Result<String, String> {
+    use std::io::Read;
+    ExternalVvcDecoder::new(path, 1).map_err(|e| format!("{} cannot be used: {e}", path.display()))?;
+    let mut child = std::process::Command::new(path)
+        .arg("--version")
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map_err(|e| format!("cannot run {}: {e}", path.display()))?;
+    let stdout = child.stdout.take();
+    let (tx, rx) = std::sync::mpsc::channel();
+    // the reader is never joined: a grandchild that keeps stdout open must not extend the deadline
+    std::thread::spawn(move || {
+        let mut buf = Vec::new();
+        if let Some(out) = stdout {
+            let _ = out.take(256).read_to_end(&mut buf);
+        }
+        let _ = tx.send(buf);
+    });
+    let deadline = std::time::Instant::now() + Duration::from_secs(2);
+    let mut timed_out = false;
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => break,
+            Ok(None) if std::time::Instant::now() < deadline => std::thread::sleep(Duration::from_millis(10)),
+            _ => {
+                timed_out = true;
+                let _ = child.kill();
+                let _ = child.wait();
+                break;
+            }
+        }
+    }
+    if timed_out {
+        return Err(format!("{} did not answer --version in time", path.display()));
+    }
+    let buf = rx.recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()).max(Duration::from_millis(50))).unwrap_or_default();
+    let text = String::from_utf8_lossy(&buf).into_owned();
+    let version = text.lines().next().unwrap_or("").trim();
+    Ok(if version.is_empty() || version.len() > 64 { "unknown".into() } else { version.to_string() })
+}
+
+/// The report of the VVC decoder for Settings ▸ Media Backends: always there, so the VVC
+/// feature stays visible when the restricted-extras package is not installed (plan section 5,
+/// VVC-TEST-022). Missing helper: `available` false, the reason in `problem`, the package in
+/// `restricted_package`. Never panics, never starts a decode.
+pub fn report() -> cfa4_media::BackendReport {
+    report_for(configured_helper().as_deref())
+}
+
+/// [`report`] for a given helper path (`None`: none found).
+pub fn report_for(helper: Option<&Path>) -> cfa4_media::BackendReport {
+    let mut r = cfa4_media::BackendReport {
+        id: BACKEND_ID.into(),
+        name: "VVdeC (H.266/VVC)".into(),
+        role: "H.266/VVC video decoding through a separate helper process".into(),
+        compiled_in: true,
+        enabled: cfa4_media::backend_enabled(BACKEND_ID),
+        restricted_package: Some(RESTRICTED_PACKAGE.into()),
+        ..Default::default()
+    };
+    let item = |available| cfa4_media::RestrictedItem { name: "VVdeC decoder".into(), purpose: "H.266/VVC video decoding".into(), available };
+    match helper {
+        None => {
+            r.problem = Some(format!("the VVC decoder is not installed ({RESTRICTED_PACKAGE} package)"));
+            r.restricted = vec![item(false)];
+        }
+        Some(path) => match helper_version(path) {
+            Ok(v) => {
+                r.available = true;
+                r.version = Some(v);
+                r.license = Some("BSD-3-Clause-Clear (VVdeC)".into());
+                r.location = Some(path.display().to_string());
+                r.restricted = vec![item(true)];
+            }
+            Err(e) => {
+                r.problem = Some(e);
+                r.location = Some(path.display().to_string());
+                r.restricted = vec![item(false)];
+            }
+        },
+    }
+    r
+}
+
+/// Registers [`report`]. `cfa4-cli` calls it at startup (feature `vvc-external`) whether or not a
+/// helper exists.
+pub fn register_status() {
+    cfa4_media::register_backend(cfa4_media::BackendEntry { id: BACKEND_ID, report });
 }
 
 /// VVC decoding through `cfa4-vvc-decode`. Samples are access units (Annex B).
@@ -140,9 +248,15 @@ impl VideoDecoder for Mp4VvcDecoder {
 
 /// Decoder factory for `vvc1` / `vvi1` sample entries: the helper in [`DECODER_ENV`], if set.
 pub fn vvc_factory(e: &cfa4_isobmff::SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
+    vvc_factory_for(configured_helper().as_deref(), e)
+}
+
+/// [`vvc_factory`] for a given helper path (`None`: none found, the entry is left to the error
+/// that names the package).
+pub fn vvc_factory_for(helper: Option<&Path>, e: &cfa4_isobmff::SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
     let cfa4_isobmff::CodecConfig::Vvc(cfg) = &e.codec else { return None };
-    let helper = configured_helper()?;
-    Some(Mp4VvcDecoder::new(&helper, 0, cfg).map(|d| Box::new(d) as Box<dyn VideoDecoder>))
+    let helper = helper?;
+    Some(Mp4VvcDecoder::new(helper, 0, cfg).map(|d| Box::new(d) as Box<dyn VideoDecoder>))
 }
 
 #[cfg(test)]

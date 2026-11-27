@@ -6,6 +6,7 @@ cargo test -p cfa4-h264                    # one crate
 cargo test --release -p cfa4-hevc          # codec tests are much faster in release
 cargo xtask ci                                  # gates fmt, clippy, layers, assets (not tests, not wasm)
 cargo xtask fixtures                            # pre-generate the ffmpeg fixture matrix
+cargo xtask parity --ci                         # measured parity vs the committed references and thresholds (needs a built cfa4-cli and .venv); `--check-ratchet --base REF`, `--check-checklist`
 CFA4_REQUIRE_ORACLES=1 cargo test --workspace   # CI: missing ffmpeg fails instead of skipping
 ```
 
@@ -35,6 +36,7 @@ CFA4_REQUIRE_ORACLES=1 cargo test --workspace   # CI: missing ffmpeg fails inste
 | Remix | `crates/audio-dsp/src/remix.rs`, `crates/render/src/remix.rs`, `crates/engine/src/remix_tests.rs`, `crates/ui-egui/tests/remix_ui.rs` | generated rhythmic music (Rust-synthesised drums, bass, chord sections at 90–128 BPM, 22.05/44.1/48 kHz): tempo within 0.3 BPM, every beat within 10 ms (measured ≤ 8.9 ms); remix targets from 0.4× to 2.2× the source within one beat (measured ≤ 12 ms at default sliders), every cut on a detected beat, intro and outro kept, pieces ≥ 4 beats, deterministic; silence, tone and noise refused; rendering independent of request cuts, source-exact outside the 20 ms equal-power crossfades, no clicks; the engine's mix equals the source pieces (< 1e-5); undo, redo and revert exact; overlaps refused; Remix Properties dialog and Remix tool drag driven by automation id |
 | Oracle | `crates/*/tests/*oracle*.rs`, `conformance.rs` | compare with ffmpeg/ffprobe (§2) |
 | Robustness / fuzz | `*/tests/robustness.rs`, `*/tests/fuzz.rs` | seeded mutation and truncation of real and synthetic files; nothing may panic |
+| Coverage-guided fuzzing (CFA4-SECURITY-001 B2) | `fuzz/` (own workspace: `fuzz/src/lib.rs` harnesses, `fuzz/fuzz_targets/`), `.github/workflows/cfa4-fuzz.yml` (every 4th night, six shards) | libFuzzer on every L0 parser and the project, interchange, caption and credits readers (`cargo +nightly fuzz run <target>`, `fuzz/run.sh`); seeds from `fuzz/seeds.sh` (the pinned FFmpeg oracle, never committed); `cargo test --lib` in `fuzz/` is the stable smoke run; `cargo xtask fuzz-targets` checks every L0 parser has a target; a finding becomes a regression test in the crate ([fuzz/README.md](../fuzz/README.md)) |
 | Program monitor while dragging | `crates/ui-egui/tests/perf_ui.rs` | headless: a parameter changed on every UI pass (a value dragged in Effect Controls or Properties) and a backward scrub leave the Program monitor's picture at most one step behind (it shows the frame asked for the pass before while the frame due renders; it used to freeze until the mouse rested); a frame still rendering is kept when the same frame is asked for at a newer revision, so frames slower than a refresh (CPU effects) are shown too; `perf.stats` reports the picture's frame and revision against the playhead and the project |
 | Performance | `*/tests/perf.rs` (`#[ignore]`) | §5 |
 
@@ -104,9 +106,9 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
   SHA-256 of the AVM v1.0.0 output (after film grain synthesis). Only hashes, never media.
 - `python3 scripts/dev/av2-oracle.py build [--ref av2-normative]` builds `avmenc`/`avmdec` at the
   pinned commit into `target/av2-oracle/avm-<ref>/bin` with an `AVM_COMMIT` stamp (nothing is
-  installed system-wide). `python3 scripts/dev/av2-oracle.py corpus` makes the sources with ffmpeg,
-  encodes the vectors into `target/fixtures/av2/vectors` and removes any bitstream whose SHA-256
-  differs from the manifest. `manifest --from <AV2-00 evidence>` refreshes the hashes. A new
+  installed system-wide). `python3 scripts/dev/av2-oracle.py corpus` makes the sources with the
+  pinned FFmpeg (`packaging/ffmpeg-version.env`; it refuses any other ffmpeg on `PATH`), encodes the vectors into
+  `target/fixtures/av2/vectors` and removes any bitstream whose SHA-256 differs from the manifest. `manifest --from <AV2-00 evidence>` refreshes the hashes. A new
   vector goes into the manifest with empty hashes; `corpus --allow-drift` encodes it, then
   `hash NAME...` fills its reference from `avmdec` v1.0.0 and refuses it unless the
   `av2-normative` build agrees.
@@ -146,12 +148,37 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
   random-access units) with FFmpeg's. VVdeC and `libvvenc` are restricted components
   (`cfa4-restricted-extras`), so without them the tests print `SKIPPED`, also under
   `CFA4_REQUIRE_ORACLES`. The JVET conformance run against VTM is the G2 entry condition.
+  VVC gate G2 (VVC-TEST-017, -021, -022; report `docs/plans/CFA4-VVC-02-G2-2026-11-23.md`):
+  `--test vvc_hostile` damages real JVET streams (bit flips, inserted and overwritten bytes,
+  damaged start codes, truncation, dropped, repeated and swapped units, empty, oversized and
+  garbage units) for `CFA4_VVC_HOSTILE_SECONDS` (default 20) through the real helper, checks every
+  picture that comes out and that a clean stream still decodes; it also runs fake helpers that
+  crash, hang or write garbage, and a helper under a memory cap. `scripts/dev/vvc-fuzz.py`
+  (`build`, `seeds`, `run`) fuzzes VVdeC itself with clang, ASan, UBSan and libFuzzer.
+  `--test vvc_perf` (only with `CFA4_VVC_PERF=1`; fixtures from `scripts/dev/vvc-perf-fixture.py
+  encode`) compares the helper with FFmpeg's native `vvc` decoder (pictures per second, time to
+  the first picture after a seek). `--test vvc_missing_extras` needs nothing: it checks that
+  without the helper the VVC backend report stays visible, unavailable, with the package name,
+  and that opening a VVC track is a clear error.
   Interlaced streams (`field_seq_flag`, JVET `FIELD_A_4` and `FIELD_B_2`) code every field as its
   own picture. The helper tags each picture as a frame or a top/bottom field, and the adapter
   weaves the two fields of a pair into one frame (the output VTM writes); the unit tests of
   `external_decoder` cover the pairing, and the two JVET streams match their `.yuv.md5`. The
   `STILL_B_1` and `STILL444_B_1` `.yuv.md5` files hash only the first picture (a Still Picture
   profile decoder has to decode only that one), so compare the first picture, not the whole output.
+- Fuzzing the native helper (G1): `python3 scripts/dev/av2-decoder.py build --sanitize` builds
+  dav2d and the helper with ASan and UBSan into `target/av2-decoder-asan` (never shipped), and
+  `python3 scripts/dev/av2-decoder.py fuzz [--rounds N] [--seed N] [--all]` drives it with
+  mutated corpus units (bit flips, special bytes, truncation, splices, garbage, duplicated
+  tails) interleaved with `RSET`/`FLSH`. A sanitizer report, an exit other than 0 or a reply
+  that takes more than 20 s fails the run; the request sequence and stderr of each failure are
+  kept in `target/av2-fuzz/failures`. By default only the `Main_420_10_IP0` vectors are used:
+  the unmutated `422-10bit` vector already makes ASan report a heap read overflow in dav2d
+  `18641bb` loop restoration (`lr_apply_tmpl.c:213`), outside the committed scope; `--all`
+  includes it. `replay <file>.requests` sends a kept failure to a helper again (`--helper` picks
+  the release build). The AV2 oracle workflow runs 3000 rounds with a fixed seed, as a
+  report-only step while the pinned dav2d has known failures (AV2-00 audit, 13. pont); G1 needs
+  it at 0.
 - CI: `.github/workflows/cfa4-av2-oracle.yml` (Ubuntu 26.04) runs only on `workflow_dispatch` or
   on a `cfa4-full-validation` label event of a PR that touches the harness or the decoder. It is
   not a required check.
@@ -185,6 +212,32 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
 | `export` settings and presets (M6.5) | `export/src/settings_tests.rs`, engine `export_tests.rs`: every built-in preset exports a slice of the demo sequence; ffprobe reads codec, profile, size, rate, audio format and data rate; our decoders read pixels back | codec / profile / container / size / `r_frame_rate` / sample format exact; H.264 bitrate ≤ VBR max × 1.1 and ≥ ½ target over 3 s; ProRes ≤ 1.5 × nominal; DNxHR within 25 % of nominal; loudness normalization within **0.5 LU** of the target (WAV and AAC), true peak ≤ ceiling + 0.1 dB; image sequences numbered `<name>000…`; limiter, overlays, metadata (`title`/`copyright` tags), MOV multiplexer, two-pass/CBR progress |
 
 Each codec README has the full fixture matrix and the measured results.
+
+### AAF: the AAF SDK as a test oracle
+
+`crates/interchange/src/aaf/` writes the structured-storage AAF files; the reference implementation
+(github.com/dneg/aaf, the AMWA AAF SDK) opens them as an oracle. The SDK is only a test tool: it is
+compiled in a copy outside the repository, and no SDK code or header is used by CFA4 (owner decision
+2026-11-22). Its sample files are the source of `aaf/meta_model.txt` as plain data (class and type
+AUIDs, names, local ids), not of any code.
+
+```
+git clone https://github.com/dneg/aaf ~/dneg/aaf
+AAF_SDK_SRC=~/dneg/aaf AAF_ORACLE_DIR=~/aaf-oracle scripts/dev/aaf-oracle.sh
+```
+
+The script builds the SDK once (a few minutes; needs a C++ toolchain and `uuid-dev`; the 2010 sources
+need `-fpermissive -std=gnu++98 -fno-lifetime-dse -fno-strict-aliasing`, which the script sets in the
+copy), writes our export in both sector sizes (the ignored `export_for_the_sdk_oracle` test) and runs
+the SDK's `ComAAFInfo` on each. It fails when the SDK cannot open a file, crashes, or finds no mobs.
+Run it when `aaf/` changes; it is not part of CI (the build is slow). What the SDK needs that the
+standard does not spell out, learned this way: the AAF label in the compound file header (bytes 8..24);
+a meta-dictionary with the built-in class and type definitions; and storage names it looks up itself
+(a collection name longer than 21 characters is shortened to its first 8 and last 7 characters, a
+single object keeps its full name). Without these the SDK rejects the file or crashes while
+resolving a property's type. The in-tree tests (`aaf/tests.rs`: the header label, the
+definitions, every written class and property defined in the meta-dictionary) check the same rules
+without the SDK.
 
 ## 3. Rendering: CPU reference and GPU parity
 

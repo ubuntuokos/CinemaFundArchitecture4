@@ -174,6 +174,8 @@ fn prop_name(pid: u16) -> &'static str {
         0x0002 => "Header",
         0x0003 => "ClassDefinitions",
         0x0004 => "TypeDefinitions",
+        0x0009 => "Properties",
+        0x001C => "MemberTypes",
         0x3B03 => "Content",
         0x3B04 => "Dictionary",
         0x3B06 => "IdentificationList",
@@ -184,7 +186,7 @@ fn prop_name(pid: u16) -> &'static str {
         0x2605 => "DataDefinitions",
         0x2607 => "CodecDefinitions",
         0x2608 => "ContainerDefinitions",
-        0x2609 => "InterpolationDefs",
+        0x2609 => "InterpolationDefinitions",
         0x4403 => "Slots",
         0x4406 => "UserComments",
         0x4803 => "Segment",
@@ -196,7 +198,7 @@ fn prop_name(pid: u16) -> &'static str {
         0x4701 => "EssenceDescription",
         0x2F01 => "Locator",
         0x2702 => "Data",
-        0x0204 => "ComponentComments",
+        0x0204 => "UserComments",
         0x1E09 => "ParametersDefined",
         _ => "Property",
     }
@@ -212,9 +214,20 @@ fn set_key_size(key_pid: u16) -> usize {
     }
 }
 
-fn storage_name(pid: u16) -> String {
+/// Name of the storage or stream of a property. A collection name longer than 21 characters is
+/// shortened to its first 8 and last 7 characters joined by "-" (as the AAF SDK names them, and
+/// the SDK looks them up by this name instead of following the stored one); a single object or
+/// stream keeps its full name.
+fn storage_name(pid: u16, collection: bool) -> String {
     let suffix = format!("-{pid:x}");
-    let name: String = prop_name(pid).chars().take(22 - suffix.len()).collect();
+    let name = prop_name(pid);
+    let n = name.chars().count();
+    if collection && n + suffix.len() > 21 && n > 16 {
+        let first: String = name.chars().take(8).collect();
+        let last: String = name.chars().skip(n - 7).collect();
+        return format!("{first}-{last}{suffix}");
+    }
+    let name: String = name.chars().take(31 - suffix.len()).collect();
     format!("{name}{suffix}")
 }
 
@@ -235,6 +248,12 @@ struct W {
 /// Serialise `root` (the Root object: MetaDictionary 0x0001, Header 0x0002) into a compound file.
 pub(crate) fn write(root: &Obj, version: Version) -> Result<Vec<u8>, String> {
     let mut w = W { cfb: Writer::new(version), paths: Vec::new() };
+    // The label AAF readers look for after the signature: the "AAFB" label of 512-byte-sector
+    // files, the 060E2B34.0302.0101.0D010201.02000000 label of 4096-byte-sector files.
+    w.cfb.set_header_id(match version {
+        Version::V3 => [0x41, 0x41, 0x46, 0x42, 0x0D, 0x00, 0x4F, 0x4D, 0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0xFF],
+        _ => [0x01, 0x02, 0x01, 0x0D, 0x00, 0x02, 0x00, 0x00, 0x06, 0x0E, 0x2B, 0x34, 0x03, 0x02, 0x01, 0x01],
+    });
     w.obj(Writer::ROOT, root)?;
     let mut rp = vec![BYTE_ORDER_LE];
     rp.extend_from_slice(&(w.paths.len() as u16).to_le_bytes());
@@ -269,13 +288,13 @@ impl W {
             let (sf, value) = match v {
                 Value::Data(d) => (SF_DATA, d.clone()),
                 Value::Strong(child) => {
-                    let name = storage_name(pid);
+                    let name = storage_name(pid, false);
                     let s = self.cfb.storage(node, &name, child.class).map_err(|e| e.to_string())?;
                     self.obj(s, child)?;
                     (SF_STRONG, utf16z(&name))
                 }
                 Value::StrongVec(items) | Value::StrongSet(items, _) => {
-                    let name = storage_name(pid);
+                    let name = storage_name(pid, true);
                     let mut index = Vec::new();
                     index.extend_from_slice(&(items.len() as u32).to_le_bytes());
                     index.extend_from_slice(&(items.len() as u32).to_le_bytes()); // first free key
@@ -308,7 +327,7 @@ impl W {
                     (SF_WEAK, d)
                 }
                 Value::WeakVec(path, key_pid, keys) => {
-                    let name = storage_name(pid);
+                    let name = storage_name(pid, true);
                     let tag = self.tag(path);
                     let size = keys.first().map_or(0, Vec::len);
                     let mut index = (keys.len() as u32).to_le_bytes().to_vec();
@@ -324,7 +343,7 @@ impl W {
                     (SF_WEAK_VECTOR, utf16z(&name))
                 }
                 Value::Stream(data) => {
-                    let name = storage_name(pid);
+                    let name = storage_name(pid, false);
                     self.cfb.stream(node, &name, data.clone()).map_err(|e| e.to_string())?;
                     let mut d = vec![BYTE_ORDER_LE];
                     d.extend_from_slice(&utf16z(&name));

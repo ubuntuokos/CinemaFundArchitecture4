@@ -245,6 +245,15 @@ def as_int(v: Any, default: int = 0) -> int:
     return v if isinstance(v, int) and not isinstance(v, bool) else default
 
 
+def edge_time(clip: dict[str, Any], out: bool) -> int:
+    """The time of a clip's Out (``out``) or In edge; 0 when the engine left it out.
+
+    Written as ``int(clip.get("start") if in else clip.get("end") or 0)`` the ``or 0`` bound only to
+    the second operand, so a clip without a ``start`` raised TypeError on the In edge
+    (CFA4-PY-TYPING-001 T0b, K1)."""
+    return int(clip.get("end" if out else "start") or 0)
+
+
 def is_rtl(text: str) -> bool:
     """Whether ``text`` reads right to left: its first strong character is Hebrew or Arabic."""
     for ch in text[:256]:
@@ -254,6 +263,25 @@ def is_rtl(text: str) -> bool:
         if bidi == "L":
             return False
     return False
+
+
+# SC-3: the audio waveform of a clip merged (default) or one band per channel
+WAVEFORM_CHANNEL_MODES = (("merged", N_("Merged")), ("channels", N_("Per Channel")))
+WAVEFORM_CHANNEL_ZOOMS = (1.0, 2.0, 4.0, 8.0)
+CHANNEL_LABELS = {
+    1: ("M",),
+    2: ("L", "R"),
+    6: ("L", "R", "C", "LFE", "Ls", "Rs"),
+    8: ("L", "R", "C", "LFE", "Lss", "Rss", "Lrs", "Rrs"),
+    10: ("L", "R", "C", "LFE", "Lss", "Rss", "Lrs", "Rrs", "Lts", "Rts"),
+}
+
+
+def channel_labels(count: int) -> list[str]:
+    """The names of a stream's ``count`` channels, in the engine's order (stereo L R, 5.1 L R C LFE
+    Ls Rs, 7.1 …); an odd layout numbers them 1, 2, 3 …"""
+    names = CHANNEL_LABELS.get(count)
+    return list(names) if names else [str(i + 1) for i in range(max(0, count))]
 
 
 THUMBNAIL_MODES = (("head", N_("Head")), ("headAndTail", N_("Head and Tail")), ("continuous", N_("Continuous")))
@@ -476,6 +504,7 @@ class TimelineCanvas(QWidget):
     files_dropped_empty = Signal(list)  # paths dropped on an empty Timeline: import, then a sequence from them
     voiceover = Signal(object)  # an audio track header's microphone: record on that track (id) / stop
     voiceover_settings = Signal()  # …its menu: Voice-Over Record Settings…
+    display_changed = Signal()  # SC-3: the waveform channel mode / channel zoom changed (the window keeps them)
     caption_opened = Signal()  # a caption block double-clicked: the Text panel's Captions tab
     gop_marks_wanted = Signal()  # Show GOP Boundaries turned on: the window fetches export.gopMarks
 
@@ -508,6 +537,8 @@ class TimelineCanvas(QWidget):
         self.show_thumbnails = True
         self.thumbnail_mode = "head"
         self.show_waveforms = True
+        self.waveform_channels = "merged"  # SC-3: "merged" or "channels" (one band per channel)
+        self.channel_zoom = 1.0  # SC-3: vertical zoom of the per-channel bands (linear amplitude)
         # View ▸ Dynamic Audio Waveforms (egui's, on by default): a logarithmic scale, −48 dB at the
         # centre line and 0 dB at the edge; off: linear amplitude
         self.dynamic_waveforms = True
@@ -1815,17 +1846,47 @@ class TimelineCanvas(QWidget):
         if not self.show_waveforms:
             return
         start, end = int(clip.get("sourceIn") or 0), int(clip.get("sourceOut") or 0)
-        peaks = self.media.waveform(item, min(start, end), max(start, end), clip.get("audioStream", 0))
+        lo_t, hi_t = min(start, end), max(start, end)
+        stream = clip.get("audioStream", 0)
+        reverse = bool(clip.get("reverse")) or end < start
+        if self.waveform_channels == "channels":
+            split = self.media.waveform_channels(item, lo_t, hi_t, stream)
+            if split and len(split) > 1:
+                self._paint_channel_bands(p, split, body, base, reverse)
+                return
+            # one channel, not here yet or not available: the merged waveform stays
+        peaks = self.media.waveform(item, lo_t, hi_t, stream)
         if not peaks:
             return
+        self._draw_wave(p, peaks, body, body.center().y(), body.height() / 2 - 1, base, reverse, 1.0)
+
+    def _paint_channel_bands(self, p: QPainter, split: list[list[tuple[float, float]]], body: QRectF, base: QColor, reverse: bool) -> None:
+        """One band per channel, the channel's name at the left (when the band is tall enough)."""
+        n = len(split)
+        band_h = body.height() / n
+        labels = channel_labels(n)
+        for i, peaks in enumerate(split):
+            band = QRectF(body.left(), body.top() + i * band_h, body.width(), band_h)
+            if i:
+                p.setPen(QPen(base.lighter(130), 1))
+                y = int(band.top())
+                p.drawLine(max(int(body.left()), HEADER_W), y, min(int(body.right()), self.width()), y)
+            self._draw_wave(p, peaks, band, band.center().y(), band_h / 2 - 0.5, base, reverse, self.channel_zoom)
+            if band_h >= 10 and peaks:
+                p.setPen(QPen(base.lighter(210), 1))
+                f = p.font()
+                f.setPixelSize(max(7, min(10, int(band_h) - 2)))
+                p.save()
+                p.setFont(f)
+                p.drawText(QRectF(max(band.left(), HEADER_W) + 2, band.top(), 40, band_h), int(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft), labels[i])
+                p.restore()
+
+    def _draw_wave(self, p: QPainter, peaks: list[tuple[float, float]], body: QRectF, mid: float, half: float, base: QColor, reverse: bool, zoom: float) -> None:
         x0 = max(int(body.left()), HEADER_W)
         x1 = min(int(body.right()), self.width())
-        if x1 <= x0:
+        if x1 <= x0 or not peaks or half <= 0:
             return
-        mid = body.center().y()
-        half = body.height() / 2 - 1
         n = len(peaks)
-        reverse = bool(clip.get("reverse")) or end < start
         p.setPen(QPen(base.lighter(170), 1))
         width = max(1.0, body.width())
         for x in range(x0, x1):
@@ -1839,6 +1900,7 @@ class TimelineCanvas(QWidget):
             hi = max(q[1] for q in peaks[i0:i1])
             if self.dynamic_waveforms:
                 hi, lo = waveform_level(hi), -waveform_level(-lo)
+            hi, lo = hi * zoom, lo * zoom
             p.drawLine(x, int(mid - max(0.0, min(1.0, hi)) * half), x, int(mid - max(-1.0, min(0.0, lo)) * half))
 
     # ----- the Volume line on audio clips (egui's timeline_volume.rs) -----
@@ -2233,6 +2295,20 @@ class TimelineCanvas(QWidget):
         a.setCheckable(True)
         a.setChecked(self.show_waveforms)
         a.toggled.connect(lambda on: self._set_display(show_waveforms=on))
+        for mode, label in WAVEFORM_CHANNEL_MODES:
+            m = menu.addAction("    " + tr(label))
+            m.setObjectName(f"timeline.settings.waveform.{mode}")
+            m.setCheckable(True)
+            m.setChecked(self.waveform_channels == mode)
+            m.setEnabled(self.show_waveforms)
+            m.triggered.connect(lambda _c=False, md=mode: self._set_display(waveform_channels=md))
+        for z in WAVEFORM_CHANNEL_ZOOMS:
+            m = menu.addAction("    " + tr("Channel Zoom") + f" ×{z:g}")
+            m.setObjectName(f"timeline.settings.waveform.zoom{z:g}")
+            m.setCheckable(True)
+            m.setChecked(self.channel_zoom == z)
+            m.setEnabled(self.show_waveforms and self.waveform_channels == "channels")
+            m.triggered.connect(lambda _c=False, zz=z: self._set_display(channel_zoom=zz))
         menu.addSeparator()
         a = menu.addAction(tr("Show Through Edits"))
         a.setObjectName("timeline.settings.showThroughEdits")
@@ -2264,6 +2340,20 @@ class TimelineCanvas(QWidget):
     def _set_display(self, **kw: Any) -> None:
         for k, v in kw.items():
             setattr(self, k, v)
+        self.update()
+        if "waveform_channels" in kw or "channel_zoom" in kw:
+            self.display_changed.emit()
+
+    def restore_waveform_display(self, mode: Any, zoom: Any) -> None:
+        """Takes back the saved waveform channel mode and channel zoom; anything else is ignored."""
+        if mode in {m for m, _label in WAVEFORM_CHANNEL_MODES}:
+            self.waveform_channels = str(mode)
+        try:
+            z = float(zoom)
+        except (TypeError, ValueError):
+            z = 1.0
+        if z in WAVEFORM_CHANNEL_ZOOMS:
+            self.channel_zoom = z
         self.update()
 
     # ----- mouse -----
@@ -2363,7 +2453,7 @@ class TimelineCanvas(QWidget):
             if not edge:  # these tools work on edges; a click on the body selects
                 self.command.emit("timeline.select", {"clips": [cid]})
                 return
-            origin = int(clip.get("start") if edge == "in" else clip.get("end") or 0)
+            origin = edge_time(clip, out=edge != "in")
             alone = bool(e.modifiers() & Qt.KeyboardModifier.AltModifier)  # Alt: only this side of a link
             if self.tool == "rateStretch":
                 self._drag = Drag("stretch", clip, pos, origin, edge=edge, linked=not alone)
@@ -2391,7 +2481,7 @@ class TimelineCanvas(QWidget):
             if self.sequence is not None:
                 self.sequence["selection"] = [cid]  # local echo until the engine's reply
         if edge:
-            origin = int(clip.get("start") if edge == "in" else clip.get("end") or 0)
+            origin = edge_time(clip, out=edge != "in")
             # Alt: only this side of a link (upstream #3301)
             self._drag = Drag("trim", clip, pos, origin, edge=edge, linked=not e.modifiers() & Qt.KeyboardModifier.AltModifier)
         else:
@@ -2494,7 +2584,7 @@ class TimelineCanvas(QWidget):
         elif self.tool == "ripple":
             select("ripple")
         else:
-            cut = int(clip.get("end") if edge == "out" else clip.get("start") or 0)
+            cut = edge_time(clip, out=edge == "out")
             host.edit_point_kind(abs(self.x_of(cut) - pos.x()), other is not None, select)
 
     def leaveEvent(self, e: QEvent) -> None:

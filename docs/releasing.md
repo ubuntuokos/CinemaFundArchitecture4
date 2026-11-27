@@ -74,7 +74,7 @@ other binary, including upstream's own release download. Bump all four values in
 
 **Package contents (#220).** `scripts/release/verify_cfa4_packages.py` lists the real `.deb`
 (`dpkg-deb --contents`) and the AppImage's squashfs (`unsquashfs`, at the offset after the runtime
-ELF, without running it) and requires in each the programs, the Qt GUI, the FFmpeg 9.0.2 libraries
+ELF, without running it) and requires in each the programs, the Qt GUI, the FFmpeg libraries
 with their licences and every licence/attribution file of `scripts/ci/check-package-docs.sh`
 (including `THIRD-PARTY-LICENSES.txt` and the `cfa4.cdx.json` SBOM); the AppImage also needs its
 PySide6 / Qt licences. The self-hosted four-formats job applies it to the real packages. On every
@@ -92,14 +92,14 @@ Run the installer again to update. For a system-wide installation, use
 its `share` directory must be in the desktop's data search path to appear in the menu.
 Prefixes containing `=`, `%` or control characters are rejected for desktop-launcher compatibility.
 
-**FFmpeg 9.0.2 ([ADR 0005](adr/ADR-0005-media-backends.md) step 4).** Every package carries CFA4's
-own FFmpeg build, made beforehand on the packaging host with `scripts/dev/build-ffmpeg-9.0.2.sh`
+**FFmpeg ([ADR 0005](adr/ADR-0005-media-backends.md) step 4).** Every package carries CFA4's
+own FFmpeg build (VERSION: `packaging/ffmpeg-version.env`), made beforehand on the packaging host with `scripts/dev/build-ffmpeg.sh`
 (GPL-3, never `nonfree`, no x264/x265; `CFA4_FFMPEG_BUILD` points `package.sh` at another prefix).
 `package.sh` links the binaries against it with the `ffmpeg` feature and checks their RUNPATH;
 `packaging/linux/stage-ffmpeg.sh` copies only the run-time libraries, under their SONAMEs, with
-`$ORIGIN` as their RUNPATH. The `.deb` installs them into `/opt/cfa4/ffmpeg-9.0.2` and lists the
+`$ORIGIN` as their RUNPATH. The `.deb` installs them into `/opt/cfa4/ffmpeg-VERSION` and lists the
 Ubuntu packages they load as `Depends`; the tarball, the AppImage and the Flatpak carry them in
-`lib/cfa4/ffmpeg-9.0.2` next to the binaries, together with the third-party libraries they load
+`lib/cfa4/ffmpeg-VERSION` next to the binaries, together with the third-party libraries they load
 (except glibc, libstdc++, zlib, VA-API, DRM and the display stack) and those libraries' copyright
 files. `share/doc/ffmpeg` holds FFmpeg's licences and `BUILDINFO` (upstream source, checksum or
 commit, configure flags): publish that unmodified upstream source next to each release, as GPL-3
@@ -131,9 +131,19 @@ runs `cfa4-cli --version` in the sandbox. Users install it with
 `flatpak install --user <file>`; the freedesktop runtime comes from Flathub.
 `packaging/linux/flatpak/io.github.ubuntuokos.cfa4.yml` is the from-source manifest for a Flathub
 submission (its header says how to build it). Both manifests must keep the same runtime and
-`finish-args`, and install the same programs: the app and `cfa4-cli`, which runs the
+`finish-args`, and install the app and `cfa4-cli`, which runs the
 headless commands and the MCP server in the sandbox
 (`flatpak run --command=cfa4-cli io.github.ubuntuokos.cfa4 mcp`). packaging-lint checks this.
+Both also carry the Qt 6 GUI and start it (`command: cfa4-qt`, owner decision 2026-11-12; `cfa4` is the
+Qt GUI's launcher too, no egui editor, owner decision 2026-11-14, Q4.3): the bundle from the tarball, the from-source manifest staging it as
+`package.sh` does, with PySide6 / Qt 6 from the wheels pinned in `requirements/linux-amd64.txt`
+(the same SHA-256 as `file` sources; bump them together). Both build MIT Kerberos first (the `krb5`
+module, a pinned and PGP-checked tarball, its NOTICE in `share/doc/cfa4/krb5`): the wheels' QtNetwork
+and QtMultimedia need `libgssapi_krb5.so.2`, which the freedesktop runtime lacks. The bundle builds
+offline (`--disable-download`), so `flatpak-bundle.sh` seeds the builder's cache with the tarball from
+`CFA4_FLATPAK_SOURCES` after checking its SHA-256 (`packaging/linux/flatpak-sources.py`;
+`scripts/release/fetch-flatpak-sources.sh` fills the directory). The bundle's test
+imports every module the GUI loads and starts it with `--smoke`.
 
 ## The draft release
 

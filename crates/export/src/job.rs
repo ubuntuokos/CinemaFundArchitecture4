@@ -171,10 +171,16 @@ pub enum Step {
 }
 
 /// An export of an encoded-video format, advanced one batch at a time.
-/// The first caption track of `seq` inside `range` for the ANC data track of an MXF OP1a export
-/// (`ExportSettings::mxf_anc_captions`); `None` when not asked for or the sequence has none.
-fn anc_captions(project: &Project, seq: ItemId, settings: &ExportSettings, range: TimeRange) -> Option<cfa4_captions::Document> {
-    if settings.format != Format::MxfOp1a || !settings.mxf_anc_captions {
+/// The first caption track of `seq` inside `range`, timed from the first exported frame, for the
+/// ANC data track of an MXF OP1a export (`ExportSettings::mxf_anc_captions`) or the subtitles of
+/// a DCP or an IMF package (`ExportSettings::dcp_subtitles`); `None` when not asked for or the sequence has none.
+fn export_captions(project: &Project, seq: ItemId, settings: &ExportSettings, range: TimeRange) -> Option<cfa4_captions::Document> {
+    let wanted = match settings.format {
+        Format::MxfOp1a => settings.mxf_anc_captions,
+        Format::Dcp | Format::Imf => settings.dcp_subtitles,
+        _ => false,
+    };
+    if !wanted {
         return None;
     }
     let track = project.sequence(seq)?.caption_tracks.first()?;
@@ -229,8 +235,11 @@ pub struct Exporter {
     project: Arc<Project>,
     /// Chapters of MP4, MOV, HLS and WebM output ([`export_chapters`]).
     chapters: Vec<cfa4_isobmff::Chapter>,
-    /// MXF OP1a closed captions (ANC data), timed from the first exported frame.
-    anc_captions: Option<cfa4_captions::Document>,
+    /// MXF OP1a closed captions (ANC data) or DCP subtitles, timed from the first exported frame.
+    captions: Option<cfa4_captions::Document>,
+    /// AS-11 programme parts of an MXF OP1a export from the sequence's segmentation markers
+    /// ([`crate::export_as11_parts`]).
+    as11_parts: Vec<(i64, i64)>,
     vt: usize,
     at: Option<usize>,
     t0: web_time::Instant,
@@ -339,6 +348,12 @@ impl Exporter {
             _ => None,
         };
         let measured = !settings.effects.loudness.enabled || audio.is_none();
+        let captions = export_captions(&project, seq, &settings, range);
+        let as11_parts = crate::export_as11_parts(&project, seq, &settings, range, pipe.rate);
+        if matches!(settings.format, Format::Dcp | Format::Imf) && settings.dcp_subtitles && captions.is_none() {
+            let what = if settings.format == Format::Dcp { "DCP" } else { "IMF" };
+            return Err(ExportError::Unsupported(format!("{what} subtitles: the sequence has no caption track")));
+        }
         Ok(Self {
             pipe,
             f0,
@@ -366,7 +381,8 @@ impl Exporter {
             seq,
             project: project.clone(),
             chapters: export_chapters(&project, seq, &settings, range),
-            anc_captions: anc_captions(&project, seq, &settings, range),
+            captions,
+            as11_parts,
             vt: 0,
             at: None,
             t0: web_time::Instant::now(),
@@ -530,8 +546,15 @@ impl Exporter {
                 t => t.to_string(),
             };
             let channels = self.audio.as_ref().map_or(0, |a| a.channels as u32);
-            self.imf =
-                Some(ImfMux::new(ImfSetup { settings: &self.settings, title, width: self.pipe.w, height: self.pipe.h, rate: self.pipe.rate, channels })?);
+            self.imf = Some(ImfMux::new(ImfSetup {
+                settings: &self.settings,
+                title,
+                width: self.pipe.w,
+                height: self.pipe.h,
+                rate: self.pipe.rate,
+                channels,
+                subtitles: self.captions.clone(),
+            })?);
             return Ok(());
         }
         if self.settings.format == Format::Dcp {
@@ -547,6 +570,7 @@ impl Exporter {
                 rate: self.pipe.rate,
                 audio: self.audio.is_some(),
                 active: self.pipe.content_size(),
+                subtitles: self.captions.clone(),
             })?);
             return Ok(());
         }
@@ -625,7 +649,8 @@ impl Exporter {
                 audio: self.audio.as_ref().map(|a| (a.sr, a.channels)),
                 timecode: (start, q.settings.drop_frame),
                 mpeg: self.venc.mpeg_video(),
-                captions: self.anc_captions.clone(),
+                captions: self.captions.clone(),
+                as11_parts: self.as11_parts.clone(),
             })?);
             return Ok(());
         }

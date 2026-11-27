@@ -334,9 +334,11 @@ impl MediaSource for OggSource {
     }
 }
 
-/// Ogg Opus / Vorbis; other Ogg codecs (FLAC) fall through to the bootstrap audio opener.
+/// Ogg Opus / Vorbis (not with Theora video: [`crate::ogg_video`]); other Ogg codecs (FLAC) fall through to the bootstrap audio opener.
 fn handles(head: &[u8]) -> bool {
-    sniff(head) && (head.windows(8).any(|w| w == b"OpusHead" || w == b"Speex   ") || head.windows(7).any(|w| w == b"\x01vorbis"))
+    sniff(head)
+        && !head.windows(7).any(|w| w == b"\x80theora")
+        && (head.windows(8).any(|w| w == b"OpusHead" || w == b"Speex   ") || head.windows(7).any(|w| w == b"\x01vorbis"))
 }
 
 pub fn opener(name: &str, bytes: Arc<[u8]>) -> Option<Result<SharedSource, MediaError>> {
