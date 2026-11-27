@@ -295,8 +295,9 @@ jobs:
   # elevates only its own subprocesses through `sudo -n` (`pg_createcluster`, the `/etc/postgresql`
   # reads, `runuser`), so the test binary stays the runner user and logs in as `cfa4_login` through
   # the `cfa4map` peer map it just wrote; it creates the `cfa4` cluster and drops it again, and
-  # asserts the default cluster is unchanged. Owner decision 2026-11-26: it is reported but NOT
-  # blocking until it has run green once in CI, then it joins `full-validation-gate`'s `needs`.
+  # asserts the default cluster is unchanged. Owner decision 2026-11-26: it was reported but NOT
+  # blocking until it ran green once in CI; that happened on 2026-11-27 (#1865), so
+  # `rust-store-db-setup` now sits in `full-validation-gate`'s `needs`.
   rust-store-postgres:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
     needs: platform-scope
@@ -332,13 +333,13 @@ jobs:
       - name: cfa4-store tests on throw-away PostgreSQL 18 clusters
         run: cargo test --locked -p cfa4-store --lib
 
-  # Owner decision 2026-11-26: the `cfa4-db-setup` idempotence gate runs and is reported, but it is
-  # deliberately absent from `full-validation-gate`'s `needs` until its first green CI run. Then add
-  # `rust-store-db-setup` there; no other change is needed.
+  # The `cfa4-db-setup` idempotence gate (PG-1 gate 3). Owner decision 2026-11-26: non-blocking
+  # until its first green CI run; that run happened on 2026-11-27 (#1865), so the job is now part
+  # of `full-validation-gate`'s `needs`.
   rust-store-db-setup:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
     needs: [platform-scope, rust-store-postgres]
-    name: cfa4-db-setup idempotence (PG-1 gate 3, non-blocking until the first green run)
+    name: cfa4-db-setup idempotence (PG-1 gate 3)
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     env:
@@ -550,6 +551,7 @@ jobs:
       - rust-architecture-assets
       - rust-release-tests
       - rust-store-postgres
+      - rust-store-db-setup
       - python-qt6-linux
       - otio-oracle
     name: full-validation-gate
