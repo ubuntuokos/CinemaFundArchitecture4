@@ -15204,6 +15204,40 @@ def test_real_engine_live_window(app, tmp_path: Path):
         engine.stop()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_live_studio_workspace(app, tmp_path: Path):
+    """S1c: Graphics and Titles ▸ Live Studio… opens the workspace; a scene and a source made there
+    are engine commands (undoable from the main window) and the program picture shows them."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "live.studio.window" in win.registry.commands, 60_000)
+        win.invoke("live.studio.window")
+        ws = win.live_studio
+        assert ws is not None and ws.isVisible() and ws.isWindow()
+        ws.auto_start = False
+        ws.preview.backend.setCurrentIndex(ws.preview.backend.findData("software"))
+        ws.add_scene("Main")
+        assert wait_until(app, lambda: ws.scene_list.count() == 1, 30_000)
+        ws.add_source("color", {"color": "#ff0000"})
+        assert wait_until(app, lambda: ws.source_list.count() == 1 and ws.selected_source is not None, 30_000), ws.message.text()
+        ws.preview.start_button.click()
+        assert wait_until(app, lambda: ws.preview._frame is not None, 30_000), ws.preview.status.text()
+        assert wait_until(app, lambda: ws.preview._frame is not None and ws.preview._frame.pixelColor(10, 10).red() == 255, 30_000)
+        # the main window's Undo takes the source away; the workspace follows the project
+        win.invoke("edit.undo")
+        assert wait_until(app, lambda: ws.source_list.count() == 0, 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 def tr_(text: str) -> str:
     from cfa4_qt.i18n import tr
 

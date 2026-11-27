@@ -4601,6 +4601,12 @@ export.summary	Low	χαμηλή
 	software backend: {reason}	λογισμικό υποστήριξης: {reason}
 	Start studio	Έναρξη στούντιο
 	Stop studio	Διακοπή στούντιο
+	Live Studio	Ζωντανό στούντιο
+	Live Studio…	Ζωντανό στούντιο…
+	Scenes	Σκηνές
+	Sources	Πηγές
+	Visible	Ορατό
+	Add a scene, then a source to it.	Προσθέστε μια σκηνή και μετά μια πηγή σε αυτήν.
 	Add Studio Scene	Προσθήκη σκηνής στούντιο
 	Live	Ζωντανά
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

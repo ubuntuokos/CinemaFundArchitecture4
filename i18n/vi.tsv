@@ -4599,6 +4599,12 @@ export.summary	Low	thấp
 	software backend: {reason}	phần phụ trợ phần mềm: {reason}
 	Start studio	Khởi động phòng thu
 	Stop studio	Dừng phòng thu
+	Live Studio	Studio trực tiếp
+	Live Studio…	Studio trực tiếp…
+	Scenes	Cảnh
+	Sources	Nguồn
+	Visible	Hiển thị
+	Add a scene, then a source to it.	Thêm một cảnh, rồi thêm nguồn vào đó.
 	Add Studio Scene	Thêm cảnh studio
 	Live	Trực tiếp
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

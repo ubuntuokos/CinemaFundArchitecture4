@@ -4602,6 +4602,12 @@ export.summary	Low	nizka
 	software backend: {reason}	programsko zaledje: {reason}
 	Start studio	Zaženi studio
 	Stop studio	Ustavi studio
+	Live Studio	Studio v živo
+	Live Studio…	Studio v živo…
+	Scenes	Prizori
+	Sources	Viri
+	Visible	Vidno
+	Add a scene, then a source to it.	Dodajte prizor in nato vir.
 	Add Studio Scene	Dodaj studijsko sceno
 	Live	V živo
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

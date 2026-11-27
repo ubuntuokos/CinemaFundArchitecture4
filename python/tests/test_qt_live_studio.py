@@ -17,6 +17,7 @@ QtWidgets = pytest.importorskip("PySide6.QtWidgets")
 
 from cfa4_qt.engine import EngineClient, locate_engine
 from cfa4_qt.panels.live_studio import LiveStudioPreview, rgba_image, status_text
+from cfa4_qt.panels.live_studio_workspace import StudioWorkspace, scenes_of, sources_of
 
 REAL = locate_engine()
 
@@ -97,4 +98,149 @@ def test_the_window_shows_the_empty_scene_and_survives_a_host_crash(app: Any) ->
         assert wait_until(app, lambda: not window.frame_timer.isActive())
     finally:
         window.close()
+        engine.stop()
+
+
+# ----- S1c: the Live Studio workspace -----
+
+
+def test_scene_and_source_replies_are_read_defensively() -> None:
+    assert scenes_of(None) == ([], None)
+    assert scenes_of({"scenes": "x"}) == ([], None)
+    scenes, current = scenes_of({"current": 2, "scenes": [{"id": 2, "name": "A"}, "junk", {"name": "no id"}]})
+    assert [s["id"] for s in scenes] == [2] and current == 2
+    assert scenes_of({"current": True, "scenes": []})[1] is None
+    # the stack is listed bottom first; the list shows the top first
+    assert [s["id"] for s in sources_of({"sources": [{"id": 1}, {"id": 2}, 3]})] == [2, 1]
+    assert sources_of(None) == []
+
+
+class FakeEngine:
+    """Answers ``live.studio.*`` commands from a small in-memory studio, like the engine does."""
+
+    def __init__(self) -> None:
+        self.running = True
+        self.calls: list[tuple[str, dict[str, Any]]] = []
+        self.scenes: list[dict[str, Any]] = []
+        self.current: int | None = None
+        self.next_id = 1
+        self.event = type("Sig", (), {"connect": lambda self, f: None})()
+        self.frames = type("F", (), {"enabled": False})()
+
+    def call(self, *_a: Any, **_k: Any) -> int:
+        return 0
+
+    def execute(
+        self, command: str, params: dict[str, Any] | None = None, on_reply: Any = None, on_error: Any = None
+    ) -> int:
+        params = params or {}
+        self.calls.append((command, params))
+        result: Any = {}
+        if command == "live.studio.scene.add":
+            sid = self.next_id
+            self.next_id += 1
+            self.scenes.append({"id": sid, "name": params.get("name") or f"Scene {sid}", "sources": []})
+            self.current = self.current or sid
+        elif command == "live.studio.scene.select":
+            self.current = params["id"]
+        elif command == "live.studio.source.add":
+            sid = self.next_id
+            self.next_id += 1
+            kind = {"type": params["type"], **{k: v for k, v in params.items() if k in ("path", "color")}}
+            src = {
+                "id": sid,
+                "name": params["type"],
+                "type": params["type"],
+                "kind": kind,
+                "visible": True,
+                "transform": {"x": 0.0, "y": 0.0, "scaleX": 1.0, "scaleY": 1.0, "rotation": 0.0, "crop": [0, 0, 0, 0]},
+            }
+            next(s for s in self.scenes if s["id"] == self.current)["sources"].append(src)
+            result = {"source": src}
+        elif command == "live.studio.source.set":
+            for sc in self.scenes:
+                for src in sc["sources"]:
+                    if src["id"] == params["id"]:
+                        if "visible" in params:
+                            src["visible"] = params["visible"]
+                        if "name" in params:
+                            src["name"] = params["name"]
+                        src["transform"].update(params.get("transform", {}))
+        elif command == "live.studio.source.remove":
+            for sc in self.scenes:
+                sc["sources"] = [s for s in sc["sources"] if s["id"] != params["id"]]
+        elif command == "live.studio.scenes":
+            result = {"current": self.current, "scenes": self.scenes}
+        if on_reply is not None:
+            on_reply(result, None)
+        return 0
+
+
+def test_workspace_edits_through_engine_commands(app: Any) -> None:
+    engine = FakeEngine()
+    ws = StudioWorkspace(engine, auto_start=False)  # type: ignore[arg-type]
+    try:
+        ws.refresh()
+        assert ws.scene_list.count() == 0 and not ws.source_add.isEnabled()
+        ws.add_scene("Opening")
+        assert wait_until(app, lambda: ws.scene_list.count() == 1)
+        assert ws.source_add.isEnabled()
+        ws.add_source("color")
+        ws.add_source("text")
+        assert wait_until(app, lambda: ws.source_list.count() == 2)
+        assert ws.source_list.item(0).text() == "text", "the newest source is on top"
+        assert ws.props.isEnabled() and ws.selected_source == engine.scenes[0]["sources"][1]["id"]
+        # visibility goes through the checkbox of the list row
+        ws.source_list.item(0).setCheckState(QtCore.Qt.CheckState.Unchecked)
+        assert engine.scenes[0]["sources"][1]["visible"] is False
+        # a transform edit is one merged undo step
+        ws.transform_widgets["x"].setValue(120.0)
+        cmd, params = engine.calls[-1]
+        assert (
+            cmd == "live.studio.source.set" and params["transform"] == {"x": 120.0} and params["merge"] == "transform.x"
+        )
+        # a type-specific form per source type
+        ws.source_list.setCurrentRow(1)
+        assert "color" in ws.kind_widgets and "text" not in ws.kind_widgets
+        ws.remove_source()
+        assert wait_until(app, lambda: ws.source_list.count() == 1)
+        # selecting another scene puts it on the program
+        ws.add_scene("Second")
+        assert wait_until(app, lambda: ws.scene_list.count() == 2)
+        ws.scene_list.setCurrentRow(1)
+        assert ("live.studio.scene.select", {"id": engine.scenes[1]["id"]}) in engine.calls
+        assert engine.current == engine.scenes[1]["id"]
+    finally:
+        ws.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="needs a built cfa4-cli (and cfa4-studio-host next to it)")
+def test_workspace_with_the_real_engine(app: Any) -> None:
+    assert REAL is not None
+    engine = EngineClient(REAL)
+    engine.start()
+    ws = StudioWorkspace(engine, auto_start=False)
+    try:
+        ws.preview.backend.setCurrentIndex(ws.preview.backend.findData("software"))
+        ws.resize(900, 600)
+        ws.show()
+        ws.add_scene("One")
+        assert wait_until(app, lambda: ws.scene_list.count() == 1)
+        ws.add_source("color")
+        assert wait_until(app, lambda: ws.source_list.count() == 1 and ws.selected_source is not None), (
+            ws.message.text()
+        )
+        ws.visible_box.setChecked(False)
+        assert wait_until(app, lambda: ws.source_list.item(0).checkState() == QtCore.Qt.CheckState.Unchecked)
+        ws.add_source("image")  # needs a file: the engine says so, the workspace shows it and stays usable
+        assert wait_until(app, lambda: bool(ws.message.text()))
+        assert ws.source_list.count() == 1 and engine.running
+        # undo from outside (the main window's Edit menu) refreshes the lists on projectChanged
+        engine.execute("edit.undo")
+        engine.execute("edit.undo")
+        assert wait_until(app, lambda: ws.source_list.count() == 0), "undo of the source is shown"
+        ws.preview.start_button.click()
+        assert wait_until(app, lambda: ws.preview._frame is not None), ws.preview.status.text()
+    finally:
+        ws.close()
         engine.stop()

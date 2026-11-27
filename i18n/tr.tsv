@@ -4600,6 +4600,12 @@ export.summary	Low	düşük
 	software backend: {reason}	yazılım arka ucu: {reason}
 	Start studio	Stüdyoyu başlat
 	Stop studio	Stüdyoyu durdur
+	Live Studio	Canlı Stüdyo
+	Live Studio…	Canlı Stüdyo…
+	Scenes	Sahneler
+	Sources	Kaynaklar
+	Visible	Görünür
+	Add a scene, then a source to it.	Bir sahne, ardından ona bir kaynak ekleyin.
 	Add Studio Scene	Stüdyo sahnesi ekle
 	Live	Canlı
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

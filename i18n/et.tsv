@@ -4601,6 +4601,12 @@ export.summary	Low	madal
 	software backend: {reason}	tarkvaraline taustasüsteem: {reason}
 	Start studio	Käivita stuudio
 	Stop studio	Peata stuudio
+	Live Studio	Otsestuudio
+	Live Studio…	Otsestuudio…
+	Scenes	Stseenid
+	Sources	Allikad
+	Visible	Nähtav
+	Add a scene, then a source to it.	Lisa stseen ja seejärel allikas.
 	Add Studio Scene	Lisa stuudiostseen
 	Live	Otse
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

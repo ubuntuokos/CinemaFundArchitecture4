@@ -4601,6 +4601,12 @@ export.summary	Low	låg
 	software backend: {reason}	programvarubakände: {reason}
 	Start studio	Starta studio
 	Stop studio	Stoppa studio
+	Live Studio	Livestudio
+	Live Studio…	Livestudio…
+	Scenes	Scener
+	Sources	Källor
+	Visible	Synlig
+	Add a scene, then a source to it.	Lägg till en scen och sedan en källa.
 	Add Studio Scene	Lägg till studioscen
 	Live	Live
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

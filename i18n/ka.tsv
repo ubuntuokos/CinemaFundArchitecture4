@@ -4602,6 +4602,12 @@ export.summary	Low	დაბალი
 	software backend: {reason}	პროგრამული ბექენდი: {reason}
 	Start studio	სტუდიის გაშვება
 	Stop studio	სტუდიის გაჩერება
+	Live Studio	ლაივ სტუდია
+	Live Studio…	ლაივ სტუდია…
+	Scenes	სცენები
+	Sources	წყაროები
+	Visible	ხილული
+	Add a scene, then a source to it.	დაამატეთ სცენა, შემდეგ მას წყარო.
 	Add Studio Scene	სტუდიის სცენის დამატება
 	Live	პირდაპირი
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

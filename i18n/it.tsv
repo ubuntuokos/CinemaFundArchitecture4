@@ -4599,6 +4599,12 @@
 	software backend: {reason}	backend software: {reason}
 	Start studio	Avvia studio
 	Stop studio	Ferma studio
+	Live Studio	Studio live
+	Live Studio…	Studio live…
+	Scenes	Scene
+	Sources	Sorgenti
+	Visible	Visibile
+	Add a scene, then a source to it.	Aggiungi una scena, poi una sorgente.
 	Add Studio Scene	Aggiungi scena studio
 	Live	Dal vivo
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

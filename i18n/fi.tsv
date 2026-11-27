@@ -4601,6 +4601,12 @@ export.summary	Low	matala
 	software backend: {reason}	ohjelmistotaustaosa: {reason}
 	Start studio	Käynnistä studio
 	Stop studio	Pysäytä studio
+	Live Studio	Live-studio
+	Live Studio…	Live-studio…
+	Scenes	Kohtaukset
+	Sources	Lähteet
+	Visible	Näkyvissä
+	Add a scene, then a source to it.	Lisää kohtaus ja sitten lähde siihen.
 	Add Studio Scene	Lisää studiokohtaus
 	Live	Suora
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

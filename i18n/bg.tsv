@@ -4602,6 +4602,12 @@ export.summary	Low	ниско
 	software backend: {reason}	софтуерна основа: {reason}
 	Start studio	Стартиране на студиото
 	Stop studio	Спиране на студиото
+	Live Studio	Студио на живо
+	Live Studio…	Студио на живо…
+	Scenes	Сцени
+	Sources	Източници
+	Visible	Видим
+	Add a scene, then a source to it.	Добавете сцена, а след това източник към нея.
 	Add Studio Scene	Добавяне на студийна сцена
 	Live	На живо
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

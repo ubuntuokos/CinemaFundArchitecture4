@@ -4607,6 +4607,12 @@
 	software backend: {reason}	backend perangkat lunak: {reason}
 	Start studio	Mulai studio
 	Stop studio	Hentikan studio
+	Live Studio	Studio Langsung
+	Live Studio…	Studio Langsung…
+	Scenes	Adegan
+	Sources	Sumber
+	Visible	Terlihat
+	Add a scene, then a source to it.	Tambahkan adegan, lalu sumber ke dalamnya.
 	Add Studio Scene	Tambah Adegan Studio
 	Live	Langsung
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

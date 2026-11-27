@@ -4601,6 +4601,12 @@ export.summary	Low	төмен
 	software backend: {reason}	бағдарламалық бэкенд: {reason}
 	Start studio	Студияны іске қосу
 	Stop studio	Студияны тоқтату
+	Live Studio	Тікелей студия
+	Live Studio…	Тікелей студия…
+	Scenes	Көріністер
+	Sources	Көздер
+	Visible	Көрінетін
+	Add a scene, then a source to it.	Көрініс қосып, оған көз қосыңыз.
 	Add Studio Scene	Студия сахнасын қосу
 	Live	Тікелей
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

@@ -4599,6 +4599,12 @@ export.summary	Low	nízká
 	software backend: {reason}	softwarový backend: {reason}
 	Start studio	Spustit studio
 	Stop studio	Zastavit studio
+	Live Studio	Živé studio
+	Live Studio…	Živé studio…
+	Scenes	Scény
+	Sources	Zdroje
+	Visible	Viditelný
+	Add a scene, then a source to it.	Přidejte scénu a k ní zdroj.
 	Add Studio Scene	Přidat scénu studia
 	Live	Živě
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

@@ -4608,6 +4608,12 @@
 	software backend: {reason}	ソフトウェアバックエンド: {reason}
 	Start studio	スタジオを開始
 	Stop studio	スタジオを停止
+	Live Studio	ライブスタジオ
+	Live Studio…	ライブスタジオ…
+	Scenes	シーン
+	Sources	ソース
+	Visible	表示
+	Add a scene, then a source to it.	シーンを追加し、次にソースを追加してください。
 	Add Studio Scene	スタジオシーンを追加
 	Live	ライブ
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

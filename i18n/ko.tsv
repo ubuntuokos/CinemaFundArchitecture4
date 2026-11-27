@@ -4593,6 +4593,12 @@
 	software backend: {reason}	소프트웨어 백엔드: {reason}
 	Start studio	스튜디오 시작
 	Stop studio	스튜디오 중지
+	Live Studio	라이브 스튜디오
+	Live Studio…	라이브 스튜디오…
+	Scenes	장면
+	Sources	소스
+	Visible	표시
+	Add a scene, then a source to it.	장면을 추가한 다음 소스를 추가하세요.
 	Add Studio Scene	스튜디오 장면 추가
 	Live	라이브
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

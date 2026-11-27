@@ -4601,6 +4601,12 @@ export.summary	Low	lav
 	software backend: {reason}	software-backend: {reason}
 	Start studio	Start studie
 	Stop studio	Stop studie
+	Live Studio	Livestudie
+	Live Studio…	Livestudie…
+	Scenes	Scener
+	Sources	Kilder
+	Visible	Synlig
+	Add a scene, then a source to it.	Tilføj en scene og derefter en kilde til den.
 	Add Studio Scene	Tilføj studiescene
 	Live	Live
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
