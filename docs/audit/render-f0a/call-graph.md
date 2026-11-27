@@ -922,7 +922,7 @@ A többi 655 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-smart-edit` | `media_index.rs` | enum | `DependencyStatus` |
 | `cfa4-testkit` | `fixtures.rs` | enum | `Status` |
 
-### Hang (47)
+### Hang (52)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -972,6 +972,11 @@ A többi 655 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-project` | `object.rs` | struct | `ObjectSample` |
 | `cfa4-qc` | `audio.rs` | struct | `AudioFacts` |
 | `cfa4-render` | `preview.rs` | struct | `AudioSegment` |
+| `cfa4-smart-edit` | `audio_index.rs` | enum | `AudioCodec` |
+| `cfa4-smart-edit` | `audio_index.rs` | struct | `AudioConfig` |
+| `cfa4-smart-edit` | `audio_index.rs` | struct | `AudioIndex` |
+| `cfa4-smart-edit` | `audio_index.rs` | enum | `AudioIndexError` |
+| `cfa4-smart-edit` | `audio_index.rs` | struct | `AudioUnit` |
 | `cfa4-testkit` | `smk.rs` | enum | `AudioKind` |
 
 ### Szín (18)
