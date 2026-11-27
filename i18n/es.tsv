@@ -4977,3 +4977,11 @@
 	Thresholds	Umbrales
 	Trail	Rastro
 	Use gestures in the window	Usar gestos en la ventana
+	DNx decoding:	Descodificación DNx:
+	As detected from the file ({detected})	Según lo detectado en el archivo ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (estándar)
+	FFmpeg-compatible	Compatible con FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg lee algunos archivos DNx de forma distinta al estándar (colores 4:4:4, cuantificación inversa). Se detecta el material codificado con FFmpeg; elija aquí si la detección es incorrecta.
+	DNx Coding	Codificación DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Compatible con FFmpeg (para herramientas basadas en FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Desactivado: codificado según SMPTE ST 2019-1. Activado: codificado como FFmpeg escribe DNx, para herramientas basadas en FFmpeg.

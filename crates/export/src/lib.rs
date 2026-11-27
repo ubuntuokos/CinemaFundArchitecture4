@@ -446,6 +446,10 @@ pub struct ExportSettings {
     /// DNxHR profile: `lb`, `sq`, `hq` or `hqx` (empty = HQ).
     #[serde(default)]
     pub dnx_profile: String,
+    /// DNx coded as FFmpeg writes it, for FFmpeg-based tools (CFA4-DNX-SPEC-001 D3): its inverse
+    /// quantisation and 4:4:4 signalling. Off = SMPTE ST 2019-1.
+    #[serde(default)]
+    pub dnx_ffmpeg_compat: bool,
     /// APV profile: `422-10`, `422-12`, `444-10` or `444-12` (empty = `422-10`).
     #[serde(default)]
     pub apv_profile: String,
@@ -893,6 +897,7 @@ impl Default for ExportSettings {
             max_threads: 0,
             prores_profile: String::new(),
             dnx_profile: String::new(),
+            dnx_ffmpeg_compat: false,
             apv_profile: String::new(),
             cineform_profile: String::new(),
             cineform_quality: String::new(),
@@ -2302,6 +2307,7 @@ fn dnx_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
         }
         let fourcc = if profile.hd_raster().is_some() { *b"AVdn" } else { *b"AVdh" };
         let mut cfg = cfa4_dnx::EncoderConfig::new(profile, w, h);
+        cfg.ffmpeg_compat = s.dnx_ffmpeg_compat;
         if s.signal.primaries == 9 {
             cfg.color_volume = cfa4_dnx::ColorVolume::Bt2020Ncl;
         }

@@ -297,6 +297,9 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = str_p(p, "dnxProfile") {
         settings.dnx_profile = v.to_string();
     }
+    if let Some(v) = bool_p(p, "dnxFfmpegCompat") {
+        settings.dnx_ffmpeg_compat = v;
+    }
     if let Some(v) = str_p(p, "apvProfile") {
         settings.apv_profile = v.to_string();
     }

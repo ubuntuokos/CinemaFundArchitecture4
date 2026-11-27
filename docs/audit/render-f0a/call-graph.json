@@ -4956,6 +4956,13 @@
   {
    "class": "other",
    "crate": "cfa4-project",
+   "kind": "enum",
+   "module": "lib.rs",
+   "name": "DnxConventions"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
    "kind": "struct",
    "module": "lib.rs",
    "name": "FieldOptions"
@@ -7817,6 +7824,11 @@
   },
   {
    "from": "cfa4-engine/color.rs",
+   "item": "DnxConventions",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/color.rs",
    "item": "MAX_LUT_TEXT_BYTES",
    "to": "cfa4-project"
   },
@@ -9559,6 +9571,11 @@
    "from": "cfa4-engine/media_pool.rs",
    "item": "wav",
    "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/media_pool.rs",
+   "item": "DnxConventions",
+   "to": "cfa4-project"
   },
   {
    "from": "cfa4-engine/media_pool.rs",

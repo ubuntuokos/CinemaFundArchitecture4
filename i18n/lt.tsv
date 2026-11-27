@@ -4973,3 +4973,11 @@ export.summary	Low	žema
 	Thresholds	Slenksčiai
 	Trail	Pėdsakas
 	Use gestures in the window	Naudoti gestus lange
+	DNx decoding:	DNx dekodavimas:
+	As detected from the file ({detected})	Kaip aptikta faile ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standartas)
+	FFmpeg-compatible	Suderinama su FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg kai kuriuos DNx failus skaito kitaip nei standartas (4:4:4 spalvos, atvirkštinis kvantavimas). FFmpeg užkoduota medžiaga aptinkama; pasirinkite čia, jei aptikimas klaidingas.
+	DNx Coding	DNx kodavimas
+	FFmpeg-compatible (for FFmpeg-based tools)	Suderinama su FFmpeg (FFmpeg pagrįstiems įrankiams)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Išjungta: koduojama pagal SMPTE ST 2019-1. Įjungta: koduojama taip, kaip FFmpeg rašo DNx, FFmpeg pagrįstiems įrankiams.

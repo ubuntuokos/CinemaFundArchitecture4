@@ -4421,6 +4421,70 @@ def test_real_engine_program_monitor_crop_handles(app, tmp_path: Path):
         win.close()
 
 
+def test_interpret_footage_chooses_dnx_conventions(app):
+    """Interpret Footage shows the DNx conventions for DNx footage only (CFA4-DNX-SPEC-001 R5);
+    OK sends ``dnxConventions`` only when it changed, and leaves mixed settings alone."""
+    from cfa4_qt.dialogs import InterpretFootageDialog
+
+    sent: list = []
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    auto = d.findChild(QtWidgets.QRadioButton, "interpretFootage.dnx.auto")
+    smpte = d.findChild(QtWidgets.QRadioButton, "interpretFootage.dnx.smpte")
+    assert auto is not None and smpte is not None and auto.isHidden()
+    for answer in (None, {"dnx": False}, "x"):
+        d._dnx_info(answer)
+        assert auto.isHidden()
+    d._dnx_info({"dnx": True, "setting": "auto", "detected": "ffmpeg", "effective": "ffmpeg"})
+    assert not auto.isHidden() and auto.isChecked() and "FFmpeg-compatible" in auto.text()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7]})
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    d._dnx_info({"dnx": True, "setting": "auto", "detected": "ffmpeg", "effective": "ffmpeg"})
+    d.findChild(QtWidgets.QRadioButton, "interpretFootage.dnx.smpte").setChecked(True)
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "dnxConventions": "smpte", "items": [7]})
+    # mixed settings: nothing chosen and nothing sent, unless one value is picked
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    d._dnx_info({"dnx": True, "setting": "smpte", "detected": "smpte", "effective": "smpte"})
+    d._dnx_info({"dnx": True, "setting": "ffmpeg", "detected": "smpte", "effective": "ffmpeg"})
+    assert d.chosen_dnx() is None
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7, 8]})
+
+
+def test_export_dnx_ffmpeg_compat_switch_only_for_dnx(app):
+    """CFA4-DNX-SPEC-001 D3: the FFmpeg-compatible DNx switch shows for DNxHR (also in MXF) and is
+    sent as ``dnxFfmpegCompat`` once changed."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "dnxhr", "label": "DNxHR"}, {"id": "mxf-op1a", "label": "MXF OP1a"}], None)
+    box = dlg.findChild(QtWidgets.QCheckBox, "export.video.dnxFfmpegCompat")
+    assert box is dlg.dnx_ffmpeg
+    dlg.format.setCurrentIndex(dlg.format.findData("h264"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "dnxFfmpegCompat" not in dlg.params()
+    dlg.format.setCurrentIndex(dlg.format.findData("dnxhr"))
+    dlg._sync_format_rows()
+    assert not box.isHidden() and "dnxFfmpegCompat" not in dlg.params()
+    box.setChecked(True)
+    assert dlg.params()["dnxFfmpegCompat"] is True
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-op1a"))
+    dlg._sync_format_rows()
+    assert not box.isHidden()
+    codec = dlg.format_choices["mxfVideoCodec"]
+    codec.setCurrentIndex(codec.findData("proRes"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "dnxFfmpegCompat" not in dlg.params()
+    dlg.deleteLater()
+
+
 def test_interpret_footage_turns_auro_decoding_off(app):
     """Interpret Footage shows the Auro-3D switch for a carrier only (#323); OK sends it only
     when it changed."""

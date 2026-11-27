@@ -4970,3 +4970,11 @@
 	Thresholds	Soglie
 	Trail	Scia
 	Use gestures in the window	Usa i gesti nella finestra
+	DNx decoding:	Decodifica DNx:
+	As detected from the file ({detected})	Come rilevato dal file ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	Compatibile con FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg legge alcuni file DNx in modo diverso dallo standard (colori 4:4:4, quantizzazione inversa). Il materiale codificato da FFmpeg viene rilevato; scegli qui se il rilevamento è errato.
+	DNx Coding	Codifica DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Compatibile con FFmpeg (per strumenti basati su FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Disattivato: codificato secondo SMPTE ST 2019-1. Attivato: codificato come FFmpeg scrive il DNx, per strumenti basati su FFmpeg.

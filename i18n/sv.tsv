@@ -4972,3 +4972,11 @@ export.summary	Low	låg
 	Thresholds	Trösklar
 	Trail	Spår
 	Use gestures in the window	Använd gester i fönstret
+	DNx decoding:	DNx-avkodning:
+	As detected from the file ({detected})	Enligt identifiering från filen ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	FFmpeg-kompatibel
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg läser vissa DNx-filer annorlunda än standarden (4:4:4-färger, invers kvantisering). Material som FFmpeg har kodat identifieras; välj här om identifieringen är fel.
+	DNx Coding	DNx-kodning
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibel (för FFmpeg-baserade verktyg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Av: kodas enligt SMPTE ST 2019-1. På: kodas så som FFmpeg skriver DNx, för verktyg byggda på FFmpeg.

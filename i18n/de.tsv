@@ -4977,3 +4977,11 @@
 	Thresholds	Schwellen
 	Trail	Spur
 	Use gestures in the window	Gesten im Fenster verwenden
+	DNx decoding:	DNx-Decodierung:
+	As detected from the file ({detected})	Wie aus der Datei erkannt ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (Standard)
+	FFmpeg-compatible	FFmpeg-kompatibel
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg liest manche DNx-Dateien anders als der Standard (4:4:4-Farben, inverse Quantisierung). Von FFmpeg codiertes Material wird erkannt; wählen Sie hier, wenn die Erkennung falsch ist.
+	DNx Coding	DNx-Codierung
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibel (für FFmpeg-basierte Werkzeuge)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Aus: codiert nach SMPTE ST 2019-1. Ein: codiert, wie FFmpeg DNx schreibt, für Werkzeuge auf FFmpeg-Basis.

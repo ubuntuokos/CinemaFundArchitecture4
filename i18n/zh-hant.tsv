@@ -4969,3 +4969,11 @@ export.summary	Low	低
 	Thresholds	閾值
 	Trail	軌跡
 	Use gestures in the window	在視窗中使用手勢
+	DNx decoding:	DNx 解碼：
+	As detected from the file ({detected})	依檔案偵測結果 ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1（標準）
+	FFmpeg-compatible	相容於 FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg 讀取某些 DNx 檔案的方式與標準不同（4:4:4 色彩、反量化）。由 FFmpeg 編碼的素材會被偵測到；若偵測有誤，請在此選擇。
+	DNx Coding	DNx 編碼
+	FFmpeg-compatible (for FFmpeg-based tools)	相容於 FFmpeg（供以 FFmpeg 為基礎的工具使用）
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	關：依 SMPTE ST 2019-1 編碼。開：依 FFmpeg 寫入 DNx 的方式編碼，供以 FFmpeg 為基礎的工具使用。

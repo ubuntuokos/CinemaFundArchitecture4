@@ -4978,3 +4978,11 @@
 	Thresholds	Ambang
 	Trail	Jejak
 	Use gestures in the window	Gunakan gestur di jendela
+	DNx decoding:	Dekode DNx:
+	As detected from the file ({detected})	Sesuai deteksi dari berkas ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standar)
+	FFmpeg-compatible	Kompatibel dengan FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg membaca beberapa berkas DNx secara berbeda dari standar (warna 4:4:4, kuantisasi balik). Rekaman yang dienkode FFmpeg terdeteksi; pilih di sini jika deteksinya salah.
+	DNx Coding	Pengodean DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Kompatibel dengan FFmpeg (untuk alat berbasis FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Mati: dienkode menurut SMPTE ST 2019-1. Nyala: dienkode seperti FFmpeg menulis DNx, untuk alat yang dibangun di atas FFmpeg.

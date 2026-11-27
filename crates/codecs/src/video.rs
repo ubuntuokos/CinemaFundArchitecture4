@@ -904,6 +904,31 @@ pub struct DnxDecoder {
     pub ffmpeg_compat: bool,
 }
 
+/// Interpret Footage ▸ DNx conventions for one source (CFA4-DNX-SPEC-001 R5): FFmpeg's, the
+/// standard's, or (by default) as the source detects from its container.
+#[derive(Debug, Default)]
+pub(crate) struct DnxChoice(std::sync::atomic::AtomicU8);
+
+impl DnxChoice {
+    pub(crate) fn set(&self, ffmpeg: Option<bool>) {
+        let v = match ffmpeg {
+            None => 0,
+            Some(false) => 1,
+            Some(true) => 2,
+        };
+        self.0.store(v, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// FFmpeg's conventions? The choice, or `detected` when there is none.
+    pub(crate) fn ffmpeg(&self, detected: bool) -> bool {
+        match self.0.load(std::sync::atomic::Ordering::Relaxed) {
+            1 => false,
+            2 => true,
+            _ => detected,
+        }
+    }
+}
+
 /// Did FFmpeg write this MXF file? From the Identification set's company / product (`FFmpeg`,
 /// `Lavf…`). FFmpeg's MXF muxer records no encoder, so this cannot tell FFmpeg-encoded essence
 /// from essence FFmpeg only rewrapped (CFA4-DNX-SPEC-001 R5, owner decision 2026-11-25).

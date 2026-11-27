@@ -4971,3 +4971,11 @@ export.summary	Low	düşük
 	Thresholds	Eşikler
 	Trail	İz
 	Use gestures in the window	Pencerede hareketleri kullan
+	DNx decoding:	DNx kod çözme:
+	As detected from the file ({detected})	Dosyadan algılandığı gibi ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standart)
+	FFmpeg-compatible	FFmpeg uyumlu
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg bazı DNx dosyalarını standarttan farklı okur (4:4:4 renkler, ters niceleme). FFmpeg ile kodlanmış görüntü algılanır; algılama yanlışsa burada seçin.
+	DNx Coding	DNx kodlama
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg uyumlu (FFmpeg tabanlı araçlar için)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Kapalı: SMPTE ST 2019-1'e göre kodlanır. Açık: FFmpeg'in DNx yazdığı biçimde kodlanır, FFmpeg tabanlı araçlar için.

@@ -4964,3 +4964,11 @@
 	Thresholds	임계값
 	Trail	궤적
 	Use gestures in the window	창에서 제스처 사용
+	DNx decoding:	DNx 디코딩:
+	As detected from the file ({detected})	파일에서 감지한 대로 ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (표준)
+	FFmpeg-compatible	FFmpeg 호환
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg는 일부 DNx 파일을 표준과 다르게 읽습니다(4:4:4 색상, 역양자화). FFmpeg로 인코딩한 영상은 감지됩니다. 감지가 잘못된 경우 여기에서 선택하십시오.
+	DNx Coding	DNx 인코딩
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg 호환(FFmpeg 기반 도구용)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	끔: SMPTE ST 2019-1에 따라 인코딩합니다. 켬: FFmpeg가 DNx를 쓰는 방식으로 인코딩합니다(FFmpeg 기반 도구용).

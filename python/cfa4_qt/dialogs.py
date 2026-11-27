@@ -289,6 +289,29 @@ class InterpretFootageDialog(QDialog):
         # as they are unless the user picks one value for all
         self._auro_states: list[bool] = []
         self.auro.clicked.connect(lambda _c=False: self.auro.setTristate(False))
+        # DNx conventions (CFA4-DNX-SPEC-001 R5, D2): shown for DNx footage only; auto = as
+        # detected from the container, or SMPTE ST 2019-1, or as FFmpeg reads it
+        self.dnx_label = QLabel(tr("DNx decoding:"), self)
+        self.dnx_group = QButtonGroup(self)
+        self.dnx_choices: dict[str, QRadioButton] = {}
+        dnx_widgets: list[QWidget] = [self.dnx_label]
+        for cid, label in (("auto", fmt("As detected from the file ({detected})", detected="—")),
+                           ("smpte", tr("SMPTE ST 2019-1 (standard)")),
+                           ("ffmpeg", tr("FFmpeg-compatible"))):
+            b = QRadioButton(label, self)
+            b.setObjectName(f"interpretFootage.dnx.{cid}")
+            self.dnx_group.addButton(b)
+            self.dnx_choices[cid] = b
+            dnx_widgets.append(b)
+        self.dnx_hint = QLabel(tr("FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong."), self)
+        self.dnx_hint.setWordWrap(True)
+        dnx_widgets.append(self.dnx_hint)
+        for widget in dnx_widgets:
+            widget.setVisible(False)
+            layout.addWidget(widget)
+        # each selected DNx item's setting; mixed settings select nothing and stay as they are
+        # unless the user picks one value for all
+        self._dnx_settings: list[str] = []
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self)
         buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("interpretFootage.ok")
         buttons.button(QDialogButtonBox.StandardButton.Cancel).setObjectName("interpretFootage.cancel")
@@ -301,6 +324,7 @@ class InterpretFootageDialog(QDialog):
                 engine.execute("media.colorInfo", {"item": items[0]}, on_reply=lambda r, _b: self._info(r))
                 for item in items:
                     engine.execute("media.auroInfo", {"item": item}, on_reply=lambda r, _b: self._auro_info(r))
+                    engine.execute("media.dnxInfo", {"item": item}, on_reply=lambda r, _b: self._dnx_info(r))
 
     def _add_choice(self, cid: str, label: str) -> None:
         b = QRadioButton(label, self)
@@ -338,6 +362,25 @@ class InterpretFootageDialog(QDialog):
         for w in (self.auro, self.auro_hint):
             w.setVisible(True)
 
+    def _dnx_info(self, result: Any) -> None:
+        if not isinstance(result, dict) or result.get("dnx") is not True:
+            return
+        setting = result.get("setting") if result.get("setting") in self.dnx_choices else "auto"
+        self._dnx_settings.append(str(setting))
+        detected = tr("FFmpeg-compatible") if result.get("detected") == "ffmpeg" else tr("SMPTE ST 2019-1 (standard)")
+        self.dnx_choices["auto"].setText(fmt("As detected from the file ({detected})", detected=detected))
+        mixed = len(set(self._dnx_settings)) > 1
+        self.dnx_group.setExclusive(False)  # lets every choice be cleared for mixed settings
+        for cid, b in self.dnx_choices.items():
+            b.setChecked(not mixed and cid == self._dnx_settings[0])
+        self.dnx_group.setExclusive(True)
+        for w in (self.dnx_label, self.dnx_hint, *self.dnx_choices.values()):
+            w.setVisible(True)
+
+    def chosen_dnx(self) -> str | None:
+        """The DNx conventions picked, or None when the items' mixed settings were left as they are."""
+        return next((cid for cid, b in self.dnx_choices.items() if b.isChecked()), None)
+
     def _select(self, cid: str | None) -> None:
         if cid is not None and cid in self.choices:
             self.choices[cid].setChecked(True)
@@ -352,6 +395,9 @@ class InterpretFootageDialog(QDialog):
             on = state == Qt.CheckState.Checked
             if any(was != on for was in self._auro_states):
                 params["auroDecoding"] = on
+        dnx = self.chosen_dnx()
+        if self._dnx_settings and dnx is not None and any(was != dnx for was in self._dnx_settings):
+            params["dnxConventions"] = dnx
         if self.items:
             params["items"] = self.items
         self.send("clip.interpretFootage", params)

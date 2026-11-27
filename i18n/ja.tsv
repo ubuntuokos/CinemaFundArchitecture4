@@ -4979,3 +4979,11 @@
 	Thresholds	しきい値
 	Trail	軌跡
 	Use gestures in the window	ウィンドウでジェスチャーを使う
+	DNx decoding:	DNx のデコード:
+	As detected from the file ({detected})	ファイルから検出 ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (規格)
+	FFmpeg-compatible	FFmpeg 互換
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg は一部の DNx ファイルを規格とは異なる方法で読み込みます (4:4:4 の色、逆量子化)。FFmpeg でエンコードされた素材は検出されます。検出が誤っている場合はここで選択してください。
+	DNx Coding	DNx のエンコード
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg 互換 (FFmpeg ベースのツール向け)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	オフ: SMPTE ST 2019-1 に従ってエンコードします。オン: FFmpeg が DNx を書き出す方法でエンコードします (FFmpeg ベースのツール向け)。

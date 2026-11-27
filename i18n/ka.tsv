@@ -4973,3 +4973,11 @@ export.summary	Low	დაბალი
 	Thresholds	ზღურბლები
 	Trail	კვალი
 	Use gestures in the window	ჟესტები ფანჯარაში
+	DNx decoding:	DNx-ის დეკოდირება:
+	As detected from the file ({detected})	ფაილიდან ამოცნობის მიხედვით ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (სტანდარტი)
+	FFmpeg-compatible	FFmpeg-თან თავსებადი
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg ზოგიერთ DNx ფაილს სტანდარტისგან განსხვავებულად კითხულობს (4:4:4 ფერები, შებრუნებული კვანტირება). FFmpeg-ით კოდირებული მასალა ამოიცნობა; აირჩიეთ აქ, თუ ამოცნობა მცდარია.
+	DNx Coding	DNx-ის კოდირება
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-თან თავსებადი (FFmpeg-ზე დაფუძნებული ხელსაწყოებისთვის)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	გამორთული: კოდირება SMPTE ST 2019-1-ის მიხედვით. ჩართული: კოდირება ისე, როგორც FFmpeg წერს DNx-ს, FFmpeg-ზე აგებული ხელსაწყოებისთვის.

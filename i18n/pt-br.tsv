@@ -4980,3 +4980,11 @@
 	Thresholds	Limiares
 	Trail	Rastro
 	Use gestures in the window	Usar gestos na janela
+	DNx decoding:	Decodificação DNx:
+	As detected from the file ({detected})	Conforme detectado no arquivo ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (padrão)
+	FFmpeg-compatible	Compatível com FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	O FFmpeg lê alguns arquivos DNx de forma diferente do padrão (cores 4:4:4, quantização inversa). O material codificado pelo FFmpeg é detectado; escolha aqui quando a detecção estiver errada.
+	DNx Coding	Codificação DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Compatível com FFmpeg (para ferramentas baseadas em FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Desligado: codificado conforme SMPTE ST 2019-1. Ligado: codificado como o FFmpeg grava DNx, para ferramentas baseadas em FFmpeg.
