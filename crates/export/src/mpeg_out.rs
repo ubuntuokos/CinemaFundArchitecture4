@@ -22,10 +22,13 @@ pub enum Mpeg2Container {
     M2ts,
     /// The video elementary stream alone (`.m2v`).
     Es,
+    /// A DVD-Video disc folder: the output path is a directory that gets `VIDEO_TS/` with the
+    /// IFO, BUP and VOB files (`cfa4-dvd`).
+    Dvd,
 }
 
 impl Mpeg2Container {
-    pub const ALL: [Mpeg2Container; 4] = [Mpeg2Container::Ps, Mpeg2Container::Ts, Mpeg2Container::M2ts, Mpeg2Container::Es];
+    pub const ALL: [Mpeg2Container; 5] = [Mpeg2Container::Ps, Mpeg2Container::Ts, Mpeg2Container::M2ts, Mpeg2Container::Es, Mpeg2Container::Dvd];
 
     /// From an id (`ps`, `ts`, `m2ts`, `es`) or a file extension.
     pub fn from_name(s: &str) -> Option<Mpeg2Container> {
@@ -34,6 +37,7 @@ impl Mpeg2Container {
             "ts" | "transport" => Mpeg2Container::Ts,
             "m2ts" | "mts" | "bdav" => Mpeg2Container::M2ts,
             "es" | "m2v" | "mpv" | "elementary" => Mpeg2Container::Es,
+            "dvd" | "dvdvideo" | "dvd-video" | "video_ts" => Mpeg2Container::Dvd,
             _ => return None,
         })
     }
@@ -44,6 +48,7 @@ impl Mpeg2Container {
             Mpeg2Container::Ts => "ts",
             Mpeg2Container::M2ts => "m2ts",
             Mpeg2Container::Es => "es",
+            Mpeg2Container::Dvd => "dvd",
         }
     }
 
@@ -53,6 +58,7 @@ impl Mpeg2Container {
             Mpeg2Container::Ts => "MPEG-2 Transport Stream (.ts)",
             Mpeg2Container::M2ts => "BDAV Transport Stream (.m2ts)",
             Mpeg2Container::Es => "Elementary Stream (.m2v, no audio)",
+            Mpeg2Container::Dvd => "DVD-Video folder (VIDEO_TS)",
         }
     }
 
@@ -62,6 +68,8 @@ impl Mpeg2Container {
             Mpeg2Container::Ts => "ts",
             Mpeg2Container::M2ts => "m2ts",
             Mpeg2Container::Es => "m2v",
+            // the output is a folder
+            Mpeg2Container::Dvd => "",
         }
     }
 
@@ -95,6 +103,93 @@ pub(crate) fn mpeg2_rate(rate: FrameRate) -> bool {
 /// leaves room for I pictures, plus 10 % for the packet headers.
 pub(crate) fn mux_rate(video_kbps: u32, audio_bps: u64) -> u64 {
     (u64::from(video_kbps) * 2000 + audio_bps) * 11 / 10
+}
+
+/// The DVD-Video side of an export: the disc folder, the staged VOB inside it and the title set.
+struct DvdStage {
+    dir: std::path::PathBuf,
+    vob: std::path::PathBuf,
+    spec: cfa4_dvd::TitleSetSpec,
+}
+
+/// Name of the VOB written first and authored into `VTS_01_n.VOB` when the export ends.
+const DVD_STAGE: &str = ".cfa4-dvd-stage.vob";
+
+/// The DVD aspect flag of `w` x `h` pictures of pixel aspect `par`: 16:9 when the picture is
+/// that, else 4:3 (DVD-Video has no other picture aspect ratios).
+pub(crate) fn dvd_aspect(w: u32, h: u32, par: Option<(u32, u32)>) -> cfa4_mpeg2v::encode::AspectRatio {
+    match crate::mpeg2_aspect(w, h, par) {
+        cfa4_mpeg2v::encode::AspectRatio::Dar16x9 => cfa4_mpeg2v::encode::AspectRatio::Dar16x9,
+        _ => cfa4_mpeg2v::encode::AspectRatio::Dar4x3,
+    }
+}
+
+/// The DVD-Video timing and picture size of an export: 25 fps 720/704/352 x 576 (or 352 x 288),
+/// or 29.97 fps 720/704/352 x 480 (or 352 x 240).
+pub(crate) fn dvd_picture(w: u32, h: u32, rate: FrameRate) -> Result<cfa4_dvd::Timing> {
+    let timing = match (rate.num, rate.den) {
+        (25, 1) => cfa4_dvd::Timing::Pal,
+        (30000, 1001) => cfa4_dvd::Timing::Ntsc,
+        _ => {
+            return Err(ExportError::Unsupported(format!("DVD-Video runs at 25 fps (PAL) or 29.97 fps (NTSC), not {}: set the frame rate", rate.label())));
+        }
+    };
+    let (full, half) = if timing == cfa4_dvd::Timing::Pal { (576, 288) } else { (480, 240) };
+    if !(matches!(w, 720 | 704 | 352) && h == full || w == 352 && h == half) {
+        return Err(ExportError::Unsupported(format!(
+            "DVD-Video pictures are 720, 704 or 352 x {full} (or 352 x {half}) at this frame rate, not {w}x{h}: set the frame size"
+        )));
+    }
+    Ok(timing)
+}
+
+/// The title set of a DVD-Video export; `chapters` are 90 kHz offsets of the chapter markers.
+pub(crate) fn dvd_spec(
+    settings: &ExportSettings,
+    w: u32,
+    h: u32,
+    rate: FrameRate,
+    audio: Option<&MpegAudio>,
+    channels: usize,
+    chapters: &[u64],
+) -> Result<cfa4_dvd::TitleSetSpec> {
+    let timing = dvd_picture(w, h, rate)?;
+    let widescreen = dvd_aspect(w, h, settings.pixel_aspect) == cfa4_mpeg2v::encode::AspectRatio::Dar16x9;
+    let bad_rate = |r: u32| ExportError::Unsupported(format!("DVD-Video audio runs at 48 kHz (LPCM also 96 kHz), not {r} Hz"));
+    let audio = match audio {
+        None => Vec::new(),
+        Some(MpegAudio::Lpcm { sample_rate, channels, bits }) => {
+            if !matches!(*sample_rate, 48_000 | 96_000) {
+                return Err(bad_rate(*sample_rate));
+            }
+            vec![cfa4_dvd::Audio {
+                kind: cfa4_dvd::AudioKind::Lpcm,
+                channels: u8::try_from(*channels).unwrap_or(2),
+                language: None,
+                lpcm_bits: u8::try_from(*bits).unwrap_or(16),
+                lpcm_rate: *sample_rate,
+            }]
+        }
+        Some(MpegAudio::Ac3(enc)) => {
+            if enc.sample_rate() != 48_000 {
+                return Err(bad_rate(enc.sample_rate()));
+            }
+            vec![cfa4_dvd::Audio { kind: cfa4_dvd::AudioKind::Ac3, channels: u8::try_from(channels).unwrap_or(2), language: None, lpcm_bits: 0, lpcm_rate: 0 }]
+        }
+        Some(MpegAudio::Mp2 { enc, sample_rate }) => {
+            if *sample_rate != 48_000 {
+                return Err(bad_rate(*sample_rate));
+            }
+            let channels = u8::try_from(enc.config().channels).unwrap_or(2);
+            vec![cfa4_dvd::Audio { kind: cfa4_dvd::AudioKind::Mpeg, channels, language: None, lpcm_bits: 0, lpcm_rate: 0 }]
+        }
+        Some(MpegAudio::Aac { .. }) => return Err(ExportError::Unsupported("DVD-Video carries AC-3, MP2 or LPCM audio, not AAC".into())),
+    };
+    let mut starts = vec![0u64];
+    starts.extend(chapters.iter().copied().filter(|c| *c > 0));
+    starts.sort_unstable();
+    starts.dedup();
+    Ok(cfa4_dvd::TitleSetSpec { timing, widescreen, width: u16::try_from(w).unwrap_or(720), audio, chapters: starts })
 }
 
 enum Sink {
@@ -144,6 +239,7 @@ pub(crate) struct MpegMux {
     /// 20- and 24-bit LPCM goes in groups of two sample frames: an odd frame waits here
     /// (interleaved samples).
     pending: Vec<i32>,
+    dvd: Option<DvdStage>,
 }
 
 fn mux_err(e: cfa4_mpegts::MuxError) -> ExportError {
@@ -161,13 +257,47 @@ fn to_90k(n: i64, num: i64, den: i64) -> i64 {
 }
 
 impl MpegMux {
-    /// `video` are the encoder's parameters: its VBV is the video buffer of the transport stream
-    /// (T-STD) and of a program stream (P-STD).
-    pub fn new(settings: &ExportSettings, rate: FrameRate, audio: Option<MpegAudio>, mux_rate: u64, video: Option<crate::MpegVideoInfo>) -> Result<Self> {
-        let out = Out::create(settings)?;
+    /// `dvd` is the title set of a DVD-Video export ([`dvd_spec`]), required for
+    /// [`Mpeg2Container::Dvd`] and unused otherwise. `video` are the encoder's parameters: its VBV
+    /// is the video buffer of the transport stream (T-STD) and of a program stream (P-STD).
+    pub fn new(
+        settings: &ExportSettings,
+        rate: FrameRate,
+        audio: Option<MpegAudio>,
+        mux_rate: u64,
+        dvd: Option<cfa4_dvd::TitleSetSpec>,
+        video: Option<crate::MpegVideoInfo>,
+    ) -> Result<Self> {
         let container = Mpeg2Container::of(settings);
+        let mut stage = None;
+        let out = if container == Mpeg2Container::Dvd {
+            let spec = dvd.ok_or_else(|| ExportError::Encode("internal: a DVD-Video export needs its title set".into()))?;
+            if settings.sink.is_some() || settings.output_file.is_some() {
+                return Err(ExportError::Unsupported("a DVD-Video folder is written to disk, not to a stream or a sink".into()));
+            }
+            let dir = std::path::PathBuf::from(&settings.path);
+            std::fs::create_dir_all(&dir).map_err(|e| ExportError::Io(format!("{}: {e}", settings.path)))?;
+            let vob = dir.join(DVD_STAGE);
+            let out = Out::create_path(settings, &vob.to_string_lossy())?;
+            stage = Some(DvdStage { dir, vob, spec });
+            out
+        } else {
+            Out::create(settings)?
+        };
         let sink = match container {
             Mpeg2Container::Es => Sink::Es(out),
+            Mpeg2Container::Dvd => {
+                let mut streams = vec![MuxCodec::Mpeg2Video];
+                match &audio {
+                    Some(MpegAudio::Lpcm { sample_rate, channels, bits }) => {
+                        streams.push(MuxCodec::LpcmDvd { sample_rate: *sample_rate, channels: *channels, bits: *bits })
+                    }
+                    Some(MpegAudio::Ac3(_)) => streams.push(MuxCodec::Ac3),
+                    Some(MpegAudio::Mp2 { .. }) => streams.push(MuxCodec::MpegAudio),
+                    _ => {}
+                }
+                Sink::Mux(Box::new(Muxer::new_dvd(out, &streams).map_err(mux_err)?))
+            }
             c => {
                 let mut streams = vec![MuxCodec::Mpeg2Video];
                 match &audio {
@@ -205,7 +335,7 @@ impl MpegMux {
             }
         };
         let audio = if container.has_audio() { audio } else { None };
-        Ok(MpegMux { sink, rate, audio, pictures: 0, samples: 0, dts_base: 0, pending: Vec::new() })
+        Ok(MpegMux { sink, rate, audio, pictures: 0, samples: 0, dts_base: 0, pending: Vec::new(), dvd: stage })
     }
 
     pub fn write_video(&mut self, packets: Vec<EncodedPacket>) -> Result<()> {
@@ -325,6 +455,7 @@ impl MpegMux {
         }
         const SEQUENCE_END: [u8; 4] = [0, 0, 1, 0xB7];
         let io = |e: std::io::Error| ExportError::Io(e.to_string());
+        let stage = self.dvd.take();
         let out = match self.sink {
             Sink::Es(mut out) => {
                 out.write_all(&SEQUENCE_END).map_err(io)?;
@@ -348,7 +479,19 @@ impl MpegMux {
                 m.finish().map_err(mux_err)?
             }
         };
-        out.finish(settings)
+        let Some(stage) = stage else { return out.finish(settings) };
+        let vob = stage.vob.to_string_lossy().into_owned();
+        out.publish(&vob)?;
+        let authored = cfa4_dvd::write_disc(&stage.dir, &stage.vob, &stage.spec).map_err(|e| ExportError::Encode(format!("DVD-Video authoring: {e}")));
+        // the staged VOB is gone whether or not authoring worked
+        let removed = std::fs::remove_file(&stage.vob);
+        authored?;
+        removed.map_err(|e| ExportError::Io(format!("{vob}: {e}")))?;
+        let mut bytes = 0;
+        for f in std::fs::read_dir(stage.dir.join("VIDEO_TS")).map_err(|e| ExportError::Io(e.to_string()))? {
+            bytes += f.and_then(|f| f.metadata()).map(|m| m.len()).unwrap_or(0);
+        }
+        Ok(bytes)
     }
 }
 

@@ -4970,3 +4970,8 @@ export.summary	Low	laag
 	Thresholds	Drempels
 	Trail	Spoor
 	Use gestures in the window	Gebaren in het venster gebruiken
+	DVD-Video folder (VIDEO_TS)	DVD-Video-map (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-map (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorf, 6 Mbps, GOP 15, AC-3 192 kbps, hoofdstukken uit de hoofdstukmarkeringen van de sequentie
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-map (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorf, 6 Mbps, GOP 18, AC-3 192 kbps, hoofdstukken uit de hoofdstukmarkeringen van de sequentie

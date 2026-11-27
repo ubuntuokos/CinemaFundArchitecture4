@@ -79,8 +79,22 @@ fn render_events_round_trip_and_stay_consistent() {
 
 #[test]
 fn version_and_capability_defaults_are_pinned() {
-    assert_eq!(CONTRACT_VERSION, ContractVersion { major: 0, minor: 1 });
+    assert_eq!(CONTRACT_VERSION, ContractVersion { major: 0, minor: 2 });
     assert_eq!(Tick::ZERO.0, 0);
     let cap = RenderCapability { format: PixelFormat::Rgba8, bit_depth: 8, place: Place::Cpu, supported: false, reason: "no".into() };
     assert_eq!(decide(&cap, Context::Export), Support::FailClosed);
+}
+
+/// ADR "render worker output index" (0.2): the progress total is an estimate that may move while a job
+/// runs (an IVTC or a 2x deinterlace changes the frame count); an event stays well formed and the
+/// fraction stays bounded in every case.
+#[test]
+fn the_progress_total_may_move_while_a_job_runs() {
+    use crate::RenderEvent;
+    for (done, total) in [(4, 8), (4, 10), (9, 8), (0, 0)] {
+        let e = RenderEvent::progress("j", done, total, None, "");
+        assert!(e.is_consistent(), "{done}/{total}");
+        let f = e.progress.map(|p| p.fraction()).unwrap_or(-1.0);
+        assert!((0.0..=1.0).contains(&f), "{done}/{total}: {f}");
+    }
 }

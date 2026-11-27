@@ -114,6 +114,16 @@ Plan DCP-F20. A DCP export goes through the export queue (`export.queue.add`, th
 Not covered: a direct `file.exportMedia` of a DCP is not validated (queue only); validation does not say
 that CFA4 writes complete DCPs (encryption, signing and KDMs are other projects).
 
+## Package structure (DCP-22)
+
+`dcp.package.info {root}` is the read-only model behind the Qt6 package views (plan DCP-F19), schema
+`cfa4-dcp-package/1`: the asset map with the state of every file (`file`, `missing`, `notAFile`, `unsafe`,
+size), the packing lists (each asset with `inAssetMap`), the compositions with their reels, assets, markers and
+the file of every reel asset, and `security` (signed documents; encrypted assets by `KeyId` only, never key
+material). It reads only the XML documents under the `cfa4-dcp` limits, opens no track file, writes nothing and
+runs no program, so it answers at once and is not a job. Not in it yet: the certificate chain of the
+signatures (DCP-23 follows with the Qt tabs; the chain view needs its own step).
+
 ## Repair proposals (DCP-14)
 
 `dcp.repair.plan {root}` turns the latest report of a package into `cfa4-dcp-repair/1`: every failure or

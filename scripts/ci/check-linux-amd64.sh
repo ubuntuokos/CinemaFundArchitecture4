@@ -51,17 +51,21 @@ import tomllib
 root = Path.cwd()
 workflow = (root / ".github/workflows/ci-linux.yml").read_text()
 assert "  platform-scope:" in workflow
-assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 11
+assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 12
 assert "types: [opened, synchronize, reopened, labeled]" in workflow
 # Merge queue (owner decision 2026-11-07, #719): every full job also runs on merge_group.
 assert "\n  merge_group:\n" in workflow
-assert workflow.count("github.event_name == 'merge_group'") == 11
+assert workflow.count("github.event_name == 'merge_group'") == 12
 assert workflow.count("    needs: platform-scope") == 11
 # Python 3.14 (owner decision 2026-11-14, CFA4-TITLE-CREDITS-001 Q6) is the 11th full job, non-blocking (not in the gate needs).
-assert workflow.count("    runs-on: ubuntu-26.04") == 13
+assert workflow.count("    runs-on: ubuntu-26.04") == 14
 # Required merge gate (owner decision 2026-10-31): fails unless every blocking full job succeeded.
 assert "  full-validation-gate:" in workflow and "    name: full-validation-gate" in workflow
 assert "if: always() && github.event_name != 'push'" in workflow
+# The non-blocking Qt GUI tests with the real engine have their own job, outside the gate's needs
+# (owner decision 2026-11-24), so a hanging GUI test does not hold the gate back.
+gate = workflow[workflow.index("  full-validation-gate:"):]
+assert "  qt-gui-real-engine:" in workflow and "qt-gui-real-engine" not in gate.split("    steps:")[0]
 assert 'info.get("result") != "success"' in workflow, "a skipped job must fail the gate"
 assert "audit-gpu-hardware.sh" not in workflow, "physical GPU gate must not run on hosted CI"
 assert "CFA4_REQUIRE_GPU_FX" in (root / "crates/gpu/src/fx_tests.rs").read_text()
