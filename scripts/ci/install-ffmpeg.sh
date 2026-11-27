@@ -29,7 +29,8 @@ if [[ ! -x "${prefix}/bin/ffmpeg" || ! -x "${prefix}/bin/ffprobe" ]]; then
     ./configure --prefix="$prefix" --disable-doc --disable-debug --disable-ffplay \
       --disable-autodetect --disable-shared --enable-static --enable-gpl --enable-zlib \
       --enable-libdav1d --enable-libsvtav1 --enable-libaom \
-      --enable-libvpx --enable-libmp3lame --enable-libopus --enable-libwebp --enable-libopenjpeg
+      --enable-libvpx --enable-libmp3lame --enable-libopus --enable-libwebp --enable-libopenjpeg \
+      --enable-vulkan --glslc=glslc
     make -j2
     make install
   )
@@ -49,7 +50,7 @@ done
 # apps/cfa4-cli/tests and crates/*/tests (including their common fixture helpers).
 # Check every dependency in one pass, rather than discovering missing codecs
 # only after a long Rust release-test run.
-video_encoders=(libvpx libvpx-vp9 libsvtav1 libaom-av1 libwebp libopenjpeg jpeg2000 mpeg2video mjpeg prores_ks dnxhd rawvideo png)
+video_encoders=(apv_vulkan libvpx libvpx-vp9 libsvtav1 libaom-av1 libwebp libopenjpeg jpeg2000 mpeg2video mjpeg prores_ks dnxhd rawvideo png)
 audio_encoders=(libmp3lame libopus aac ac3 eac3 mp2 flac vorbis pcm_s16le pcm_s24le pcm_dvd)
 video_decoders=(apv libdav1d jpeg2000 h264 hevc vp8 vp9 mpeg2video prores dnxhd png webp)
 audio_decoders=(aac ac3 eac3 mp3 mp2 opus vorbis flac)

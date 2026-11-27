@@ -10,6 +10,7 @@ sudo apt-get update
 oracle_dev_packages=(
   libdav1d-dev libsvtav1enc-dev libaom-dev
   libvpx-dev libmp3lame-dev libopus-dev libwebp-dev libopenjp2-7-dev zlib1g-dev
+  glslc mesa-vulkan-drivers
   libheif-examples libheif-plugin-libde265 libheif-plugin-x265 libjxl-tools
   webp
 )
