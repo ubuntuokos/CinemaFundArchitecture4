@@ -1,9 +1,11 @@
 # Settings and Hardware menu (Qt 6)
 
-> **Last updated:** 2026-11-27 · **Change:** minor (the menu plan moved into the repo as `plans/CFA4-SETTINGS-MENU-001.md`; next step proposed in `plans/CFA4-SETTINGS-HW-002.md`)
+> **Last updated:** 2026-11-27 · **Change:** minor (the groups and the Accelerators and Decoding & Encoding pages are in the Qt editor's Preferences dialog, `cfa4-qt`; the menu plan moved into the repo)
 
-The Settings window of the Qt 6 shell (`python/cfa4_devtools/qt_settings.py`, Edit ▸ Settings…,
-Ctrl+,). It merges the CFA3 Control Center layout, the FA3 SystemSettingsPage draft and the
+The Settings window of the Qt 6 editor, `cfa4-qt` (`python/cfa4_qt/panels/settings.py` and
+`settings_hardware.py`, Edit ▸ Preferences ▸ <page>, Ctrl+,). Phases 1 and 2 were first built in
+the experimental Qt shell (`python/cfa4_devtools/qt_settings.py`, `cfa4-qt-shell`), which keeps its
+own copy for now; the editor is the one users see ([plans/CFA4-SETTINGS-HW-002.md](plans/CFA4-SETTINGS-HW-002.md)). It merges the CFA3 Control Center layout, the FA3 SystemSettingsPage draft and the
 current CFA4 preferences. New settings UI is Qt 6 / PySide6 only
 ([ADR F8](adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md)); the egui window is not extended.
 
@@ -34,6 +36,20 @@ Next step (approved 2026-11-27): [plans/CFA4-SETTINGS-HW-002.md](plans/CFA4-SETT
 - OK saves only the changed keys; Reset Page… resets one category after a confirmation and keeps
   unsaved edits of the other pages. Settings the engine stores but does not act on yet are shown
   greyed out with "no effect yet".
+
+## In the editor (`cfa4-qt`, CFA4-SETTINGS-HW-002)
+
+- The category list is grouped under the schema's groups (headings `settings.group.<id>`); an
+  engine without groups keeps the flat list.
+- Hardware & Devices ▸ **Accelerators (GPU / NPU)** and Media & Playback ▸ **Decoding & Encoding**
+  are Qt-only pages. Their data comes over the editor's engine channel (`cfa4-cli serve`):
+  `hardware.inventory` and `codecs.capabilities` give the same JSON as `cfa4-cli hardware` and
+  `cfa4-cli codecs` ([qt-gui.md](qt-gui.md)), probed once per session and again on Detect Again.
+- Decoding & Encoding shows `playback.hardwareDecoding` and `playback.draftDecode`; they stay on
+  the Playback page too, and Reset… is off on both Qt-only pages.
+- Edit ▸ Preferences ▸ Accelerators (GPU / NPU)… and Decoding & Encoding… open them.
+- Tests: `python/tests/test_qt_settings_hardware.py` (stub engine; the built engine when there is
+  one), `cargo test -p cfa4-cli --bin cfa4-cli serve::`.
 
 ## Groups (phase 1)
 

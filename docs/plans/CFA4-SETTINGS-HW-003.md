@@ -131,8 +131,9 @@ Mindegyik aszinkron fut a serve-ben (külön szálon), hogy a jelszóablak alatt
 
 A HW-002 után a Beállítások két helyen lesz, eltérő tartalommal: a szerkesztőben és a kísérleti héjban
 (`python/cfa4_devtools/qt_app.py`, `qt_settings.py`). Javaslat (D5): a HW-002 beolvasztása után a kísérleti
-héj Beállítások ablakát (`qt_settings.py` és az Edit ▸ Settings… menüpont) törlöm. A `settings_backend.py`
-adatmodelljét (`Hardware`, `Codecs`, `pci_name`) a szerkesztő használja, az marad. Előtte megnézem, hivatkozik-e
+héj Beállítások ablakát (`qt_settings.py` és az Edit ▸ Settings… menüpont) törlöm. A szerkesztő saját adatmodellt kapott
+(`python/cfa4_qt/hardware_report.py`), így a `settings_backend.py` megfelelő része is törölhető, ha más
+nem használja. Előtte megnézem, hivatkozik-e
 rá csomagolás, CI vagy dokumentáció, és a talált hivatkozásokat ugyanabban a PR-ban javítom. Törlés csak a
 tulajdonos kifejezett jóváhagyásával (D5).
 
