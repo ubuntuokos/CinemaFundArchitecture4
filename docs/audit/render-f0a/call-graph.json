@@ -1294,6 +1294,41 @@
   },
   {
    "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "enum",
+   "module": "audio_index.rs",
+   "name": "AudioCodec"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "struct",
+   "module": "audio_index.rs",
+   "name": "AudioConfig"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "struct",
+   "module": "audio_index.rs",
+   "name": "AudioIndex"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "enum",
+   "module": "audio_index.rs",
+   "name": "AudioIndexError"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "struct",
+   "module": "audio_index.rs",
+   "name": "AudioUnit"
+  },
+  {
+   "class": "audio",
    "crate": "cfa4-testkit",
    "kind": "enum",
    "module": "smk.rs",
@@ -2684,6 +2719,13 @@
    "kind": "enum",
    "module": "dcp_export.rs",
    "name": "Severity"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "dcp_repair.rs",
+   "name": "DcpRepairSession"
   },
   {
    "class": "other",
@@ -8405,6 +8447,16 @@
    "from": "cfa4-engine/dcp_import.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/dcp_repair.rs",
+   "item": "Progress",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/dcp_repair.rs",
+   "item": "Report",
+   "to": "cfa4-export"
   },
   {
    "from": "cfa4-engine/dcp_validation.rs",
