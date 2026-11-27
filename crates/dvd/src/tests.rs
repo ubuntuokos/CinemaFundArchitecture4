@@ -321,3 +321,109 @@ fn a_disc_with_a_title_menu_and_a_chapter_menu_has_both_tables() {
         let _ = std::fs::remove_dir_all(&d);
     }
 }
+
+/// A tiny reader of the VM commands and tables the authoring wrote, to follow the buttons the way
+/// a player's virtual machine would (decoded with the bit positions of libdvdnav's `vmcmd.c`).
+mod navigation {
+    use super::*;
+
+    #[derive(Debug, PartialEq, Eq)]
+    pub enum Op {
+        JumpTT(u8),
+        JumpSsVmgm(u8),
+        JumpSsVtsm { vts: u8, title: u8, menu: u8 },
+        JumpVtsPtt { title: u8, ptt: u16 },
+        LinkPgcn(u16),
+        SetHlBtnn(u8),
+        Other(u64),
+    }
+
+    fn bits(w: u64, msb: u32, n: u32) -> u64 {
+        (w >> (msb + 1 - n)) & ((1u64 << n) - 1)
+    }
+
+    pub fn decode(cmd: &[u8]) -> Op {
+        let w = u64::from_be_bytes(cmd[..8].try_into().unwrap());
+        match bits(w, 63, 3) {
+            1 if bits(w, 60, 1) == 1 => match bits(w, 51, 4) {
+                2 => Op::JumpTT(bits(w, 22, 7) as u8),
+                5 => Op::JumpVtsPtt { title: bits(w, 22, 7) as u8, ptt: bits(w, 41, 10) as u16 },
+                6 => match bits(w, 23, 2) {
+                    1 => Op::JumpSsVmgm(bits(w, 19, 4) as u8),
+                    2 => Op::JumpSsVtsm { vts: bits(w, 30, 7) as u8, title: bits(w, 38, 7) as u8, menu: bits(w, 19, 4) as u8 },
+                    _ => Op::Other(w),
+                },
+                _ => Op::Other(w),
+            },
+            1 if bits(w, 51, 4) == 4 => Op::LinkPgcn(bits(w, 14, 15) as u16),
+            2 if bits(w, 59, 4) == 6 => Op::SetHlBtnn(bits(w, 31, 6) as u8),
+            _ => Op::Other(w),
+        }
+    }
+
+    /// The pre and post commands of a PGC at `pgc`.
+    pub fn pgc_commands(pgc: &[u8]) -> (Vec<Op>, Vec<Op>) {
+        let off = usize::from(u16::from_be_bytes([pgc[0xE4], pgc[0xE5]]));
+        let t = &pgc[off..];
+        let (pre, post) = (usize::from(u16::from_be_bytes([t[0], t[1]])), usize::from(u16::from_be_bytes([t[2], t[3]])));
+        let cmds: Vec<Op> = (0..pre + post).map(|i| decode(&t[8 + 8 * i..])).collect();
+        let mut it = cmds.into_iter();
+        let pre_cmds: Vec<Op> = it.by_ref().take(pre).collect();
+        (pre_cmds, it.collect())
+    }
+
+    /// The PGC of the entry with `entry_id` in the menu table (PGCI_UT) at sector `sector`.
+    pub fn menu_pgc(ifo: &[u8], sector: u32, entry_id: u8) -> Option<&[u8]> {
+        let ut = &ifo[sector as usize * SECTOR..];
+        let lu = be32(ut, 12) as usize;
+        let pgcit = &ut[lu..];
+        let n = usize::from(u16::from_be_bytes([pgcit[0], pgcit[1]]));
+        (0..n).find(|i| pgcit[8 + 8 * i] == entry_id).map(|i| &pgcit[be32(pgcit, 8 + 8 * i + 4) as usize..])
+    }
+
+    /// The button commands of the first navigation pack of a menu VOB.
+    pub fn button_commands(vob: &[u8]) -> Vec<Op> {
+        let hli = 0x2D + 0x60;
+        let n = usize::from(vob[hli + 17]);
+        (0..n).map(|i| decode(&vob[hli + 46 + 18 * i + 10..])).collect()
+    }
+}
+
+#[test]
+fn following_the_buttons_reaches_the_titles_chapters_and_menus() {
+    use navigation::*;
+    let d = dir("walk");
+    let (Some(vob), Some(pic)) = (ffmpeg_vob(&d), still_picture()) else { return };
+    let b = |y: u16, action| MenuButton { rect: (100, y, 499, y + 39), action };
+    let menus = DiscMenus {
+        main: menu_spec(pic.clone(), vec![b(100, MenuAction::PlayTitle(1)), b(160, MenuAction::ShowChapterMenu)]),
+        chapters: Some(menu_spec(pic, vec![b(100, MenuAction::PlayChapter(1)), b(160, MenuAction::PlayChapter(2)), b(220, MenuAction::ShowMainMenu)])),
+    };
+    let a =
+        author_with_menus(&mut std::fs::OpenOptions::new().read(true).write(true).open(&vob).unwrap(), &spec(vec![2 * 90_000, 5 * 90_000]), &menus).unwrap();
+    let (vmg, vts) = (&a.disc.vmg_ifo, &a.disc.vts_ifo);
+    // power on: the first-play program chain shows the title menu
+    let (pre, _) = pgc_commands(&vmg[0x400..]);
+    assert_eq!(pre, [Op::JumpSsVmgm(2)]);
+    // the title menu: select the first button, link back to itself when it ends
+    let main_pgc = menu_pgc(vmg, be32(vmg, 0xC8), 0x82).expect("title menu");
+    let (pre, post) = pgc_commands(main_pgc);
+    assert_eq!((pre, post), (vec![Op::SetHlBtnn(1)], vec![Op::LinkPgcn(1)]));
+    // its buttons: play title 1, open the chapter menu
+    let tt = be32(vmg, 0xC4) as usize * SECTOR;
+    let title_set_sector = be32(vmg, tt + 16);
+    assert_eq!(button_commands(&a.menu_vob), [Op::JumpTT(1), Op::JumpSsVtsm { vts: 1, title: 1, menu: 7 }]);
+    assert!(title_set_sector > 0, "JumpTT 1 finds title 1 in the title set at sector {title_set_sector}");
+    // the chapter menu exists in the title set, with buttons for chapters 1 and 2 and the way back
+    let chapter_pgc = menu_pgc(vts, be32(vts, 0xD0), 0x87).expect("chapter menu");
+    assert_eq!(pgc_commands(chapter_pgc).0, [Op::SetHlBtnn(1)]);
+    let chapter_vob = a.chapter_vob.as_ref().unwrap();
+    assert_eq!(button_commands(chapter_vob), [Op::JumpVtsPtt { title: 1, ptt: 1 }, Op::JumpVtsPtt { title: 1, ptt: 2 }, Op::JumpSsVmgm(2)]);
+    // JumpVTS_PTT 1:2 exists: VTS_PTT_SRPT lists the 3 chapters of title 1 (the spec has two marks)
+    let ptt = &vts[be32(vts, 0xC8) as usize * SECTOR..];
+    assert_eq!((be32(ptt, 4) as usize + 1 - 12) / 4, 3);
+    assert_eq!(a.disc.chapters, 3);
+    if std::env::var_os("CFA4_DVD_KEEP").is_none() {
+        let _ = std::fs::remove_dir_all(&d);
+    }
+}

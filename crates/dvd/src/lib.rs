@@ -8,8 +8,13 @@
 //! `VTS_01_0.IFO`; [`write_disc`] adds the BUP copies and splits the VOB into the
 //! `VTS_01_n.VOB` files of at most 1 GiB.
 //!
-//! Layouts come from the public DVD-Video format notes (no menus, no subpictures, one title,
-//! one program chain whose chapters are its programs and cells; no interleaving or angles).
+//! Layouts come from the public DVD-Video format notes and, for the VM commands, the button
+//! table and the IFO tables, libdvdnav / libdvdread (GPL-2.0-or-later) field order: one title, one
+//! program chain whose chapters are its programs and cells; no interleaving or angles. Menus
+//! ([`DiscMenus`], [`write_disc_with_menus`]): a title menu in `VIDEO_TS.VOB` and an optional
+//! chapter menu in `VTS_01_0.VOB`, each a still picture with a sub-picture and buttons whose
+//! actions are VM commands. Subtitles (D2), several titles and angles (D3) and pulldown (D4) are
+//! later phases of the plan.
 //! The picture duration of a VOBU ignores repeat_first_field (3:2 pulldown).
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
