@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # CFA4 R0 hardware-media audit of the pinned FFmpeg (packaging/ffmpeg-version.env); Ubuntu 26.04 Linux AMD64.
 # Run locally on a physical NVIDIA GPU, not on a hosted CI software runner.
+# Multi-GPU hosts: CFA4_NVIDIA_GPU=<nvidia-smi index> selects the card (default 0)
+# for NVENC, NVDEC, Vulkan and OpenCL; CUDA is forced to PCI bus order so the
+# index means the same card everywhere (reference machine: RTX A1000 + RTX A4000).
 # No installs, downloads or Rust builds. Uses eight standard-size frames only.
 set -euo pipefail
 
@@ -34,8 +37,13 @@ mkdir -p "$OUT/logs"
 printf 'CFA4 FFmpeg hardware-audit evidence: %s\n' "$OUT"
 printf 'case\trequirement\tstatus\tlog\n' > "$OUT/results.tsv"
 
-GPU_NAME="$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)"
-[[ -n "$GPU_NAME" ]] || die "NVIDIA GPU not available"
+# nvidia-smi enumerates in PCI bus order; CUDA defaults to fastest-first.
+export CUDA_DEVICE_ORDER=PCI_BUS_ID
+GPU_INDEX="${CFA4_NVIDIA_GPU:-0}"
+[[ "$GPU_INDEX" =~ ^[0-9]+$ ]] || die "CFA4_NVIDIA_GPU must be an nvidia-smi index"
+GPU_NAME="$(nvidia-smi -i "$GPU_INDEX" --query-gpu=name --format=csv,noheader 2>/dev/null | head -n 1)"
+[[ -n "$GPU_NAME" ]] || die "NVIDIA GPU $GPU_INDEX not available"
+GPU_BUS="$(nvidia-smi -i "$GPU_INDEX" --query-gpu=pci.bus_id --format=csv,noheader | head -n 1)"
 {
     printf 'Date UTC: %s\n' "$(date -u --iso-8601=seconds)"
     printf 'Git commit: %s\n' "$(git rev-parse HEAD)"
@@ -46,9 +54,12 @@ GPU_NAME="$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)"
     printf 'FFmpeg executable: %s\n' "$(readlink -f -- "$FFMPEG")"
     printf 'FFmpeg SHA256: %s\n' "$(sha256sum -- "$FFMPEG")"
     printf 'FFprobe executable: %s\n' "$(readlink -f -- "$FFPROBE")"
-    printf 'GPU name (first NVIDIA adapter): %s\n' "$GPU_NAME"
-    nvidia-smi --query-gpu=name,driver_version,memory.total,compute_cap --format=csv,noheader
-    printf 'Vulkan GPU filter selector: %s\n' "${CFA4_VULKAN_DEVICE:-NVIDIA}"
+    printf 'GPU index (CFA4_NVIDIA_GPU, PCI bus order): %s\n' "$GPU_INDEX"
+    printf 'GPU name: %s\n' "$GPU_NAME"
+    printf 'GPU PCI bus: %s\n' "$GPU_BUS"
+    printf 'All NVIDIA adapters:\n'
+    nvidia-smi --query-gpu=index,name,pci.bus_id,driver_version,memory.total,compute_cap --format=csv,noheader
+    printf 'Vulkan GPU filter selector: %s\n' "${CFA4_VULKAN_DEVICE:-$GPU_NAME}"
 } > "$OUT/metadata.txt"
 "$FFMPEG" -version > "$OUT/ffmpeg-version.txt" 2>&1
 "$FFMPEG" -buildconf > "$OUT/ffmpeg-buildconf.txt" 2>&1
@@ -147,13 +158,16 @@ run_step cpu_source_decode REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
 # the hardware encoder cannot initialize. Never relabel NVENC FAIL as PASS.
 for codec in h264 hevc; do
     encoder="${codec}_nvenc"
+    nvenc_ok=0
     if ! has_encoder "$encoder"; then
         record "nvenc_$codec" REQUIRED NOT_BUILT "FFmpeg has no $encoder encoder"
     else
         file="$OUT/$codec.mp4"
         if run_step "nvenc_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
-            -i "$INPUT" -an -frames:v 8 -pix_fmt yuv420p -c:v "$encoder" -preset p4 "$file"; then
-            run_probe "probe_$codec" "$file" "$codec" "$SOURCE_W" "$SOURCE_H" || true
+            -i "$INPUT" -an -frames:v 8 -pix_fmt yuv420p -c:v "$encoder" -gpu "$GPU_INDEX" -preset p4 "$file"; then
+            if run_probe "probe_$codec" "$file" "$codec" "$SOURCE_W" "$SOURCE_H"; then
+                nvenc_ok=1
+            fi
         fi
     fi
 
@@ -164,14 +178,20 @@ for codec in h264 hevc; do
     else
         sw_encoder=libx265
     fi
-    if ! has_encoder "$sw_encoder"; then
-        record "reference_$codec" REQUIRED NOT_BUILT "FFmpeg has no $sw_encoder encoder"
-        record "nvdec_$codec" REQUIRED BLOCKED "software reference encoder unavailable"
-        record "cpu_decode_$codec" REQUIRED BLOCKED "software reference encoder unavailable"
-        continue
-    fi
     ref_file="$OUT/${codec}-reference.mkv"
-    if ! run_step "reference_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
+    if ! has_encoder "$sw_encoder"; then
+        # Base (non-restricted) builds have no x264/x265. Fall back to the
+        # probed NVENC output, labelled as such; NVDEC then depends on NVENC.
+        if (( nvenc_ok )); then
+            record "reference_$codec" OPTIONAL NOT_BUILT "no $sw_encoder; NVDEC uses the NVENC output (nvenc-sourced reference)"
+            ref_file="$file"
+        else
+            record "reference_$codec" REQUIRED NOT_BUILT "FFmpeg has no $sw_encoder encoder and NVENC output is unusable"
+            record "nvdec_$codec" REQUIRED BLOCKED "no software or NVENC reference"
+            record "cpu_decode_$codec" REQUIRED BLOCKED "no software or NVENC reference"
+            continue
+        fi
+    elif ! run_step "reference_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
         -i "$INPUT" -an -frames:v 8 -pix_fmt yuv420p \
         -c:v "$sw_encoder" -preset ultrafast -crf 28 "$ref_file"; then
         record "nvdec_$codec" REQUIRED BLOCKED "software reference failed to encode"
@@ -187,7 +207,7 @@ for codec in h264 hevc; do
         # GPU surfaces are downloaded explicitly: both the real CUDA path
         # and the 8 output frame count must pass to claim an NVDEC PASS.
         if run_step "nvdec_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
-            -hwaccel cuda -hwaccel_output_format cuda -i "$ref_file" -an \
+            -hwaccel cuda -hwaccel_device "$GPU_INDEX" -hwaccel_output_format cuda -i "$ref_file" -an \
             -vf "hwdownload,format=nv12" -f framehash "$OUT/nvdec_${codec}.framehash"; then
             run_step "nvdec_${codec}_framecheck" REQUIRED \
                 check_framehash "$OUT/nvdec_${codec}.framehash" || true
@@ -202,13 +222,13 @@ for codec in h264 hevc; do
         -hwaccel none -i "$ref_file" -an -f null - || true
 done
 
-# Ampere RTX A1000 has AV1 NVDEC but not AV1 NVENC. Encoder listing alone
-# does not mean that the installed hardware can encode that codec.
-if [[ "$GPU_NAME" == *"RTX A1000"* ]]; then
-    record av1_nvenc OPTIONAL UNSUPPORTED_HARDWARE "Ampere RTX A1000 does not encode AV1"
+# Ampere (RTX A1000, RTX A4000) has AV1 NVDEC but not AV1 NVENC. Encoder
+# listing alone does not mean that the installed hardware can encode that codec.
+if [[ "$GPU_NAME" == *"RTX A1000"* || "$GPU_NAME" == *"RTX A4000"* ]]; then
+    record av1_nvenc OPTIONAL UNSUPPORTED_HARDWARE "Ampere $GPU_NAME does not encode AV1"
 elif has_encoder av1_nvenc; then
     run_step av1_nvenc OPTIONAL "$FFMPEG" "${FFCOMMON[@]}" -i "$INPUT" -an \
-        -frames:v 8 -pix_fmt yuv420p -c:v av1_nvenc -preset p4 "$OUT/av1-nvenc.mkv" || true
+        -frames:v 8 -pix_fmt yuv420p -c:v av1_nvenc -gpu "$GPU_INDEX" -preset p4 "$OUT/av1-nvenc.mkv" || true
 else
     record av1_nvenc OPTIONAL NOT_BUILT "av1_nvenc not present in FFmpeg"
 fi
@@ -230,7 +250,7 @@ elif run_step av1_software_sample REQUIRED "${av1_cmd[@]}"; then
     run_probe av1_software_probe "$AV1_INPUT" av1 "$SOURCE_W" "$SOURCE_H" || true
     if has_hwaccel cuda; then
         if run_step av1_nvdec REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
-            -hwaccel cuda -hwaccel_output_format cuda -i "$AV1_INPUT" -an \
+            -hwaccel cuda -hwaccel_device "$GPU_INDEX" -hwaccel_output_format cuda -i "$AV1_INPUT" -an \
             -vf "hwdownload,format=nv12" -f framehash "$OUT/av1-nvdec.framehash"; then
             run_step av1_nvdec_framecheck REQUIRED \
                 check_framehash "$OUT/av1-nvdec.framehash" || true
@@ -249,7 +269,7 @@ fi
 
 # Select NVIDIA by name to avoid picking llvmpipe. For OpenCL, require
 # an NVIDIA GPU device instead of silently selecting a CPU OpenCL provider.
-VULKAN_DEVICE="${CFA4_VULKAN_DEVICE:-NVIDIA}"
+VULKAN_DEVICE="${CFA4_VULKAN_DEVICE:-$GPU_NAME}"
 if has_hwaccel vulkan; then
     if has_filter scale_vulkan; then
         run_step scale_vulkan REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
@@ -290,7 +310,7 @@ else
 fi
 if has_hwaccel opencl && has_filter avgblur_opencl; then
     run_step avgblur_opencl REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
-        -init_hw_device "opencl=cl:,device_type=gpu,device_vendor=NVIDIA" \
+        -init_hw_device "opencl=cl:,device_type=gpu,device_vendor=NVIDIA,device_name=$GPU_NAME" \
         -filter_hw_device cl -i "$INPUT" -an -frames:v 8 \
         -vf "format=yuv420p,hwupload,avgblur_opencl=sizeX=2:sizeY=2,hwdownload,format=yuv420p" \
         -f null - || true
@@ -300,10 +320,10 @@ fi
 
 {
     printf 'CFA4 R0 FFmpeg hardware audit (Ubuntu 26.04 / AMD64)\n'
-    printf 'FFmpeg: %s\nGPU: %s\nGit SHA: %s\n' "$version" "$GPU_NAME" "$(git rev-parse HEAD)"
+    printf 'FFmpeg: %s\nGPU: %s (index %s, PCI %s)\nGit SHA: %s\n' "$version" "$GPU_NAME" "$GPU_INDEX" "$GPU_BUS" "$(git rev-parse HEAD)"
     printf 'Synthetic video: %sx%s, 8 frames @ 8 fps\n' "$SOURCE_W" "$SOURCE_H"
     printf 'FAIL cases: %d\nNOT_BUILT required cases: %d\nBLOCKED required cases: %d\n' "$failures" "$not_built" "$blocked"
-    printf 'AV1_NVENC=UNSUPPORTED_HARDWARE is expected for RTX A1000.\n'
+    printf 'AV1_NVENC=UNSUPPORTED_HARDWARE is expected for Ampere (RTX A1000, RTX A4000).\n'
     printf 'Read results.tsv, logs/*.log and buildconf before closing issue #14.\n'
 } > "$OUT/SUMMARY.txt"
 cat "$OUT/SUMMARY.txt"
