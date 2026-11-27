@@ -557,7 +557,7 @@ impl VideoSamples for Mp4Video<'_> {
         // compressor name says so, the muxer's `©too` does not (it is on rewrapped files too)
         let compressor = entry.video.as_ref().map_or("", |v| v.compressor_name.as_str());
         if matches!(entry.codec, cfa4_isobmff::CodecConfig::Dnx { .. }) && crate::video::encoded_by_ffmpeg(compressor) {
-            return Ok(Box::new(crate::video::DnxDecoder { ffmpeg_compat: true }));
+            return Ok(crate::lcevc::LcevcDecoder::wrap(Box::new(crate::video::DnxDecoder { ffmpeg_compat: true }), self.src.lcevc));
         }
         Ok(crate::lcevc::LcevcDecoder::wrap(make_video_decoder(entry)?, self.src.lcevc))
     }
