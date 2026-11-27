@@ -1,7 +1,7 @@
 // The declarations in this file are transcribed from NVIDIA's `nvEncodeAPI.h` (Video Codec SDK,
-// API 12.1), which carries this notice:
+// API 12.1 and 13.1), which carries this notice:
 //
-// Copyright (c) 2010-2023 NVIDIA Corporation
+// Copyright (c) 2010-2026 NVIDIA Corporation
 //
 // Permission is hereby granted, free of charge, to any person
 // obtaining a copy of this software and associated documentation
@@ -24,13 +24,16 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
-//! The NVIDIA Video Codec SDK's encode API (`nvEncodeAPI.h`, API 12.1, MIT-licensed header by
+//! The NVIDIA Video Codec SDK's encode API (`nvEncodeAPI.h`, API 12.1 and 13.1, MIT-licensed header by
 //! NVIDIA) as the driver's `libnvidia-encode.so.1` expects it: the structures this backend fills in,
 //! the function table, and the constants it uses. Written from the public header; sizes and field
 //! offsets are checked against a C compiler's by the generated `abi_tests.rs`.
 //!
-//! API 12.1 is targeted on purpose: it is understood by every driver since 531.x, and the encoder
-//! features used here (H.264 and HEVC, presets, rate control) are the same in later versions.
+//! Two API levels are supported ([`ApiLevel`], docs/plans/CFA4-NVENC-131-001): 12.1 is understood by
+//! every driver since 531.x, 13.1 by drivers that report it (610 and later). The structures below are
+//! the 12.1 layouts; 13.1 only turns reserved words into named fields (the prefix every field this
+//! backend uses lives in is identical, checked by `abi_tests.rs` against both headers), so one set of
+//! structures serves both levels and only the version tags and a few fields differ.
 //!
 //! FFI module (docs/adr/0001-platform-ffi.md): plain `repr(C)` data, no logic.
 
@@ -60,8 +63,10 @@ impl Guid {
 }
 
 pub const NVENCAPI_VERSION: u32 = 12 | (1 << 24);
+/// `NVENCAPI_VERSION` of API 13.1.
+pub const NVENCAPI_VERSION_13_1: u32 = 13 | (1 << 24);
 
-/// `NVENCAPI_STRUCT_VERSION(ver)`.
+/// `NVENCAPI_STRUCT_VERSION(ver)` of API 12.1.
 pub const fn struct_version(ver: u32) -> u32 {
     NVENCAPI_VERSION | (ver << 16) | (0x7 << 28)
 }
@@ -79,6 +84,102 @@ pub const NV_ENC_PIC_PARAMS_VER: u32 = struct_version(6) | (1 << 31);
 pub const NV_ENC_LOCK_BITSTREAM_VER: u32 = struct_version(1) | (1 << 31);
 pub const NV_ENC_LOCK_INPUT_BUFFER_VER: u32 = struct_version(1);
 pub const NV_ENC_SEQUENCE_PARAM_PAYLOAD_VER: u32 = struct_version(1);
+
+/// The NVENC API level a session speaks. 13.1 needs a driver that reports it (610 and later per the
+/// SDK 13.1 notes); every other driver keeps 12.1.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ApiLevel {
+    V12_1,
+    V13_1,
+}
+
+impl ApiLevel {
+    /// The highest level a driver reporting `max` (`NvEncodeAPIGetMaxSupportedVersion`: major in the
+    /// high nibble group, minor in the low one, as that function packs them) supports, or `None` when
+    /// even 12.1 is too new for it.
+    pub const fn for_driver(max: u32) -> Option<ApiLevel> {
+        if max >= 13 << 4 | 1 {
+            Some(ApiLevel::V13_1)
+        } else if max >= 12 << 4 | 1 {
+            Some(ApiLevel::V12_1)
+        } else {
+            None
+        }
+    }
+
+    /// `NVENCAPI_VERSION` of the level.
+    pub const fn api_version(self) -> u32 {
+        match self {
+            ApiLevel::V12_1 => NVENCAPI_VERSION,
+            ApiLevel::V13_1 => NVENCAPI_VERSION_13_1,
+        }
+    }
+
+    /// The `major << 4 | minor` form `NvEncodeAPIGetMaxSupportedVersion` uses.
+    pub const fn packed(self) -> u32 {
+        (self.api_version() & 0xf) << 4 | ((self.api_version() >> 24) & 0xf)
+    }
+
+    /// `NVENCAPI_STRUCT_VERSION(ver)` at this level.
+    pub const fn struct_version(self, ver: u32) -> u32 {
+        self.api_version() | (ver << 16) | (0x7 << 28)
+    }
+
+    /// The version tags of every structure this backend passes, at this level.
+    pub const fn versions(self) -> Versions {
+        let hi = 1 << 31;
+        match self {
+            ApiLevel::V12_1 => Versions {
+                function_list: self.struct_version(2),
+                open_session: self.struct_version(1),
+                caps_param: self.struct_version(1),
+                config: self.struct_version(8) | hi,
+                initialize_params: self.struct_version(6) | hi,
+                preset_config: self.struct_version(4) | hi,
+                rc_params: self.struct_version(1),
+                create_input_buffer: self.struct_version(1),
+                create_bitstream_buffer: self.struct_version(1),
+                pic_params: self.struct_version(6) | hi,
+                lock_bitstream: self.struct_version(1) | hi,
+                lock_input_buffer: self.struct_version(1),
+                sequence_param_payload: self.struct_version(1),
+            },
+            ApiLevel::V13_1 => Versions {
+                function_list: self.struct_version(2),
+                open_session: self.struct_version(1),
+                caps_param: self.struct_version(1),
+                config: self.struct_version(9) | hi,
+                initialize_params: self.struct_version(7) | hi,
+                preset_config: self.struct_version(5) | hi,
+                rc_params: self.struct_version(1),
+                create_input_buffer: self.struct_version(2),
+                create_bitstream_buffer: self.struct_version(1),
+                pic_params: self.struct_version(7) | hi,
+                lock_bitstream: self.struct_version(2) | hi,
+                lock_input_buffer: self.struct_version(1),
+                sequence_param_payload: self.struct_version(1),
+            },
+        }
+    }
+}
+
+/// The `NV_ENC_*_VER` tags of one [`ApiLevel`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Versions {
+    pub function_list: u32,
+    pub open_session: u32,
+    pub caps_param: u32,
+    pub config: u32,
+    pub initialize_params: u32,
+    pub preset_config: u32,
+    pub rc_params: u32,
+    pub create_input_buffer: u32,
+    pub create_bitstream_buffer: u32,
+    pub pic_params: u32,
+    pub lock_bitstream: u32,
+    pub lock_input_buffer: u32,
+    pub sequence_param_payload: u32,
+}
 
 pub type NvStatus = c_int;
 pub const NV_ENC_SUCCESS: NvStatus = 0;
@@ -99,6 +200,13 @@ pub const NV_ENC_BUFFER_FORMAT_ABGR: u32 = 0x10000000;
 pub const NV_ENC_PARAMS_RC_VBR: u32 = 1;
 pub const NV_ENC_PARAMS_RC_CBR: u32 = 2;
 pub const NV_ENC_TUNING_INFO_HIGH_QUALITY: u32 = 1;
+/// API 13.1.
+pub const NV_ENC_TUNING_INFO_ULTRA_HIGH_QUALITY: u32 = 5;
+/// `NV_ENC_BIT_DEPTH` (API 13.1 `outputBitDepth` / `inputBitDepth`).
+pub const NV_ENC_BIT_DEPTH_8: u32 = 8;
+pub const NV_ENC_BIT_DEPTH_10: u32 = 10;
+/// `NV_ENC_LOOKAHEAD_LEVEL` (API 13.1 `lookaheadLevel`).
+pub const NV_ENC_LOOKAHEAD_LEVEL_AUTOSELECT: u32 = 15;
 pub const NV_ENC_PIC_STRUCT_FRAME: u32 = 1;
 pub const NV_ENC_PIC_TYPE_P: u32 = 0;
 pub const NV_ENC_PIC_TYPE_B: u32 = 1;
@@ -315,7 +423,16 @@ pub struct NV_ENC_CONFIG_HEVC {
     pub useBFramesAsRef: u32,
     pub numRefL0: u32,
     pub numRefL1: u32,
-    pub reserved1: [u32; 214],
+    /// API 13.1 (reserved words at 12.1): temporal filter strength, deblocking filter mode, the
+    /// output / input bit depths (`NV_ENC_BIT_DEPTH`; 13.1 replaces the `pixelBitDepthMinus8` flag
+    /// bits with these), temporal layers and views.
+    pub tfLevel: u32,
+    pub disableDeblockingFilterIDC: u32,
+    pub outputBitDepth: u32,
+    pub inputBitDepth: u32,
+    pub numTemporalLayers: u32,
+    pub numViews: u32,
+    pub reserved1: [u32; 208],
     pub reserved2: [*mut c_void; 64],
 }
 
@@ -329,6 +446,10 @@ pub const HEVC_CHROMA_FORMAT_MASK: u32 = 3 << HEVC_CHROMA_FORMAT_SHIFT;
 pub const HEVC_PIXEL_BIT_DEPTH_SHIFT: u32 = 11;
 pub const HEVC_PIXEL_BIT_DEPTH_MASK: u32 = 7 << HEVC_PIXEL_BIT_DEPTH_SHIFT;
 pub const HEVC_OUTPUT_RECOVERY_POINT_SEI: u32 = 1 << 18;
+/// API 13.1 flag bits: write the content light level / mastering display SEI from the picture
+/// parameters' `pMaxCll` / `pMasteringDisplay`.
+pub const HEVC_OUTPUT_MAX_CLL: u32 = 1 << 23;
+pub const HEVC_OUTPUT_MASTERING_DISPLAY: u32 = 1 << 24;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -478,8 +599,41 @@ pub struct NV_ENC_PIC_PARAMS_HEVC {
     pub reserved: u32,
     pub seiPayloadArray: *mut NV_ENC_SEI_PAYLOAD,
     pub timeCode: NV_ENC_TIME_CODE,
-    pub reserved2: [u32; 237],
+    /// API 13.1 (the 13.1 time code is 4 bytes longer, `skipClockTimestampInsertion`; zero here).
+    pub reserved2: [u32; 5],
+    /// API 13.1: the content light level and mastering display colour volume of the picture.
+    pub pMaxCll: *mut CONTENT_LIGHT_LEVEL,
+    pub pMasteringDisplay: *mut MASTERING_DISPLAY_INFO,
+    pub reserved2b: [u32; 228],
     pub reserved3: [*mut c_void; 61],
+}
+
+/// `CHROMA_POINTS` (API 13.1).
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct CHROMA_POINTS {
+    pub x: u16,
+    pub y: u16,
+}
+
+/// `MASTERING_DISPLAY_INFO` (API 13.1).
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct MASTERING_DISPLAY_INFO {
+    pub g: CHROMA_POINTS,
+    pub b: CHROMA_POINTS,
+    pub r: CHROMA_POINTS,
+    pub whitePoint: CHROMA_POINTS,
+    pub maxLuma: u32,
+    pub minLuma: u32,
+}
+
+/// `CONTENT_LIGHT_LEVEL` (API 13.1).
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct CONTENT_LIGHT_LEVEL {
+    pub maxContentLightLevel: u16,
+    pub maxPicAverageLightLevel: u16,
 }
 
 /// `NV_ENC_CODEC_PIC_PARAMS`: a union of codec structures (H.264 and AV1 stay opaque inside `reserved`).

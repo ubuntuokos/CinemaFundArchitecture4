@@ -27,6 +27,7 @@ pub mod control_surfaces;
 pub mod credits;
 pub mod dcp_export;
 pub mod dcp_import;
+pub mod dcp_package;
 pub mod dcp_validation;
 mod dcpomatic;
 pub mod delivery_check;

@@ -1570,6 +1570,13 @@
    "class": "frame",
    "crate": "cfa4-golden",
    "kind": "struct",
+   "module": "range_meter.rs",
+   "name": "RangeFrame"
+  },
+  {
+   "class": "frame",
+   "crate": "cfa4-golden",
+   "kind": "struct",
    "module": "validation.rs",
    "name": "FrameCapture"
   },
@@ -4211,6 +4218,20 @@
    "kind": "struct",
    "module": "lib.rs",
    "name": "Vec2"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "range_meter.rs",
+   "name": "Layer"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "range_meter.rs",
+   "name": "RangeReport"
   },
   {
    "class": "other",

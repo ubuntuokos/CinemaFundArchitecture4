@@ -381,6 +381,11 @@ fn start_frames(tc: &Timecode, rate: FrameRate) -> i64 {
 }
 
 impl MxfSource {
+    /// FFmpeg wrote the file (Identification set: company `FFmpeg`, or a `Lavf…` product).
+    fn file_written_by_ffmpeg(&self) -> bool {
+        crate::video::written_by_ffmpeg(self.file.company_name.as_deref().into_iter().chain(self.file.product_name.as_deref()))
+    }
+
     pub fn open(name: &str, bytes: Arc<[u8]>) -> crate::Result<Self> {
         Self::open_reader(name, Arc::new(cfa4_media::reader::MemReader(bytes)))
     }
@@ -924,6 +929,8 @@ impl VideoSamples for MxfVideo<'_> {
         match t.codec {
             Codec::Avc { .. } => Ok(Box::new(crate::video::H264Decoder::annexb())),
             Codec::Mpeg2 => Ok(Box::new(crate::video::Mpeg2Decoder::new(self.src.mpeg2_header.clone()))),
+            // DNx written by FFmpeg follows FFmpeg's conventions (CFA4-DNX-SPEC-001 R5)
+            Codec::Vc3 if self.src.file_written_by_ffmpeg() => Ok(Box::new(crate::video::DnxDecoder { ffmpeg_compat: true })),
             Codec::Vc3 => make_video_decoder(&SampleEntry::dnx(FourCc(*b"AVdh"), w, h)),
             Codec::ProRes { profile } => make_video_decoder(&SampleEntry::prores(prores_fourcc(profile), w, h)),
             Codec::Jpeg2000 => Ok(Box::new(crate::j2k::J2kDecoder::new(self.src.j2k_hints))),
