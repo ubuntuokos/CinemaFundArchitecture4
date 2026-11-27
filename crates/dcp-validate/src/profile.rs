@@ -33,7 +33,8 @@ pub const BUILTIN: &[&str] =
     &["quick-scan", "full-integrity", "smpte-cinema", "interop-cinema", "subtitle-accessibility", "audio-quality", "security", "delivery-preflight"];
 
 const QUICK: &[&str] = &[AM_PRESENT, AM_DOCUMENT, AM_PATH_SAFE, AM_FILE_EXISTS, PKL_DOCUMENT, CPL_DOCUMENT];
-const INTEGRITY: &[&str] = &[AM_UNIQUE_IDS, AM_HAS_PKL, PKL_IN_ASSETMAP, PKL_SIZE, PKL_HASH, CPL_IN_PKL, CPL_ASSETS_IN_PKL, CPL_DURATIONS, CPL_REEL_SYNC];
+const INTEGRITY: &[&str] =
+    &[AM_UNIQUE_IDS, AM_HAS_PKL, AM_UNLISTED, PKL_IN_ASSETMAP, PKL_SIZE, PKL_HASH, CPL_IN_PKL, CPL_ASSETS_IN_PKL, CPL_DURATIONS, CPL_REEL_SYNC];
 const CINEMA: &[&str] = &[STD_CONSISTENT, MXF_TRACK_FILES, J2K_CODESTREAM, PIC_FORMAT, AUD_PCM, MARK_MARKERS];
 
 /// The version history of the built-in profiles: the latest version of each, and what changed.
@@ -42,15 +43,19 @@ const CINEMA: &[&str] = &[STD_CONSISTENT, MXF_TRACK_FILES, J2K_CODESTREAM, PIC_F
 pub const HISTORY: &[(&str, u32, &str)] = &[
     ("quick-scan", 1, "first version (DCP-03)"),
     ("full-integrity", 1, "first version (DCP-03)"),
+    ("full-integrity", 2, "adds DCP.AM.007, unlisted packing lists and compositions (warning)"),
     ("smpte-cinema", 1, "first version (DCP-03)"),
     ("smpte-cinema", 2, "requires DCP.PIC.001 (DCP-06)"),
+    ("smpte-cinema", 3, "adds DCP.AM.007, unlisted packing lists and compositions (warning)"),
     ("interop-cinema", 1, "first version (DCP-03)"),
     ("interop-cinema", 2, "requires DCP.PIC.001 (DCP-06)"),
+    ("interop-cinema", 3, "adds DCP.AM.007, unlisted packing lists and compositions (warning)"),
     ("subtitle-accessibility", 1, "first version (DCP-03)"),
     ("audio-quality", 1, "first version (DCP-03)"),
     ("security", 1, "first version (DCP-03)"),
     ("delivery-preflight", 1, "first version (DCP-03)"),
     ("delivery-preflight", 2, "requires DCP.PIC.001 (DCP-06)"),
+    ("delivery-preflight", 3, "adds DCP.AM.007, unlisted packing lists and compositions (warning)"),
 ];
 
 /// The profile file format.
@@ -110,18 +115,21 @@ impl Profile {
         }
         // version 1 of the cinema profiles had no DCP.PIC.001
         let cinema: Vec<&str> = CINEMA.iter().copied().filter(|r| version >= 2 || *r != PIC_FORMAT).collect();
+        // DCP.AM.007 came with full-integrity v2 and with v3 of the profiles that also had DCP.PIC.001
+        let unlisted_from = if id == "full-integrity" { 2 } else { 3 };
+        let integrity: Vec<&str> = INTEGRITY.iter().copied().filter(|r| version >= unlisted_from || *r != AM_UNLISTED).collect();
         let (title, standard, required, optional): (&str, Option<Standard>, Vec<&str>, Vec<&str>) = match id {
             "quick-scan" => ("Quick Scan", None, QUICK.to_vec(), vec![]),
-            "full-integrity" => ("Full Integrity", None, [QUICK, INTEGRITY].concat(), vec![]),
-            "smpte-cinema" => ("SMPTE Cinema", Some(Standard::Smpte), [QUICK, INTEGRITY, &cinema].concat(), vec![IAB_TRACK, SUB_DOCUMENTS, NAME_ISDCF]),
-            "interop-cinema" => ("Interop Cinema", Some(Standard::Interop), [QUICK, INTEGRITY, &cinema].concat(), vec![SUB_DOCUMENTS, NAME_ISDCF]),
+            "full-integrity" => ("Full Integrity", None, [QUICK, &integrity].concat(), vec![]),
+            "smpte-cinema" => ("SMPTE Cinema", Some(Standard::Smpte), [QUICK, &integrity, &cinema].concat(), vec![IAB_TRACK, SUB_DOCUMENTS, NAME_ISDCF]),
+            "interop-cinema" => ("Interop Cinema", Some(Standard::Interop), [QUICK, &integrity, &cinema].concat(), vec![SUB_DOCUMENTS, NAME_ISDCF]),
             "subtitle-accessibility" => ("Subtitle & Accessibility", None, [QUICK, &[SUB_DOCUMENTS]].concat(), vec![]),
             "audio-quality" => ("Audio Quality", None, [QUICK, &[AUD_PCM, AUD_LOUDNESS]].concat(), vec![IAB_TRACK]),
             "security" => ("Security", None, [QUICK, &[SIG_SIGNATURE, SIG_CERTIFICATES]].concat(), vec![]),
             "delivery-preflight" => (
                 "Delivery Preflight",
                 None,
-                [QUICK, INTEGRITY, &cinema].concat(),
+                [QUICK, &integrity, &cinema].concat(),
                 vec![AUD_LOUDNESS, IAB_TRACK, SUB_DOCUMENTS, NAME_ISDCF, SIG_SIGNATURE, SIG_CERTIFICATES],
             ),
             _ => return None,
