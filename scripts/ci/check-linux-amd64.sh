@@ -51,21 +51,26 @@ import tomllib
 root = Path.cwd()
 workflow = (root / ".github/workflows/ci-linux.yml").read_text()
 assert "  platform-scope:" in workflow
-assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 13
+assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 15
 assert "types: [opened, synchronize, reopened, labeled]" in workflow
 # Merge queue (owner decision 2026-11-07, #719): every full job also runs on merge_group.
 assert "\n  merge_group:\n" in workflow
-assert workflow.count("github.event_name == 'merge_group'") == 13
-# 13 full jobs (11 of 2026-11-14 plus the two PostgreSQL 18 store jobs, CFA4-DATA-PG-001 P15). One of the
-# two is non-blocking (`needs: [platform-scope, rust-store-postgres]`, outside the gate's needs), so only
-# 12 jobs carry the single-line `needs: platform-scope` the count below sees.
-assert workflow.count("    needs: platform-scope") == 12
-# Python 3.14 (owner decision 2026-11-14, CFA4-TITLE-CREDITS-001 Q6) and the `cfa4-db-setup` idempotence
-# job (owner decision 2026-11-26) are full jobs that are non-blocking (not in the gate needs).
-assert workflow.count("    runs-on: ubuntu-26.04") == 15
+assert workflow.count("github.event_name == 'merge_group'") == 15
+# 15 full jobs: the 12 of main (Python 3.14 non-blocking, the measured-parity job G7.10 blocking) plus the
+# two PostgreSQL 18 store jobs (CFA4-DATA-PG-001 P15), both blocking. One of them waits for the other
+# (`needs: [platform-scope, rust-store-postgres]`), so only 13 jobs carry the single-line
+# `needs: platform-scope` the count below sees.
+assert workflow.count("    needs: platform-scope") == 13
+# The `cfa4-db-setup` idempotence job (owner decision 2026-11-26: non-blocking until its first green run,
+# which happened on 2026-11-27) is in the gate needs now.
+assert workflow.count("    runs-on: ubuntu-26.04") == 17
 # Required merge gate (owner decision 2026-10-31): fails unless every blocking full job succeeded.
 assert "  full-validation-gate:" in workflow and "    name: full-validation-gate" in workflow
 assert "if: always() && github.event_name != 'push'" in workflow
+# The non-blocking Qt GUI tests with the real engine have their own job, outside the gate's needs
+# (owner decision 2026-11-24), so a hanging GUI test does not hold the gate back.
+gate = workflow[workflow.index("  full-validation-gate:"):]
+assert "  qt-gui-real-engine:" in workflow and "qt-gui-real-engine" not in gate.split("    steps:")[0]
 assert 'info.get("result") != "success"' in workflow, "a skipped job must fail the gate"
 assert "audit-gpu-hardware.sh" not in workflow, "physical GPU gate must not run on hosted CI"
 assert "CFA4_REQUIRE_GPU_FX" in (root / "crates/gpu/src/fx_tests.rs").read_text()

@@ -6,7 +6,7 @@ cargo test -p cfa4-h264                    # one crate
 cargo test --release -p cfa4-hevc          # codec tests are much faster in release
 cargo xtask ci                                  # gates fmt, clippy, layers, assets (not tests, not wasm)
 cargo xtask fixtures                            # pre-generate the ffmpeg fixture matrix
-cargo xtask parity --ci                         # measured parity vs the committed references and thresholds (needs a built cfa4-cli and .venv); `--check-ratchet --base REF`, `--check-checklist`
+cargo xtask parity --ci                         # measured parity vs the committed references and thresholds (needs a built cfa4-cli and .venv); `--check-ratchet --base REF`, `--check-checklist`; CI: the `parity` job of full validation
 CFA4_REQUIRE_ORACLES=1 cargo test --workspace   # CI: missing ffmpeg fails instead of skipping
 ```
 
@@ -87,7 +87,7 @@ with NVENC (H.265: when the HEVC probe says there is no HEVC encoder; Main 10: w
 there is no 10-bit encoder; on a machine that has one, a configuration NVENC refuses fails the test). The FFI layout tests in
 `crates/platform/src/nvenc/abi_tests.rs` were generated from a C program (upstream built it with MSVC; the
 fixed-width layouts are the same on x86_64 Linux, so build it with `cc` there) against NVIDIA's
-MIT-licensed `nvEncodeAPI.h` (12.1); the header and the program are not in the repository. To regenerate them, put the header in a scratch directory and
+MIT-licensed `nvEncodeAPI.h` (12.1; the 13.1 additions come from the 13.1 header the same way); the header and the program are not in the repository. To regenerate them, put the header in a scratch directory and
 write a program that prints, for every type, field, constant and GUID of `src/nvenc/ffi.rs` that the
 asserts name (H.264, HEVC and the HEVC picture parameters with their SEI payload array), `sizeof` / `alignof` / `offsetof`, the enum and macro values cast to
 64-bit integers and the GUIDs as 128-bit hex; for the bit-fields of the `flags` words, which

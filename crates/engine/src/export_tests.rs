@@ -417,6 +417,19 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
             }
             continue;
         }
+        if fmt == "mpeg2" && settings["mpeg2Container"] == "dvd" {
+            // a folder: VIDEO_TS with the IFO and BUP files and the VOB
+            assert_eq!(out, path, "{name}: the folder keeps its name");
+            let files = files_in(&Path::new(&out).join("VIDEO_TS"));
+            assert_eq!(files, ["VIDEO_TS.BUP", "VIDEO_TS.IFO", "VTS_01_0.BUP", "VTS_01_0.IFO", "VTS_01_1.VOB"], "{name}");
+            if let Some(j) = probe(&Path::new(&out).join("VIDEO_TS/VTS_01_1.VOB").to_string_lossy()) {
+                let v = stream(&j, "video").unwrap();
+                assert_eq!(v["codec_name"], "mpeg2video", "{name}");
+                assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), (w, h), "{name}");
+                assert_eq!(stream(&j, "audio").unwrap()["codec_name"], "ac3", "{name}");
+            }
+            continue;
+        }
         assert!(Path::new(&out).exists(), "{name}: {out}");
         let Some(j) = probe(&out) else { continue };
         let fmt_name = j["format"]["format_name"].as_str().unwrap();
@@ -1574,4 +1587,35 @@ fn mxf_op1a_writes_as11_metadata() {
         let e = s.execute("file.exportMedia", q).unwrap_err().to_string();
         assert!(e.contains("AS-11"), "{key}: {e}");
     }
+}
+
+#[test]
+fn queue_import_puts_the_finished_file_into_the_project() {
+    // KDN-47: `import: true` adds the finished file to the Project panel; the default does not
+    let mut s = demo();
+    let dir = Scratch::new("queue-import");
+    let items_before = s.project.items.len();
+    let plain = s
+        .execute(
+            "export.queue.add",
+            json!({"path": dir.path("plain.wav"), "format": "wav", "range": "custom", "startSeconds": 0, "endSeconds": 0.25, "start": true, "wait": true}),
+        )
+        .unwrap();
+    assert_eq!(plain["items"][0]["status"], "done", "{plain}");
+    assert_eq!(plain["items"][0]["import"], json!(false));
+    assert_eq!(s.project.items.len(), items_before, "nothing is imported unless asked");
+    let r = s
+        .execute(
+            "export.queue.add",
+            json!({"path": dir.path("imported.wav"), "format": "wav", "range": "custom", "startSeconds": 0, "endSeconds": 0.25, "import": true, "start": true, "wait": true}),
+        )
+        .unwrap();
+    let item = &r["items"][1];
+    assert_eq!(item["status"], "done", "{r}");
+    assert_eq!(item["import"], json!(true));
+    let imported = s.execute("export.queue.list", json!({})).unwrap();
+    let imported = imported.get("result").unwrap_or(&imported)["items"][1]["imported"].as_array().map(Vec::len).unwrap_or(0);
+    assert!(imported >= 1, "the file became a project item: {r}");
+    assert_eq!(s.project.items.len(), items_before + imported);
+    assert!(s.execute("export.queue.add", json!({"path": dir.path("x.wav"), "format": "wav", "import": "yes"})).is_err());
 }

@@ -172,6 +172,7 @@ removed: `docs/plans/CFA4-QT6-FINISH-001.md`.
 | File | Role |
 |---|---|
 | `apps/cfa4-cli/src/serve.rs` | engine server (protocol, frame/audio rendering, upkeep loop) |
+| `python/cfa4_qt/render_notices.py` | warning and fallback events of `render.list` as one-line notices, once per event (C0 Qt6 sketch, step 1; no Qt import) |
 | `python/cfa4_qt/engine.py` | process, framing, request/reply/event plumbing |
 | `python/cfa4_qt/commands.py` | registry → menus, actions, shortcuts; parameter specs |
 | `python/cfa4_qt/main_window.py` | docks, refresh cycle, command routing, close/recovery prompts |
