@@ -23,6 +23,19 @@ fn sample_71() -> Option<PathBuf> {
     p.is_file().then_some(p)
 }
 
+/// A name tag that changes with the sample (its path, size and modification time), so a cached
+/// fixture made from another sample is never reused.
+fn sample_tag(path: &std::path::Path) -> String {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    path.hash(&mut h);
+    if let Ok(m) = std::fs::metadata(path) {
+        m.len().hash(&mut h);
+        m.modified().ok().hash(&mut h);
+    }
+    format!("{:016x}", h.finish())
+}
+
 /// Seconds of the real sample the 7.1 tests decode.
 const SAMPLE_SECONDS: usize = 6;
 
@@ -160,7 +173,8 @@ fn truehd_7_1_real_sample_in_bdav_with_an_ac3_core_is_bit_exact() {
     };
     let t = SAMPLE_SECONDS.to_string();
     let thd_args = ["-i", path.to_str().unwrap(), "-map", "0:a:0", "-t", &t, "-c:a", "copy", "-f", "truehd"];
-    let thd = fixture(&ff, "truehd_71_real.thd", &thd_args).expect("could not extract the TrueHD 7.1 units");
+    let thd_name = format!("truehd_71_real_{}.thd", sample_tag(&path));
+    let thd = fixture(&ff, &thd_name, &thd_args).expect("could not extract the TrueHD 7.1 units");
     let ac3_args = ["-f", "lavfi", "-i", SURROUND, "-t", &t, "-c:a", "ac3", "-b:a", "640k", "-f", "ac3"];
     let ac3 = fixture(&ff, "truehd_71_real_core.ac3", &ac3_args).expect("could not write the AC-3 core");
     let (thd_bytes, ac3_bytes) = (std::fs::read(&thd).unwrap(), std::fs::read(&ac3).unwrap());
