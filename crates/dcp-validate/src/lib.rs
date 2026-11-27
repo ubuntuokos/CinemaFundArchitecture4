@@ -27,6 +27,7 @@ pub mod repair;
 pub mod report;
 pub mod rules;
 mod signatures;
+pub mod snapshot;
 mod subtitles;
 
 pub use native::NativeValidator;
