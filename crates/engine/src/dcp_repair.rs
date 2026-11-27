@@ -171,6 +171,88 @@ fn log_cmd(_: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"schema": snapshot::LOG_SCHEMA, "path": file.to_string_lossy(), "entries": entries}))
 }
 
+/// Name of the next re-export of the package called `name`: `<base>_r2`, `_r3`, … where `base` is `name`
+/// without a `_rN` suffix. Never a name that exists in `dir` or is already queued.
+fn next_name(s: &Session, dir: &Path, name: &str) -> String {
+    let base = match name.rsplit_once("_r") {
+        Some((b, n)) if !b.is_empty() && !n.is_empty() && n.bytes().all(|c| c.is_ascii_digit()) => b,
+        _ => name,
+    };
+    (2u32..)
+        .map(|n| format!("{base}_r{n}"))
+        .find(|c| {
+            let p = dir.join(c);
+            std::fs::symlink_metadata(&p).is_err() && !s.export_queue.items.iter().any(|i| Path::new(&i.settings.path) == p)
+        })
+        .unwrap_or_default()
+}
+
+/// `dcp.repair.reexport {root, path?, dest?, …export params}`: the package at `root` has bad content, so
+/// export the current project again as a new package `<name>_rN` (in the folder `path`, default: next to
+/// `root`). First an exact copy of `root` is made (`dest`, default `<root>.cfa4repair-<UTC time>`), as
+/// `dcp.snapshot` does; the package and its report are never changed. The repair log in the copy gets a
+/// `reexport` entry that names the new package. Other parameters (`sequence`, `preset`, `settings`, `range`,
+/// `dcpValidate`, `start`, `wait`) go to `export.queue.add`; the format is always `dcp`.
+fn reexport_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "dcp.repair.reexport";
+    let root = str_p(p, "root").ok_or_else(|| bad(cmd, "need `root` (the DCP folder)"))?.to_string();
+    let root_path = Path::new(root.trim_end_matches(['/', '\\']));
+    let name = root_path.file_name().map(|n| n.to_string_lossy().into_owned()).ok_or_else(|| bad(cmd, "`root` has no folder name"))?;
+    if s.state.active_sequence.is_none() && p.get("sequence").is_none() {
+        return Err(bad(cmd, "no project is open: open the project the package was exported from, then re-export"));
+    }
+    if !root_path.is_dir() {
+        return Err(bad(cmd, format!("{root}: not a folder")));
+    }
+    let parent = root_path.parent().filter(|d| !d.as_os_str().is_empty()).unwrap_or(Path::new("."));
+    let out_dir = str_p(p, "path").map_or_else(|| parent.to_path_buf(), PathBuf::from);
+    let new_path = out_dir.join(next_name(s, &out_dir, &name));
+    let stamp = chrono::DateTime::<chrono::Utc>::from(std::time::SystemTime::now()).format("%Y%m%dT%H%M%SZ");
+    let dest = str_p(p, "dest").map_or_else(|| parent.join(format!("{name}.cfa4repair-{stamp}")), PathBuf::from);
+
+    // 1. the exact copy, with its manifest and log (the package is only read)
+    let before = crate::dcp_validation::latest_report_json(s, &root).map(|j| snapshot::report_id(&j));
+    let never = std::sync::atomic::AtomicBool::new(false);
+    let manifest = snapshot::snapshot(root_path, &dest, &never, &|_, _, _| {}).map_err(|e| bad(cmd, e.to_string()))?;
+    let log = dest.join(snapshot::LOG_FILE);
+    let mut first = LogEntry::new("snapshot", &root, &manifest);
+    first.report_before = before.clone();
+    snapshot::append_log(&log, &first).map_err(|e| bad(cmd, e.to_string()))?;
+
+    // 2. the new export of the current project, always a DCP into a new place
+    let mut q = p.clone();
+    let Some(obj) = q.as_object_mut() else { return Err(bad(cmd, "parameters must be an object")) };
+    for k in ["root", "dest"] {
+        obj.remove(k);
+    }
+    obj.insert("format".into(), json!("dcp"));
+    obj.insert("path".into(), json!(new_path.to_string_lossy()));
+    obj.entry("dcpValidate").or_insert(json!(true));
+    let mut entry = LogEntry::new("reexport", &root, &manifest);
+    entry.report_before = before;
+    match crate::export_tools::queue_add(s, &q) {
+        Ok(added) => {
+            entry.result = Some(new_path.to_string_lossy().into_owned());
+            snapshot::append_log(&log, &entry).map_err(|e| bad(cmd, e.to_string()))?;
+            Ok(json!({
+                "snapshot": dest.to_string_lossy(),
+                "manifest": dest.join(snapshot::MANIFEST_FILE).to_string_lossy(),
+                "log": log.to_string_lossy(),
+                "manifestId": manifest.id(),
+                "newPackage": new_path.to_string_lossy(),
+                "newReport": format!("{}{}", new_path.to_string_lossy(), crate::dcp_export::REPORT_SUFFIX),
+                "queued": added,
+            }))
+        }
+        Err(e) => {
+            // the copy stays; the log says that nothing new was made
+            entry.result = Some(format!("not queued: {e}"));
+            let _ = snapshot::append_log(&log, &entry);
+            Err(bad(cmd, format!("{e} (the exact copy of the package is kept in {})", dest.display())))
+        }
+    }
+}
+
 type Run = fn(&mut Session, &Value) -> Result<Value>;
 
 fn spec(id: &'static str, label: &'static str, params: &'static str, run: Run) -> CommandSpec {
@@ -181,6 +263,12 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
     vec![
         spec("dcp.snapshot", "Snapshot DCP Package", r#"{"root":str,"dest":str,"wait":bool=false}"#, snapshot_cmd),
         spec("dcp.manifest.verify", "Verify DCP Package Against Manifest", r#"{"root":str,"manifest":str,"wait":bool=false}"#, verify_cmd),
+        spec(
+            "dcp.repair.reexport",
+            "Re-export DCP Under a New Name",
+            r#"{"root":str,"path":str?,"dest":str?,"sequence":id?,"preset":str?,"settings":object?,"range":range?,"dcpValidate":str|bool?,"start":bool?,"wait":bool?}"#,
+            reexport_cmd,
+        ),
         spec("dcp.repair.job", "Get DCP Repair Job Result", r#"{"job":int}"#, job_cmd),
         spec("dcp.repair.log", "Read DCP Repair Log", r#"{"path":str}"#, log_cmd),
     ]

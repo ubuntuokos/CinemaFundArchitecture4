@@ -106,3 +106,62 @@ fn a_background_snapshot_is_read_back_with_its_job_id() {
     assert!(done["manifestId"].is_string(), "{done}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn reexport_keeps_the_old_package_and_writes_a_new_validated_one() {
+    let dir = scratch("reexport");
+    let (mut s, pkg) = exported(&dir);
+    let root = pkg.to_string_lossy().into_owned();
+    s.execute("dcp.validate", json!({"root": root, "profile": "quick-scan", "wait": true})).unwrap();
+    let range = json!({"range": "custom", "startSeconds": 1.0, "endSeconds": 1.25});
+    let mut params = json!({"root": root, "start": true, "wait": true});
+    params.as_object_mut().unwrap().extend(range.as_object().unwrap().clone());
+    let r = out(s.execute("dcp.repair.reexport", params.clone()).unwrap());
+
+    // a new name next to the old package, never the same place
+    let new = dir.join("Pkg_r2");
+    assert_eq!(r["newPackage"], json!(new.to_string_lossy()), "{r}");
+    assert!(new.join("ASSETMAP.xml").is_file());
+    // the old package is byte-identical to the copy made first (per its manifest)
+    let snap = PathBuf::from(r["snapshot"].as_str().unwrap());
+    assert!(snap.starts_with(&dir) && snap.join("package/ASSETMAP.xml").is_file());
+    let v = out(s.execute("dcp.manifest.verify", json!({"root": root, "manifest": snap.to_string_lossy(), "wait": true})).unwrap());
+    assert_eq!(v["verification"]["identical"], true, "{v}");
+    // the new package was validated, its report is next to it
+    let q = out(s.execute("export.queue.list", json!({})).unwrap());
+    let item = q["items"].as_array().unwrap().last().unwrap().clone();
+    assert_eq!(item["dcpValidation"]["status"], "passed", "{item}");
+    assert!(PathBuf::from(r["newReport"].as_str().unwrap()).is_file());
+    // the log: the snapshot, then the re-export that names the new package
+    let log = out(s.execute("dcp.repair.log", json!({"path": snap.to_string_lossy()})).unwrap());
+    let acts: Vec<_> = log["entries"].as_array().unwrap().iter().map(|e| e["action"].as_str().unwrap().to_string()).collect();
+    assert_eq!(acts, ["snapshot", "reexport"], "{log}");
+    assert_eq!(log["entries"][1]["result"], json!(new.to_string_lossy()));
+    assert_eq!(log["entries"][1]["manifest"], r["manifestId"]);
+    assert!(log["entries"][1]["report_before"].is_string());
+
+    // a second run goes to _r3, a re-export of the re-export too
+    let again = out(s.execute("dcp.repair.reexport", params.clone()).unwrap());
+    assert_eq!(again["newPackage"], json!(dir.join("Pkg_r3").to_string_lossy()));
+    let mut from_r2 = params;
+    from_r2["root"] = json!(new.to_string_lossy());
+    let third = out(s.execute("dcp.repair.reexport", from_r2).unwrap());
+    assert_eq!(third["newPackage"], json!(dir.join("Pkg_r4").to_string_lossy()));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn reexport_without_a_project_or_package_says_why_and_writes_nothing() {
+    let dir = scratch("reexport-refuse");
+    let (mut s, pkg) = exported(&dir);
+    let root = pkg.to_string_lossy().into_owned();
+    let mut empty = Session::default();
+    let e = empty.execute("dcp.repair.reexport", json!({"root": root})).unwrap_err().to_string();
+    assert!(e.contains("no project is open"), "{e}");
+    let e = s.execute("dcp.repair.reexport", json!({"root": dir.join("nope").to_string_lossy()})).unwrap_err().to_string();
+    assert!(e.contains("not a folder"), "{e}");
+    assert!(s.execute("dcp.repair.reexport", json!({})).is_err());
+    let entries: Vec<_> = std::fs::read_dir(&dir).unwrap().flatten().collect();
+    assert_eq!(entries.len(), 1, "only the original package: {entries:?}");
+    let _ = std::fs::remove_dir_all(&dir);
+}

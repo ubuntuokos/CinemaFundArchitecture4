@@ -134,8 +134,19 @@ as `skipped`, never copied), reads the copy back against the manifest, and start
 before and after, the result). A `dest` inside the package, one that exists, or one with `..` is refused; a cancelled or
 failed snapshot removes what it made. `dcp.manifest.verify {root, manifest, wait}` compares a package with a manifest
 (`same`, `changed`, `missing`, `extra`), so it can be shown that a package is the same before and after.
-`dcp.repair.job {job}` reads the answer of either background job, `dcp.repair.log {path}` the log. The re-export that
-uses this (DCP-25) and the Qt dialog (DCP-26) follow.
+`dcp.repair.job {job}` reads the answer of either background job, `dcp.repair.log {path}` the log. The Qt dialog (DCP-26) follows.
+
+## Re-export under a new name (DCP-25)
+
+`dcp.repair.reexport {root, path?, dest?, wait?, …}` answers a package with bad content. It first makes the exact copy
+above (`dest`, default `<package>.cfa4repair-<UTC time>` next to the package) and logs a `snapshot` entry, then queues
+an export of the **current** project as a DCP under a new name, `<base>_r2`, `_r3`, … (in `path`, default next to the
+package; never a name that exists or is queued), validated with `dcpValidate` (default `delivery-preflight`). Other
+parameters (`sequence`, `preset`, `settings`, `range`, `start`, `wait`) go to `export.queue.add`. The old package and its
+report are not touched; the log gets a `reexport` entry that names the new package (its report is
+`<new>.cfa4dcp.json`). If the export is refused (preflight) the copy stays and the entry says `not queued: …`. With no
+project open the command says so and writes nothing. The copy is made inside the command, so a very large package
+blocks the engine for the time it takes to read it.
 
 ## Repair proposals (DCP-14)
 
