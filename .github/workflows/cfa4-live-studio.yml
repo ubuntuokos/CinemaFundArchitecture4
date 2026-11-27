@@ -38,6 +38,7 @@ jobs:
             libsimde-dev uthash-dev libjansson-dev zlib1g-dev uuid-dev \
             libx11-dev libx11-xcb-dev libxcb1-dev libxcb-xinput-dev libxcb-randr0-dev \
             libxcb-xfixes0-dev libxcb-composite0-dev libxcb-shm0-dev libglib2.0-dev libpulse-dev \
+            libpipewire-0.3-dev libv4l-dev libudev-dev \
             libwayland-dev libxkbcommon-dev libdrm-dev libegl-dev libgl-dev libopengl-dev \
             libva-dev libdav1d-dev libopus-dev libvpx-dev libwebp-dev libmp3lame-dev libvpl-dev \
             libvulkan-dev libffmpeg-nvenc-dev xz-utils glslc git \
@@ -51,6 +52,8 @@ jobs:
         run: |
           cat /opt/cfa4/libobs-33.0.1/share/doc/libobs/BUILDINFO
           cat /opt/cfa4/libobs-33.0.1/share/doc/libobs/SHA256SUMS
+          # S2: exactly the three capture modules (the build script fails on any other)
+          ls /opt/cfa4/libobs-33.0.1/lib/obs-modules/core
           test -s /opt/cfa4/libobs-33.0.1/share/doc/libobs/COPYING
       - name: Clippy (live studio crates)
         run: cargo clippy --locked -p cfa4-obs -p cfa4-studio-host --all-targets -- -D warnings

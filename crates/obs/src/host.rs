@@ -46,6 +46,12 @@ pub enum HostEvent {
         version: String,
         /// Why `auto` did not use libobs.
         fallback_reason: Option<String>,
+        /// The source types the backend can create (libobs: its registered input types).
+        #[serde(default)]
+        source_types: Vec<String>,
+        /// Capture source types (S2) the libobs lacks, because a module did not load (libobs only).
+        #[serde(default)]
+        missing_sources: Vec<String>,
     },
     /// The host could not start or run its backend.
     Error {
@@ -114,6 +120,12 @@ pub struct HostStatus {
     pub version: Option<String>,
     /// Why `auto` fell back to the software backend.
     pub fallback_reason: Option<String>,
+    /// The source types the running host can create.
+    #[serde(default)]
+    pub source_types: Vec<String>,
+    /// Capture source types (S2) the running host lacks (a module did not load).
+    #[serde(default)]
+    pub missing_sources: Vec<String>,
     /// The last error the host or the supervisor reported.
     pub error: Option<String>,
     /// The frame ring the host writes.
@@ -236,6 +248,8 @@ impl Supervisor {
                 backend: None,
                 version: None,
                 fallback_reason: None,
+                source_types: Vec::new(),
+                missing_sources: Vec::new(),
                 error: None,
                 ring: ring_path.to_string_lossy().into_owned(),
                 video: opts.video,
@@ -368,11 +382,13 @@ fn read_events(shared: Arc<Shared>, out: std::process::ChildStdout) {
         for line in BufReader::new(out).lines() {
             let Ok(line) = line else { break };
             match serde_json::from_str::<HostEvent>(&line) {
-                Ok(HostEvent::Ready { backend, version, fallback_reason }) => shared.update(|s| {
+                Ok(HostEvent::Ready { backend, version, fallback_reason, source_types, missing_sources }) => shared.update(|s| {
                     s.state = HostState::Running;
                     s.backend = Some(backend);
                     s.version = Some(version);
                     s.fallback_reason = fallback_reason;
+                    s.source_types = source_types;
+                    s.missing_sources = missing_sources;
                 }),
                 Ok(HostEvent::Error { message }) => {
                     log::warn!("cfa4-studio-host: {message}");
@@ -434,6 +450,8 @@ fn monitor(shared: &Arc<Shared>, opts: &HostOptions, ring: &Path) {
             s.starts = generation;
             s.backend = None;
             s.version = None;
+            s.source_types.clear();
+            s.missing_sources.clear();
             s.scene_revision = None;
             s.scene_layers = 0;
         });
@@ -530,10 +548,19 @@ mod tests {
 
     #[test]
     fn events_and_commands_have_a_stable_wire_form() {
-        let e = HostEvent::Ready { backend: "libobs".into(), version: "33.0.1".into(), fallback_reason: None };
+        let e = HostEvent::Ready {
+            backend: "libobs".into(),
+            version: "33.0.1".into(),
+            fallback_reason: None,
+            source_types: vec!["v4l2_input".into()],
+            missing_sources: vec!["x".into()],
+        };
         let s = serde_json::to_string(&e).expect("json");
-        assert_eq!(s, r#"{"event":"ready","backend":"libobs","version":"33.0.1","fallbackReason":null}"#);
+        assert_eq!(s, r#"{"event":"ready","backend":"libobs","version":"33.0.1","fallbackReason":null,"sourceTypes":["v4l2_input"],"missingSources":["x"]}"#);
         assert_eq!(serde_json::from_str::<HostEvent>(&s).ok(), Some(e));
+        // a Ready line from before S2 (no source lists) still reads
+        let old = r#"{"event":"ready","backend":"libobs","version":"33.0.1","fallbackReason":null}"#;
+        assert!(matches!(serde_json::from_str::<HostEvent>(old), Ok(HostEvent::Ready { source_types, .. }) if source_types.is_empty()));
         assert_eq!(serde_json::to_string(&HostCommand::Quit).ok().as_deref(), Some(r#"{"cmd":"quit"}"#));
         let shown = HostEvent::SceneShown { revision: 3, layers: 2 };
         assert_eq!(serde_json::to_string(&shown).ok().as_deref(), Some(r#"{"event":"sceneShown","revision":3,"layers":2}"#));

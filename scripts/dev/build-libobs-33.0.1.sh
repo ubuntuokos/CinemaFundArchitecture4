@@ -10,11 +10,16 @@
 # SHA-256 below, or (CFA4_LIBOBS_SOURCE=git) the 33.0.1 tag, checked against its commit. Ubuntu's own
 # package is older (26.04: 32.1.0, without the browser source) and is not used.
 #
-# What is built (S0): libobs and libobs-opengl only. No OBS frontend (Qt), no scripting, no core
-# plugins yet: later phases add the plugins they need (S2 capture, S5 outputs, S7 encoders), and
-# the browser source comes from WPE WebKit, not CEF (D3). Licence: libobs is GPL-2.0-or-later,
+# What is built: libobs and libobs-opengl, plus (S2, CFA4-LIVE-STUDIO-001-S2 D-S2-1) exactly three
+# capture modules: linux-v4l2 (cameras), linux-pipewire (screen and window through the XDG portal),
+# linux-pulseaudio (audio input and output capture). OBS 33 builds all its core modules or none, so
+# the build replaces plugins/CMakeLists.txt of the unpacked release with the allow-list
+# scripts/dev/libobs-modules.cmake (build glue only, no OBS source file changes) and checks the
+# installed modules against the same list. No x264, NVENC, QSV or WebRTC before S7; no OBS frontend
+# (Qt), no scripting; the browser source comes from Qt WebEngine (D3).
+# Licence: libobs is GPL-2.0-or-later (the modules too; libv4l2 LGPL),
 # combined with CFA4 under GPL-3.0-or-later; the corresponding source is the unmodified upstream
-# release named in share/doc/libobs/BUILDINFO.
+# release named in share/doc/libobs/BUILDINFO (plus the build glue file named above).
 #
 # FFmpeg: libobs 33 needs FFmpeg >= 8.0; it is built against CFA4's own FFmpeg
 # (scripts/dev/build-ffmpeg.sh, ADR 0005), so there is one FFmpeg in a CFA4 installation.
@@ -27,7 +32,7 @@
 #   libsimde-dev uthash-dev libjansson-dev zlib1g-dev uuid-dev libx11-dev libx11-xcb-dev
 #   libxcb1-dev libxcb-xinput-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-composite0-dev
 #   libxcb-shm0-dev libglib2.0-dev libpulse-dev libwayland-dev libxkbcommon-dev libdrm-dev
-#   libegl-dev libgl-dev libopengl-dev
+#   libegl-dev libgl-dev libopengl-dev libpipewire-0.3-dev libv4l-dev libudev-dev
 set -euo pipefail
 
 if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
@@ -85,6 +90,9 @@ case "${CFA4_LIBOBS_SOURCE:-tarball}" in
   *) echo "CFA4_LIBOBS_SOURCE must be tarball or git" >&2; exit 2 ;;
 esac
 
+# The allow-list of core modules (see above): the build glue of the unpacked release is replaced.
+cp "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libobs-modules.cmake" "${src}/plugins/CMakeLists.txt"
+
 flags=(
   -G Ninja
   -DCMAKE_BUILD_TYPE=Release
@@ -93,10 +101,14 @@ flags=(
   # OBS sets its own (empty) install RPATH on Linux; the linker flag keeps ours, so libobs finds
   # libobs-opengl next to it and CFA4's FFmpeg without LD_LIBRARY_PATH.
   -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--enable-new-dtags,-rpath,${prefix}/lib:${ffmpeg_prefix}/lib"
+  -DCMAKE_MODULE_LINKER_FLAGS="-Wl,--enable-new-dtags,-rpath,${prefix}/lib:${ffmpeg_prefix}/lib"
   -DCMAKE_COMPILE_WARNING_AS_ERROR=OFF
   -DENABLE_FRONTEND=OFF
   -DENABLE_SCRIPTING=OFF
-  -DENABLE_CORE_MODULES=OFF
+  -DENABLE_CORE_MODULES=ON
+  -DENABLE_V4L2=ON
+  -DENABLE_UDEV=ON
+  -DENABLE_PIPEWIRE=ON
   -DENABLE_PULSEAUDIO=ON
   -DENABLE_WAYLAND=ON
   -DENABLE_RELOCATABLE=OFF
@@ -112,6 +124,22 @@ if [[ ! -w "$(dirname "$prefix")" && "$(id -u)" != 0 ]]; then
   sudo mkdir -p "$(dirname "$prefix")"
 fi
 "${install_cmd[@]}" >"${tmp}/install.log"
+
+# The installed capture modules are exactly the allow-list (S2, D-S2-1), and each finds its libraries.
+modules=(linux-pipewire linux-pulseaudio linux-v4l2)
+installed="$(cd "${prefix}/lib/obs-modules/core" && ls | sort | tr '\n' ' ')"
+expected="$(printf '%s.so\n' "${modules[@]}" | sort | tr '\n' ' ')"
+if [[ "$installed" != "$expected" ]]; then
+  echo "installed OBS modules: ${installed}; expected only: ${expected}" >&2
+  exit 1
+fi
+for m in "${modules[@]}"; do
+  if LC_ALL=C ldd "${prefix}/lib/obs-modules/core/${m}.so" | grep -q 'not found'; then
+    LC_ALL=C ldd "${prefix}/lib/obs-modules/core/${m}.so" | grep 'not found' >&2
+    echo "module ${m} does not find all its libraries" >&2
+    exit 1
+  fi
+done
 
 # libobs keeps the ABI soname of OBS 30 (OBS_SOVERSION in cmake/linux/helpers.cmake).
 lib="${prefix}/lib/libobs.so.30"
@@ -137,7 +165,7 @@ cp "$src"/COPYING "$doc/COPYING"
     git) echo "Source: ${git_url} tag ${git_tag}, commit ${git_commit}, unmodified." ;;
   esac
   echo "FFmpeg: ${ffmpeg_prefix} ($(PKG_CONFIG_PATH="${ffmpeg_prefix}/lib/pkgconfig" pkg-config --modversion libavcodec 2>/dev/null || echo unknown) libavcodec)"
-  echo "Components: libobs, libobs-opengl (no frontend, no scripting, no core plugins, no browser source)"
+  echo "Components: libobs, libobs-opengl, OBS modules ${modules[*]} (allow-list scripts/dev/libobs-modules.cmake replaces plugins/CMakeLists.txt; no frontend, no scripting, no other modules, no browser source)"
   echo "CMake flags:"
   printf '  %s\n' "${flags[@]}"
 } >"${doc}/BUILDINFO"

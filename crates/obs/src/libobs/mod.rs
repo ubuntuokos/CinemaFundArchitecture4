@@ -93,6 +93,11 @@ impl LibObsBackend {
         me.started = true;
         me.api.register_picture_source();
         me.api.reset_video(&module, &video)?;
+        me.api.reset_audio()?;
+        let failed = me.api.load_modules(dir);
+        if !failed.is_empty() {
+            log::warn!("live studio: libobs capture modules not loaded: {}", failed.join(", "));
+        }
         me.raw = Some(me.api.add_raw_video(me.sink.clone()));
         log::info!(
             "live studio: libobs {} started ({}x{} @ {}/{}, {})",
@@ -118,6 +123,11 @@ impl StudioBackend for LibObsBackend {
 
     fn video(&self) -> VideoSettings {
         self.video
+    }
+
+    fn source_types(&self) -> Vec<String> {
+        // after `shutdown` libobs has freed its state: enumerating would dereference it
+        if self.started { self.api.input_types() } else { Vec::new() }
     }
 
     fn show_empty_scene(&mut self) -> Result<()> {

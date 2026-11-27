@@ -119,6 +119,12 @@ fn libobs_shows_an_empty_scene_and_comes_back_after_a_crash() {
     let mut sup = Supervisor::start(o).expect("start");
     let st = sup.wait_ready(Duration::from_secs(30)).expect("libobs ready");
     assert_eq!(st.backend.as_deref(), Some("libobs"));
+    // S2: the three capture modules loaded, so their source types are registered
+    // (the PipeWire portal types exist only where the XDG desktop portal does: not in CI)
+    for t in cfa4_obs::CAPTURE_SOURCE_TYPES {
+        assert!(!st.missing_sources.iter().any(|m| m == t), "capture source type {t} is missing: {:?}", st.missing_sources);
+        assert!(st.source_types.iter().any(|s| s == t), "source type {t} is not registered: {:?}", st.source_types);
+    }
     assert_eq!(st.version.as_deref(), Some(cfa4_obs::LIBOBS_VERSION));
     let f = sup.latest_frame().expect("read").expect("a frame");
     assert_eq!((f.frame.width, f.frame.height), (320, 180));

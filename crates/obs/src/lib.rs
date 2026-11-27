@@ -43,6 +43,20 @@ pub const LIBOBS_VERSION: &str = "33.0.1";
 /// Where `scripts/dev/build-libobs-33.0.1.sh` installs it unless `CFA4_LIBOBS_DIR` says otherwise.
 pub const LIBOBS_DEFAULT_DIR: &str = "/opt/cfa4/libobs-33.0.1";
 
+/// Source types the `linux-v4l2` and `linux-pulseaudio` modules register (CFA4-LIVE-STUDIO-001-S2
+/// section 3). They need only the libraries, so a libobs build without them is broken.
+pub const CAPTURE_SOURCE_TYPES: &[&str] = &["v4l2_input", "pulse_input_capture", "pulse_output_capture"];
+
+/// Source types the `linux-pipewire` module registers once the XDG desktop portal offers the
+/// capture type (no portal, for example in a container: no type, and no error).
+pub const PORTAL_SOURCE_TYPES: &[&str] = &["pipewire-desktop-capture-source", "pipewire-window-capture-source"];
+
+/// The capture source types ([`CAPTURE_SOURCE_TYPES`] and [`PORTAL_SOURCE_TYPES`]) that `registered`
+/// does not contain.
+pub fn missing_capture_sources(registered: &[String]) -> Vec<String> {
+    CAPTURE_SOURCE_TYPES.iter().chain(PORTAL_SOURCE_TYPES).filter(|t| !registered.iter().any(|r| r == **t)).map(|t| (*t).to_string()).collect()
+}
+
 /// Largest frame side the studio accepts (8K).
 pub const MAX_SIDE: u32 = cfa4_io_core::ring::MAX_SIDE;
 /// Smallest frame side.
@@ -188,6 +202,11 @@ pub trait StudioBackend: Send {
     fn version(&self) -> String;
     /// The video the backend produces.
     fn video(&self) -> VideoSettings;
+    /// The ids of the source types the backend can create (libobs: the registered input types,
+    /// including the capture modules; software: none).
+    fn source_types(&self) -> Vec<String> {
+        Vec::new()
+    }
     /// Shows an empty scene on the program output.
     fn show_empty_scene(&mut self) -> Result<()>;
     /// Shows `scene` on the program output instead of the one shown (S1). On an error the
