@@ -15,3 +15,12 @@ Sources fetched with `scripts/dev/fetch-usd-source.sh` (pins in `packaging/usd-v
 
 Result: the minimal core builds with oneTBB as the only external library. SB-G4 holds on this toolchain.
 Not covered: tag signature (D-SB-4), licence decision (SB-G7), physical measurement (SB-G9), a second compiler.
+
+## S3: reproducible build (SB-G3)
+
+`scripts/dev/build-usd.sh --check-repro` (same toolchain, 4 cores, 2026-11-27): two builds one after the other, with the
+same prefix and work directory, produced **identical hashes for all 1212 installed files** (`SHA256SUMS`); 22 min 40 s for both.
+Determinism comes from `SOURCE_DATE_EPOCH` (the pinned commit time), `-ffile-prefix-map`, `LC_ALL=C`/`TZ=UTC`, `RUNPATH $ORIGIN`,
+a fixed `strip` and a sorted hash list. `BUILDINFO.json` (pins, toolchain, flags) is written next to it and is not part of the hashed set.
+Not covered: a different build directory or host path (the install prefix is embedded in CMake config files, so the prefix must stay the same),
+a different compiler or distribution (the manual workflow `cfa4-usd-build.yml` runs Ubuntu 26.04 and 24.04; not yet run).
