@@ -98,7 +98,7 @@ pub(crate) struct Spu<'a> {
 
 /// Build a menu SPU (start-display "menu" command, a single sequence at date 0).
 pub(crate) fn encode_menu(s: &Spu<'_>) -> Result<Vec<u8>> {
-    if s.w == 0 || s.h < 2 || s.w > MAX_W || s.bitmap.len() != s.w * s.h {
+    if s.w == 0 || s.h < 2 || s.w > MAX_W || s.w.checked_mul(s.h) != Some(s.bitmap.len()) {
         return Err(Error::Vob("sub-picture: bad bitmap size".into()));
     }
     let top = field(s.bitmap, s.w, s.h, 0);

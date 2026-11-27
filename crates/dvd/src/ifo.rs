@@ -42,6 +42,13 @@ fn video_attr(spec: &TitleSetSpec) -> [u8; 2] {
     [0x40 | pal << 4 | aspect << 2 | 0x03, res << 3]
 }
 
+/// The menu video attributes: menu pictures are always 720 wide.
+fn menu_video_attr(spec: &TitleSetSpec) -> [u8; 2] {
+    let mut a = video_attr(spec);
+    a[1] &= !0x38;
+    a
+}
+
 fn audio_attr(a: &Audio) -> [u8; 8] {
     let mut b = [0u8; 8];
     let mode = match a.kind {
@@ -267,7 +274,7 @@ pub(crate) fn build_vts(spec: &TitleSetSpec, vobus: &[Vobu], cells: &[Range<usiz
         put32(&mut mat, 0xD0, m_pgci_at);
         put32(&mut mat, 0xD8, m_cadt_at);
         put32(&mut mat, 0xDC, m_admap_at);
-        mat[0x100..0x102].copy_from_slice(&video_attr(spec));
+        mat[0x100..0x102].copy_from_slice(&menu_video_attr(spec));
         put16(&mut mat, 0x154, 1);
     }
     put32(&mut mat, 0xC4, ifo_sectors + menu_sectors);
@@ -362,7 +369,8 @@ fn menu_pgci_ut(spec: &TitleSetSpec, m: &MenuIfo<'_>, entry_id: u8) -> Vec<u8> {
     let mut ut = vec![0u8; 16];
     put16(&mut ut, 0, 1);
     ut[8..10].copy_from_slice(&m.language);
-    ut[11] = 0x80; // the language unit holds menus
+    // existence flags: 0x80 root/title menu, 0x08 part-of-title (chapter) menu
+    ut[11] = if entry_id == 0x87 { 0x08 } else { 0x80 };
     put32(&mut ut, 12, 16);
     ut.extend_from_slice(&pgcit);
     let end = (ut.len() - 1) as u32;
@@ -416,7 +424,7 @@ pub(crate) fn build_vmg(spec: &TitleSetSpec, chapters: usize, vts_ifo: &[u8], me
         at += c_adt_t.as_ref().map_or(0, |t| sectors(t));
         put32(&mut mat, 0xDC, at);
         // the menu video attributes, no audio, one sub-picture stream (2-bit RLE)
-        mat[0x100..0x102].copy_from_slice(&video_attr(spec));
+        mat[0x100..0x102].copy_from_slice(&menu_video_attr(spec));
         put16(&mut mat, 0x154, 1);
     }
     mat[0x400..0x400 + fp.len()].copy_from_slice(&fp);

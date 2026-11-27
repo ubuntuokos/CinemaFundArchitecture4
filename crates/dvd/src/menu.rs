@@ -70,7 +70,7 @@ impl Packer {
     }
 
     /// `stream_id` data in packs; the first packet carries `pts`. `prefix` goes in front of the
-    /// payload of the first packet only (private stream 1 sub-stream id).
+    /// payload of every packet (private stream 1 sub-stream id).
     fn pes(&mut self, stream_id: u8, pts: u64, prefix: &[u8], data: &[u8]) {
         let mut first = true;
         let mut left = data;
@@ -79,7 +79,7 @@ impl Packer {
             pack_header(&mut p, self.clock);
             let room = SECTOR - p.len();
             let pts_len = if first { 5 } else { 0 };
-            let pre = if first { prefix.len() } else { 0 };
+            let pre = prefix.len();
             // 6 packet header + 3 flag bytes + the optional PTS, then the payload
             let overhead = 9 + pts_len;
             let take = left.len().min(room - overhead - pre);
@@ -94,9 +94,7 @@ impl Packer {
                 p.extend_from_slice(&pts_bytes(2, pts));
             }
             p.extend(std::iter::repeat_n(0xFFu8, stuffing));
-            if first {
-                p.extend_from_slice(prefix);
-            }
+            p.extend_from_slice(prefix);
             p.extend_from_slice(&left[..take]);
             left = &left[take..];
             let free = SECTOR - p.len();
@@ -292,5 +290,23 @@ mod tests {
         let text = String::from_utf8_lossy(&out.stdout);
         assert!(text.contains("codec_name=mpeg2video") && text.contains("width=720") && text.contains("height=576"), "{text}");
         assert!(text.contains("nb_read_frames=30"), "{text}");
+    }
+
+    #[test]
+    fn every_packet_of_a_long_subpicture_starts_with_the_substream_id() {
+        let mut p = Packer { out: Vec::new(), clock: 0 };
+        p.pes(0xBD, 90_000, &[0x20], &vec![0x55u8; 6000]);
+        assert!(p.out.len() >= 3 * SECTOR && p.out.len().is_multiple_of(SECTOR));
+        let mut payload = 0;
+        for sector in p.out.chunks(SECTOR) {
+            // pack header (14 bytes, stuffing byte count in the last) then the PES packet
+            let at = 14 + usize::from(sector[13] & 7);
+            assert_eq!(&sector[at..at + 4], &[0, 0, 1, 0xBD]);
+            let hdl = usize::from(sector[at + 8]);
+            let plen = usize::from(u16::from_be_bytes([sector[at + 4], sector[at + 5]]));
+            assert_eq!(sector[at + 9 + hdl], 0x20, "sub-stream id");
+            payload += plen - 3 - hdl - 1;
+        }
+        assert_eq!(payload, 6000);
     }
 }

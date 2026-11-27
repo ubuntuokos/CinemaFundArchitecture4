@@ -427,3 +427,28 @@ fn following_the_buttons_reaches_the_titles_chapters_and_menus() {
         let _ = std::fs::remove_dir_all(&d);
     }
 }
+
+#[test]
+fn impossible_menu_buttons_are_refused() {
+    let d = dir("menu-bad");
+    let (Some(vob), Some(pic)) = (ffmpeg_vob(&d), still_picture()) else { return };
+    let spec = spec(vec![2 * 90_000]);
+    let one = |action| vec![MenuButton { rect: (100, 100, 499, 139), action }];
+    let try_main = |buttons: Vec<MenuButton>| {
+        let menus = DiscMenus { main: menu_spec(pic.clone(), buttons), chapters: None };
+        author_with_menus(&mut std::io::Cursor::new(std::fs::read(&vob).unwrap()), &spec, &menus)
+    };
+    assert!(try_main(one(MenuAction::PlayTitle(2))).is_err(), "only one title exists");
+    assert!(try_main((0..300).map(|_| one(MenuAction::PlayTitle(1)).remove(0)).collect()).is_err(), "too many buttons");
+    let chapters = |c| {
+        let menus = DiscMenus {
+            main: menu_spec(pic.clone(), vec![MenuButton { rect: (100, 100, 499, 139), action: MenuAction::ShowChapterMenu }]),
+            chapters: Some(menu_spec(pic.clone(), vec![MenuButton { rect: (100, 100, 499, 139), action: MenuAction::PlayChapter(c) }])),
+        };
+        author_with_menus(&mut std::io::Cursor::new(std::fs::read(&vob).unwrap()), &spec, &menus)
+    };
+    assert!(chapters(3).is_err(), "the title has two chapters");
+    assert!(chapters(1025).is_err(), "does not wrap to chapter 1");
+    assert!(chapters(2).is_ok());
+    let _ = std::fs::remove_dir_all(&d);
+}

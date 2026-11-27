@@ -236,10 +236,9 @@ pub struct AuthoredMenus {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Domain {
     /// Video manager menu; whether a chapter menu exists to open.
-    Vmgm {
-        chapter_menu: bool,
-    },
-    Vtsm,
+    Vmgm { chapter_menu: bool },
+    /// Title-set menu; the number of chapters (cells) a button may play.
+    Vtsm { chapters: usize },
 }
 
 /// The menu id of the chapter (part-of-title) menu in the title set.
@@ -247,10 +246,11 @@ const PTT_MENU: u8 = 7;
 
 fn action_command(a: MenuAction, domain: Domain) -> Result<vm::Cmd> {
     Ok(match (a, domain) {
-        (MenuAction::PlayTitle(n), Domain::Vmgm { .. }) if (1..=99).contains(&n) => vm::jump_tt(n),
+        // one title is authored
+        (MenuAction::PlayTitle(1), Domain::Vmgm { .. }) => vm::jump_tt(1),
         (MenuAction::ShowChapterMenu, Domain::Vmgm { chapter_menu: true }) => vm::jump_ss(vm::Menu::Vtsm { vts: 1, title: 1, menu: PTT_MENU }),
-        (MenuAction::PlayChapter(c), Domain::Vtsm) if c >= 1 => vm::jump_vts_ptt(1, c),
-        (MenuAction::ShowMainMenu, Domain::Vtsm) => vm::jump_ss(vm::Menu::Vmgm(2)),
+        (MenuAction::PlayChapter(c), Domain::Vtsm { chapters }) if (1..=1023).contains(&c) && usize::from(c) <= chapters => vm::jump_vts_ptt(1, c),
+        (MenuAction::ShowMainMenu, Domain::Vtsm { .. }) => vm::jump_ss(vm::Menu::Vmgm(2)),
         (other, _) => return Err(Error::Vob(format!("{other:?} is not possible in this menu"))),
     })
 }
@@ -263,8 +263,8 @@ struct BuiltMenu {
 }
 
 fn build_menu(spec: &TitleSetSpec, menu: &MenuSpec, domain: Domain) -> Result<BuiltMenu> {
-    if menu.buttons.is_empty() {
-        return Err(Error::Vob("a menu needs at least one button".into()));
+    if menu.buttons.is_empty() || menu.buttons.len() > hli::MAX_BUTTONS {
+        return Err(Error::Vob(format!("a menu needs 1..={} buttons, got {}", hli::MAX_BUTTONS, menu.buttons.len())));
     }
     let o = &menu.overlay;
     let spu = spu::encode_menu(&spu::Spu { bitmap: &o.pixels, w: o.w, h: o.h, x: o.x, y: o.y, color: menu.normal.index, alpha: menu.normal.alpha })?;
@@ -297,7 +297,7 @@ fn build_menu(spec: &TitleSetSpec, menu: &MenuSpec, domain: Domain) -> Result<Bu
 pub fn author_with_menus<F: Read + Write + Seek>(vob: &mut F, spec: &TitleSetSpec, menus: &DiscMenus) -> Result<AuthoredMenus> {
     let (scan, cells) = author_parts(vob, spec)?;
     let main = build_menu(spec, &menus.main, Domain::Vmgm { chapter_menu: menus.chapters.is_some() })?;
-    let chapters = menus.chapters.as_ref().map(|c| build_menu(spec, c, Domain::Vtsm)).transpose()?;
+    let chapters = menus.chapters.as_ref().map(|c| build_menu(spec, c, Domain::Vtsm { chapters: cells.len() })).transpose()?;
     let main_info = ifo::MenuIfo {
         vobus: &main.scan.vobus,
         cells: &main.cells,
