@@ -4972,3 +4972,50 @@ export.summary	Low	låg
 	Thresholds	Trösklar
 	Trail	Spår
 	Use gestures in the window	Använd gester i fönstret
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Acceleration per uppgift
+	Accelerators (GPU / NPU)	Acceleratorer (GPU / NPU)
+	Accelerators (GPU / NPU)…	Acceleratorer (GPU / NPU)…
+	Codec	Kodek
+	Decode	Avkoda
+	Decoding & Encoding	Avkodning och kodning
+	Decoding & Encoding…	Avkodning och kodning…
+	Detect Again	Identifiera igen
+	Detecting…	Identifierar…
+	Detection failed: {error}	Identifieringen misslyckades: {error}
+	Driver	Drivrutin
+	Encode	Koda
+	Export ▸ {format}	Exportera ▸ {format}
+	GStreamer backend: not available ({reason})	GStreamer-motor: inte tillgänglig ({reason})
+	GStreamer backend: not part of this build	GStreamer-motor: ingår inte i detta bygge
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreamer-motor: {version} (reserv för filer som CFA4 inte öppnar själv)
+	General compute	Allmän beräkning
+	Hardware & Devices	Maskinvara och enheter
+	Hardware decode	Maskinvaruavkodning
+	Hardware decoder: {name}	Maskinvaruavkodare: {name}
+	Hardware only	Endast maskinvara
+	Local AI	Lokal AI
+	Local AI (speech, voices)	Lokal AI (tal, röster)
+	Media & Playback	Media och uppspelning
+	No GPU or NPU found: everything runs on the CPU.	Ingen GPU eller NPU hittades: allt körs på processorn.
+	Node	Nod
+	Not used	Används inte
+	Notes	Anteckningar
+	On this machine	På den här datorn
+	PCI ID	PCI-ID
+	Preview, compositing and effects	Förhandsvisning, sammansättning och effekter
+	Software	Programvara
+	Tried in this order	Provade i denna ordning
+	Unknown device	Okänd enhet
+	Vendor	Tillverkare
+	Video decoding	Videoavkodning
+	Video encoding	Videokodning
+	failed while running	misslyckades under körning
+	left out by the preference	utesluten av inställningen
+	no answer	inget svar
+	no suitable device	ingen lämplig enhet
+	not found	hittades inte
+	not implemented yet	inte implementerat än
+	not in this build	ingår inte i detta bygge
+	switched off in the settings	avstängd i inställningarna
+	vendor-locked backends are switched off	tillverkarbundna motorer är avstängda

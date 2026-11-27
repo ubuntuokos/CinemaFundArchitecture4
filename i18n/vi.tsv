@@ -4970,3 +4970,50 @@ export.summary	Low	thấp
 	Thresholds	Ngưỡng
 	Trail	Vệt
 	Use gestures in the window	Dùng cử chỉ trong cửa sổ
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Tăng tốc theo tác vụ
+	Accelerators (GPU / NPU)	Bộ tăng tốc (GPU / NPU)
+	Accelerators (GPU / NPU)…	Bộ tăng tốc (GPU / NPU)…
+	Codec	Codec
+	Decode	Giải mã
+	Decoding & Encoding	Giải mã và mã hóa
+	Decoding & Encoding…	Giải mã và mã hóa…
+	Detect Again	Phát hiện lại
+	Detecting…	Đang phát hiện…
+	Detection failed: {error}	Phát hiện thất bại: {error}
+	Driver	Trình điều khiển
+	Encode	Mã hóa
+	Export ▸ {format}	Xuất ▸ {format}
+	GStreamer backend: not available ({reason})	Phần nền GStreamer: không khả dụng ({reason})
+	GStreamer backend: not part of this build	Phần nền GStreamer: không có trong bản dựng này
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	Phần nền GStreamer: {version} (phương án dự phòng cho tệp CFA4 không tự mở được)
+	General compute	Tính toán chung
+	Hardware & Devices	Phần cứng và thiết bị
+	Hardware decode	Giải mã phần cứng
+	Hardware decoder: {name}	Bộ giải mã phần cứng: {name}
+	Hardware only	Chỉ phần cứng
+	Local AI	AI cục bộ
+	Local AI (speech, voices)	AI cục bộ (giọng nói, lời đọc)
+	Media & Playback	Phương tiện và phát lại
+	No GPU or NPU found: everything runs on the CPU.	Không tìm thấy GPU hay NPU: mọi thứ chạy trên CPU.
+	Node	Nút
+	Not used	Không dùng
+	Notes	Ghi chú
+	On this machine	Trên máy này
+	PCI ID	ID PCI
+	Preview, compositing and effects	Xem trước, ghép hình và hiệu ứng
+	Software	Phần mềm
+	Tried in this order	Thử theo thứ tự này
+	Unknown device	Thiết bị không xác định
+	Vendor	Nhà sản xuất
+	Video decoding	Giải mã video
+	Video encoding	Mã hóa video
+	failed while running	lỗi khi đang chạy
+	left out by the preference	bị loại theo tùy chọn
+	no answer	không có phản hồi
+	no suitable device	không có thiết bị phù hợp
+	not found	không tìm thấy
+	not implemented yet	chưa được triển khai
+	not in this build	không có trong bản dựng này
+	switched off in the settings	đã tắt trong cài đặt
+	vendor-locked backends are switched off	các phần nền gắn với nhà sản xuất đã tắt

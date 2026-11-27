@@ -4977,3 +4977,50 @@
 	Thresholds	Umbrales
 	Trail	Rastro
 	Use gestures in the window	Usar gestos en la ventana
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Aceleración por tarea
+	Accelerators (GPU / NPU)	Aceleradores (GPU / NPU)
+	Accelerators (GPU / NPU)…	Aceleradores (GPU / NPU)…
+	Codec	Códec
+	Decode	Decodificar
+	Decoding & Encoding	Decodificación y codificación
+	Decoding & Encoding…	Decodificación y codificación…
+	Detect Again	Detectar de nuevo
+	Detecting…	Detectando…
+	Detection failed: {error}	Error en la detección: {error}
+	Driver	Controlador
+	Encode	Codificar
+	Export ▸ {format}	Exportar ▸ {format}
+	GStreamer backend: not available ({reason})	Motor GStreamer: no disponible ({reason})
+	GStreamer backend: not part of this build	Motor GStreamer: no incluido en esta compilación
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	Motor GStreamer: {version} (alternativa para archivos que CFA4 no abre por sí mismo)
+	General compute	Cálculo general
+	Hardware & Devices	Hardware y dispositivos
+	Hardware decode	Decodificación por hardware
+	Hardware decoder: {name}	Decodificador por hardware: {name}
+	Hardware only	Solo por hardware
+	Local AI	IA local
+	Local AI (speech, voices)	IA local (habla, voces)
+	Media & Playback	Medios y reproducción
+	No GPU or NPU found: everything runs on the CPU.	No se encontró ninguna GPU ni NPU: todo se ejecuta en la CPU.
+	Node	Nodo
+	Not used	Sin usar
+	Notes	Notas
+	On this machine	En este equipo
+	PCI ID	ID PCI
+	Preview, compositing and effects	Vista previa, composición y efectos
+	Software	Software
+	Tried in this order	Probados en este orden
+	Unknown device	Dispositivo desconocido
+	Vendor	Fabricante
+	Video decoding	Decodificación de vídeo
+	Video encoding	Codificación de vídeo
+	failed while running	falló durante la ejecución
+	left out by the preference	excluido por la preferencia
+	no answer	sin respuesta
+	no suitable device	ningún dispositivo adecuado
+	not found	no encontrado
+	not implemented yet	aún no implementado
+	not in this build	no incluido en esta compilación
+	switched off in the settings	desactivado en la configuración
+	vendor-locked backends are switched off	los motores vinculados a un fabricante están desactivados

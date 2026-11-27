@@ -4973,3 +4973,50 @@ export.summary	Low	nizka
 	Thresholds	Pragi
 	Trail	Sled
 	Use gestures in the window	Uporabi poteze v oknu
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Pospeševanje po opravilih
+	Accelerators (GPU / NPU)	Pospeševalniki (GPU / NPU)
+	Accelerators (GPU / NPU)…	Pospeševalniki (GPU / NPU)…
+	Codec	Kodek
+	Decode	Dekodiranje
+	Decoding & Encoding	Dekodiranje in kodiranje
+	Decoding & Encoding…	Dekodiranje in kodiranje…
+	Detect Again	Ponovno zaznaj
+	Detecting…	Zaznavanje…
+	Detection failed: {error}	Zaznavanje ni uspelo: {error}
+	Driver	Gonilnik
+	Encode	Kodiranje
+	Export ▸ {format}	Izvoz ▸ {format}
+	GStreamer backend: not available ({reason})	Zaledje GStreamer: ni na voljo ({reason})
+	GStreamer backend: not part of this build	Zaledje GStreamer: ni del te izgradnje
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	Zaledje GStreamer: {version} (nadomestek za datoteke, ki jih CFA4 ne odpre sam)
+	General compute	Splošno računanje
+	Hardware & Devices	Strojna oprema in naprave
+	Hardware decode	Strojno dekodiranje
+	Hardware decoder: {name}	Strojni dekodirnik: {name}
+	Hardware only	Samo strojno
+	Local AI	Lokalna UI
+	Local AI (speech, voices)	Lokalna UI (govor, glasovi)
+	Media & Playback	Mediji in predvajanje
+	No GPU or NPU found: everything runs on the CPU.	Ni najdenega GPU-ja ali NPU-ja: vse teče na procesorju.
+	Node	Vozlišče
+	Not used	Ni uporabljeno
+	Notes	Opombe
+	On this machine	Na tem računalniku
+	PCI ID	PCI ID
+	Preview, compositing and effects	Predogled, sestavljanje in učinki
+	Software	Programska oprema
+	Tried in this order	Preizkušeno v tem vrstnem redu
+	Unknown device	Neznana naprava
+	Vendor	Proizvajalec
+	Video decoding	Dekodiranje videa
+	Video encoding	Kodiranje videa
+	failed while running	spodletelo med izvajanjem
+	left out by the preference	izpuščeno zaradi nastavitve
+	no answer	ni odgovora
+	no suitable device	ni ustrezne naprave
+	not found	ni najdeno
+	not implemented yet	še ni izvedeno
+	not in this build	ni del te izgradnje
+	switched off in the settings	izklopljeno v nastavitvah
+	vendor-locked backends are switched off	na proizvajalca vezana zaledja so izklopljena

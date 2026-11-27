@@ -4978,3 +4978,50 @@
 	Thresholds	Ambang
 	Trail	Jejak
 	Use gestures in the window	Gunakan gestur di jendela
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Akselerasi per tugas
+	Accelerators (GPU / NPU)	Akselerator (GPU / NPU)
+	Accelerators (GPU / NPU)…	Akselerator (GPU / NPU)…
+	Codec	Codec
+	Decode	Dekode
+	Decoding & Encoding	Dekode dan enkode
+	Decoding & Encoding…	Dekode dan enkode…
+	Detect Again	Deteksi lagi
+	Detecting…	Mendeteksi…
+	Detection failed: {error}	Deteksi gagal: {error}
+	Driver	Driver
+	Encode	Enkode
+	Export ▸ {format}	Ekspor ▸ {format}
+	GStreamer backend: not available ({reason})	Backend GStreamer: tidak tersedia ({reason})
+	GStreamer backend: not part of this build	Backend GStreamer: tidak termasuk dalam build ini
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	Backend GStreamer: {version} (cadangan untuk berkas yang tidak dibuka sendiri oleh CFA4)
+	General compute	Komputasi umum
+	Hardware & Devices	Perangkat keras dan perangkat
+	Hardware decode	Dekode perangkat keras
+	Hardware decoder: {name}	Dekoder perangkat keras: {name}
+	Hardware only	Hanya perangkat keras
+	Local AI	AI lokal
+	Local AI (speech, voices)	AI lokal (ucapan, suara)
+	Media & Playback	Media dan pemutaran
+	No GPU or NPU found: everything runs on the CPU.	Tidak ada GPU atau NPU: semuanya berjalan di CPU.
+	Node	Node
+	Not used	Tidak digunakan
+	Notes	Catatan
+	On this machine	Di komputer ini
+	PCI ID	ID PCI
+	Preview, compositing and effects	Pratinjau, komposisi, dan efek
+	Software	Perangkat lunak
+	Tried in this order	Dicoba dengan urutan ini
+	Unknown device	Perangkat tidak dikenal
+	Vendor	Vendor
+	Video decoding	Dekode video
+	Video encoding	Enkode video
+	failed while running	gagal saat berjalan
+	left out by the preference	dikecualikan oleh preferensi
+	no answer	tidak ada jawaban
+	no suitable device	tidak ada perangkat yang sesuai
+	not found	tidak ditemukan
+	not implemented yet	belum diimplementasikan
+	not in this build	tidak termasuk dalam build ini
+	switched off in the settings	dimatikan di pengaturan
+	vendor-locked backends are switched off	backend yang terikat vendor dimatikan

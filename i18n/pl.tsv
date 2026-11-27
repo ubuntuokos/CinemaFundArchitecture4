@@ -4970,3 +4970,50 @@ export.summary	Low	niska
 	Thresholds	Progi
 	Trail	Ślad
 	Use gestures in the window	Używaj gestów w oknie
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Akceleracja według zadania
+	Accelerators (GPU / NPU)	Akceleratory (GPU / NPU)
+	Accelerators (GPU / NPU)…	Akceleratory (GPU / NPU)…
+	Codec	Kodek
+	Decode	Dekodowanie
+	Decoding & Encoding	Dekodowanie i kodowanie
+	Decoding & Encoding…	Dekodowanie i kodowanie…
+	Detect Again	Wykryj ponownie
+	Detecting…	Wykrywanie…
+	Detection failed: {error}	Wykrywanie nie powiodło się: {error}
+	Driver	Sterownik
+	Encode	Kodowanie
+	Export ▸ {format}	Eksport ▸ {format}
+	GStreamer backend: not available ({reason})	Zaplecze GStreamer: niedostępne ({reason})
+	GStreamer backend: not part of this build	Zaplecze GStreamer: nie wchodzi w skład tej kompilacji
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	Zaplecze GStreamer: {version} (rozwiązanie zapasowe dla plików, których CFA4 nie otwiera sam)
+	General compute	Obliczenia ogólne
+	Hardware & Devices	Sprzęt i urządzenia
+	Hardware decode	Dekodowanie sprzętowe
+	Hardware decoder: {name}	Dekoder sprzętowy: {name}
+	Hardware only	Tylko sprzętowo
+	Local AI	Lokalna SI
+	Local AI (speech, voices)	Lokalna SI (mowa, głosy)
+	Media & Playback	Multimedia i odtwarzanie
+	No GPU or NPU found: everything runs on the CPU.	Nie znaleziono GPU ani NPU: wszystko działa na procesorze.
+	Node	Węzeł
+	Not used	Nieużywane
+	Notes	Uwagi
+	On this machine	Na tym komputerze
+	PCI ID	Identyfikator PCI
+	Preview, compositing and effects	Podgląd, komponowanie i efekty
+	Software	Oprogramowanie
+	Tried in this order	Próbowane w tej kolejności
+	Unknown device	Nieznane urządzenie
+	Vendor	Producent
+	Video decoding	Dekodowanie wideo
+	Video encoding	Kodowanie wideo
+	failed while running	błąd podczas działania
+	left out by the preference	pominięte przez preferencję
+	no answer	brak odpowiedzi
+	no suitable device	brak odpowiedniego urządzenia
+	not found	nie znaleziono
+	not implemented yet	jeszcze niezaimplementowane
+	not in this build	nie wchodzi w skład tej kompilacji
+	switched off in the settings	wyłączone w ustawieniach
+	vendor-locked backends are switched off	zaplecza powiązane z producentem są wyłączone

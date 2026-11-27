@@ -4972,3 +4972,50 @@ export.summary	Low	తక్కువ
 	Thresholds	ప్రవేశాలు
 	Trail	జాడ
 	Use gestures in the window	విండోలో సంజ్ఞలు వాడు
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	పని వారీగా వేగవర్ధనం
+	Accelerators (GPU / NPU)	వేగవర్ధకాలు (GPU / NPU)
+	Accelerators (GPU / NPU)…	వేగవర్ధకాలు (GPU / NPU)…
+	Codec	కోడెక్
+	Decode	డీకోడ్
+	Decoding & Encoding	డీకోడింగ్ మరియు ఎన్‌కోడింగ్
+	Decoding & Encoding…	డీకోడింగ్ మరియు ఎన్‌కోడింగ్…
+	Detect Again	మళ్లీ గుర్తించు
+	Detecting…	గుర్తిస్తోంది…
+	Detection failed: {error}	గుర్తింపు విఫలమైంది: {error}
+	Driver	డ్రైవర్
+	Encode	ఎన్‌కోడ్
+	Export ▸ {format}	ఎగుమతి ▸ {format}
+	GStreamer backend: not available ({reason})	GStreamer బ్యాకెండ్: అందుబాటులో లేదు ({reason})
+	GStreamer backend: not part of this build	GStreamer బ్యాకెండ్: ఈ బిల్డ్‌లో భాగం కాదు
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreamer బ్యాకెండ్: {version} (CFA4 స్వయంగా తెరవని ఫైళ్ల కోసం ప్రత్యామ్నాయం)
+	General compute	సాధారణ గణన
+	Hardware & Devices	హార్డ్‌వేర్ మరియు పరికరాలు
+	Hardware decode	హార్డ్‌వేర్ డీకోడ్
+	Hardware decoder: {name}	హార్డ్‌వేర్ డీకోడర్: {name}
+	Hardware only	హార్డ్‌వేర్ మాత్రమే
+	Local AI	స్థానిక AI
+	Local AI (speech, voices)	స్థానిక AI (ప్రసంగం, స్వరాలు)
+	Media & Playback	మీడియా మరియు ప్లేబ్యాక్
+	No GPU or NPU found: everything runs on the CPU.	GPU లేదా NPU కనబడలేదు: అన్నీ CPU పై నడుస్తాయి.
+	Node	నోడ్
+	Not used	ఉపయోగంలో లేదు
+	Notes	గమనికలు
+	On this machine	ఈ యంత్రంలో
+	PCI ID	PCI ID
+	Preview, compositing and effects	ప్రివ్యూ, కంపోజిటింగ్ మరియు ఎఫెక్ట్‌లు
+	Software	సాఫ్ట్‌వేర్
+	Tried in this order	ఈ క్రమంలో ప్రయత్నించబడింది
+	Unknown device	తెలియని పరికరం
+	Vendor	తయారీదారు
+	Video decoding	వీడియో డీకోడింగ్
+	Video encoding	వీడియో ఎన్‌కోడింగ్
+	failed while running	నడుస్తున్నప్పుడు విఫలమైంది
+	left out by the preference	ప్రాధాన్యత వల్ల వదిలివేయబడింది
+	no answer	జవాబు లేదు
+	no suitable device	తగిన పరికరం లేదు
+	not found	కనబడలేదు
+	not implemented yet	ఇంకా అమలు చేయలేదు
+	not in this build	ఈ బిల్డ్‌లో భాగం కాదు
+	switched off in the settings	సెట్టింగ్‌లలో ఆపివేయబడింది
+	vendor-locked backends are switched off	తయారీదారుకు కట్టుబడిన బ్యాకెండ్‌లు ఆపివేయబడ్డాయి

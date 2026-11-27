@@ -4964,3 +4964,50 @@
 	Thresholds	임계값
 	Trail	궤적
 	Use gestures in the window	창에서 제스처 사용
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	작업별 가속
+	Accelerators (GPU / NPU)	가속기 (GPU / NPU)
+	Accelerators (GPU / NPU)…	가속기 (GPU / NPU)…
+	Codec	코덱
+	Decode	디코딩
+	Decoding & Encoding	디코딩 및 인코딩
+	Decoding & Encoding…	디코딩 및 인코딩…
+	Detect Again	다시 감지
+	Detecting…	감지 중…
+	Detection failed: {error}	감지 실패: {error}
+	Driver	드라이버
+	Encode	인코딩
+	Export ▸ {format}	내보내기 ▸ {format}
+	GStreamer backend: not available ({reason})	GStreamer 백엔드: 사용할 수 없음 ({reason})
+	GStreamer backend: not part of this build	GStreamer 백엔드: 이 빌드에 포함되지 않음
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreamer 백엔드: {version} (CFA4가 직접 열지 못하는 파일의 대체 수단)
+	General compute	일반 연산
+	Hardware & Devices	하드웨어 및 장치
+	Hardware decode	하드웨어 디코딩
+	Hardware decoder: {name}	하드웨어 디코더: {name}
+	Hardware only	하드웨어 전용
+	Local AI	로컬 AI
+	Local AI (speech, voices)	로컬 AI (음성, 목소리)
+	Media & Playback	미디어 및 재생
+	No GPU or NPU found: everything runs on the CPU.	GPU나 NPU를 찾지 못했습니다: 모두 CPU에서 실행됩니다.
+	Node	노드
+	Not used	사용 안 함
+	Notes	참고
+	On this machine	이 컴퓨터
+	PCI ID	PCI ID
+	Preview, compositing and effects	미리 보기, 합성 및 효과
+	Software	소프트웨어
+	Tried in this order	시도 순서
+	Unknown device	알 수 없는 장치
+	Vendor	제조사
+	Video decoding	비디오 디코딩
+	Video encoding	비디오 인코딩
+	failed while running	실행 중 실패
+	left out by the preference	기본 설정에 따라 제외됨
+	no answer	응답 없음
+	no suitable device	적합한 장치 없음
+	not found	찾을 수 없음
+	not implemented yet	아직 구현되지 않음
+	not in this build	이 빌드에 포함되지 않음
+	switched off in the settings	설정에서 꺼짐
+	vendor-locked backends are switched off	제조사 종속 백엔드가 꺼져 있음

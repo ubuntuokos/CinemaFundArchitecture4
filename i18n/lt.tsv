@@ -4973,3 +4973,50 @@ export.summary	Low	žema
 	Thresholds	Slenksčiai
 	Trail	Pėdsakas
 	Use gestures in the window	Naudoti gestus lange
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Spartinimas pagal užduotį
+	Accelerators (GPU / NPU)	Spartintuvai (GPU / NPU)
+	Accelerators (GPU / NPU)…	Spartintuvai (GPU / NPU)…
+	Codec	Kodekas
+	Decode	Dekodavimas
+	Decoding & Encoding	Dekodavimas ir kodavimas
+	Decoding & Encoding…	Dekodavimas ir kodavimas…
+	Detect Again	Aptikti iš naujo
+	Detecting…	Aptinkama…
+	Detection failed: {error}	Aptikti nepavyko: {error}
+	Driver	Tvarkyklė
+	Encode	Kodavimas
+	Export ▸ {format}	Eksportas ▸ {format}
+	GStreamer backend: not available ({reason})	GStreamer posistemė: nepasiekiama ({reason})
+	GStreamer backend: not part of this build	GStreamer posistemė: neįtraukta į šią versiją
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreamer posistemė: {version} (atsarginis būdas failams, kurių CFA4 neatveria pati)
+	General compute	Bendrieji skaičiavimai
+	Hardware & Devices	Aparatinė įranga ir įrenginiai
+	Hardware decode	Aparatinis dekodavimas
+	Hardware decoder: {name}	Aparatinis dekoderis: {name}
+	Hardware only	Tik aparatiškai
+	Local AI	Vietinis DI
+	Local AI (speech, voices)	Vietinis DI (kalba, balsai)
+	Media & Playback	Medija ir atkūrimas
+	No GPU or NPU found: everything runs on the CPU.	GPU ar NPU nerasta: viskas vykdoma procesoriumi.
+	Node	Mazgas
+	Not used	Nenaudojama
+	Notes	Pastabos
+	On this machine	Šiame kompiuteryje
+	PCI ID	PCI ID
+	Preview, compositing and effects	Peržiūra, komponavimas ir efektai
+	Software	Programinė įranga
+	Tried in this order	Bandyta šia tvarka
+	Unknown device	Nežinomas įrenginys
+	Vendor	Gamintojas
+	Video decoding	Vaizdo dekodavimas
+	Video encoding	Vaizdo kodavimas
+	failed while running	nepavyko vykdant
+	left out by the preference	praleista dėl nuostatos
+	no answer	nėra atsakymo
+	no suitable device	nėra tinkamo įrenginio
+	not found	nerasta
+	not implemented yet	dar neįgyvendinta
+	not in this build	neįtraukta į šią versiją
+	switched off in the settings	išjungta nustatymuose
+	vendor-locked backends are switched off	su gamintoju susietos posistemės išjungtos

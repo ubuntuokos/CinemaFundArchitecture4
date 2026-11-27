@@ -4971,3 +4971,50 @@ export.summary	Low	düşük
 	Thresholds	Eşikler
 	Trail	İz
 	Use gestures in the window	Pencerede hareketleri kullan
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Görev başına hızlandırma
+	Accelerators (GPU / NPU)	Hızlandırıcılar (GPU / NPU)
+	Accelerators (GPU / NPU)…	Hızlandırıcılar (GPU / NPU)…
+	Codec	Kodek
+	Decode	Kod çözme
+	Decoding & Encoding	Kod çözme ve kodlama
+	Decoding & Encoding…	Kod çözme ve kodlama…
+	Detect Again	Yeniden algıla
+	Detecting…	Algılanıyor…
+	Detection failed: {error}	Algılama başarısız: {error}
+	Driver	Sürücü
+	Encode	Kodlama
+	Export ▸ {format}	Dışa aktar ▸ {format}
+	GStreamer backend: not available ({reason})	GStreamer arka ucu: kullanılamıyor ({reason})
+	GStreamer backend: not part of this build	GStreamer arka ucu: bu derlemede yok
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreamer arka ucu: {version} (CFA4’ün kendisinin açmadığı dosyalar için yedek)
+	General compute	Genel hesaplama
+	Hardware & Devices	Donanım ve aygıtlar
+	Hardware decode	Donanımla kod çözme
+	Hardware decoder: {name}	Donanım kod çözücü: {name}
+	Hardware only	Yalnızca donanımla
+	Local AI	Yerel yapay zekâ
+	Local AI (speech, voices)	Yerel yapay zekâ (konuşma, sesler)
+	Media & Playback	Medya ve oynatma
+	No GPU or NPU found: everything runs on the CPU.	GPU veya NPU bulunamadı: her şey işlemcide çalışır.
+	Node	Düğüm
+	Not used	Kullanılmıyor
+	Notes	Notlar
+	On this machine	Bu bilgisayarda
+	PCI ID	PCI kimliği
+	Preview, compositing and effects	Önizleme, birleştirme ve efektler
+	Software	Yazılım
+	Tried in this order	Bu sırayla denendi
+	Unknown device	Bilinmeyen aygıt
+	Vendor	Üretici
+	Video decoding	Video kod çözme
+	Video encoding	Video kodlama
+	failed while running	çalışırken başarısız oldu
+	left out by the preference	tercih nedeniyle dışarıda bırakıldı
+	no answer	yanıt yok
+	no suitable device	uygun aygıt yok
+	not found	bulunamadı
+	not implemented yet	henüz uygulanmadı
+	not in this build	bu derlemede yok
+	switched off in the settings	ayarlarda kapalı
+	vendor-locked backends are switched off	üreticiye bağlı arka uçlar kapalı

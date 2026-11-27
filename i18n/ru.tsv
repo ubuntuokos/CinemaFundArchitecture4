@@ -4953,3 +4953,50 @@
 	Thresholds	Пороги
 	Trail	След
 	Use gestures in the window	Жесты в окне
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Ускорение по задачам
+	Accelerators (GPU / NPU)	Ускорители (GPU / NPU)
+	Accelerators (GPU / NPU)…	Ускорители (GPU / NPU)…
+	Codec	Кодек
+	Decode	Декодирование
+	Decoding & Encoding	Декодирование и кодирование
+	Decoding & Encoding…	Декодирование и кодирование…
+	Detect Again	Определить снова
+	Detecting…	Определение…
+	Detection failed: {error}	Не удалось определить: {error}
+	Driver	Драйвер
+	Encode	Кодирование
+	Export ▸ {format}	Экспорт ▸ {format}
+	GStreamer backend: not available ({reason})	Модуль GStreamer: недоступен ({reason})
+	GStreamer backend: not part of this build	Модуль GStreamer: не входит в эту сборку
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	Модуль GStreamer: {version} (запасной вариант для файлов, которые CFA4 не открывает сам)
+	General compute	Общие вычисления
+	Hardware & Devices	Оборудование и устройства
+	Hardware decode	Аппаратное декодирование
+	Hardware decoder: {name}	Аппаратный декодер: {name}
+	Hardware only	Только аппаратно
+	Local AI	Локальный ИИ
+	Local AI (speech, voices)	Локальный ИИ (речь, голоса)
+	Media & Playback	Медиа и воспроизведение
+	No GPU or NPU found: everything runs on the CPU.	GPU и NPU не найдены: всё выполняется на процессоре.
+	Node	Узел
+	Not used	Не используется
+	Notes	Примечания
+	On this machine	На этом компьютере
+	PCI ID	PCI ID
+	Preview, compositing and effects	Предпросмотр, композитинг и эффекты
+	Software	Программно
+	Tried in this order	Пробуются в этом порядке
+	Unknown device	Неизвестное устройство
+	Vendor	Производитель
+	Video decoding	Декодирование видео
+	Video encoding	Кодирование видео
+	failed while running	ошибка во время работы
+	left out by the preference	исключено настройкой
+	no answer	нет ответа
+	no suitable device	нет подходящего устройства
+	not found	не найдено
+	not implemented yet	ещё не реализовано
+	not in this build	не входит в эту сборку
+	switched off in the settings	отключено в настройках
+	vendor-locked backends are switched off	модули, привязанные к производителю, отключены

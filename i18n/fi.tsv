@@ -4972,3 +4972,50 @@ export.summary	Low	matala
 	Thresholds	Kynnykset
 	Trail	Jälki
 	Use gestures in the window	Käytä eleitä ikkunassa
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Kiihdytys tehtävittäin
+	Accelerators (GPU / NPU)	Kiihdyttimet (GPU / NPU)
+	Accelerators (GPU / NPU)…	Kiihdyttimet (GPU / NPU)…
+	Codec	Koodekki
+	Decode	Purku
+	Decoding & Encoding	Purku ja koodaus
+	Decoding & Encoding…	Purku ja koodaus…
+	Detect Again	Tunnista uudelleen
+	Detecting…	Tunnistetaan…
+	Detection failed: {error}	Tunnistus epäonnistui: {error}
+	Driver	Ajuri
+	Encode	Koodaus
+	Export ▸ {format}	Vienti ▸ {format}
+	GStreamer backend: not available ({reason})	GStreamer-taustaosa: ei käytettävissä ({reason})
+	GStreamer backend: not part of this build	GStreamer-taustaosa: ei mukana tässä koostuksessa
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreamer-taustaosa: {version} (varakeino tiedostoille, joita CFA4 ei itse avaa)
+	General compute	Yleinen laskenta
+	Hardware & Devices	Laitteisto ja laitteet
+	Hardware decode	Laitteistopurku
+	Hardware decoder: {name}	Laitteistopurkain: {name}
+	Hardware only	Vain laitteisto
+	Local AI	Paikallinen tekoäly
+	Local AI (speech, voices)	Paikallinen tekoäly (puhe, äänet)
+	Media & Playback	Media ja toisto
+	No GPU or NPU found: everything runs on the CPU.	GPU:ta tai NPU:ta ei löytynyt: kaikki ajetaan suorittimella.
+	Node	Solmu
+	Not used	Ei käytössä
+	Notes	Huomautukset
+	On this machine	Tällä koneella
+	PCI ID	PCI-tunnus
+	Preview, compositing and effects	Esikatselu, koostaminen ja tehosteet
+	Software	Ohjelmisto
+	Tried in this order	Kokeiltu tässä järjestyksessä
+	Unknown device	Tuntematon laite
+	Vendor	Valmistaja
+	Video decoding	Videon purku
+	Video encoding	Videon koodaus
+	failed while running	epäonnistui ajon aikana
+	left out by the preference	jätetty pois asetuksen vuoksi
+	no answer	ei vastausta
+	no suitable device	ei sopivaa laitetta
+	not found	ei löytynyt
+	not implemented yet	ei vielä toteutettu
+	not in this build	ei mukana tässä koostuksessa
+	switched off in the settings	poistettu käytöstä asetuksissa
+	vendor-locked backends are switched off	valmistajaan sidotut taustaosat on poistettu käytöstä

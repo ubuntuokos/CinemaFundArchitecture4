@@ -4979,3 +4979,50 @@
 	Thresholds	しきい値
 	Trail	軌跡
 	Use gestures in the window	ウィンドウでジェスチャーを使う
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	ジョブごとのアクセラレーション
+	Accelerators (GPU / NPU)	アクセラレータ (GPU / NPU)
+	Accelerators (GPU / NPU)…	アクセラレータ (GPU / NPU)…
+	Codec	コーデック
+	Decode	デコード
+	Decoding & Encoding	デコードとエンコード
+	Decoding & Encoding…	デコードとエンコード…
+	Detect Again	再検出
+	Detecting…	検出中…
+	Detection failed: {error}	検出に失敗しました: {error}
+	Driver	ドライバー
+	Encode	エンコード
+	Export ▸ {format}	書き出し ▸ {format}
+	GStreamer backend: not available ({reason})	GStreamer バックエンド: 利用不可 ({reason})
+	GStreamer backend: not part of this build	GStreamer バックエンド: このビルドには含まれていません
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreamer バックエンド: {version} (CFA4 が自分で開けないファイル用の代替手段)
+	General compute	汎用計算
+	Hardware & Devices	ハードウェアとデバイス
+	Hardware decode	ハードウェアデコード
+	Hardware decoder: {name}	ハードウェアデコーダー: {name}
+	Hardware only	ハードウェアのみ
+	Local AI	ローカル AI
+	Local AI (speech, voices)	ローカル AI (音声認識、音声合成)
+	Media & Playback	メディアと再生
+	No GPU or NPU found: everything runs on the CPU.	GPU も NPU も見つかりません: すべて CPU で実行されます。
+	Node	ノード
+	Not used	未使用
+	Notes	メモ
+	On this machine	このマシン
+	PCI ID	PCI ID
+	Preview, compositing and effects	プレビュー、合成、エフェクト
+	Software	ソフトウェア
+	Tried in this order	試行順
+	Unknown device	不明なデバイス
+	Vendor	ベンダー
+	Video decoding	ビデオデコード
+	Video encoding	ビデオエンコード
+	failed while running	実行中に失敗
+	left out by the preference	設定により除外
+	no answer	応答なし
+	no suitable device	適したデバイスがありません
+	not found	見つかりません
+	not implemented yet	未実装
+	not in this build	このビルドには含まれていません
+	switched off in the settings	設定でオフ
+	vendor-locked backends are switched off	ベンダー固有のバックエンドはオフです

@@ -4970,3 +4970,50 @@
 	Thresholds	Soglie
 	Trail	Scia
 	Use gestures in the window	Usa i gesti nella finestra
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Accelerazione per attività
+	Accelerators (GPU / NPU)	Acceleratori (GPU / NPU)
+	Accelerators (GPU / NPU)…	Acceleratori (GPU / NPU)…
+	Codec	Codec
+	Decode	Decodifica
+	Decoding & Encoding	Decodifica e codifica
+	Decoding & Encoding…	Decodifica e codifica…
+	Detect Again	Rileva di nuovo
+	Detecting…	Rilevamento…
+	Detection failed: {error}	Rilevamento non riuscito: {error}
+	Driver	Driver
+	Encode	Codifica
+	Export ▸ {format}	Esporta ▸ {format}
+	GStreamer backend: not available ({reason})	Backend GStreamer: non disponibile ({reason})
+	GStreamer backend: not part of this build	Backend GStreamer: non incluso in questa build
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	Backend GStreamer: {version} (ripiego per i file che CFA4 non apre da solo)
+	General compute	Calcolo generale
+	Hardware & Devices	Hardware e dispositivi
+	Hardware decode	Decodifica hardware
+	Hardware decoder: {name}	Decodificatore hardware: {name}
+	Hardware only	Solo hardware
+	Local AI	IA locale
+	Local AI (speech, voices)	IA locale (parlato, voci)
+	Media & Playback	Media e riproduzione
+	No GPU or NPU found: everything runs on the CPU.	Nessuna GPU o NPU trovata: tutto viene eseguito sulla CPU.
+	Node	Nodo
+	Not used	Non usato
+	Notes	Note
+	On this machine	Su questo computer
+	PCI ID	ID PCI
+	Preview, compositing and effects	Anteprima, compositing ed effetti
+	Software	Software
+	Tried in this order	Provati in questo ordine
+	Unknown device	Dispositivo sconosciuto
+	Vendor	Produttore
+	Video decoding	Decodifica video
+	Video encoding	Codifica video
+	failed while running	non riuscito durante l’esecuzione
+	left out by the preference	escluso dalla preferenza
+	no answer	nessuna risposta
+	no suitable device	nessun dispositivo adatto
+	not found	non trovato
+	not implemented yet	non ancora implementato
+	not in this build	non incluso in questa build
+	switched off in the settings	disattivato nelle impostazioni
+	vendor-locked backends are switched off	i backend legati a un produttore sono disattivati

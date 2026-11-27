@@ -4972,3 +4972,50 @@ export.summary	Low	χαμηλή
 	Thresholds	Κατώφλια
 	Trail	Ίχνος
 	Use gestures in the window	Χρήση κινήσεων στο παράθυρο
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Επιτάχυνση ανά εργασία
+	Accelerators (GPU / NPU)	Επιταχυντές (GPU / NPU)
+	Accelerators (GPU / NPU)…	Επιταχυντές (GPU / NPU)…
+	Codec	Κωδικοποιητής
+	Decode	Αποκωδικοποίηση
+	Decoding & Encoding	Αποκωδικοποίηση και κωδικοποίηση
+	Decoding & Encoding…	Αποκωδικοποίηση και κωδικοποίηση…
+	Detect Again	Εντοπισμός ξανά
+	Detecting…	Εντοπισμός…
+	Detection failed: {error}	Ο εντοπισμός απέτυχε: {error}
+	Driver	Πρόγραμμα οδήγησης
+	Encode	Κωδικοποίηση
+	Export ▸ {format}	Εξαγωγή ▸ {format}
+	GStreamer backend: not available ({reason})	Υποσύστημα GStreamer: μη διαθέσιμο ({reason})
+	GStreamer backend: not part of this build	Υποσύστημα GStreamer: δεν περιλαμβάνεται σε αυτή την έκδοση
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	Υποσύστημα GStreamer: {version} (εφεδρική λύση για αρχεία που το CFA4 δεν ανοίγει μόνο του)
+	General compute	Γενικοί υπολογισμοί
+	Hardware & Devices	Υλικό και συσκευές
+	Hardware decode	Αποκωδικοποίηση υλικού
+	Hardware decoder: {name}	Αποκωδικοποιητής υλικού: {name}
+	Hardware only	Μόνο με υλικό
+	Local AI	Τοπική ΤΝ
+	Local AI (speech, voices)	Τοπική ΤΝ (ομιλία, φωνές)
+	Media & Playback	Πολυμέσα και αναπαραγωγή
+	No GPU or NPU found: everything runs on the CPU.	Δεν βρέθηκε GPU ή NPU: όλα εκτελούνται στον επεξεργαστή.
+	Node	Κόμβος
+	Not used	Δεν χρησιμοποιείται
+	Notes	Σημειώσεις
+	On this machine	Σε αυτόν τον υπολογιστή
+	PCI ID	PCI ID
+	Preview, compositing and effects	Προεπισκόπηση, σύνθεση και εφέ
+	Software	Λογισμικό
+	Tried in this order	Δοκιμάστηκαν με αυτή τη σειρά
+	Unknown device	Άγνωστη συσκευή
+	Vendor	Κατασκευαστής
+	Video decoding	Αποκωδικοποίηση βίντεο
+	Video encoding	Κωδικοποίηση βίντεο
+	failed while running	απέτυχε κατά την εκτέλεση
+	left out by the preference	παραλείφθηκε λόγω προτίμησης
+	no answer	καμία απάντηση
+	no suitable device	καμία κατάλληλη συσκευή
+	not found	δεν βρέθηκε
+	not implemented yet	δεν έχει υλοποιηθεί ακόμα
+	not in this build	δεν περιλαμβάνεται σε αυτή την έκδοση
+	switched off in the settings	απενεργοποιημένο στις ρυθμίσεις
+	vendor-locked backends are switched off	τα υποσυστήματα που δεσμεύονται σε κατασκευαστή είναι απενεργοποιημένα

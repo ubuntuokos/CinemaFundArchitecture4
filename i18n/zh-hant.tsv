@@ -4969,3 +4969,50 @@ export.summary	Low	低
 	Thresholds	閾值
 	Trail	軌跡
 	Use gestures in the window	在視窗中使用手勢
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	依工作加速
+	Accelerators (GPU / NPU)	加速器 (GPU / NPU)
+	Accelerators (GPU / NPU)…	加速器 (GPU / NPU)…
+	Codec	編解碼器
+	Decode	解碼
+	Decoding & Encoding	解碼與編碼
+	Decoding & Encoding…	解碼與編碼…
+	Detect Again	重新偵測
+	Detecting…	正在偵測…
+	Detection failed: {error}	偵測失敗：{error}
+	Driver	驅動程式
+	Encode	編碼
+	Export ▸ {format}	匯出 ▸ {format}
+	GStreamer backend: not available ({reason})	GStreamer 後端：無法使用（{reason}）
+	GStreamer backend: not part of this build	GStreamer 後端：此版本未包含
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreamer 後端：{version}（供 CFA4 本身無法開啟的檔案使用的備援方案）
+	General compute	一般運算
+	Hardware & Devices	硬體與裝置
+	Hardware decode	硬體解碼
+	Hardware decoder: {name}	硬體解碼器：{name}
+	Hardware only	僅硬體
+	Local AI	本機 AI
+	Local AI (speech, voices)	本機 AI（語音辨識、語音合成）
+	Media & Playback	媒體與播放
+	No GPU or NPU found: everything runs on the CPU.	找不到 GPU 或 NPU：全部在 CPU 上執行。
+	Node	節點
+	Not used	未使用
+	Notes	備註
+	On this machine	本機
+	PCI ID	PCI ID
+	Preview, compositing and effects	預覽、合成與效果
+	Software	軟體
+	Tried in this order	嘗試順序
+	Unknown device	未知裝置
+	Vendor	廠商
+	Video decoding	視訊解碼
+	Video encoding	視訊編碼
+	failed while running	執行時失敗
+	left out by the preference	已依偏好排除
+	no answer	沒有回應
+	no suitable device	沒有合適的裝置
+	not found	找不到
+	not implemented yet	尚未實作
+	not in this build	此版本未包含
+	switched off in the settings	已在設定中關閉
+	vendor-locked backends are switched off	綁定廠商的後端已關閉

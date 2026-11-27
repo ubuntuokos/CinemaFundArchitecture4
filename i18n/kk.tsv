@@ -4972,3 +4972,50 @@ export.summary	Low	төмен
 	Thresholds	Шектер
 	Trail	Із
 	Use gestures in the window	Терезені қимылмен басқару
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Тапсырма бойынша жеделдету
+	Accelerators (GPU / NPU)	Жеделдеткіштер (GPU / NPU)
+	Accelerators (GPU / NPU)…	Жеделдеткіштер (GPU / NPU)…
+	Codec	Кодек
+	Decode	Декодтау
+	Decoding & Encoding	Декодтау және кодтау
+	Decoding & Encoding…	Декодтау және кодтау…
+	Detect Again	Қайта анықтау
+	Detecting…	Анықталуда…
+	Detection failed: {error}	Анықтау сәтсіз: {error}
+	Driver	Драйвер
+	Encode	Кодтау
+	Export ▸ {format}	Экспорт ▸ {format}
+	GStreamer backend: not available ({reason})	GStreamer модулі: қолжетімсіз ({reason})
+	GStreamer backend: not part of this build	GStreamer модулі: бұл жинаққа кірмейді
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreamer модулі: {version} (CFA4 өзі ашпайтын файлдарға арналған қосалқы жол)
+	General compute	Жалпы есептеу
+	Hardware & Devices	Жабдық және құрылғылар
+	Hardware decode	Аппараттық декодтау
+	Hardware decoder: {name}	Аппараттық декодер: {name}
+	Hardware only	Тек аппараттық
+	Local AI	Жергілікті ЖИ
+	Local AI (speech, voices)	Жергілікті ЖИ (сөйлеу, дауыстар)
+	Media & Playback	Медиа және ойнату
+	No GPU or NPU found: everything runs on the CPU.	GPU немесе NPU табылмады: бәрі процессорда орындалады.
+	Node	Түйін
+	Not used	Пайдаланылмайды
+	Notes	Ескертпелер
+	On this machine	Осы компьютерде
+	PCI ID	PCI ID
+	Preview, compositing and effects	Алдын ала қарау, композитинг және эффектілер
+	Software	Бағдарламалық
+	Tried in this order	Осы ретпен сыналды
+	Unknown device	Белгісіз құрылғы
+	Vendor	Өндіруші
+	Video decoding	Бейне декодтау
+	Video encoding	Бейне кодтау
+	failed while running	жұмыс кезінде сәтсіз болды
+	left out by the preference	баптау бойынша шығарылды
+	no answer	жауап жоқ
+	no suitable device	сәйкес құрылғы жоқ
+	not found	табылмады
+	not implemented yet	әлі іске асырылмаған
+	not in this build	бұл жинаққа кірмейді
+	switched off in the settings	баптауларда өшірілген
+	vendor-locked backends are switched off	өндірушіге байланған модульдер өшірілген

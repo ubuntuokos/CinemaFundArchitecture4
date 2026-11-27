@@ -4980,3 +4980,50 @@
 	Thresholds	Limiares
 	Trail	Rastro
 	Use gestures in the window	Usar gestos na janela
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Aceleração por tarefa
+	Accelerators (GPU / NPU)	Aceleradores (GPU / NPU)
+	Accelerators (GPU / NPU)…	Aceleradores (GPU / NPU)…
+	Codec	Codec
+	Decode	Decodificar
+	Decoding & Encoding	Decodificação e codificação
+	Decoding & Encoding…	Decodificação e codificação…
+	Detect Again	Detectar novamente
+	Detecting…	Detectando…
+	Detection failed: {error}	Falha na detecção: {error}
+	Driver	Driver
+	Encode	Codificar
+	Export ▸ {format}	Exportar ▸ {format}
+	GStreamer backend: not available ({reason})	Back-end GStreamer: indisponível ({reason})
+	GStreamer backend: not part of this build	Back-end GStreamer: não incluído nesta compilação
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	Back-end GStreamer: {version} (alternativa para arquivos que o CFA4 não abre sozinho)
+	General compute	Computação geral
+	Hardware & Devices	Hardware e dispositivos
+	Hardware decode	Decodificação por hardware
+	Hardware decoder: {name}	Decodificador por hardware: {name}
+	Hardware only	Somente hardware
+	Local AI	IA local
+	Local AI (speech, voices)	IA local (fala, vozes)
+	Media & Playback	Mídia e reprodução
+	No GPU or NPU found: everything runs on the CPU.	Nenhuma GPU ou NPU encontrada: tudo é executado na CPU.
+	Node	Nó
+	Not used	Não usado
+	Notes	Observações
+	On this machine	Neste computador
+	PCI ID	ID PCI
+	Preview, compositing and effects	Pré-visualização, composição e efeitos
+	Software	Software
+	Tried in this order	Tentados nesta ordem
+	Unknown device	Dispositivo desconhecido
+	Vendor	Fabricante
+	Video decoding	Decodificação de vídeo
+	Video encoding	Codificação de vídeo
+	failed while running	falhou durante a execução
+	left out by the preference	excluído pela preferência
+	no answer	sem resposta
+	no suitable device	nenhum dispositivo adequado
+	not found	não encontrado
+	not implemented yet	ainda não implementado
+	not in this build	não incluído nesta compilação
+	switched off in the settings	desativado nas configurações
+	vendor-locked backends are switched off	os back-ends vinculados a um fabricante estão desativados

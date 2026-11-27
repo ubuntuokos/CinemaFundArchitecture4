@@ -4975,3 +4975,50 @@
 	Thresholds	Seuils
 	Trail	Traînée
 	Use gestures in the window	Utiliser les gestes dans la fenêtre
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Accélération par tâche
+	Accelerators (GPU / NPU)	Accélérateurs (GPU / NPU)
+	Accelerators (GPU / NPU)…	Accélérateurs (GPU / NPU)…
+	Codec	Codec
+	Decode	Décodage
+	Decoding & Encoding	Décodage et encodage
+	Decoding & Encoding…	Décodage et encodage…
+	Detect Again	Détecter à nouveau
+	Detecting…	Détection…
+	Detection failed: {error}	Échec de la détection : {error}
+	Driver	Pilote
+	Encode	Encodage
+	Export ▸ {format}	Exportation ▸ {format}
+	GStreamer backend: not available ({reason})	Moteur GStreamer : indisponible ({reason})
+	GStreamer backend: not part of this build	Moteur GStreamer : absent de cette version
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	Moteur GStreamer : {version} (solution de repli pour les fichiers que CFA4 n’ouvre pas lui-même)
+	General compute	Calcul général
+	Hardware & Devices	Matériel et périphériques
+	Hardware decode	Décodage matériel
+	Hardware decoder: {name}	Décodeur matériel : {name}
+	Hardware only	Matériel uniquement
+	Local AI	IA locale
+	Local AI (speech, voices)	IA locale (parole, voix)
+	Media & Playback	Médias et lecture
+	No GPU or NPU found: everything runs on the CPU.	Aucun GPU ni NPU trouvé : tout s’exécute sur le processeur.
+	Node	Nœud
+	Not used	Non utilisé
+	Notes	Remarques
+	On this machine	Sur cette machine
+	PCI ID	ID PCI
+	Preview, compositing and effects	Aperçu, composition et effets
+	Software	Logiciel
+	Tried in this order	Essayés dans cet ordre
+	Unknown device	Périphérique inconnu
+	Vendor	Fabricant
+	Video decoding	Décodage vidéo
+	Video encoding	Encodage vidéo
+	failed while running	échec pendant l’exécution
+	left out by the preference	écarté par la préférence
+	no answer	aucune réponse
+	no suitable device	aucun périphérique adapté
+	not found	introuvable
+	not implemented yet	pas encore implémenté
+	not in this build	absent de cette version
+	switched off in the settings	désactivé dans les paramètres
+	vendor-locked backends are switched off	les moteurs liés à un fabricant sont désactivés

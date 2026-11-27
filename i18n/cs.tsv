@@ -4970,3 +4970,50 @@ export.summary	Low	nízká
 	Thresholds	Prahy
 	Trail	Stopa
 	Use gestures in the window	Používat gesta v okně
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Akcelerace podle úlohy
+	Accelerators (GPU / NPU)	Akcelerátory (GPU / NPU)
+	Accelerators (GPU / NPU)…	Akcelerátory (GPU / NPU)…
+	Codec	Kodek
+	Decode	Dekódování
+	Decoding & Encoding	Dekódování a kódování
+	Decoding & Encoding…	Dekódování a kódování…
+	Detect Again	Znovu zjistit
+	Detecting…	Zjišťování…
+	Detection failed: {error}	Zjištění selhalo: {error}
+	Driver	Ovladač
+	Encode	Kódování
+	Export ▸ {format}	Export ▸ {format}
+	GStreamer backend: not available ({reason})	Podpůrná vrstva GStreamer: není k dispozici ({reason})
+	GStreamer backend: not part of this build	Podpůrná vrstva GStreamer: není součástí tohoto sestavení
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	Podpůrná vrstva GStreamer: {version} (záloha pro soubory, které CFA4 neotevře sám)
+	General compute	Obecné výpočty
+	Hardware & Devices	Hardware a zařízení
+	Hardware decode	Hardwarové dekódování
+	Hardware decoder: {name}	Hardwarový dekodér: {name}
+	Hardware only	Pouze hardwarově
+	Local AI	Místní AI
+	Local AI (speech, voices)	Místní AI (řeč, hlasy)
+	Media & Playback	Média a přehrávání
+	No GPU or NPU found: everything runs on the CPU.	Nebyla nalezena žádná GPU ani NPU: vše běží na procesoru.
+	Node	Uzel
+	Not used	Nepoužito
+	Notes	Poznámky
+	On this machine	Na tomto počítači
+	PCI ID	PCI ID
+	Preview, compositing and effects	Náhled, kompozice a efekty
+	Software	Software
+	Tried in this order	Zkoušeno v tomto pořadí
+	Unknown device	Neznámé zařízení
+	Vendor	Výrobce
+	Video decoding	Dekódování videa
+	Video encoding	Kódování videa
+	failed while running	selhalo za běhu
+	left out by the preference	vynecháno podle předvolby
+	no answer	bez odpovědi
+	no suitable device	žádné vhodné zařízení
+	not found	nenalezeno
+	not implemented yet	zatím neimplementováno
+	not in this build	není součástí tohoto sestavení
+	switched off in the settings	vypnuto v nastavení
+	vendor-locked backends are switched off	podpůrné vrstvy vázané na výrobce jsou vypnuté

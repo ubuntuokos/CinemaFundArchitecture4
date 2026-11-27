@@ -4977,3 +4977,50 @@
 	Thresholds	Schwellen
 	Trail	Spur
 	Use gestures in the window	Gesten im Fenster verwenden
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Beschleunigung pro Aufgabe
+	Accelerators (GPU / NPU)	Beschleuniger (GPU / NPU)
+	Accelerators (GPU / NPU)…	Beschleuniger (GPU / NPU)…
+	Codec	Codec
+	Decode	Dekodieren
+	Decoding & Encoding	Dekodierung und Kodierung
+	Decoding & Encoding…	Dekodierung und Kodierung…
+	Detect Again	Erneut erkennen
+	Detecting…	Wird erkannt…
+	Detection failed: {error}	Erkennung fehlgeschlagen: {error}
+	Driver	Treiber
+	Encode	Kodieren
+	Export ▸ {format}	Export ▸ {format}
+	GStreamer backend: not available ({reason})	GStreamer-Backend: nicht verfügbar ({reason})
+	GStreamer backend: not part of this build	GStreamer-Backend: nicht Teil dieses Builds
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreamer-Backend: {version} (Ausweichlösung für Dateien, die CFA4 nicht selbst öffnet)
+	General compute	Allgemeine Berechnung
+	Hardware & Devices	Hardware und Geräte
+	Hardware decode	Hardware-Dekodierung
+	Hardware decoder: {name}	Hardware-Decoder: {name}
+	Hardware only	Nur Hardware
+	Local AI	Lokale KI
+	Local AI (speech, voices)	Lokale KI (Sprache, Stimmen)
+	Media & Playback	Medien und Wiedergabe
+	No GPU or NPU found: everything runs on the CPU.	Keine GPU oder NPU gefunden: Alles läuft auf der CPU.
+	Node	Knoten
+	Not used	Nicht verwendet
+	Notes	Hinweise
+	On this machine	Auf diesem Rechner
+	PCI ID	PCI-ID
+	Preview, compositing and effects	Vorschau, Compositing und Effekte
+	Software	Software
+	Tried in this order	In dieser Reihenfolge versucht
+	Unknown device	Unbekanntes Gerät
+	Vendor	Hersteller
+	Video decoding	Videodekodierung
+	Video encoding	Videokodierung
+	failed while running	beim Ausführen fehlgeschlagen
+	left out by the preference	durch die Einstellung ausgelassen
+	no answer	keine Antwort
+	no suitable device	kein geeignetes Gerät
+	not found	nicht gefunden
+	not implemented yet	noch nicht implementiert
+	not in this build	nicht in diesem Build
+	switched off in the settings	in den Einstellungen ausgeschaltet
+	vendor-locked backends are switched off	herstellergebundene Backends sind ausgeschaltet

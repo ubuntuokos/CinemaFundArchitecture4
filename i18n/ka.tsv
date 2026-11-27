@@ -4973,3 +4973,50 @@ export.summary	Low	დაბალი
 	Thresholds	ზღურბლები
 	Trail	კვალი
 	Use gestures in the window	ჟესტები ფანჯარაში
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	აჩქარება ამოცანების მიხედვით
+	Accelerators (GPU / NPU)	ამაჩქარებლები (GPU / NPU)
+	Accelerators (GPU / NPU)…	ამაჩქარებლები (GPU / NPU)…
+	Codec	კოდეკი
+	Decode	დეკოდირება
+	Decoding & Encoding	დეკოდირება და კოდირება
+	Decoding & Encoding…	დეკოდირება და კოდირება…
+	Detect Again	ხელახლა აღმოჩენა
+	Detecting…	აღმოჩენა…
+	Detection failed: {error}	აღმოჩენა ვერ მოხერხდა: {error}
+	Driver	დრაივერი
+	Encode	კოდირება
+	Export ▸ {format}	ექსპორტი ▸ {format}
+	GStreamer backend: not available ({reason})	GStreamer-ის მოდული: მიუწვდომელია ({reason})
+	GStreamer backend: not part of this build	GStreamer-ის მოდული: ამ აწყობაში არ შედის
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreamer-ის მოდული: {version} (სათადარიგო გზა ფაილებისთვის, რომლებსაც CFA4 თავად ვერ ხსნის)
+	General compute	ზოგადი გამოთვლები
+	Hardware & Devices	აპარატურა და მოწყობილობები
+	Hardware decode	აპარატული დეკოდირება
+	Hardware decoder: {name}	აპარატული დეკოდერი: {name}
+	Hardware only	მხოლოდ აპარატულად
+	Local AI	ლოკალური AI
+	Local AI (speech, voices)	ლოკალური AI (მეტყველება, ხმები)
+	Media & Playback	მედია და დაკვრა
+	No GPU or NPU found: everything runs on the CPU.	GPU ან NPU ვერ მოიძებნა: ყველაფერი პროცესორზე სრულდება.
+	Node	კვანძი
+	Not used	არ გამოიყენება
+	Notes	შენიშვნები
+	On this machine	ამ კომპიუტერზე
+	PCI ID	PCI ID
+	Preview, compositing and effects	გადახედვა, კომპოზიცია და ეფექტები
+	Software	პროგრამული
+	Tried in this order	ცდილი ამ თანმიმდევრობით
+	Unknown device	უცნობი მოწყობილობა
+	Vendor	მწარმოებელი
+	Video decoding	ვიდეოს დეკოდირება
+	Video encoding	ვიდეოს კოდირება
+	failed while running	შესრულებისას ჩავარდა
+	left out by the preference	გამოტოვებულია პარამეტრით
+	no answer	პასუხი არ არის
+	no suitable device	შესაფერისი მოწყობილობა არ არის
+	not found	ვერ მოიძებნა
+	not implemented yet	ჯერ არ არის რეალიზებული
+	not in this build	ამ აწყობაში არ შედის
+	switched off in the settings	გამორთულია პარამეტრებში
+	vendor-locked backends are switched off	მწარმოებელზე მიბმული მოდულები გამორთულია

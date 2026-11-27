@@ -4972,3 +4972,50 @@ export.summary	Low	lav
 	Thresholds	Tærskler
 	Trail	Spor
 	Use gestures in the window	Brug gestusser i vinduet
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Acceleration pr. opgave
+	Accelerators (GPU / NPU)	Acceleratorer (GPU / NPU)
+	Accelerators (GPU / NPU)…	Acceleratorer (GPU / NPU)…
+	Codec	Codec
+	Decode	Afkod
+	Decoding & Encoding	Afkodning og kodning
+	Decoding & Encoding…	Afkodning og kodning…
+	Detect Again	Registrer igen
+	Detecting…	Registrerer…
+	Detection failed: {error}	Registreringen mislykkedes: {error}
+	Driver	Driver
+	Encode	Kod
+	Export ▸ {format}	Eksportér ▸ {format}
+	GStreamer backend: not available ({reason})	GStreamer-backend: ikke tilgængelig ({reason})
+	GStreamer backend: not part of this build	GStreamer-backend: ikke en del af denne build
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreamer-backend: {version} (reserve til filer, som CFA4 ikke selv åbner)
+	General compute	Generel beregning
+	Hardware & Devices	Hardware og enheder
+	Hardware decode	Hardwareafkodning
+	Hardware decoder: {name}	Hardwareafkoder: {name}
+	Hardware only	Kun hardware
+	Local AI	Lokal AI
+	Local AI (speech, voices)	Lokal AI (tale, stemmer)
+	Media & Playback	Medier og afspilning
+	No GPU or NPU found: everything runs on the CPU.	Ingen GPU eller NPU fundet: alt kører på processoren.
+	Node	Node
+	Not used	Ikke brugt
+	Notes	Noter
+	On this machine	På denne computer
+	PCI ID	PCI-id
+	Preview, compositing and effects	Forhåndsvisning, sammensætning og effekter
+	Software	Software
+	Tried in this order	Prøvet i denne rækkefølge
+	Unknown device	Ukendt enhed
+	Vendor	Producent
+	Video decoding	Videoafkodning
+	Video encoding	Videokodning
+	failed while running	mislykkedes under kørsel
+	left out by the preference	udeladt af indstillingen
+	no answer	intet svar
+	no suitable device	ingen egnet enhed
+	not found	ikke fundet
+	not implemented yet	endnu ikke implementeret
+	not in this build	ikke i denne build
+	switched off in the settings	slået fra i indstillingerne
+	vendor-locked backends are switched off	producentbundne backends er slået fra

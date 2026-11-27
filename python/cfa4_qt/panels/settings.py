@@ -51,6 +51,7 @@ from PySide6.QtWidgets import (
 from .. import theme
 from ..i18n import N_, fmt, tr
 from .gesture_settings import gesture_page
+from .settings_hardware import ACCELERATORS_PAGE, DECODING_PAGE, QT_ONLY_PAGES, HardwarePages, arrange
 
 LIST_W = 216
 LABEL_W = 250
@@ -81,7 +82,12 @@ MENU = (
     ("timeline", "Timeline…"),
     ("trim", "Trim…"),
     ("controlSurfaces", N_("Control Surfaces…")),
+    # the Qt-only pages (CFA4-SETTINGS-HW-002)
+    (ACCELERATORS_PAGE, N_("Accelerators (GPU / NPU)…")),
+    (DECODING_PAGE, N_("Decoding & Encoding…")),
 )
+# prefs.schema's group titles (crates/engine/src/settings.rs groups()), translated in the list
+GROUP_TITLES = (N_("General"), N_("Appearance"), N_("Editing"), N_("Media & Playback"), N_("Hardware & Devices"), N_("Local AI"))
 LABELS = ("Violet", "Iris", "Caribbean", "Lavender", "Cerulean", "Forest", "Rose", "Mango", "Purple", "Blue", "Teal", "Magenta", "Tan", "Green",
           "Brown", "Yellow")
 
@@ -369,6 +375,8 @@ class PreferencesDialog(QDialog):
         self.label_presets: dict[str, Any] | None = None
         self.auto_save_status: dict[str, Any] | None = None
         self.surfaces: dict[str, Any] | None = None  # surface.devices
+        # Accelerators and Decoding & Encoding: hardware.inventory, codecs.capabilities
+        self.hardware = HardwarePages(engine, self._hardware_changed)
         self.surface_profiles: list[dict[str, Any]] | None = None  # controlSurfaces.profiles
         self._surfaces_pending = self._surfaces_building = False
         self.monitor_lines: list[str] = []  # the MIDI Monitor's lines, kept across page rebuilds
@@ -458,7 +466,7 @@ class PreferencesDialog(QDialog):
                 cats = schema.get("categories") if isinstance(schema, dict) else None
                 vals = values.get("values") if isinstance(values, dict) else None
                 if isinstance(cats, list) and isinstance(vals, dict):
-                    self.set_data([c for c in cats if isinstance(c, dict)], vals)
+                    self.set_data([c for c in cats if isinstance(c, dict)], vals, schema)
 
         def failed(message: str) -> None:
             self.message = message
@@ -467,8 +475,11 @@ class PreferencesDialog(QDialog):
         self.engine.execute("prefs.schema", {}, on_reply=lambda r, _b: done("schema", r), on_error=failed)
         self.engine.execute("prefs.get", {}, on_reply=lambda r, _b: done("values", r), on_error=failed)
 
-    def set_data(self, categories: list[dict[str, Any]], values: dict[str, Any]) -> None:
-        self.categories = categories
+    def set_data(self, categories: list[dict[str, Any]], values: dict[str, Any], schema: dict[str, Any] | None = None) -> None:
+        """The pages of ``categories``; with the whole ``schema`` (its ``groups``) they are listed
+        under group headings, with the Qt-only pages added (``settings_hardware.arrange``)."""
+        sections = arrange({**schema, "categories": categories}) if isinstance(schema, dict) else [(None, categories)]
+        self.categories = [c for _g, pages in sections for c in pages]
         self.saved = copy.deepcopy(values)
         self.values = copy.deepcopy(values)
         while self.list_layout.count() > 1:
@@ -476,7 +487,11 @@ class PreferencesDialog(QDialog):
             w = item.widget() if item is not None else None
             if w is not None:
                 w.deleteLater()
-        for c in categories:
+        for group, c in ((g, c) for g, pages in sections for c in [None, *pages]):
+            if c is None:
+                if group is not None:
+                    self._group_heading(group)
+                continue
             cid = str(c.get("id") or "")
             b = QPushButton(tr(str(c.get("title") or cid)).replace("&", "&&"), self.list_box)
             b.setObjectName(f"settings.category.{cid}")
@@ -485,15 +500,29 @@ class PreferencesDialog(QDialog):
             b.setAutoDefault(False)
             b.setFixedHeight(25)
             b.setToolTip(tr(str(c.get("title") or cid)))
-            b.setStyleSheet("QPushButton { text-align: left; padding-left: 8px; border: none; }"
+            indent = 20 if group is not None else 8
+            b.setStyleSheet(f"QPushButton {{ text-align: left; padding-left: {indent}px; border: none; }}"
                             f" QPushButton:checked {{ background: {theme.current().row_alt}; color: {theme.current().text}; }}")
             b.clicked.connect(lambda _c=False, i=cid: self.select_page(i))
             self.category_group.addButton(b)
             self.list_layout.insertWidget(self.list_layout.count() - 1, b)
-        if not any(c.get("id") == self.page for c in categories):
-            self.page = str(categories[0].get("id")) if categories else ""
+        if not any(c.get("id") == self.page for c in self.categories):
+            self.page = str(self.categories[0].get("id")) if self.categories else ""
         self.ready = True
         self.select_page(self.page)
+
+    def _group_heading(self, group: dict[str, Any]) -> None:
+        gid = str(group.get("id") or "")
+        label = QLabel(tr(str(group.get("title") or gid)), self.list_box)
+        label.setObjectName(f"settings.group.{gid}")
+        label.setFixedHeight(25)
+        label.setStyleSheet(f"padding-left: 8px; font-weight: bold; color: {theme.current().text_dim};")
+        self.list_layout.insertWidget(self.list_layout.count() - 1, label)
+
+    def _hardware_changed(self, page: str) -> None:
+        """A report for ``page`` arrived (or failed): redraw it if it is the one shown."""
+        if self.page == page and self.ready:
+            self._build_page()
 
     def select_page(self, page: str) -> None:
         if not any(c.get("id") == page for c in self.categories):
@@ -503,6 +532,9 @@ class PreferencesDialog(QDialog):
         b = self.list_box.findChild(QPushButton, f"settings.category.{page}")
         if b is not None:
             b.setChecked(True)
+        # the Qt-only pages' keys belong to other categories (Playback), which reset them
+        self.reset_button.setEnabled(page not in QT_ONLY_PAGES)
+        self.hardware.load(page)
         self._build_page()
 
     def patch(self, p: Any) -> None:
@@ -839,6 +871,10 @@ class PreferencesDialog(QDialog):
     def _custom(self, parent: QWidget, name: str) -> QWidget | None:
         if name == "appearanceModes":
             return self._appearance(parent)
+        if name == "accelerators":
+            return self.hardware.accelerators(parent)
+        if name == "codecs":
+            return self.hardware.codecs_section(parent)
         if name == "labelPresets":
             return self._label_presets(parent)
         if name == "memoryInfo":

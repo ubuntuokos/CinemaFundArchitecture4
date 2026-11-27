@@ -4972,3 +4972,50 @@ export.summary	Low	madal
 	Thresholds	Läved
 	Trail	Jälg
 	Use gestures in the window	Kasuta žeste aknas
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Kiirendus ülesannete kaupa
+	Accelerators (GPU / NPU)	Kiirendid (GPU / NPU)
+	Accelerators (GPU / NPU)…	Kiirendid (GPU / NPU)…
+	Codec	Koodek
+	Decode	Dekodeerimine
+	Decoding & Encoding	Dekodeerimine ja kodeerimine
+	Decoding & Encoding…	Dekodeerimine ja kodeerimine…
+	Detect Again	Tuvasta uuesti
+	Detecting…	Tuvastamine…
+	Detection failed: {error}	Tuvastamine nurjus: {error}
+	Driver	Draiver
+	Encode	Kodeerimine
+	Export ▸ {format}	Eksport ▸ {format}
+	GStreamer backend: not available ({reason})	GStreameri taustaprogramm: pole saadaval ({reason})
+	GStreamer backend: not part of this build	GStreameri taustaprogramm: pole selles järgus
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreameri taustaprogramm: {version} (varuvariant failidele, mida CFA4 ise ei ava)
+	General compute	Üldarvutused
+	Hardware & Devices	Riistvara ja seadmed
+	Hardware decode	Riistvaraline dekodeerimine
+	Hardware decoder: {name}	Riistvaraline dekooder: {name}
+	Hardware only	Ainult riistvaraliselt
+	Local AI	Kohalik tehisaru
+	Local AI (speech, voices)	Kohalik tehisaru (kõne, hääled)
+	Media & Playback	Meedia ja taasesitus
+	No GPU or NPU found: everything runs on the CPU.	GPU-d ega NPU-d ei leitud: kõik töötab protsessoril.
+	Node	Sõlm
+	Not used	Pole kasutusel
+	Notes	Märkused
+	On this machine	Selles arvutis
+	PCI ID	PCI ID
+	Preview, compositing and effects	Eelvaade, komposiit ja efektid
+	Software	Tarkvara
+	Tried in this order	Prooviti selles järjekorras
+	Unknown device	Tundmatu seade
+	Vendor	Tootja
+	Video decoding	Video dekodeerimine
+	Video encoding	Video kodeerimine
+	failed while running	nurjus töö ajal
+	left out by the preference	jäeti eelistuse tõttu välja
+	no answer	vastus puudub
+	no suitable device	sobiv seade puudub
+	not found	ei leitud
+	not implemented yet	pole veel teostatud
+	not in this build	pole selles järgus
+	switched off in the settings	seadetes välja lülitatud
+	vendor-locked backends are switched off	tootjaga seotud taustaprogrammid on välja lülitatud

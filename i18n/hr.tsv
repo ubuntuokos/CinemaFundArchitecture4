@@ -4972,3 +4972,50 @@ export.summary	Low	niska
 	Thresholds	Pragovi
 	Trail	Trag
 	Use gestures in the window	Koristi geste u prozoru
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Ubrzanje po zadatku
+	Accelerators (GPU / NPU)	Akceleratori (GPU / NPU)
+	Accelerators (GPU / NPU)…	Akceleratori (GPU / NPU)…
+	Codec	Kodek
+	Decode	Dekodiranje
+	Decoding & Encoding	Dekodiranje i kodiranje
+	Decoding & Encoding…	Dekodiranje i kodiranje…
+	Detect Again	Ponovno otkrij
+	Detecting…	Otkrivanje…
+	Detection failed: {error}	Otkrivanje nije uspjelo: {error}
+	Driver	Upravljački program
+	Encode	Kodiranje
+	Export ▸ {format}	Izvoz ▸ {format}
+	GStreamer backend: not available ({reason})	GStreamer pozadina: nije dostupna ({reason})
+	GStreamer backend: not part of this build	GStreamer pozadina: nije dio ove verzije
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	GStreamer pozadina: {version} (zamjena za datoteke koje CFA4 ne otvara sam)
+	General compute	Opće računanje
+	Hardware & Devices	Hardver i uređaji
+	Hardware decode	Hardversko dekodiranje
+	Hardware decoder: {name}	Hardverski dekoder: {name}
+	Hardware only	Samo hardverski
+	Local AI	Lokalna UI
+	Local AI (speech, voices)	Lokalna UI (govor, glasovi)
+	Media & Playback	Mediji i reprodukcija
+	No GPU or NPU found: everything runs on the CPU.	Nije pronađen GPU ni NPU: sve radi na procesoru.
+	Node	Čvor
+	Not used	Nije korišteno
+	Notes	Napomene
+	On this machine	Na ovom računalu
+	PCI ID	PCI ID
+	Preview, compositing and effects	Pregled, kompozicija i efekti
+	Software	Softver
+	Tried in this order	Isprobano ovim redoslijedom
+	Unknown device	Nepoznat uređaj
+	Vendor	Proizvođač
+	Video decoding	Dekodiranje videa
+	Video encoding	Kodiranje videa
+	failed while running	nije uspjelo tijekom rada
+	left out by the preference	izostavljeno zbog postavke
+	no answer	nema odgovora
+	no suitable device	nema prikladnog uređaja
+	not found	nije pronađeno
+	not implemented yet	još nije implementirano
+	not in this build	nije dio ove verzije
+	switched off in the settings	isključeno u postavkama
+	vendor-locked backends are switched off	pozadine vezane uz proizvođača su isključene

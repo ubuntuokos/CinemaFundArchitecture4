@@ -4973,3 +4973,50 @@ export.summary	Low	ниско
 	Thresholds	Прагове
 	Trail	Следа
 	Use gestures in the window	Жестове в прозореца
+# CFA4-SETTINGS-HW-002: Settings groups, Accelerators and Decoding & Encoding in the Qt editor
+	Acceleration per job	Ускоряване по задачи
+	Accelerators (GPU / NPU)	Ускорители (GPU / NPU)
+	Accelerators (GPU / NPU)…	Ускорители (GPU / NPU)…
+	Codec	Кодек
+	Decode	Декодиране
+	Decoding & Encoding	Декодиране и кодиране
+	Decoding & Encoding…	Декодиране и кодиране…
+	Detect Again	Откриване отново
+	Detecting…	Откриване…
+	Detection failed: {error}	Неуспешно откриване: {error}
+	Driver	Драйвер
+	Encode	Кодиране
+	Export ▸ {format}	Експорт ▸ {format}
+	GStreamer backend: not available ({reason})	Модул GStreamer: не е наличен ({reason})
+	GStreamer backend: not part of this build	Модул GStreamer: не е част от тази компилация
+	GStreamer backend: {version} (fallback for files CFA4 does not open itself)	Модул GStreamer: {version} (резервен вариант за файлове, които CFA4 не отваря сам)
+	General compute	Общи изчисления
+	Hardware & Devices	Хардуер и устройства
+	Hardware decode	Хардуерно декодиране
+	Hardware decoder: {name}	Хардуерен декодер: {name}
+	Hardware only	Само хардуерно
+	Local AI	Локален ИИ
+	Local AI (speech, voices)	Локален ИИ (реч, гласове)
+	Media & Playback	Медия и възпроизвеждане
+	No GPU or NPU found: everything runs on the CPU.	Не е открит GPU или NPU: всичко работи на процесора.
+	Node	Възел
+	Not used	Не се използва
+	Notes	Бележки
+	On this machine	На този компютър
+	PCI ID	PCI ID
+	Preview, compositing and effects	Преглед, композиране и ефекти
+	Software	Софтуерно
+	Tried in this order	Изпробвани в този ред
+	Unknown device	Неизвестно устройство
+	Vendor	Производител
+	Video decoding	Декодиране на видео
+	Video encoding	Кодиране на видео
+	failed while running	грешка по време на работа
+	left out by the preference	изключено от настройката
+	no answer	няма отговор
+	no suitable device	няма подходящо устройство
+	not found	не е намерено
+	not implemented yet	още не е реализирано
+	not in this build	не е част от тази компилация
+	switched off in the settings	изключено в настройките
+	vendor-locked backends are switched off	модулите, обвързани с производител, са изключени
