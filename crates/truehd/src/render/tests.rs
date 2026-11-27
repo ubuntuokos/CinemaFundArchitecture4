@@ -169,6 +169,31 @@ fn an_objects_first_state_is_not_ramped_in() {
     assert!(out[0][45..].iter().all(|v| *v == 1.0));
 }
 
+#[test]
+fn backdating_gives_the_first_states_the_start_of_the_held_span() {
+    let mut r = Renderer::new(Layout::stereo());
+    let left = ObjectState { source: Source::Bed(SpeakerLabels::L), gain: 1.0 };
+    let right = ObjectState { source: Source::Bed(SpeakerLabels::R), gain: 1.0 };
+    assert!(!r.has_states());
+    // object 0's first state is at 25, its second at 30; object 1's first is at 28
+    r.schedule(25, 0, &left, 0);
+    r.schedule(30, 0, &right, 0);
+    r.schedule(28, 1, &left, 0);
+    assert!(r.has_states());
+    r.backdate_first_states(0);
+    let ones = vec![1.0f32; 40];
+    let mut out = vec![Vec::new(), Vec::new()];
+    r.render(0, &[&ones, &ones], &mut out);
+    // from sample 0: object 0 and 1 on the left; at 30 object 0 moves to the right
+    assert!(out[0][..30].iter().all(|v| *v == 2.0), "{:?}", out[0]);
+    assert!(out[0][30..].iter().all(|v| *v == 1.0) && out[1][..30].iter().all(|v| *v == 0.0) && out[1][30..].iter().all(|v| *v == 1.0));
+    // a state later than the span's start is never moved forward, and placed objects keep theirs
+    r.schedule(50, 0, &left, 0);
+    r.backdate_first_states(45);
+    r.render(40, &[&ones, &ones], &mut out);
+    assert!(out[0][40..50].iter().all(|v| *v == 1.0) && out[0][50..].iter().all(|v| *v == 2.0));
+}
+
 /// An MSB-first bit writer for building OAMD payloads.
 #[derive(Default)]
 struct Bits(Vec<bool>);
