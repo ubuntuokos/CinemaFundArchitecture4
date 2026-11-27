@@ -334,6 +334,16 @@ everything you need to contribute is in the public docs above. Ask a maintainer 
    and gaps.md, with their timestamps). Commit as `M<n>.<k>: …`, then move on to the next task of the same project. When your project
    has no open task left, stop and report; do not start another project.
 
+**Cloud sessions: push and one-branch rules** (FINAL 1.2 of CFA4-DEV-AI-ORCHESTRATION-001, rule 8.15a and
+D-C3 / TC-02, owner decision 2026-11-06; details in
+[the FINAL 1.2 supplement](development/ai-orchestration/CFA4-DEV-AI-ORCHESTRATION-001-FINAL-1.2-felho.md)).
+* **Push after every green step (8.15a).** A cloud container can disappear at any time. After each green
+  step, commit and push the branch. A session does not end with unpushed work.
+* **One session = one container = one branch = at most one open PR (TC-02).** A session never pushes to
+  another session's branch and never merges into `main` ([coordination.md](coordination.md) §1, §2.4).
+  Within a session, parallel sub-agents may write only in their own git worktree with their own
+  `CARGO_TARGET_DIR` (next paragraph).
+
 For parallel agents, use one git worktree and one `CARGO_TARGET_DIR` per agent, and keep each crate
 with one owner ([contributing.md §5](contributing.md#5-parallel-work-several-agents-or-worktrees)).
 
