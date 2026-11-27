@@ -19,7 +19,7 @@
 //! The XML is parsed with the shared safe parser ([`crate::xml::parse`]): no internal DTD
 //! subsets, no external entities.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use cfa4_media::Generator;
 use cfa4_project::{ClipId, Interpolation, ItemId, Keyframe, Label, Marker, MarkerId, MarkerKind, Param, ParamValue, Sequence, TrackItem, TrackKind};
@@ -96,6 +96,8 @@ struct Imp<'a, 'd, 'r> {
     ids: HashMap<&'a str, Node<'a, 'd>>,
     /// Media items already made, by producer id.
     media: HashMap<String, Option<(ItemId, f64)>>,
+    /// Network resources already reported (KDN-46), so each is warned about once.
+    remote_seen: HashSet<String>,
     entries: usize,
     /// The MLT track (index in the sequence tractor, the background track being 0) being read.
     cur_mlt: usize,
@@ -160,6 +162,7 @@ pub(crate) fn import(text: &str, opts: &ImportOptions, report: &mut Report) -> R
         root: root.attribute("root").map(str::trim).filter(|r| !r.is_empty()).map(str::to_string),
         ids,
         media: HashMap::new(),
+        remote_seen: HashSet::new(),
         entries: 0,
         cur_mlt: 0,
         placed: Vec::new(),
@@ -469,7 +472,7 @@ impl<'a, 'd> Imp<'a, 'd, '_> {
         let spec = MediaSpec { duration: Some(self.rate.tick_of(length)), ..Default::default() };
         match service.as_str() {
             "avformat" | "avformat-novalidate" | "qimage" | "pixbuf" | "" if !resource.is_empty() => {
-                let path = self.path(&resource);
+                let path = self.media_path(&resource);
                 let name = file_name(&path).to_string();
                 Some((self.b.file_media(&path, &name, &path, &spec, None), 1.0))
             }
@@ -479,7 +482,7 @@ impl<'a, 'd> Imp<'a, 'd, '_> {
                     prop(prod, "warp_resource").map(str::to_string).or_else(|| resource.split_once(':').map(|(_, r)| r.to_string())).filter(|r| !r.is_empty());
                 match (speed, source) {
                     (Some(speed), Some(source)) => {
-                        let path = self.path(&source);
+                        let path = self.media_path(&source);
                         let name = file_name(&path).to_string();
                         let full = MediaSpec { duration: Some(self.rate.tick_of((length as f64 * speed.abs()).round() as i64)), ..Default::default() };
                         Some((self.b.file_media(&path, &name, &path, &full, None), speed.abs()))
@@ -507,6 +510,22 @@ impl<'a, 'd> Imp<'a, 'd, '_> {
                 Some((self.b.generator_media(&format!("unsupported:{pid}"), &name, g, &spec, None), 1.0))
             }
         }
+    }
+
+    /// The path of a producer's media (KDN-46): a network resource (`http://`, `rtsp://`, …) is never
+    /// opened or joined to the document's directory; it is kept verbatim (so the clip stays offline until
+    /// it is relinked to a local file) and reported once.
+    fn media_path(&mut self, resource: &str) -> String {
+        if is_remote(resource) {
+            let url = resource.trim().to_string();
+            if self.remote_seen.insert(url.clone()) {
+                self.report.warn(format!(
+                    "the media {url:?} is a network resource that CFA4 does not open: its clip stays offline until it is relinked to a local file"
+                ));
+            }
+            return url;
+        }
+        self.path(resource)
     }
 
     /// A media path as the program stores it: absolute, or relative to the `root` attribute or the
@@ -629,6 +648,18 @@ fn collect_leaves(g: &serde_json::Value, out: &mut Vec<(usize, i64)>, depth: usi
 }
 
 /// A colour producer's resource (`#rrggbb`, `#aarrggbb`, `0xrrggbbaa`, a few names) as a generator.
+/// Whether a producer resource is a network or other non-file URL (`scheme://…`, a scheme of at least two
+/// letters so a Windows drive such as `C://` is not one; `file://` is a local file).
+fn is_remote(resource: &str) -> bool {
+    let r = resource.trim();
+    let Some((scheme, rest)) = r.split_once("://") else { return false };
+    scheme.len() >= 2
+        && !rest.is_empty()
+        && scheme.chars().next().is_some_and(|c| c.is_ascii_alphabetic())
+        && scheme.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
+        && !scheme.eq_ignore_ascii_case("file")
+}
+
 fn color_generator(resource: &str) -> Generator {
     let r = resource.trim();
     let hex = r.strip_prefix('#').or_else(|| r.strip_prefix("0x")).or_else(|| r.strip_prefix("0X"));
@@ -692,6 +723,7 @@ mod tests {
             root: None,
             ids: HashMap::new(),
             media: HashMap::new(),
+            remote_seen: HashSet::new(),
             entries: 0,
             cur_mlt: 0,
             placed: Vec::new(),
