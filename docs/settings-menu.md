@@ -9,7 +9,7 @@ current CFA4 preferences. New settings UI is Qt 6 / PySide6 only
 
 Full menu plan (all groups, Kdenlive / OpenShot mapping, codec settings, AI, publishing and
 providers, open questions): [plans/CFA4-SETTINGS-MENU-001.md](plans/CFA4-SETTINGS-MENU-001.md).
-Next step (awaiting approval): [plans/CFA4-SETTINGS-HW-002.md](plans/CFA4-SETTINGS-HW-002.md).
+Next step (approved 2026-11-27): [plans/CFA4-SETTINGS-HW-002.md](plans/CFA4-SETTINGS-HW-002.md).
 
 ## How it works
 

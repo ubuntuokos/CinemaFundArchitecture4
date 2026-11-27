@@ -1,7 +1,8 @@
 # CFA4-SETTINGS-HW-002 – a Hardver és eszközök oldalak a valódi Qt6 szerkesztőben
 
-**Állapot:** JAVASLAT 0.1 – a tulajdonos jóváhagyására vár. Fejlesztés csak jóváhagyás után indul
-([`docs/coordination.md`](../coordination.md) §2.10).
+**Állapot:** FINAL 1.0 – a tulajdonos 2026-11-27-én jóváhagyta és véglegesítette (a D1–D3 a javaslat
+szerint: D1 igen, D2 serve-metódus, D3 a kísérleti héj marad). A terv minden további módosítása után a
+munka a tulajdonos újabb jóváhagyásáig áll ([`docs/coordination.md`](../coordination.md) §2.10).
 **Dátum:** 2026-11-27 · **Tulajdonos:** ubuntuokos
 **Projekt:** „CFA4 hardver beállítása” (Beállítások ▸ Hardver és eszközök almenü).
 **Előzmény:** a közös menüterv [`CFA4-SETTINGS-MENU-001.md`](CFA4-SETTINGS-MENU-001.md) (2026-10-26),
@@ -84,7 +85,7 @@ A szövegek angol forrással kerülnek a felületre, a magyar fordítás az `i18
 2. **Áttekintés oldal** és a közös eszközoldal-minta (lista + fülek).
 3. A kísérleti héj Beállítások ablakának sorsa (megtartás tesztorákulumnak vagy törlés): a tulajdonos dönt.
 
-## 7. Döntések a tulajdonosnak
+## 7. Döntések (eldöntve 2026-11-27, a javaslat szerint)
 
 | # | Kérdés | Javaslat |
 |---|---|---|
