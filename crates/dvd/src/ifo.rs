@@ -191,7 +191,7 @@ const EXIT: [u8; 8] = [0x30, 0x01, 0, 0, 0, 0, 0, 0];
 
 /// VTS_01_0.IFO. `vob_sectors` is the size of the title VOBs, `ifo_sectors_hint` is not needed:
 /// the IFO is laid out once and the BUP is identical.
-pub(crate) fn build_vts(spec: &TitleSetSpec, vobus: &[Vobu], cells: &[Range<usize>], vob_sectors: u32, vob_id: u16) -> Vec<u8> {
+pub(crate) fn build_vts(spec: &TitleSetSpec, vobus: &[Vobu], cells: &[Range<usize>], vob_sectors: u32, vob_id: u16, menu: Option<&MenuIfo<'_>>) -> Vec<u8> {
     let chapters = cells.len();
     // VTS_PTT_SRPT: one title with one PTT per chapter (program chain 1, program k)
     let mut ptt = vec![0u8; 12];
@@ -246,15 +246,31 @@ pub(crate) fn build_vts(spec: &TitleSetSpec, vobus: &[Vobu], cells: &[Range<usiz
     let tmap_at = pgci_at + sectors(&pgci);
     let cadt_at = tmap_at + sectors(&tm);
     let admap_at = cadt_at + sectors(&cadt);
-    let ifo_sectors = admap_at + sectors(&admap);
+    // the chapter menu (VTSM) tables follow the title tables
+    let m_pgci_ut = menu.map(|m| menu_pgci_ut(spec, m, 0x87));
+    let m_cadt = menu.map(|m| c_adt(m.vobus, m.cells, 1));
+    let m_admap = menu.map(|m| vobu_admap(m.vobus));
+    let m_pgci_at = admap_at + sectors(&admap);
+    let m_cadt_at = m_pgci_at + m_pgci_ut.as_ref().map_or(0, |t| sectors(t));
+    let m_admap_at = m_cadt_at + m_cadt.as_ref().map_or(0, |t| sectors(t));
+    let ifo_sectors = m_admap_at + m_admap.as_ref().map_or(0, |t| sectors(t));
+    let menu_sectors = menu.map_or(0, |m| m.vob_sectors);
 
     let mut mat = vec![0u8; SECTOR];
     mat[..12].copy_from_slice(b"DVDVIDEO-VTS");
-    put32(&mut mat, 0x0C, ifo_sectors * 2 + vob_sectors - 1);
+    put32(&mut mat, 0x0C, ifo_sectors * 2 + menu_sectors + vob_sectors - 1);
     put32(&mut mat, 0x1C, ifo_sectors - 1);
     put16(&mut mat, 0x20, 0x0010);
     put32(&mut mat, 0x80, ifo_sectors * SECTOR as u32 - 1);
-    put32(&mut mat, 0xC4, ifo_sectors);
+    if menu.is_some() {
+        put32(&mut mat, 0xC0, ifo_sectors); // VTS_01_0.VOB follows the IFO
+        put32(&mut mat, 0xD0, m_pgci_at);
+        put32(&mut mat, 0xD8, m_cadt_at);
+        put32(&mut mat, 0xDC, m_admap_at);
+        mat[0x100..0x102].copy_from_slice(&video_attr(spec));
+        put16(&mut mat, 0x154, 1);
+    }
+    put32(&mut mat, 0xC4, ifo_sectors + menu_sectors);
     put32(&mut mat, 0xC8, ptt_at);
     put32(&mut mat, 0xCC, pgci_at);
     put32(&mut mat, 0xD4, tmap_at);
@@ -263,7 +279,7 @@ pub(crate) fn build_vts(spec: &TitleSetSpec, vobus: &[Vobu], cells: &[Range<usiz
     let attr = vts_attributes(spec);
     mat[0x200..0x400].copy_from_slice(&attr[0x100..0x300]);
     let mut ifo = mat;
-    for t in [ptt, pgci, tm, cadt, admap] {
+    for t in [ptt, pgci, tm, cadt, admap].into_iter().chain(m_pgci_ut).chain(m_cadt).chain(m_admap) {
         ifo.extend_from_slice(&t);
     }
     ifo

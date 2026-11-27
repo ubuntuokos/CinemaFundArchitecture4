@@ -261,8 +261,8 @@ fn a_disc_with_a_title_menu_is_read_by_lsdvd() {
     let d = dir("menu");
     let (Some(vob), Some(pic)) = (ffmpeg_vob(&d), still_picture()) else { return };
     let disc = d.join("disc");
-    let menu = menu_spec(pic, vec![MenuButton { rect: (100, 100, 499, 139), action: MenuAction::PlayTitle(1) }]);
-    let a = write_disc_with_menu(&disc, &vob, &spec(vec![2 * 90_000]), &menu).unwrap();
+    let menus = DiscMenus { main: menu_spec(pic, vec![MenuButton { rect: (100, 100, 499, 139), action: MenuAction::PlayTitle(1) }]), chapters: None };
+    let a = write_disc_with_menus(&disc, &vob, &spec(vec![2 * 90_000]), &menus).unwrap();
     let v = disc.join("VIDEO_TS");
     for name in ["VIDEO_TS.IFO", "VIDEO_TS.BUP", "VIDEO_TS.VOB", "VTS_01_0.IFO", "VTS_01_0.BUP", "VTS_01_1.VOB"] {
         assert!(v.join(name).exists(), "{name}");
@@ -283,6 +283,40 @@ fn a_disc_with_a_title_menu_is_read_by_lsdvd() {
         assert!(text.contains("Title: 01, Length: 00:00:08") && text.contains("Chapters: 02"), "{text}");
         assert!(text.contains("Aspect ratio: 4/3"), "{text}");
     }
+    if std::env::var_os("CFA4_DVD_KEEP").is_none() {
+        let _ = std::fs::remove_dir_all(&d);
+    }
+}
+
+#[test]
+fn a_disc_with_a_title_menu_and_a_chapter_menu_has_both_tables() {
+    let d = dir("menus");
+    let (Some(vob), Some(pic)) = (ffmpeg_vob(&d), still_picture()) else { return };
+    let disc = d.join("disc");
+    let b = |y: u16, action| MenuButton { rect: (100, y, 499, y + 39), action };
+    let menus = DiscMenus {
+        main: menu_spec(pic.clone(), vec![b(100, MenuAction::PlayTitle(1)), b(160, MenuAction::ShowChapterMenu)]),
+        chapters: Some(menu_spec(pic, vec![b(100, MenuAction::PlayChapter(1)), b(160, MenuAction::PlayChapter(2)), b(220, MenuAction::ShowMainMenu)])),
+    };
+    let a = write_disc_with_menus(&disc, &vob, &spec(vec![2 * 90_000]), &menus).unwrap();
+    let v = disc.join("VIDEO_TS");
+    assert_eq!(std::fs::metadata(v.join("VTS_01_0.VOB")).unwrap().len() as usize, a.chapter_vob.as_ref().unwrap().len());
+    // VTS_01_0.IFO: the menu VOB follows the IFO, the title VOBs follow the menu VOB
+    let ifo = &a.disc.vts_ifo;
+    let n = ifo.len() / SECTOR;
+    let m = a.chapter_vob.as_ref().unwrap().len() / SECTOR;
+    assert_eq!(be32(ifo, 0xC0) as usize, n);
+    assert_eq!(be32(ifo, 0xC4) as usize, n + m);
+    assert_eq!(be32(ifo, 0x0C) as usize, 2 * n + m + a.disc.sectors as usize - 1);
+    for at in [0xD0usize, 0xD8, 0xDC] {
+        let sector = be32(ifo, at) as usize;
+        assert!(sector > 0 && sector < n, "table at {at:#x}: sector {sector}");
+    }
+    // a button whose action does not belong to its menu is refused
+    let bad = DiscMenus { main: menus.main.clone(), chapters: Some(menus.main.clone()) };
+    assert!(write_disc_with_menus(&d.join("bad"), &vob, &spec(vec![]), &bad).is_err());
+    let no_chapter_menu = DiscMenus { main: menus.main.clone(), chapters: None };
+    assert!(write_disc_with_menus(&d.join("bad2"), &vob, &spec(vec![]), &no_chapter_menu).is_err());
     if std::env::var_os("CFA4_DVD_KEEP").is_none() {
         let _ = std::fs::remove_dir_all(&d);
     }

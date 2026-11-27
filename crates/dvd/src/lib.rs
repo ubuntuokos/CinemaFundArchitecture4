@@ -121,8 +121,8 @@ pub struct Authored {
     pub sectors: u32,
 }
 
-/// Fill the navigation packs of the VOB in `vob` (in place) and build the IFO files for it.
-pub fn author<F: Read + Write + Seek>(vob: &mut F, spec: &TitleSetSpec) -> Result<Authored> {
+/// Scan the VOB in `vob`, fill its navigation packs (in place) and find its cells.
+fn author_parts<F: Read + Write + Seek>(vob: &mut F, spec: &TitleSetSpec) -> Result<(nav::Scan, Vec<std::ops::Range<usize>>)> {
     let kinds: Vec<AudioKind> = spec.audio.iter().map(|a| a.kind).collect();
     let scan = nav::scan(vob, &kinds, spec.timing)?;
     if scan.vobus.iter().any(|v| v.s_ptm == u32::MAX) {
@@ -130,7 +130,13 @@ pub fn author<F: Read + Write + Seek>(vob: &mut F, spec: &TitleSetSpec) -> Resul
     }
     let cells = nav::cells(&scan.vobus, &spec.chapters);
     nav::fill(vob, &scan, &cells, 1, spec.audio.len().min(8), spec.timing)?;
-    let vts_ifo = ifo::build_vts(spec, &scan.vobus, &cells, scan.total_sectors, 1);
+    Ok((scan, cells))
+}
+
+/// Fill the navigation packs of the VOB in `vob` (in place) and build the IFO files for it.
+pub fn author<F: Read + Write + Seek>(vob: &mut F, spec: &TitleSetSpec) -> Result<Authored> {
+    let (scan, cells) = author_parts(vob, spec)?;
+    let vts_ifo = ifo::build_vts(spec, &scan.vobus, &cells, scan.total_sectors, 1, None);
     let vmg_ifo = ifo::build_vmg(spec, cells.len(), &vts_ifo, None);
     Ok(Authored { vmg_ifo, vts_ifo, vobus: scan.vobus.len(), chapters: cells.len(), sectors: scan.total_sectors })
 }
@@ -154,8 +160,14 @@ pub fn write_disc(dir: &Path, vob: &Path, spec: &TitleSetSpec) -> Result<Authore
 /// What a menu button does.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MenuAction {
-    /// Play title `n` from its start.
+    /// Title menu: play title `n` from its start.
     PlayTitle(u8),
+    /// Title menu: open the chapter menu.
+    ShowChapterMenu,
+    /// Chapter menu: play title 1 of the title set from chapter `n`.
+    PlayChapter(u16),
+    /// Chapter menu: back to the title menu.
+    ShowMainMenu,
 }
 
 /// One button: the area that is highlighted (inclusive pixels of the 720 x 480/576 picture) and
@@ -176,8 +188,8 @@ pub struct Overlay {
     pub pixels: Vec<u8>,
 }
 
-/// The title menu (the video manager menu, shown first). The caller renders the background
-/// picture and the button graphics (the writer only codes them).
+/// One menu. The caller renders the background picture and the button graphics (the writer only
+/// codes them).
 #[derive(Clone, Debug)]
 pub struct MenuSpec {
     /// One coded MPEG-2 I picture: a sequence header, a GOP header and the picture, 720 wide and
@@ -197,65 +209,117 @@ pub struct MenuSpec {
     pub language: [u8; 2],
 }
 
-/// The menu VOB and the IFO files built with a menu.
+/// The menus of a disc: the title menu (shown first, in `VIDEO_TS.VOB`) and optionally a chapter
+/// menu (in `VTS_01_0.VOB`).
 #[derive(Clone, Debug)]
-pub struct AuthoredMenu {
+pub struct DiscMenus {
+    pub main: MenuSpec,
+    pub chapters: Option<MenuSpec>,
+}
+
+/// The menu VOBs and the IFO files built with menus.
+#[derive(Clone, Debug)]
+pub struct AuthoredMenus {
     pub disc: Authored,
-    /// `VIDEO_TS.VOB`.
+    /// `VIDEO_TS.VOB`: the title menu.
     pub menu_vob: Vec<u8>,
+    /// `VTS_01_0.VOB`: the chapter menu.
+    pub chapter_vob: Option<Vec<u8>>,
 }
 
-fn menu_action_command(a: MenuAction) -> vm::Cmd {
-    match a {
-        MenuAction::PlayTitle(n) => vm::jump_tt(n),
+/// Which domain a menu lives in decides which commands its buttons may use.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Domain {
+    /// Video manager menu; whether a chapter menu exists to open.
+    Vmgm {
+        chapter_menu: bool,
+    },
+    Vtsm,
+}
+
+/// The menu id of the chapter (part-of-title) menu in the title set.
+const PTT_MENU: u8 = 7;
+
+fn action_command(a: MenuAction, domain: Domain) -> Result<vm::Cmd> {
+    Ok(match (a, domain) {
+        (MenuAction::PlayTitle(n), Domain::Vmgm { .. }) if (1..=99).contains(&n) => vm::jump_tt(n),
+        (MenuAction::ShowChapterMenu, Domain::Vmgm { chapter_menu: true }) => vm::jump_ss(vm::Menu::Vtsm { vts: 1, title: 1, menu: PTT_MENU }),
+        (MenuAction::PlayChapter(c), Domain::Vtsm) if c >= 1 => vm::jump_vts_ptt(1, c),
+        (MenuAction::ShowMainMenu, Domain::Vtsm) => vm::jump_ss(vm::Menu::Vmgm(2)),
+        (other, _) => return Err(Error::Vob(format!("{other:?} is not possible in this menu"))),
+    })
+}
+
+/// A menu VOB with its navigation packs filled, and what the scan found.
+struct BuiltMenu {
+    vob: Vec<u8>,
+    scan: nav::Scan,
+    cells: Vec<std::ops::Range<usize>>,
+}
+
+fn build_menu(spec: &TitleSetSpec, menu: &MenuSpec, domain: Domain) -> Result<BuiltMenu> {
+    if menu.buttons.is_empty() {
+        return Err(Error::Vob("a menu needs at least one button".into()));
     }
-}
-
-/// Like [`author`], and builds the menu: `VIDEO_TS.IFO` gets the menu tables and a first-play
-/// command that shows it, the menu VOB is returned in [`AuthoredMenu::menu_vob`].
-pub fn author_with_menu<F: Read + Write + Seek>(vob: &mut F, spec: &TitleSetSpec, menu: &MenuSpec) -> Result<AuthoredMenu> {
-    let mut disc = author(vob, spec)?;
     let o = &menu.overlay;
     let spu = spu::encode_menu(&spu::Spu { bitmap: &o.pixels, w: o.w, h: o.h, x: o.x, y: o.y, color: menu.normal.index, alpha: menu.normal.alpha })?;
     let n = menu.buttons.len();
-    let buttons = menu
-        .buttons
-        .iter()
-        .enumerate()
-        .map(|(i, b)| {
-            // buttons stack vertically in the order given; at the ends a button stays put
-            let me = (i + 1) as u8;
-            hli::Button {
-                rect: b.rect,
-                color: 1,
-                auto_action: false,
-                up: if i == 0 { me } else { me - 1 },
-                down: if i + 1 == n { me } else { me + 1 },
-                left: me,
-                right: me,
-                cmd: menu_action_command(b.action),
-            }
-        })
-        .collect();
+    let mut buttons = Vec::with_capacity(n);
+    for (i, b) in menu.buttons.iter().enumerate() {
+        // buttons stack vertically in the order given; at the ends a button stays put
+        let me = (i + 1) as u8;
+        buttons.push(hli::Button {
+            rect: b.rect,
+            color: 1,
+            auto_action: false,
+            up: if i == 0 { me } else { me - 1 },
+            down: if i + 1 == n { me } else { me + 1 },
+            left: me,
+            right: me,
+            cmd: action_command(b.action, domain)?,
+        });
+    }
     let template =
         hli::Hli { status: 1, start_ptm: 0, end_ptm: 0, wide: spec.widescreen, colors: [[menu.select, menu.activate]; 3], buttons, forced_select: 0 };
     let raw = menu::build_vob(&menu.picture, menu::MENU_FRAMES, spec.timing, &spu)?;
     let mut cur = std::io::Cursor::new(raw);
     let m = menu::author_vob(&mut cur, &template, spec.timing, 1)?;
-    let menu_vob = cur.into_inner();
-    let vob_sectors = m.scan.total_sectors;
-    let info = ifo::MenuIfo { vobus: &m.scan.vobus, cells: &m.cells, vob_sectors, palette: &menu.palette, first_button: 1, language: menu.language };
-    // the title set starts after the menu, so VIDEO_TS.IFO is built again with it
-    let vts_ifo = disc.vts_ifo.clone();
-    disc.vmg_ifo = ifo::build_vmg(spec, disc.chapters, &vts_ifo, Some(&info));
-    Ok(AuthoredMenu { disc, menu_vob })
+    Ok(BuiltMenu { vob: cur.into_inner(), scan: m.scan, cells: m.cells })
 }
 
-/// Like [`write_disc`], with the title menu: also writes `VIDEO_TS.VOB` and `VIDEO_TS.BUP` and
-/// the IFO that shows the menu first.
-pub fn write_disc_with_menu(dir: &Path, vob: &Path, spec: &TitleSetSpec, menu: &MenuSpec) -> Result<AuthoredMenu> {
+/// Like [`author`], and builds the menus: `VIDEO_TS.IFO` gets the title menu and a first-play
+/// command that shows it, `VTS_01_0.IFO` the chapter menu if there is one.
+pub fn author_with_menus<F: Read + Write + Seek>(vob: &mut F, spec: &TitleSetSpec, menus: &DiscMenus) -> Result<AuthoredMenus> {
+    let (scan, cells) = author_parts(vob, spec)?;
+    let main = build_menu(spec, &menus.main, Domain::Vmgm { chapter_menu: menus.chapters.is_some() })?;
+    let chapters = menus.chapters.as_ref().map(|c| build_menu(spec, c, Domain::Vtsm)).transpose()?;
+    let main_info = ifo::MenuIfo {
+        vobus: &main.scan.vobus,
+        cells: &main.cells,
+        vob_sectors: main.scan.total_sectors,
+        palette: &menus.main.palette,
+        first_button: 1,
+        language: menus.main.language,
+    };
+    let chapter_info = chapters.as_ref().zip(menus.chapters.as_ref()).map(|(b, m)| ifo::MenuIfo {
+        vobus: &b.scan.vobus,
+        cells: &b.cells,
+        vob_sectors: b.scan.total_sectors,
+        palette: &m.palette,
+        first_button: 1,
+        language: m.language,
+    });
+    let vts_ifo = ifo::build_vts(spec, &scan.vobus, &cells, scan.total_sectors, 1, chapter_info.as_ref());
+    let vmg_ifo = ifo::build_vmg(spec, cells.len(), &vts_ifo, Some(&main_info));
+    let disc = Authored { vmg_ifo, vts_ifo, vobus: scan.vobus.len(), chapters: cells.len(), sectors: scan.total_sectors };
+    Ok(AuthoredMenus { disc, menu_vob: main.vob, chapter_vob: chapters.map(|c| c.vob) })
+}
+
+/// Like [`write_disc`], with menus: also writes `VIDEO_TS.VOB` / `VIDEO_TS.BUP` (title menu) and
+/// `VTS_01_0.VOB` (chapter menu), and IFO files that show the title menu first.
+pub fn write_disc_with_menus(dir: &Path, vob: &Path, spec: &TitleSetSpec, menus: &DiscMenus) -> Result<AuthoredMenus> {
     let mut f = std::fs::OpenOptions::new().read(true).write(true).open(vob)?;
-    let authored = author_with_menu(&mut f, spec, menu)?;
+    let authored = author_with_menus(&mut f, spec, menus)?;
     let out = dir.join("VIDEO_TS");
     std::fs::create_dir_all(&out)?;
     for (name, data) in [
@@ -266,6 +330,9 @@ pub fn write_disc_with_menu(dir: &Path, vob: &Path, spec: &TitleSetSpec, menu: &
         ("VIDEO_TS.VOB", &authored.menu_vob),
     ] {
         std::fs::write(out.join(name), data)?;
+    }
+    if let Some(c) = &authored.chapter_vob {
+        std::fs::write(out.join("VTS_01_0.VOB"), c)?;
     }
     write_title_vobs(&mut f, &out, authored.disc.sectors)?;
     Ok(authored)
