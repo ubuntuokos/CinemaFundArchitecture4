@@ -16,6 +16,9 @@
 
 mod ifo;
 mod nav;
+// the menu authoring (D1) builds on these; the encoders are used from the next commits on
+#[allow(dead_code)]
+mod vm;
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
