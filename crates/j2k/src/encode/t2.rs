@@ -139,12 +139,14 @@ pub(crate) struct Contribution<'a> {
     pub zero: u32,
     pub passes: u32,
     pub data: &'a [u8],
+    /// HTJ2K refinement segment (SigProp, MagRef): the passes beyond the cleanup pass.
+    pub refine: &'a [u8],
 }
 
 /// The packet of a precinct in layer 0: per band, its code-block grid width and its blocks'
 /// contributions (raster order, `None` for a block not included). The header, followed by the
 /// body with `body`, and the body's length.
-pub(crate) fn packet(bands: &[(usize, Vec<Option<Contribution>>)], body: bool) -> (Vec<u8>, usize) {
+pub(crate) fn packet(bands: &[(usize, Vec<Option<Contribution<'_>>>)], body: bool) -> (Vec<u8>, usize) {
     let mut w = BitWriter::new();
     let any = bands.iter().any(|(_, b)| b.iter().any(Option::is_some));
     if !any {
@@ -169,20 +171,24 @@ pub(crate) fn packet(bands: &[(usize, Vec<Option<Contribution>>)], body: bool) -
                 zero.encode(&mut w, x, y, t);
             }
             w.passes(b.passes);
-            // Lblock (B.10.7.1): 3, raised until the length fits
-            let len = b.data.len() as u32;
-            let need = 32 - len.leading_zeros();
-            let extra = floor_log2(b.passes);
+            // Lblock (B.10.7.1): 3, raised until every segment's length fits; a block with a
+            // refinement segment (HT) has the cleanup pass alone in the first
+            let segs: Vec<(&[u8], u32)> = if b.refine.is_empty() { vec![(b.data, b.passes)] } else { vec![(b.data, 1), (b.refine, b.passes - 1)] };
             let mut lblock = 3;
-            while lblock + extra < need {
-                w.bit(1);
-                lblock += 1;
+            for (d, n) in &segs {
+                let need = 32 - (d.len() as u32).leading_zeros();
+                while lblock + floor_log2(*n) < need {
+                    w.bit(1);
+                    lblock += 1;
+                }
             }
             w.bit(0);
-            w.bits(len, lblock + extra);
-            len_sum += b.data.len();
-            if body {
-                data.extend_from_slice(b.data);
+            for (d, n) in &segs {
+                w.bits(d.len() as u32, lblock + floor_log2(*n));
+                len_sum += d.len();
+                if body {
+                    data.extend_from_slice(d);
+                }
             }
         }
     }

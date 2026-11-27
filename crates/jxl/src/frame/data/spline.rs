@@ -22,7 +22,7 @@ pub struct Splines {
 impl Bundle<&FrameHeader> for Splines {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, header: &FrameHeader) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, header: &FrameHeader) -> Result<Self> {
         let mut decoder = crate::coding::Decoder::parse(bitstream, 6)?;
         decoder.begin(bitstream)?;
 
@@ -138,7 +138,7 @@ pub struct QuantSpline {
 impl Bundle<QuantSplineParams<'_>> for QuantSpline {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, params: QuantSplineParams<'_>) -> std::result::Result<Self, Self::Error> {
+    fn parse(bitstream: &mut Bitstream<'_>, params: QuantSplineParams<'_>) -> std::result::Result<Self, Self::Error> {
         let QuantSplineParams { start_point, num_pixels, decoder, acc_control_points } = params;
 
         let num_points = decoder.read_varint(bitstream, 3)? as usize;

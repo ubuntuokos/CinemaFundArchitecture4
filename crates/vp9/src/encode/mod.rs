@@ -221,7 +221,7 @@ impl Encoder {
     }
 
     /// Copy the input into the superblock-padded source planes, replicating the edges.
-    fn load_source(&mut self, input: &Input) -> Result<()> {
+    fn load_source(&mut self, input: &Input<'_>) -> Result<()> {
         let (w, h) = (self.cfg.width as usize, self.cfg.height as usize);
         let (cw, ch) = (w.div_ceil(2), h.div_ceil(2));
         let need = |stride: usize, pw: usize, ph: usize| stride.checked_mul(ph - 1).and_then(|v| v.checked_add(pw));
@@ -272,7 +272,7 @@ impl Encoder {
     }
 
     /// Encode one frame (a key frame when `force_key`, at the key frame interval, or first).
-    pub fn encode(&mut self, input: &Input, force_key: bool) -> Result<Packet> {
+    pub fn encode(&mut self, input: &Input<'_>, force_key: bool) -> Result<Packet> {
         self.load_source(input)?;
         let (last, prev_mi) = self.dec.last_reference();
         let interval_due = self.cfg.keyframe_interval > 0 && self.since_key >= self.cfg.keyframe_interval;

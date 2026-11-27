@@ -59,33 +59,268 @@ The rule catalogue is in [`src/rules.rs`](src/rules.rs). Rule ids are stable (`D
 `DCP.REF.001` is in no profile. A reference-engine backend (`cfa4-dcp-inspect`, DCP-04) keeps
 there every engine message that no catalogue rule covers, and a `FAIL` there fails the package.
 
-The eight profiles of plan §5 are built in, all at version 1:
+The eight profiles of plan §5 are built in and versioned (DCP-11). `Profile::builtin(id)` gives the
+latest version and `Profile::builtin_version(id, v)` any earlier one. A report records the profile id
+and version, so an earlier run can be repeated with the same rules.
 
-- `quick-scan`
-- `full-integrity`
-- `smpte-cinema`
-- `interop-cinema`
-- `subtitle-accessibility`
-- `audio-quality`
-- `security`
-- `delivery-preflight`
+| Profile | Version | Change |
+|---|---|---|
+| `quick-scan` | 1 | |
+| `full-integrity` | 1 | |
+| `smpte-cinema` | 2 | requires `DCP.PIC.001` (DCP-06) |
+| `interop-cinema` | 2 | requires `DCP.PIC.001` (DCP-06) |
+| `subtitle-accessibility` | 1 | |
+| `audio-quality` | 1 | |
+| `security` | 1 | |
+| `delivery-preflight` | 2 | requires `DCP.PIC.001` (DCP-06) |
 
-A profile file format arrives with DCP-11. It will deserialise into the same `Profile` type.
+The history is `profile::HISTORY`. Changing a built-in profile's rules means adding a version there.
 
-The native backend currently implements seven rules:
+### Profile files (`cfa4-dcp-profile/1`)
+
+`Profile::load(path)` (at most 1 MiB) and `Profile::from_json(text)` read a profile file;
+`Profile::to_json()` writes one. Unknown fields are an error.
+
+```json
+{
+  "format": "cfa4-dcp-profile/1",
+  "id": "festival-delivery",
+  "version": 3,
+  "title": "Festival Delivery",
+  "standard": "smpte",
+  "extends": "smpte-cinema@1",
+  "remove": ["DCP.MARK.001"],
+  "rules": [
+    {"rule": "DCP.SUB.001", "required": true},
+    {"rule": "DCP.AUD.002", "required": false}
+  ]
+}
+```
+
+- `standard` is `smpte`, `interop` or absent (both are accepted).
+- `extends` names a built-in profile, optionally `@version`; its rules come first.
+- `remove` leaves out inherited rules. `rules` adds rules, or changes `required` on an inherited one.
+- A profile is checked (`Profile::check`). The `id` must be 1-64 lower-case letters, digits and `-`,
+  the version 1 or more, and the title not empty. It needs at least one rule, each from the
+  catalogue and none twice. `DCP.REF.001` is in no profile.
+- `to_json` writes the resolved rules, without `extends`, so the file stands on its own.
+
+The native backend implements these rules:
 
 | Rule | Checks |
 |---|---|
 | `DCP.AM.001` | The asset map is present and readable. |
 | `DCP.AM.002` | The asset map document is valid. |
+| `DCP.AM.003` | No asset id appears twice in the asset map, and the map's own id is not an asset id. |
 | `DCP.AM.004` | Chunk paths are safe. |
-| `DCP.AM.005` | Chunk files exist. |
+| `DCP.AM.005` | Chunk files exist. A single chunk's optional `Length` must equal the file length. |
+| `DCP.AM.006` | The asset map marks at least one packing list. |
 | `DCP.PKL.001` | The packing list documents are valid. |
+| `DCP.PKL.002` | Every packing list asset is in the asset map. |
+| `DCP.PKL.003` | Every file has the `Size` its packing list declares. An asset in two packing lists must have the same size in both. |
+| `DCP.PKL.004` | Every file has the SHA-1 `Hash` its packing list declares. Hashing streams the files in 1 MiB steps with progress and cancel, and runs only when the profile has this rule. |
 | `DCP.CPL.001` | The composition playlist documents are valid. |
+| `DCP.CPL.002` | No composition playlist in the asset map is missing from the packing lists. |
+| `DCP.CPL.003` | Every reel track file is in a packing list. One the asset map has but no packing list names is `FAIL`. One not in the package at all is `WARNING`: a version file plays with its original version. |
+| `DCP.CPL.004` | `EntryPoint` + `Duration` ≤ `IntrinsicDuration`, and `Duration` is not 0. |
+| `DCP.CPL.005` | The assets of a reel have the same `EditRate` and play for the same time (exact rational comparison). |
 | `DCP.STD.001` | All documents use one standard (SMPTE or Interop). |
+| `DCP.MXF.001` | Track files (see below). |
+| `DCP.J2K.001` | Picture codestreams (see below). |
+| `DCP.PIC.001` | Picture format (see below). |
+| `DCP.AUD.001` | Sound track files (see below). |
+| `DCP.AUD.002` | Loudness (see below). |
+| `DCP.IAB.001` | Immersive audio track files (see below). |
+| `DCP.SUB.001` | Subtitle and caption documents (see below). |
+| `DCP.NAME.001` | The ISDCF name in `ContentTitleText` (see below). |
+| `DCP.MARK.001` | Markers (see below). |
+| `DCP.SIG.001` | XML signatures of the compositions and packing lists (see below). |
+| `DCP.SIG.002` | Signer certificate chains (see below). |
 
-These are exactly the Quick Scan rules plus the standard check. The integrity and consistency rules
-come with DCP-05, the media rules with DCP-06 to DCP-08, and signatures with DCP-10.
+`DCP.MARK.001` checks each composition's markers:
+
+- `FAIL`: a marker offset is outside its reel;
+- `FAIL`: a label appears twice;
+- `FAIL`: a first-frame marker comes after its last-frame marker;
+- `FAIL`: a marker lies outside FFOC … LFOC;
+- `WARNING`: a label is not one of ST 429-7's;
+- `WARNING`: the composition has no markers;
+- `WARNING`: FFOC is later than frame 1;
+- `WARNING`: LFOC is not on the last frame.
+- `WARNING`: `MainMarkers` has an `EntryPoint` or a `Duration`. The ST 429-7 schema allows both, but libdcp's
+  `dcpverify` reports them as errors (`UNEXPECTED_ENTRY_POINT`, `UNEXPECTED_DURATION`); CFA4's export no longer
+  writes them (plan CFA4-DCPVAL-LIBDCP-001 v1.1, D6–D7).
+
+Tools differ on whether FFOC sits at offset 0 or 1 (CFA4's export writes 1), so both are accepted.
+
+If no packing list or composition playlist was read, the rules over them are `UNCHECKED`, never a
+vacuous pass.
+
+### Track files and pictures (DCP-06)
+
+The track files are read with `cfa4-mxf` and the codestreams with `cfa4-j2k`; nothing is decoded.
+Only a profile with one of the three rules opens the track files, and only one with
+`DCP.J2K.001` reads every frame (a few small reads per frame, with progress stage `media` and
+cancel).
+
+`DCP.MXF.001` (ST 429-3, 429-6, 429-10), for every picture, sound and SMPTE subtitle reel asset
+whose file is in the package, `FAIL` when:
+
+- the file is not MXF, or not readable;
+- it is not OP-Atom, or has more or fewer than one essence track;
+- it holds another essence than the reel asset declares (JPEG 2000, PCM, timed text);
+- its labels are of the other standard (the OP-Atom label is version 2 in SMPTE files, 1 in MXF
+  Interop files);
+- its edit rate or duration differs from the reel asset's `EditRate` or `IntrinsicDuration`;
+- its file package UMID does not carry the reel asset's id;
+- it is encrypted without a `KeyId`, not encrypted with one, or with another key;
+- a stereoscopic file is in a `MainPicture`, or a mono file in a `MainStereoscopicPicture`.
+
+Problems `cfa4-mxf` recovered from (a truncated partition, an unresolved reference) are `WARNING`.
+
+`DCP.J2K.001` (ISO/IEC 15444-1 and its Amendment 1, as ST 429-4 requires) checks every frame of
+every picture file in the clear. `FAIL` when a frame breaks the 2K or 4K digital cinema profile:
+
+- `Rsiz` (3 for 2K, 4 for 4K), size, one tile at origin 0;
+- three 12-bit unsigned components without sub-sampling;
+- 1-5 decomposition levels (2K) or 1-6 (4K), CPRL, one layer, 9/7 wavelet;
+- 32 × 32 code-blocks without style flags, precincts 128 × 128 then 256 × 256;
+- scalar expounded quantization with 1 guard bit (2K) or 2 (4K);
+- 3 tile-parts (2K) or 6 (4K);
+- a size other than the MXF picture descriptor's;
+- more bytes than the DCI limit at the image rate: 250 Mbit/s a frame, 200 Mbit/s a component
+  (above 48 images a second this is a `WARNING`).
+
+A missing TLM marker, a 4K frame without a POC marker, a frame without the multiple component
+transform (MCT) and a codestream that does not end with EOC are `WARNING`. The MCT (the ICT on
+X'Y'Z') is allowed: libdcp's `dcpverify` requires it and the DCI DCSS (§4.3.2) has every decoder
+apply the inverse ICT; the ISO/IEC 15444-1 profile table itself was not checked
+([CFA4-DCPVAL-LIBDCP-001](../../docs/plans/CFA4-DCPVAL-LIBDCP-001-FINAL-1.0.md), D2 and D4). The same problem in many frames is one finding with the first frame and a count.
+An encrypted file's codestreams are `UNCHECKED`: they need the content key.
+
+`DCP.PIC.001` (DCI, ST 428-21, ST 429-7, ST 429-10):
+
+- `FAIL`: the picture is larger than 4096 × 2160;
+- `FAIL`: `FrameRate` is not the edit rate (twice the edit rate for stereoscopic pictures);
+- `FAIL`: the edit rate is not a cinema frame rate (23.976 for example);
+- `WARNING`: the size is not one of the DCI flat, scope or full container sizes;
+- `WARNING`: `ScreenAspectRatio` is not the image's ratio (within 0.01 for an Interop decimal);
+- `WARNING`: the rate is in the standard, but not every server plays it. 24 and 48 (2K) and 24
+  (4K, stereoscopic) pass; SMPTE's 25, 30, 50, 60 and the 2K high frame rates, and Interop's 25,
+  are warnings;
+- `WARNING`: 4K stereoscopic pictures.
+
+### Sound and immersive audio (DCP-07)
+
+`DCP.AUD.001` (ST 428-2, ST 429-2), for every `MainSound` track file, `FAIL` when it is not linear
+PCM, not 48 or 96 kHz, not 24 bits, has 0 or more than 16 channels, or a block align other than
+channels × bytes a sample, and when a later reel of a composition changes the sample rate or the
+channel count. A channel count other than 6, 8 or 16 and a reel without sound in a composition
+with sound are `WARNING`. A composition without any sound is `NOT_APPLICABLE`. The MCA labels are
+not read yet (`cfa4-mxf` does not expose them).
+
+`DCP.AUD.002` (ITU-R BS.1770-4, EBU R128, measured with `cfa4-audio-dsp`) runs only when the
+profile has it, because it reads every sample (progress stage `loudness`, cancel between 32 768
+sample frames). Each composition is measured over the played range of its reels, in reel order:
+integrated loudness, loudness range, true and sample peak, length. Channels 1-6 are the programme
+(L, R, C, LFE, Ls, Rs; the LFE does not count, the surrounds weigh 1.41), and channels 7 and up
+(HI, VI-N, sync and the like) are not. Cinema has no single loudness target, so a measurement
+passes and the numbers are kept in the finding's evidence; a true peak above 0 dBTP is `WARNING`.
+Profile thresholds come with the profile files (DCP-11). Encrypted sound is `UNCHECKED`.
+
+`DCP.IAB.001` (ST 429-18, ST 2098-2), for every `AuxData` track file that holds immersive audio:
+`FAIL` when its edit rate or duration differs from the reel asset's, or a frame is not an
+IABitstream frame (`cfa4-iab`) of that frame rate with 24-bit audio. Every frame is parsed (progress
+stage `iab`). A package without immersive audio is `NOT_APPLICABLE`.
+
+### Subtitles and captions (DCP-08)
+
+`DCP.SUB.001` (ST 428-7, ST 429-5, Interop `DCSubtitle`) reads every `MainSubtitle`, `MainCaption`
+and `MainClosedCaption` asset of the compositions with `cfa4_dcp::subtitle`. A SMPTE asset is a
+timed text track file (`cfa4-mxf`); its fonts and images are the file's ancillary resources. An
+Interop asset is the XML file; its fonts and PNG images are files beside it, inside the package.
+Each document is read once, however many reels play it.
+
+- `FAIL`: the file is neither a subtitle document nor a timed text track file, or cannot be read;
+- `FAIL`: the reader found a missing, invalid or repeated element (a time that is not
+  `HH:MM:SS:EE`, a missing `SpotNumber` and the like);
+- `FAIL`: the document is of the other standard than its composition;
+- `FAIL`: SMPTE `Id` is not the track file's timed text resource id, Interop `SubtitleID` is not the
+  reel asset's `Id`;
+- `FAIL`: SMPTE `EditRate` is not the reel asset's;
+- `FAIL`: a font or image it loads is not in the package, or an image is not PNG;
+- `FAIL`: a `Font` names an id no `LoadFont` declares;
+- `FAIL`: a subtitle does not end after it starts, starts before `StartTime`, or ends after the reel
+  (`IntrinsicDuration` at the reel asset's `EditRate`);
+- `WARNING`: fades longer than the subtitle, subtitles out of time order or spot-number order, a
+  subtitle with neither text nor image.
+
+The same problem in many subtitles is one finding with a count. An encrypted asset is `UNCHECKED`.
+Not checked: the XML schemas beyond what the reader enforces, whether the fonts have a glyph for
+every character, and how the subtitles render. The local asdcplib build has no XML parser, so it
+cannot wrap timed text; the SMPTE tests use track files built with `cfa4-mxf`'s test builder.
+
+### ISDCF names (DCP-09)
+
+`DCP.NAME.001` reads each composition's `ContentTitleText` with `cfa4_dcp::isdcf` (ISDCF Digital
+Cinema Naming Convention) and compares its claims with the package. A name is a claim, not proof,
+so every problem is a `WARNING`:
+
+- the title is not an ISDCF name (its second field is not a content type), lacks a required
+  field, has a field out of place, or a date that is not a calendar date;
+- the content type is not the CPL `ContentKind`;
+- the frame rate (24 when the name gives none) is not the picture's edit rate;
+- `3D` is claimed for a 2D picture, or a stereoscopic picture is not named `3D`;
+- the aspect ratio (`F` 1998×1080, `S` 2048×858, `C` 2048×1080, and the 4K sizes) or the
+  resolution is not the picture's;
+- the standard (`SMPTE`, `IOP`) is not the composition's;
+- the audio field claims more channels than the sound has, sound where there is none, `MOS` where
+  there is sound, or immersive audio that is not there (or the other way round);
+- the audio or subtitle language is not the CPL `Language`, subtitles in their own track file
+  (upper case) are claimed and missing, or present while the name says `XX`; `CCAP` without a
+  caption track or the other way round;
+- `OV` while the composition plays track files from elsewhere, `VF` while it does not.
+
+The picture size, sound channels and immersive audio come from the MXF headers. The rule is
+optional in the cinema and preflight profiles.
+
+On CFA4 export packages renamed to ISDCF names, every mismatch dcp_inspect reports (standard,
+resolution, 3D, VF) is reported here too. The native rule also compares the content kind, aspect
+ratio, audio channels and the frame rate that a name without one implies (24); dcp_inspect does not.
+
+### Signatures (DCP-10)
+
+`DCP.SIG.001` (ST 429-7 / ST 429-8 with ST 430-3) re-reads every signed composition playlist and
+packing list and verifies its enveloped `ds:Signature` with `cfa4_dcp::xmldsig`:
+
+- `FAIL`: the signature does not verify (digest, signature value, key), naming the reason;
+- `FAIL`: it does not cover the whole document (`URI=""`);
+- `FAIL`: a `Signer` without a `Signature`, or the other way round, or more than one `Signature`;
+- `FAIL`: the certificate the `Signer` names (its serial number) is not the one that signed;
+- `FAIL`: an unsigned document where the profile requires the rule (`security`);
+- `WARNING`: an unsigned document beside signed ones, where the rule is optional;
+- `NOT_APPLICABLE`: nothing in the package is signed, where the rule is optional.
+
+`DCP.SIG.002` checks, for each verified signature, the certificate chain in `KeyInfo` against
+ST 430-2 6.2 and that the signer has the content signer role (`CS` in its CommonName). A document
+whose signature did not verify is `UNCHECKED` here. Whether the root is trusted is not decided.
+
+Not checked natively: that the `Signer`'s `X509IssuerName` matches the certificate, and that names
+are ASN.1 PrintableString (dcp_inspect checks both). The tests sign with xmlsec1 over openssl ST 430-2
+chains and skip without them, unless `CFA4_REQUIRE_ORACLES` is set as in CI. A package signed with
+another signer (signxml) verified both natively and in dcp_inspect, and a changed title failed both.
+
+### Comparison with dcp_inspect
+
+On CFA4 exports the rules were compared with dcp_inspect: a flipped byte, a grown file and a marker
+outside its reel. Both backends report the same failures.
+
+For DCP-06 the export's picture file was replaced by files asdcplib 2.13.3 wrapped from the same
+frames: one for another asset, one with MXF Interop labels, one stereoscopic. dcp_inspect and the
+native backend report the same problems: the asset id, the edit rate, the labels of the other
+standard, the stereoscopic file in a `MainPicture`. On the export itself both reported the J2K QCD
+guard bits then: CFA4's encoder wrote 2 where the 2K profile has 1. It writes 1 since plan
+CFA4-DCPVAL-LIBDCP-001 v1.1 phase 6.
 
 ## Report
 
@@ -118,11 +353,31 @@ The HTML report is DCP-15.
 
 ## Tests
 
-- 18 unit tests use synthetic packages:
+- 40 unit tests use synthetic packages:
   - unsafe paths, `..` and symbolic links leading outside the package;
+  - each DCP-05 rule, with a passing and a failing package (size, hash, ids, packing list and
+    composition consistency, version files, durations, reel sync, markers, chunk length);
+  - a cancel while hashing, and while reading frames;
+  - track files written with `cfa4-mxf` around frames `cfa4-j2k` encoded: a DCI file that passes,
+    and each `DCP.MXF.001`, `DCP.J2K.001` and `DCP.PIC.001` failure and warning;
+  - sound track files: a good one, 16 bits, 4 channels, a picture where sound belongs;
+  - loudness: a 1 kHz sine at -20 dBFS on one front channel measures -23.0 LUFS (BS.1770);
+  - immersive audio: a good IAB frame, a frame of another rate, a frame that is not IAB;
   - broken documents, a missing asset map, a missing packing list;
   - profiles and the verdict rules;
   - cancellation and progress;
   - the report.
-- `tests/export_round_trip.rs` writes a DCP with `cfa4-export` and runs Quick Scan on it, which must
-  pass. It also runs the SMPTE Cinema profile, which must have no `FAIL` and be `INCOMPLETE`.
+- `tests/subtitles.rs` builds small Interop and SMPTE packages with subtitles: a good one of each,
+  and each `DCP.SUB.001` failure and warning (ids, fonts, images, times, standard, edit rate).
+- `tests/naming.rs` builds SMPTE packages with picture and sound track files and checks a matching
+  name, the name `cfa4-export` writes, each `DCP.NAME.001` mismatch, and titles outside the
+  convention.
+- `tests/profiles.rs` checks the history of the built-in profiles, a profile file that extends one,
+  every kind of bad profile file and the size limit.
+- `tests/signatures.rs` signs small SMPTE packages with xmlsec1: a good one, a changed document, a
+  chain outside ST 430-2, an unsigned document beside a signed one, unsigned packages per profile,
+  a `Signer` without a `Signature` and an unfilled signature template.
+- `tests/export_round_trip.rs` writes a DCP with `cfa4-export` and runs three profiles on it:
+  - Quick Scan and Full Integrity, including the hashes, must pass;
+  - SMPTE Cinema: the track files and the sound pass, the picture format is a warning (25 fps), and
+    nothing fails.

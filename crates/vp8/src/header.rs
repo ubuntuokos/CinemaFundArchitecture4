@@ -145,7 +145,7 @@ pub struct FrameHeader {
 /// `saved` receives the entropy context to restore after the frame when
 /// `refresh_entropy_probs` is 0.
 pub fn read_header(
-    d: &mut BoolDecoder,
+    d: &mut BoolDecoder<'_>,
     key_frame: bool,
     seg: &mut Segmentation,
     lf: &mut LfDeltas,

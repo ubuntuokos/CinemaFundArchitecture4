@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CFA4 – CodeRabbit-beállítás. Terv: docs/plans/CFA4-CODERABBIT-001.md (tulajdonosi döntés, 2026-11-12).
+# A CFA4 szabályai NEM itt vannak, hanem az AGENTS.md-ben, a CLAUDE.md-ben és a
+# docs/coordination.md-ben; a CodeRabbit ezeket olvassa (knowledge_base.code_guidelines).
+# A munkarend (ki indítja, ki javít, mi blokkol): docs/coordination.md §2.9 és §3.4.
+
+# A sémában nincs magyar nyelvkód, ezért a magyar nyelvet a tone_instructions kéri.
+language: en-US
+tone_instructions: >-
+  Minden összefoglalót, megállapítást és választ magyarul írj. Kódot, azonosítót, parancsot,
+  fájlnevet ne fordíts. Röviden és tárgyszerűen fogalmazz.
+early_access: false
+
+reviews:
+  profile: chill
+  # Nem blokkol GitHub-szinten: a beolvasztás előtti ellenőrzést a gazda végzi (coordination.md §3.4).
+  request_changes_workflow: false
+  high_level_summary: true
+  collapse_walkthrough: true
+  review_status: true
+  sequence_diagrams: false
+  poem: false
+  in_progress_fortune: false
+  suggested_labels: false
+  auto_apply_labels: false
+  suggested_reviewers: false
+  auto_assign_reviewers: false
+  enable_prompt_for_ai_agents: true
+  # A CFA4 PR-jait MI-munkamenetek készítik; a „slop” szűrő ezeket tévesen jelölné.
+  slop_detection:
+    enabled: false
+
+  # 10 csillag alatt amúgy sincs automatikus review. Indítás: a fejlesztő munkamenet
+  # „@coderabbitai review” megjegyzéssel, amikor a PR-t késznek jelöli (coordination.md §2.9).
+  auto_review:
+    enabled: false
+    # Tulajdonosi döntés (2026-11-13): a piszkozat (draft) PR-ok is kaphatnak automatikus review-t.
+    drafts: true
+    ignore_usernames:
+      - "dependabot[bot]"
+    ignore_title_keywords:
+      - "Köteg koteg/"
+
+  # A CodeRabbit soha nem tol commitot a CFA4 PR-jaiba (coordination.md §2.4: más PR-jához
+  # senki nem nyúl; beolvasztani csak a gazda olvaszt be).
+  finishing_touches:
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+    autofix:
+      enabled: false
+    fix_ci:
+      enabled: false
+    resolve_merge_conflict:
+      enabled: false
+
+  auto_approvals:
+    enabled: false
+
+  pre_merge_checks:
+    title:
+      mode: "off"
+    description:
+      mode: "off"
+    issue_assessment:
+      mode: "off"
+
+  path_filters:
+    - "!vendor/**"
+    - "!Cargo.lock"
+    - "!requirements/*.txt"
+    - "!i18n/**/*.tsv"
+    - "!docs/upstream/upstream-sync.md"
+
+  path_instructions:
+    - path: "**"
+      instructions: >-
+        Az irányadó szabályok sorrendje: AGENTS.md, majd CLAUDE.md és docs/coordination.md.
+        Ne javasolj ezekkel ellentétes változtatást (pl. macOS-, Windows- vagy WASM-támogatás,
+        Adobe-eszköz, kodek- vagy konténerkód átvétele a clean-room szabály ellenére,
+        beolvasztás vagy más PR-jának módosítása). Ha egy megállapításod ütközik ezekkel,
+        a szabály nyer; ilyenkor ne tedd fel a megállapítást.
+
+  tools:
+    # Magyar nyelvű dokumentumokra sok téves találatot adna.
+    languagetool:
+      enabled: false
+
+chat:
+  auto_reply: true
+  art: false
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "docs/coordination.md"
+  learnings:
+    scope: local
+
+issue_enrichment:
+  auto_enrich:
+    enabled: false
+  planning:
+    enabled: false
+    auto_planning:
+      enabled: false

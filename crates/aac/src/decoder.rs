@@ -223,7 +223,7 @@ impl Decoder {
             .ok_or(Error::Bitstream("unexpected channel element for the channel configuration"))
     }
 
-    fn decode_cpe(&mut self, br: &mut BitReader, ch: usize) -> Result<[Vec<f32>; 2]> {
+    fn decode_cpe(&mut self, br: &mut BitReader<'_>, ch: usize) -> Result<[Vec<f32>; 2]> {
         let common_window = br.read_bits(1)? == 1;
         let mut ms_mask_present = 0;
         let mut ms_used = [[false; 64]; 8];
@@ -283,7 +283,7 @@ impl Decoder {
         Ok([self.finish_channel(ch, &mut l), self.finish_channel(ch + 1, &mut r)])
     }
 
-    fn decode_ics(&mut self, br: &mut BitReader, common: Option<IcsInfo>) -> Result<Ics> {
+    fn decode_ics(&mut self, br: &mut BitReader<'_>, common: Option<IcsInfo>) -> Result<Ics> {
         let sfi = self.sf_index();
         let global_gain = br.read_bits(8)? as i32;
         let info = match common {

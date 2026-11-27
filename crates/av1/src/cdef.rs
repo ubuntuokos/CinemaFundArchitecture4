@@ -39,7 +39,7 @@ pub(crate) fn apply(fs: &FrameState, pool: &Pool) -> Option<FrameBuf> {
     any.contains(&true).then_some(out)
 }
 
-fn cdef_block(fs: &FrameState, out: &mut [RowBand; 3], r: usize, c: usize, idx: usize) -> bool {
+fn cdef_block(fs: &FrameState, out: &mut [RowBand<'_>; 3], r: usize, c: usize, idx: usize) -> bool {
     let mi = &fs.mi;
     let sk = |rr: usize, cc: usize| -> bool { if rr < mi.rows && cc < mi.cols { mi.skip[mi.idx(rr, cc)] } else { true } };
     let skip = sk(r, c) && sk(r + 1, c) && sk(r, c + 1) && sk(r + 1, c + 1);
@@ -135,7 +135,7 @@ fn constrain(diff: i32, threshold: i32, adj: u32) -> i32 {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn filter(fs: &FrameState, out: &mut [RowBand; 3], plane: usize, r: usize, c: usize, pri: i32, sec: i32, damping: i32, dir: usize) {
+fn filter(fs: &FrameState, out: &mut [RowBand<'_>; 3], plane: usize, r: usize, c: usize, pri: i32, sec: i32, damping: i32, dir: usize) {
     if pri == 0 && sec == 0 {
         // Every tap contributes 0 and the clamp to [min, max] keeps x: CdefFrame = CurrFrame.
         return;
@@ -254,7 +254,7 @@ fn filter(fs: &FrameState, out: &mut [RowBand; 3], plane: usize, r: usize, c: us
 fn filter_rows<const W: usize>(
     b16: &[i16; PAD_STRIDE * PAD_STRIDE],
     taps: &[(isize, i32, i32, u32); 12],
-    dst: &mut RowBand,
+    dst: &mut RowBand<'_>,
     (y0, x0, h): (usize, usize, usize),
 ) {
     for i in 0..h {

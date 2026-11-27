@@ -136,7 +136,7 @@ impl Toc {
 impl Bundle<&crate::frame::FrameHeader> for Toc {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, ctx: &crate::frame::FrameHeader) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, ctx: &crate::frame::FrameHeader) -> Result<Self> {
         let num_groups = ctx.num_groups();
         let num_passes = ctx.passes.num_passes;
 

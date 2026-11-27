@@ -57,7 +57,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .. import theme
+from .. import recent_effects, theme
 from ..hot_number import HotSpin
 from ..i18n import N_, fmt, tr
 from ..timecode import TICKS_PER_SECOND, format_timecode
@@ -76,6 +76,16 @@ INTERPOLATIONS = (
     ("hold", N_("Hold")),
     ("easeIn", N_("Ease In")),
     ("easeOut", N_("Ease Out")),
+)
+# CFA4's easing presets (egui's Easing Presets submenu of the keyframe menu): a fixed curve leaving
+# the keyframe, no influence handles
+EASING_PRESETS = (
+    ("sine", N_("Sine")),
+    ("expo", N_("Exponential")),
+    ("circ", N_("Circular")),
+    ("overshoot", N_("Overshoot")),
+    ("elastic", N_("Elastic")),
+    ("bounce", N_("Bounce")),
 )
 UNEDITABLE = {"curve", "wheel", "path"}
 ROW_H = 24
@@ -871,7 +881,7 @@ def components(value: Any) -> list[float | None]:
 
 def eases(interpolation: Any) -> tuple[bool, bool]:
     """Whether a keyframe's curve eases (has an influence handle) out of it and into it."""
-    flat = ("linear", "hold", None)
+    flat = ("linear", "hold", None, *(k for k, _label in EASING_PRESETS))
     return interpolation not in (*flat, "easeIn"), interpolation not in (*flat, "easeOut")
 
 
@@ -1414,13 +1424,19 @@ class KeyLane(QWidget):
         menu = QMenu(self)
         title = menu.addAction(tr("Temporal Interpolation"))
         title.setEnabled(False)
-        for k, label in INTERPOLATIONS:
-            a = menu.addAction(tr(label))
+        def choice(into: QMenu, k: str, label: str) -> None:
+            a = into.addAction(tr(label))
             a.setObjectName(f"effectControls.keyframeMenu.{k}")
             a.setCheckable(True)
             a.setChecked(key["interp"] == k)
-            a.triggered.connect(lambda _c=False, kk=k: self.panel.send("effects.setInterpolation",
-                                                                       {**params, "interpolation": kk}))
+            a.triggered.connect(lambda _c=False: self.panel.send("effects.setInterpolation", {**params, "interpolation": k}))
+
+        for k, label in INTERPOLATIONS:
+            choice(menu, k, label)
+        presets = menu.addMenu(tr("Easing Presets"))
+        presets.setObjectName("effectControls.keyframeMenu.easingPresets")
+        for k, label in EASING_PRESETS:
+            choice(presets, k, label)
         menu.addSeparator()
         clear = menu.addAction(tr("Clear"))
         clear.setObjectName("effectControls.keyframeMenu.clear")
@@ -1679,6 +1695,36 @@ class EffectControlsPanel(QWidget):
         hh.addWidget(self.pills)
         hh.addSpacing(DIVIDER_W)
         hh.addWidget(self.ruler, 1)
+        # SC-4: bulk switch for the selected clips' effects and the recently used effects
+        self.bulk_bar = QWidget(self)
+        self.bulk_bar.setObjectName("effectControls.bulkBar")
+        bh = QHBoxLayout(self.bulk_bar)
+        bh.setContentsMargins(8, 2, 8, 2)
+        bh.setSpacing(6)
+        self.bulk_on = QToolButton(self.bulk_bar)
+        self.bulk_on.setObjectName("effectControls.bulk.enableAll")
+        self.bulk_on.setText(tr("Enable all effects"))
+        self.bulk_on.setToolTip(tr("Switch every effect of the selected clips on"))
+        self.bulk_on.clicked.connect(lambda: self.set_all_enabled(True))
+        self.bulk_off = QToolButton(self.bulk_bar)
+        self.bulk_off.setObjectName("effectControls.bulk.disableAll")
+        self.bulk_off.setText(tr("Disable all effects"))
+        self.bulk_off.setToolTip(tr("Switch every effect of the selected clips off"))
+        self.bulk_off.clicked.connect(lambda: self.set_all_enabled(False))
+        self.recent_button = QToolButton(self.bulk_bar)
+        self.recent_button.setObjectName("effectControls.recent")
+        self.recent_button.setText(tr("Recent effects"))
+        self.recent_button.setToolTip(tr("Apply a recently used effect to the selected clips"))
+        self.recent_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.recent_menu = QMenu(self.recent_button)
+        self.recent_menu.setObjectName("effectControls.recentMenu")
+        self.recent_menu.aboutToShow.connect(self._fill_recent)
+        self.recent_button.setMenu(self.recent_menu)
+        self.settings: Any = None  # the main window's QSettings (set by attach_settings)
+        bh.addWidget(self.bulk_on)
+        bh.addWidget(self.bulk_off)
+        bh.addStretch(1)
+        bh.addWidget(self.recent_button)
         # body: the list and the lane scroll together; the divider between them
         self.body = QWidget(self)
         content = QHBoxLayout(self.body)
@@ -1718,6 +1764,7 @@ class EffectControlsPanel(QWidget):
         self.transition_view.hide()
         layout.addWidget(self.title)
         layout.addWidget(self.header)
+        layout.addWidget(self.bulk_bar)
         layout.addWidget(self.scroll, 1)
         layout.addWidget(self.transition_view, 1)
         layout.addWidget(self.timecode)
@@ -1725,7 +1772,7 @@ class EffectControlsPanel(QWidget):
 
     def _set_visible(self, has_clip: bool) -> None:
         self.title.setVisible(not has_clip)
-        for w in (self.header, self.scroll, self.timecode):
+        for w in (self.header, self.bulk_bar, self.scroll, self.timecode):
             w.setVisible(has_clip)
 
     # ----- layout -----
@@ -1815,6 +1862,43 @@ class EffectControlsPanel(QWidget):
         # the video clip first; its linked audio clip takes audio effects the video clip refuses
         self._apply_dropped(effect, [as_int(c.get("clip"), -1) for c in self.clips])
 
+    def attach_settings(self, settings: Any) -> None:
+        """The user preferences the recent-effects list lives in (``None``: no list is kept)."""
+        self.settings = settings
+
+    def selected_clips(self) -> list[int]:
+        """The selected clip ids (what the bulk buttons and Recent effects act on)."""
+        return [c for c in (self._wanted[0] or []) if isinstance(c, int)]
+
+    def set_all_enabled(self, enabled: bool) -> None:
+        """Switch every applied effect of the selected clips on or off: one command, one undo step."""
+        clips = self.selected_clips()
+        if clips:
+            self.send("effects.toggleEnabled", {"clips": clips, "all": True, "enabled": enabled})
+
+    def note_recent(self, effect: str) -> None:
+        """Remember an effect as recently used (ids only; presets are not listed)."""
+        if effect and ":" not in effect:
+            recent_effects.push(self.settings, effect)
+
+    def _fill_recent(self) -> None:
+        self.recent_menu.clear()
+        items = recent_effects.load(self.settings)
+        if not items:
+            empty = self.recent_menu.addAction(tr("No recent effects"))
+            empty.setEnabled(False)
+            return
+        for i, effect in enumerate(items):
+            act = self.recent_menu.addAction(tr(effect))
+            act.setObjectName(f"effectControls.recent.{i}")
+            act.triggered.connect(lambda _c=False, e=effect: self.apply_recent(e))
+
+    def apply_recent(self, effect: str) -> None:
+        clips = self.selected_clips()
+        if clips:
+            self.note_recent(effect)
+            self.send("effects.apply", {"effect": effect, "clips": clips})
+
     def _apply_dropped(self, effect: str, clips: list[int], error: str = "") -> None:
         win = self.main_window()
         if not clips:
@@ -1822,6 +1906,7 @@ class EffectControlsPanel(QWidget):
                 win._command_failed("effects.apply", error)
             return
         cid, rest = clips[0], clips[1:]
+        self.note_recent(effect)
         if effect.startswith("preset:"):
             command, params = "presets.apply", {"preset": effect[len("preset:"):], "clips": [cid]}
         elif effect.startswith("lumetri:"):

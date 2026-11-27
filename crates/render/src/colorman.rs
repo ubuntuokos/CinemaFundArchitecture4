@@ -75,7 +75,7 @@ pub fn decode(project: &Project, item: ItemId, frame: &VideoFrame, n: usize, pip
     }
     // RGB stills/generators carry full-range code values; YUV carries its own range flag
     let range = match frame.data {
-        cfa4_frame::PixelData::Rgba8(_) | cfa4_frame::PixelData::RgbaF32(_) => Range::Full,
+        cfa4_frame::PixelData::Rgba8(_) | cfa4_frame::PixelData::RgbaF32(_) | cfa4_frame::PixelData::Rgb16 { .. } => Range::Full,
         _ => frame.color.range,
     };
     let t = input_transform(cs, range, pipe, source_peak_nits(project, item));

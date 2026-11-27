@@ -26,7 +26,9 @@ only as an external fixture generator and test oracle.
 | Alpha: DCT-coded and lossless differential RLE (Amendment 1 for HD CIDs) | done, not oracle-tested (no encoder produces it) |
 | CBR padding, VBR, scan-line indices, EOF signature / CRC flag | done |
 | Encoder: DNxHR LB, SQ, HQ (8-bit), HQX (10/12-bit), 444 (10/12-bit); CBR | done |
-| Encoder: DNxHD (HD CIDs), interlaced, alpha, VBR | not yet |
+| Encoder: DNxHD progressive HD CIDs 1235, 1237, 1238, 1250, 1251, 1252, 1253, 1256 | done (`tests/oracle_encode.rs`: ffmpeg decodes them within ±2 LSB) |
+| Encoder: interlaced DNxHD 1241, 1242, 1243 (two field coding units, top field first) | done (`tests/oracle_encode.rs`: ffmpeg decodes them within ±2 LSB) |
+| Encoder: thin-raster DNxHD (1244, 1258–1260), alpha, VBR | not yet |
 
 ## API
 
@@ -46,7 +48,9 @@ let sample: Vec<u8> = enc.encode(&frame)?;               // exactly enc.frame_si
 color_volume, cid, par }` holds planar samples without row padding. Interlaced frames are woven
 (field 1 = top field on even lines). RGB frames hold G, B, R in `y`, `cb`, `cr`. In MOV the
 sample entry is `AVdn` (DNxHD) or `AVdh` (DNxHR); `cfa4-codecs` reads the CID from the
-first frame header to label the stream.
+first frame header to label the stream. It hands RGB frames to the timeline as planar R′G′B′ (no Y′CbCr
+round trip): the video-range codes are expanded to full range at the coded depth, which keeps
+every code distinct.
 
 ## Decoder
 
@@ -73,9 +77,14 @@ its behaviour, and we match it by default:
    steps for every CID family and step size). The decoder does the same;
    `DecodeOptions::spec_dequant` selects equation 8.1 instead. The encoder picks the amplitude
    nearest to the `(A + ¾)` reconstruction.
-2. **CID 1271 (DNxHR HQX) weights.** Table C.2 assigns Table D.1 to CID 1271. ffmpeg's decoder and
-   encoder use Table D.4 (the CID 1241 weights) — fitted RMS error 0.65 against D.4, > 2.6
-   against every other table. We use D.4.
+2. **CID 1271 (DNxHR HQX) weights.** Table C.2 assigns Table D.1 to CID 1271, and we use D.1
+   (owner decision 2026-11-24). FFmpeg up to 9.0.x decoded and encoded CID 1271 with Table D.4 (the
+   CID 1241 weights; fitted RMS error 0.65 against D.4, > 2.6 against every other table) and fixed
+   that in FFmpeg 9.1 (commit a598cc99). HQX files written by FFmpeg 9.0.x or older therefore decode
+   slightly differently here than in those FFmpeg versions — the same as in FFmpeg 9.1. The same
+   holds for DNxHR HQX exported by CFA4 before this change (the encoder used D.4 then): those files
+   decode slightly differently than before, in CFA4 and in FFmpeg 9.1 alike. The difference is a
+   change of quantisation weights only (no decode error, frame size or timing change).
 3. **4:4:4 signalling.** ffmpeg writes RGB DNxHR 444 with `CLF = 0`, and Y′CbCr 444 with `CLF = 1`
    plus `ACF = 1` on every macroblock; its channel order is G, B, R (Ch1 = G). The decoder treats
    every 4:4:4 stream as RGB except macroblocks flagged `ACF = 1` (a stream that is entirely
@@ -90,6 +99,9 @@ the prose of §7.3.1.2; we follow the prose (normative text takes precedence).
 - DNxHR LB/SQ/HQ (8-bit 4:2:2), HQX (10- or 12-bit 4:2:2) and 444 (10- or 12-bit 4:4:4,
   Y′CbCr or RGB), progressive, CBR at exactly the equation 7.1 frame size (e.g. 917 504 bytes
   for 1080p HQ, 606 208 for SQ). Input at any depth 8–16 is rescaled to the coded depth.
+- DNxHD, the progressive HD-profile IDs of Table C.1 (`Profile::Hd1235` … `Hd1256`): one fixed
+  raster (1920 × 1080 or 1280 × 720), depth and frame size each, header version 1; the same
+  transform, quantisation and rate control with the ID's weights and VLC tables.
 - Every macroblock is transformed once (orthonormal FDCT) and stored pre-divided by its weights.
   Rate control binary-searches the smallest uniform `qsf` whose frame fits the payload
   (including the 4-byte scan-line alignment), starting from the previous frame's value, then
@@ -97,6 +109,10 @@ the prose of §7.3.1.2; we follow the prose (normative text takes precedence).
 - `export::Format::DnxHr` (`file.exportMedia {"format":"dnxhr","dnxProfile":"lb|sq|hq|hqx"}`)
   writes QuickTime `AVdh` + PCM. The Avid-specific `ACLR`/`ADHR` sample-entry atoms are not
   written (ffmpeg and our reader don't need them).
+- The 4:2:2 DNxHD IDs are export profiles too (`"dnxProfile":"hd1235|hd1237|hd1238|hd1250|hd1251|hd1252|hd1253"`),
+  written as QuickTime `AVdn` or in MXF (OP1a / OP-Atom, the ID in the picture coding label).
+  Each codes one raster, so another output size is refused before encoding. CID 1256
+  (RGB 4:4:4) is not offered: the export path feeds the encoder 4:2:2.
 
 ## Accuracy (vs ffmpeg as an external oracle)
 
@@ -135,7 +151,7 @@ lower bounds by a factor of roughly 4–10:
 ## Gaps
 
 - Decode is within IDCT precision of ffmpeg, not bit-exact (see above).
-- Encoder: no DNxHD (HD CIDs), interlaced, alpha or VBR output; no RDO/trellis.
+- Encoder: no thin-raster DNxHD (1244, 1258–1260), alpha or VBR output; no RDO/trellis.
 - CIDs 1256/1260 and alpha decoding are implemented from the standard but have no oracle
   fixtures, because no available encoder produces them.
 - No MXF; DNx in MOV only (via `cfa4-isobmff` / `cfa4-codecs`).

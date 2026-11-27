@@ -143,7 +143,7 @@ def build_sbom(
     components.sort(key=lambda c: c["bom-ref"])
 
     product_ref = f"pkg:generic/cfa4@{version}"
-    dependencies = [{"ref": product_ref, "dependsOn": sorted(refs[i] for i in ids if packages[i].get("name") in ROOTS)}]
+    dependencies: list[dict[str, Any]] = [{"ref": product_ref, "dependsOn": sorted(refs[i] for i in ids if packages[i].get("name") in ROOTS)}]
     dependencies += [{"ref": refs[i], "dependsOn": sorted(refs[d] for d in graph[i])} for i in ids]
     dependencies.sort(key=lambda d: d["ref"])
 

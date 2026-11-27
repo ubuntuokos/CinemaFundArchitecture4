@@ -746,6 +746,20 @@ fn sample_item_problems(p: &Project, it: &cfa4_project::TrackItem, want: &serde_
     {
         problems.push(format!("offline {}, expected {offline}", m.offline));
     }
+    if let Some(want) = media["other_references"].as_array() {
+        let mut want: Vec<&str> = want.iter().filter_map(|k| k.as_str()).collect();
+        want.sort_unstable();
+        let kept: Vec<&str> =
+            it.interchange.get("cfa4").and_then(|o| o["media_references"].as_object()).map(|o| o.keys().map(String::as_str).collect()).unwrap_or_default();
+        if kept != want {
+            problems.push(format!("other media references {kept:?}, expected {want:?}"));
+        }
+    }
+    if let Some(seq) = media["image_sequence"].as_bool()
+        && (m.info.kind == cfa4_media::MediaKind::ImageSequence) != seq
+    {
+        problems.push(format!("media kind {:?}, expected an image sequence: {seq}", m.info.kind));
+    }
     match (kind, &m.media) {
         ("file", MediaRef::File { path }) => {
             if let Some(want) = media["path"].as_str()
@@ -813,4 +827,197 @@ fn upstream_metadata_key_is_read_and_written_as_cfa4() {
     let from_legacy = again(&legacy);
     assert_eq!(from_legacy, again(&current), "an old file imports exactly like a current one");
     assert!(!from_legacy.contains(&format!("\"{old}\":")), "exports write only the cfa4 key");
+}
+
+// ---------------------------------------------------------------------------------------------
+// OTIO-2.5 (H5): OTIO stores no picture size. Sequences from other programs are listed in
+// `size_from_media`, and take their first video clip's size once its media is known.
+// ---------------------------------------------------------------------------------------------
+
+#[test]
+fn foreign_sequences_are_sized_from_their_first_video_clip() {
+    let (imp, rep) = import(image_sequence_doc("/v", ".png", "").as_bytes(), Format::Otio, None).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    let seq = only_seq(&imp);
+    assert_eq!(imp.size_from_media, [seq]);
+    let mut p = imp.project.clone();
+    let media = cfa4_interchange::first_video_media(&p, seq).unwrap();
+    assert!(!cfa4_interchange::size_from_media(&mut p, seq), "the default size until the media is probed");
+    let info = &mut p.item_mut(media).unwrap().as_media_mut().unwrap().info;
+    let v = info.video.as_mut().unwrap();
+    (v.width, v.height, v.par) = (4096, 1716, (1, 1));
+    assert!(cfa4_interchange::size_from_media(&mut p, seq));
+    let s = &p.sequence(seq).unwrap().settings;
+    assert_eq!((s.width, s.height, s.frame_rate), (4096, 1716, FrameRate::FPS_24));
+    // a size the project cannot use is left alone
+    let v = p.item_mut(media).unwrap().as_media_mut().unwrap().info.video.as_mut().unwrap();
+    (v.width, v.height) = (0, 0);
+    assert!(!cfa4_interchange::size_from_media(&mut p, seq));
+    assert_eq!(p.sequence(seq).unwrap().settings.width, 4096);
+
+    // CFA4's own files store the settings: nothing to size
+    let (bytes, _) = cfa4_interchange::export(&imp.project, seq, Format::Otio, &ExportOptions::default()).unwrap();
+    let (own, _) = import(&bytes, Format::Otio, None).unwrap();
+    assert!(own.size_from_media.is_empty());
+}
+
+// ---------------------------------------------------------------------------------------------
+// OTIO-2.3 (H3): `ImageSequenceReference` with its whole pattern. CFA4 keeps an image sequence as
+// image-sequence media at its first frame; the export writes the pattern back from that file name.
+// ---------------------------------------------------------------------------------------------
+
+fn image_sequence_doc(base: &str, suffix: &str, extra: &str) -> String {
+    format!(
+        r#"{{"OTIO_SCHEMA": "Timeline.1", "name": "Plates", "tracks": {{"OTIO_SCHEMA": "Stack.1", "children": [
+            {{"OTIO_SCHEMA": "Track.1", "name": "V1", "kind": "Video", "children": [
+                {{"OTIO_SCHEMA": "Clip.2", "name": "plate", "source_range": {}, "active_media_reference_key": "DEFAULT_MEDIA",
+                  "media_references": {{"DEFAULT_MEDIA": {{"OTIO_SCHEMA": "ImageSequenceReference.1", "name": "", "metadata": {{}},
+                    "target_url_base": "{base}", "name_prefix": "shot_a.", "name_suffix": "{suffix}", "start_frame": 1001,
+                    "frame_step": 1, "rate": 24.0, "frame_zero_padding": 4, "missing_frame_policy": "error",
+                    "available_range": {}, "available_image_bounds": null {extra}}}}}}}]}}]}}}}"#,
+        tr(2.0, 24.0, 24.0),
+        tr(0.0, 48.0, 24.0)
+    )
+}
+
+fn image_sequence_refs(v: &serde_json::Value, out: &mut Vec<serde_json::Value>) {
+    match v {
+        serde_json::Value::Object(o) => {
+            if o.get("OTIO_SCHEMA").and_then(|s| s.as_str()) == Some("ImageSequenceReference.1") {
+                out.push(v.clone());
+            }
+            o.values().for_each(|x| image_sequence_refs(x, out));
+        }
+        serde_json::Value::Array(a) => a.iter().for_each(|x| image_sequence_refs(x, out)),
+        _ => {}
+    }
+}
+
+/// The media the only clip of the only sequence points at.
+fn only_media(imp: &cfa4_interchange::Imported) -> (String, cfa4_media::MediaInfo) {
+    let s = imp.project.sequence(only_seq(imp)).unwrap();
+    let item = s.tracks(TrackKind::Video)[0].items[0].item;
+    let m = imp.project.item(item).unwrap().as_media().unwrap();
+    let MediaRef::File { path } = &m.media else { panic!("expected file media, got {:?}", m.media) };
+    (path.clone(), m.info.clone())
+}
+
+#[test]
+fn image_sequence_pattern_round_trips() {
+    let (imp, rep) = import(image_sequence_doc("file:///frames", ".exr", "").as_bytes(), Format::Otio, None).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    let (path, info) = only_media(&imp);
+    // OTIO joins base and file name with "/"
+    assert_eq!(path, "/frames/shot_a.1001.exr");
+    assert_eq!(info.kind, cfa4_media::MediaKind::ImageSequence);
+    assert_eq!(info.frame_rate(), FrameRate::FPS_24);
+    assert_eq!(info.duration, f(FrameRate::FPS_24, 48));
+
+    let (bytes, _) = cfa4_interchange::export(&imp.project, only_seq(&imp), Format::Otio, &ExportOptions::default()).unwrap();
+    let mut out: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let mut refs = Vec::new();
+    image_sequence_refs(&out, &mut refs);
+    assert_eq!(refs.len(), 1, "{}", String::from_utf8_lossy(&bytes));
+    let r = &refs[0];
+    assert_eq!(r["target_url_base"], "file:///frames/");
+    assert_eq!((&r["name_prefix"], &r["name_suffix"]), (&serde_json::json!("shot_a."), &serde_json::json!(".exr")));
+    assert_eq!((r["start_frame"].as_i64(), r["frame_step"].as_i64(), r["frame_zero_padding"].as_i64()), (Some(1001), Some(1), Some(4)));
+    assert_eq!(r["rate"].as_f64(), Some(24.0));
+    assert_eq!(r["available_range"]["duration"]["value"].as_f64(), Some(48.0));
+
+    // a reader without CFA4's metadata gets the same sequence from the pattern alone
+    strip_cfa4(&mut out);
+    let (again, rep) = import(out.to_string().as_bytes(), Format::Otio, None).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    let (path2, info2) = only_media(&again);
+    assert_eq!(path2, path);
+    assert_eq!((info2.kind, info2.frame_rate(), info2.duration), (info.kind, info.frame_rate(), info.duration));
+}
+
+fn strip_cfa4(v: &mut serde_json::Value) {
+    match v {
+        serde_json::Value::Object(o) => {
+            o.remove("cfa4");
+            o.values_mut().for_each(strip_cfa4);
+        }
+        serde_json::Value::Array(a) => a.iter_mut().for_each(strip_cfa4),
+        _ => {}
+    }
+}
+
+#[test]
+fn image_sequence_relative_base_and_unsupported_parts() {
+    let extra = r#", "frame_step": 2, "missing_frame_policy": "black""#;
+    // later duplicate keys win in serde_json, so `extra` overrides the defaults above
+    let (imp, rep) = import(image_sequence_doc("plates", ".png", extra).as_bytes(), Format::Otio, Some("/show")).unwrap();
+    let (path, info) = only_media(&imp);
+    assert_eq!(path, "/show/plates/shot_a.1001.png");
+    assert_eq!(info.kind, cfa4_media::MediaKind::ImageSequence);
+    let text = rep.to_string();
+    assert!(text.contains("frame step 2"), "{text}");
+    assert!(text.contains("not black"), "{text}");
+
+    // not still images: one file, with a warning
+    let (imp, rep) = import(image_sequence_doc("/v", ".mov", "").as_bytes(), Format::Otio, None).unwrap();
+    let (path, info) = only_media(&imp);
+    assert_eq!(path, "/v/shot_a.1001.mov");
+    assert_ne!(info.kind, cfa4_media::MediaKind::ImageSequence);
+    assert!(rep.to_string().contains("not numbered still images"), "{rep}");
+
+    // no base: offline, as before
+    let (imp, rep) = import(image_sequence_doc("", ".png", "").as_bytes(), Format::Otio, None).unwrap();
+    let s = imp.project.sequence(only_seq(&imp)).unwrap();
+    let m = imp.project.item(s.tracks(TrackKind::Video)[0].items[0].item).unwrap().as_media().unwrap();
+    assert!(m.offline);
+    assert!(rep.has_warnings());
+}
+
+// ---------------------------------------------------------------------------------------------
+// OTIO-2.4 (H4): a clip's media references that are not active are written back unchanged, under
+// their own keys, with the same active key.
+// ---------------------------------------------------------------------------------------------
+
+#[test]
+fn inactive_media_references_round_trip() {
+    let proxy = r#"{"OTIO_SCHEMA": "ExternalReference.1", "name": "proxy", "target_url": "file:///proxy/a.mov", "available_range": null, "metadata": {"app": {"k": 1}}}"#;
+    let doc = format!(
+        r#"{{"OTIO_SCHEMA": "Timeline.1", "name": "Refs", "tracks": {{"OTIO_SCHEMA": "Stack.1", "children": [
+            {{"OTIO_SCHEMA": "Track.1", "name": "V1", "kind": "Video", "children": [
+                {{"OTIO_SCHEMA": "Clip.2", "name": "a", "source_range": {}, "active_media_reference_key": "HIGH",
+                  "media_references": {{"DEFAULT_MEDIA": {proxy},
+                    "HIGH": {{"OTIO_SCHEMA": "ExternalReference.1", "target_url": "file:///full/a.mov", "available_range": {}}}}}}},
+                {{"OTIO_SCHEMA": "Clip.2", "name": "b", "source_range": {}, "active_media_reference_key": "DEFAULT_MEDIA",
+                  "media_references": {{"DEFAULT_MEDIA": {{"OTIO_SCHEMA": "ExternalReference.1", "target_url": "file:///full/b.mov", "available_range": null}}}}}}]}}]}}}}"#,
+        tr(0.0, 24.0, 24.0),
+        tr(0.0, 48.0, 24.0),
+        tr(0.0, 24.0, 24.0)
+    );
+    let (imp, rep) = import(doc.as_bytes(), Format::Otio, None).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    // the active reference is the media
+    let (path, _) = only_media(&imp);
+    assert_eq!(path, "/full/a.mov");
+    let s = imp.project.sequence(only_seq(&imp)).unwrap();
+    assert!(s.tracks(TrackKind::Video)[0].items[1].interchange.is_empty(), "a single default reference keeps nothing");
+
+    let export = |p: &Project, seq| {
+        let (bytes, _) = cfa4_interchange::export(p, seq, Format::Otio, &ExportOptions::default()).unwrap();
+        serde_json::from_slice::<serde_json::Value>(&bytes).unwrap()
+    };
+    let clips = |v: &serde_json::Value| v["tracks"]["children"][0]["children"].as_array().unwrap().clone();
+    let out = export(&imp.project, only_seq(&imp));
+    let [a, b] = <[serde_json::Value; 2]>::try_from(clips(&out)).unwrap();
+    assert_eq!(a["active_media_reference_key"], "HIGH");
+    assert_eq!(a["media_references"]["DEFAULT_MEDIA"], serde_json::from_str::<serde_json::Value>(proxy).unwrap(), "written back unchanged");
+    assert_eq!(a["media_references"]["HIGH"]["target_url"], "file:///full/a.mov");
+    assert!(a["metadata"].get("cfa4").is_some() && a["metadata"]["cfa4"].get("media_references").is_none(), "{}", a["metadata"]);
+    assert_eq!(b["active_media_reference_key"], "DEFAULT_MEDIA");
+    assert_eq!(b["media_references"].as_object().unwrap().len(), 1);
+
+    // stable: a second round trip writes the same references
+    let (again, rep) = import(out.to_string().as_bytes(), Format::Otio, None).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    let out2 = export(&again.project, only_seq(&again));
+    assert_eq!(clips(&out2)[0]["media_references"], a["media_references"]);
+    assert_eq!(clips(&out2)[0]["active_media_reference_key"], "HIGH");
 }

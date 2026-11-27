@@ -622,7 +622,7 @@ fn dynrng_gain(v: u32) -> f32 {
 
 /// Decode exponents of one set (§7.1.3) into `exp[first..]`; `ngrps` groups of 3 mapped values,
 /// each expanded to `grpsize` bins after the absolute exponent.
-fn decode_exponents(r: &mut Bits, absexp: i32, ngrps: usize, grpsize: usize, exp: &mut [u8; 256], first: usize, skip_abs: bool) -> Result<()> {
+fn decode_exponents(r: &mut Bits<'_>, absexp: i32, ngrps: usize, grpsize: usize, exp: &mut [u8; 256], first: usize, skip_abs: bool) -> Result<()> {
     let mut prev = absexp;
     let mut at = first;
     if !skip_abs {
@@ -663,7 +663,7 @@ const fn sym(levels: i32, code: i32) -> f32 {
 }
 
 /// The mantissa value (before the exponent shift) of a bin with allocation `bap`.
-fn mantissa(r: &mut Bits, bap: u8, gr: &mut Groups) -> f32 {
+fn mantissa(r: &mut Bits<'_>, bap: u8, gr: &mut Groups) -> f32 {
     match bap {
         1 => {
             if gr.b1.1 == 0 {
@@ -941,7 +941,15 @@ impl Decoder {
 
     /// Decode `nblocks` audio blocks and synthesize them (inverse transform, overlap-add), in coded
     /// channel order with the LFE last.
-    fn blocks(&mut self, r: &mut Bits, f: &mut Frame, acmod: usize, lfeon: bool, nblocks: usize, mut x: Option<&mut eac3::FrameInfo>) -> Result<Vec<Vec<f32>>> {
+    fn blocks(
+        &mut self,
+        r: &mut Bits<'_>,
+        f: &mut Frame,
+        acmod: usize,
+        lfeon: bool,
+        nblocks: usize,
+        mut x: Option<&mut eac3::FrameInfo>,
+    ) -> Result<Vec<Vec<f32>>> {
         let nfchans = f.nfchans;
         let nout = nfchans + lfeon as usize;
         let mut pcm: Vec<Vec<f32>> = vec![Vec::with_capacity(256 * nblocks); nout];
@@ -970,7 +978,7 @@ impl Decoder {
     #[allow(clippy::too_many_arguments)]
     fn audio_block(
         &mut self,
-        r: &mut Bits,
+        r: &mut Bits<'_>,
         f: &mut Frame,
         acmod: usize,
         lfeon: bool,

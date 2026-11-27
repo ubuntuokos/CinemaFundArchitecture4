@@ -1,0 +1,16 @@
+[package]
+name = "cfa4-musepack"
+description = "Pure-Rust Musepack (SV7/SV8) audio decoder, ported from the BSD-licensed libmpcdec"
+version.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later AND BSD-3-Clause"
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }

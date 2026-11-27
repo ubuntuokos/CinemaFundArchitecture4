@@ -113,15 +113,15 @@ fn xll_x_error_kind(error: &XllError) -> &'static str {
 }
 
 #[inline]
-fn rb(gb: &mut BitReader, n: usize) -> R<u32> {
+fn rb(gb: &mut BitReader<'_>, n: usize) -> R<u32> {
     gb.read_bits(n).ok_or(XllError::Bitstream)
 }
 #[inline]
-fn rb1(gb: &mut BitReader) -> R<bool> {
+fn rb1(gb: &mut BitReader<'_>) -> R<bool> {
     gb.read_bit().ok_or(XllError::Bitstream)
 }
 #[inline]
-fn seek(gb: &mut BitReader, pos: usize) -> R<()> {
+fn seek(gb: &mut BitReader<'_>, pos: usize) -> R<()> {
     if gb.seek(pos) { Ok(()) } else { Err(XllError::Invalid("seek past end")) }
 }
 
@@ -419,14 +419,14 @@ sample_loop! {
 
 /// A signed `n`-bit two's complement field, `1 <= n <= 32`.
 #[inline]
-fn get_sbits(gb: &mut BitReader, n: usize) -> R<i32> {
+fn get_sbits(gb: &mut BitReader<'_>, n: usize) -> R<i32> {
     let v = rb(gb, n)?;
     let unused = 32 - n as u32;
     Ok(((v << unused) as i32) >> unused)
 }
 
 #[inline]
-fn get_linear(gb: &mut BitReader, n: usize) -> R<i32> {
+fn get_linear(gb: &mut BitReader<'_>, n: usize) -> R<i32> {
     if n == 0 {
         return Ok(0);
     }
@@ -435,18 +435,18 @@ fn get_linear(gb: &mut BitReader, n: usize) -> R<i32> {
 }
 
 #[inline]
-fn get_rice(gb: &mut BitReader, k: usize) -> R<i32> {
+fn get_rice(gb: &mut BitReader<'_>, k: usize) -> R<i32> {
     let v = gb.read_rice(k, 1 << 20).ok_or(XllError::Bitstream)?;
     Ok(((v >> 1) ^ (0u32.wrapping_sub(v & 1))) as i32)
 }
 
 /// `get_rice` for every sample of `out`.
-fn get_rice_run(gb: &mut BitReader, k: usize, out: &mut [i32]) -> R<()> {
+fn get_rice_run(gb: &mut BitReader<'_>, k: usize, out: &mut [i32]) -> R<()> {
     gb.read_rice_run(k, out).ok_or(XllError::Bitstream)
 }
 
 /// `get_linear` for every sample of `out`.
-fn get_linear_run(gb: &mut BitReader, n: usize, out: &mut [i32]) -> R<()> {
+fn get_linear_run(gb: &mut BitReader<'_>, n: usize, out: &mut [i32]) -> R<()> {
     gb.read_bits_run(n, out).ok_or(XllError::Bitstream)?;
     for v in out {
         let u = *v as u32;
@@ -456,7 +456,7 @@ fn get_linear_run(gb: &mut BitReader, n: usize, out: &mut [i32]) -> R<()> {
 }
 
 /// `get_bits` for every sample of `out`.
-fn get_bits_run(gb: &mut BitReader, n: usize, out: &mut [i32]) -> R<()> {
+fn get_bits_run(gb: &mut BitReader<'_>, n: usize, out: &mut [i32]) -> R<()> {
     gb.read_bits_run(n, out).ok_or(XllError::Bitstream)
 }
 
@@ -920,7 +920,7 @@ impl XllDecoder {
     /// end of frame. We do the same, but additionally retain the raw payload
     /// (syncword + remaining bytes up to `frame_size`) for offline analysis. This
     /// runs after all band data is decoded, so it never affects the PCM output.
-    fn detect_x_extension(&mut self, gb: &mut BitReader, data: &[u8]) {
+    fn detect_x_extension(&mut self, gb: &mut BitReader<'_>, data: &[u8]) {
         self.x_syncword_present = false;
         self.x_imax_syncword_present = false;
         self.x_payload.clear();
@@ -1238,7 +1238,7 @@ impl XllDecoder {
         Ok(audio_end * 8)
     }
 
-    fn parse_common_header(&mut self, gb: &mut BitReader) -> R<()> {
+    fn parse_common_header(&mut self, gb: &mut BitReader<'_>) -> R<()> {
         if rb(gb, 32)? != DCA_SYNCWORD_XLL {
             return Err(XllError::Eagain);
         }
@@ -1276,7 +1276,7 @@ impl XllDecoder {
         seek(gb, header_size * 8)
     }
 
-    fn parse_sub_headers(&mut self, gb: &mut BitReader) -> R<()> {
+    fn parse_sub_headers(&mut self, gb: &mut BitReader<'_>) -> R<()> {
         // Reset in place: the sets keep their vectors' allocations and hand
         // their sample buffers to the pool.
         for c in &mut self.chset {
@@ -1321,11 +1321,11 @@ impl XllDecoder {
         Ok(())
     }
 
-    fn chs_parse_header(&mut self, gb: &mut BitReader, c: &mut XllChSet, is_primary: bool, allow_unmapped: bool) -> R<()> {
+    fn chs_parse_header(&mut self, gb: &mut BitReader<'_>, c: &mut XllChSet, is_primary: bool, allow_unmapped: bool) -> R<()> {
         self.chs_parse_header_with_mapping(gb, c, ChsMappingSyntax::Asset { is_primary, allow_unmapped })
     }
 
-    fn chs_parse_header_with_mapping(&mut self, gb: &mut BitReader, c: &mut XllChSet, mapping: ChsMappingSyntax) -> R<()> {
+    fn chs_parse_header_with_mapping(&mut self, gb: &mut BitReader<'_>, c: &mut XllChSet, mapping: ChsMappingSyntax) -> R<()> {
         let header_pos = gb.position();
         let header_size = rb(gb, 10)? as usize + 1;
         c.nchannels = rb(gb, 4)? as usize + 1;
@@ -1464,7 +1464,7 @@ impl XllDecoder {
     }
 
     /// The coding parameters of frequency band `band` in a channel set header.
-    fn chs_parse_band_header(&self, gb: &mut BitReader, c: &mut XllChSet, band: usize) -> R<()> {
+    fn chs_parse_band_header(&self, gb: &mut BitReader<'_>, c: &mut XllChSet, band: usize) -> R<()> {
         let nchannels = c.nchannels;
         let dmix_embedded = c.dmix_embedded;
         let b = c.bands.get_mut(band).ok_or(XllError::Invalid("XLL frequency band"))?;
@@ -1554,7 +1554,7 @@ impl XllDecoder {
         Ok(())
     }
 
-    fn parse_dmix_coeffs(&mut self, gb: &mut BitReader, c: &mut XllChSet) -> R<()> {
+    fn parse_dmix_coeffs(&mut self, gb: &mut BitReader<'_>, c: &mut XllChSet) -> R<()> {
         let m = if c.primary_chset { DMIX_PRIMARY_NCH[c.dmix_type] as usize } else { c.hier_ofs };
         c.dmix_coeff.clear();
         c.dmix_scale.clear();
@@ -1590,7 +1590,7 @@ impl XllDecoder {
         Ok(())
     }
 
-    fn parse_navi_table(&mut self, gb: &mut BitReader) -> R<()> {
+    fn parse_navi_table(&mut self, gb: &mut BitReader<'_>) -> R<()> {
         let navi_nb = self.nfreqbands * self.nframesegs * self.nchsets;
         if navi_nb > 1024 {
             return Err(XllError::Invalid("too many NAVI entries"));
@@ -1617,7 +1617,7 @@ impl XllDecoder {
         Ok(())
     }
 
-    fn parse_band_data(&mut self, gb: &mut BitReader) -> R<()> {
+    fn parse_band_data(&mut self, gb: &mut BitReader<'_>) -> R<()> {
         // Allocate MSB/LSB buffers for active channel sets.
         for chs in 0..self.nactivechsets {
             let nframesamples = self.nframesamples;
@@ -1646,7 +1646,7 @@ impl XllDecoder {
         Ok(())
     }
 
-    fn chs_parse_band_data(&mut self, gb: &mut BitReader, chs: usize, band: usize, seg: usize, band_data_end: usize) -> R<()> {
+    fn chs_parse_band_data(&mut self, gb: &mut BitReader<'_>, chs: usize, band: usize, seg: usize, band_data_end: usize) -> R<()> {
         let nsegsamples = self.nsegsamples;
         let nsegsamples_log2 = self.nsegsamples_log2;
         if band >= DCA_XLL_BANDS_MAX {

@@ -77,8 +77,20 @@ fn command(program: &Path, scratch: &Scratch) -> Command {
     c
 }
 
+/// Starts `c`. `ETXTBSY` (the wrapper was just written, and another thread's fork still holds the
+/// write descriptor until its exec) is retried briefly instead of reported as unavailable.
 fn spawn(mut c: Command, program: &Path) -> Result<Child, ValidationError> {
-    c.spawn().map_err(|e| ValidationError::Unavailable(format!("{} cannot be started: {e}", program.display())))
+    let mut tries = 0;
+    loop {
+        match c.spawn() {
+            Ok(child) => return Ok(child),
+            Err(e) if e.kind() == std::io::ErrorKind::ExecutableFileBusy && tries < 50 => {
+                tries += 1;
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            Err(e) => return Err(ValidationError::Unavailable(format!("{} cannot be started: {e}", program.display()))),
+        }
+    }
 }
 
 fn signal_group(child: &Child, sig: Signal) {

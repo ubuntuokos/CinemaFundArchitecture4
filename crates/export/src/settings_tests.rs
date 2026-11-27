@@ -332,6 +332,45 @@ fn image_sequences_are_numbered_like_premiere() {
     }
 }
 
+/// DPX at 12 and 16 bits (CFA4-PROCODEC-002 WP3): `dpx_bit_depth` sets the component size, alpha is
+/// kept from 12 bits on (straight, descriptor 51), other depths are refused; ffmpeg (external
+/// oracle) decodes every still.
+#[test]
+fn dpx_sequence_bit_depths_and_alpha() {
+    let (p, seq, m) = matte([0.0, 0.0, 1.0, 0.5], 64, 36, None);
+    for (depth, alpha) in [(12u8, false), (16, false), (12, true), (16, true)] {
+        let dir = Scratch::new(&format!("dpxdeep-{depth}-{alpha}"));
+        let mut s = ExportSettings { format: Format::DpxSequence, path: dir.path("D.dpx"), alpha, dpx_bit_depth: depth, ..Default::default() };
+        s.range = Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(2)));
+        assert!(s.supports_alpha(), "{depth}-bit");
+        assert_eq!(s.keeps_alpha(), alpha);
+        let video = s.summary(160, 90, FrameRate::FPS_24, 48_000, Tick(TICKS_PER_SECOND)).video;
+        assert!(video.contains(&format!("{depth}-bit RGB{}", if alpha { "A" } else { "" })), "{video}");
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let first = dir.0.join("D000.dpx");
+        let bytes = std::fs::read(&first).unwrap();
+        let comps = if alpha { 4 } else { 3 };
+        assert_eq!(bytes.len(), 2048 + 64 * 36 * comps * 2, "{depth}-bit alpha {alpha}");
+        assert_eq!((bytes[800], bytes[803]), (if alpha { 51 } else { 50 }, depth));
+        let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("DPX bit depths") else { continue };
+        let first = first.to_string_lossy().to_string();
+        let out = std::process::Command::new(ffmpeg).args(["-v", "error", "-i", &first, "-f", "rawvideo", "-pix_fmt", "rgba", "-"]).output().unwrap();
+        assert!(out.status.success(), "{first}: {}", String::from_utf8_lossy(&out.stderr));
+        let at = (18 * 64 + 32) * 4;
+        let px = &out.stdout[at..at + 4];
+        if alpha {
+            assert!((100..=160).contains(&px[3]) && px[2] > 200 && px[0] < 15, "{first} straight alpha: {px:?}");
+        } else {
+            assert!(px[3] == 255 && px[2] > 100 && px[0] < 20, "{first}: {px:?}");
+        }
+    }
+    // 10 bits carries no alpha; other depths are refused
+    let ten = ExportSettings { format: Format::DpxSequence, alpha: true, ..Default::default() };
+    assert!(!ten.supports_alpha() && !ten.keeps_alpha());
+    let bad = ExportSettings { format: Format::DpxSequence, dpx_bit_depth: 14, ..Default::default() };
+    assert!(bad.validate().is_err());
+}
+
 /// JPEG, Targa and DPX sequences (#779): numbered like the others, JPEG at the export quality,
 /// Targa with alpha when asked; every still decoded by ffmpeg (external test oracle).
 #[test]
@@ -401,6 +440,17 @@ fn openexr_sequences() {
         let first = dir.0.join(&want[0]);
         let bytes = std::fs::read(&first).unwrap();
         assert_eq!(&bytes[..4], &[0x76, 0x2F, 0x31, 0x01]);
+        // every frame carries its time code (consecutive) and the frame rate
+        let timing: Vec<(Option<i64>, FrameRate)> = want
+            .iter()
+            .map(|f| {
+                let src = cfa4_media::open_bytes("f.exr", std::fs::read(dir.0.join(f)).unwrap().into(), &[]).unwrap();
+                (src.info().start_timecode, src.info().video.as_ref().unwrap().frame_rate)
+            })
+            .collect();
+        let t0 = timing[0].0.expect("time code");
+        assert_eq!(timing.iter().map(|t| t.0).collect::<Vec<_>>(), vec![Some(t0), Some(t0 + 1), Some(t0 + 2)]);
+        assert!(timing.iter().all(|t| t.1 == timing[0].1));
         let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("OpenEXR sequences") else { continue };
         let out = std::process::Command::new(ffmpeg)
             .args(["-v", "error", "-i"])
@@ -440,7 +490,7 @@ fn openexr_sequences_compress() {
         let path = dir.0.join("c000.exr");
         let bytes = std::fs::read(&path).unwrap();
         let at = bytes.windows(24).position(|w| w == b"compression\0compression\0").unwrap() + 28;
-        assert_eq!(bytes[at], [0, 1, 2, 3][files.len()], "{c:?}");
+        assert_eq!(bytes[at], [0, 1, 2, 3, 4][files.len()], "{c:?}");
         files.push((c, path, bytes.len(), dir));
     }
     let plain = files[0].2;
@@ -1283,7 +1333,7 @@ fn metadata_and_quicktime_multiplexer() {
 #[test]
 fn interlaced_output_is_rejected_honestly() {
     let (p, seq, m) = matte([0.0, 0.0, 1.0, 1.0], 160, 90, None);
-    let s = ExportSettings { format: Format::ProRes, path: "unused.mov".into(), field_order: FieldOrder::UpperFirst, ..Default::default() };
+    let s = ExportSettings { format: Format::DnxHr, path: "unused.mov".into(), field_order: FieldOrder::UpperFirst, ..Default::default() };
     let e = export(&p, seq, &s, &m, &Progress::default()).unwrap_err();
     assert!(e.to_string().contains("progressive"), "{e}");
 }
@@ -1318,11 +1368,21 @@ fn builtin_presets_are_valid_and_unique() {
     for p in &all {
         p.settings.validate().unwrap();
         assert!(p.builtin && !p.category.is_empty() && !p.description.is_empty(), "{}", p.name);
+        // a preset is only offered when an encoder and a container path exist for it
+        assert!(available(p.settings.format) && unavailable_reason(p.settings.format).is_none(), "{}", p.name);
     }
     assert_eq!(presets::find_builtin("match source - adaptive high bitrate").unwrap().name, presets::DEFAULT_PRESET);
     let json = serde_json::to_value(&all[0]).unwrap();
     let back: ExportPreset = serde_json::from_value(json).unwrap();
     assert_eq!(back.settings.adaptive_bitrate, Some(0.2));
+}
+
+/// CFA4-PROCODEC-002 WP0: every listed format has an encoder in this build, so none carries a reason.
+#[test]
+fn unavailable_formats_say_why() {
+    for f in Format::ALL {
+        assert_eq!(unavailable_reason(f), None, "{}", f.label());
+    }
 }
 
 /// #108: the default 320 kbps is more than AAC can carry in stereo at 22.05 kHz (6 bits per sample
@@ -1392,7 +1452,7 @@ fn h265_is_a_format_with_a_built_in_encoder() {
     }
     assert_eq!(Format::from_name(Format::Hevc.id()), Some(Format::Hevc));
     assert_eq!((Format::Hevc.extension(), Format::Hevc.label()), ("mp4", "H.265 (HEVC)"));
-    assert!(Format::ALL.contains(&Format::Hevc) && Format::ALL.len() == 27);
+    assert!(Format::ALL.contains(&Format::Hevc) && Format::ALL.len() == 28);
     let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "hevc"})).unwrap();
     assert_eq!(s.format, Format::Hevc);
     assert_eq!(serde_json::to_value(&s).unwrap()["format"], "hevc");
@@ -2127,7 +2187,7 @@ fn dash_manifest_matches_the_hls_playlists() {
     }
 
     // ffprobe opens the manifest: one H.264 and one AAC stream, about 13 seconds. ffmpeg's DASH
-    // demuxer needs libxml2; the CI's FFmpeg 9.0.2 is built without it (--disable-autodetect),
+    // demuxer needs libxml2; the CI's pinned FFmpeg is built without it (--disable-autodetect),
     // so this part is skipped there even with CFA4_REQUIRE_ORACLES=1: the timelines above are
     // the check that counts, and the local ffprobe (distribution builds have libxml2) adds this one.
     let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("export settings") else { return };
@@ -2141,4 +2201,15 @@ fn dash_manifest_matches_the_hls_playlists() {
     assert_eq!(v["format"]["format_name"], "dash", "{v}");
     let secs: f64 = v["format"]["duration"].as_str().unwrap().parse().unwrap();
     assert!((secs - 13.0).abs() < 0.1, "{v}");
+}
+
+#[test]
+fn mxf_op1a_mixes_eight_channels_when_asked() {
+    let (p, seq, _sources) = matte([0.0, 0.0, 0.0, 1.0], 64, 36, None);
+    let range = TimeRange::new(Tick::ZERO, Tick(TICKS_PER_SECOND));
+    let mut settings = ExportSettings { format: Format::MxfOp1a, ..ExportSettings::default() };
+    settings.audio.channels = 8;
+    assert_eq!(audio_out::AudioOut::new(p.clone(), seq, &settings, range).unwrap().channels, 8, "XDCAM / D-10 take 8 channels");
+    settings.format = Format::H264;
+    assert_eq!(audio_out::AudioOut::new(p, seq, &settings, range).unwrap().channels, 6, "other formats keep the 5.1 cap");
 }

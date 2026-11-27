@@ -12,8 +12,13 @@
 //! profiles (T.800 Amd. 1, SMPTE ST 429-4 / DCI): 12-bit X'Y'Z', 9/7, 32×32 code-blocks, CPRL,
 //! 128 / 256 precincts, one tile-part per component (and per progression for 4K), TLM, and the
 //! DCI byte limits per frame and per component.
+//!
+//! With [`EncodeOptions::ht`] the code-blocks are coded with the HTJ2K block coder instead
+//! (ITU-T T.814 | ISO/IEC 15444-15, [`ht`]): one HT cleanup pass per code-block with all its
+//! bit-planes, Rsiz bit 14 and the CAP marker. Rate control does not apply to it yet.
 
 mod dwt;
+mod ht;
 mod t1;
 mod t2;
 
@@ -150,6 +155,16 @@ impl ImfProfile {
         Some(ImfProfile { size, reversible, mainlevel, sublevel })
     }
 
+    /// Decomposition levels an HTJ2K codestream may use (ST 2067-21 Table I.1): up to 5 for
+    /// pictures at most 2048 samples across, 6 up to 4096, 7 up to 8192.
+    fn levels_ht(width: u32, height: u32) -> std::ops::RangeInclusive<u8> {
+        1..=match width.max(height) {
+            ..=2048 => 5,
+            2049..=4096 => 6,
+            _ => 7,
+        }
+    }
+
     /// Decomposition levels allowed for an image (tile) `width` wide.
     fn levels(&self, width: u32) -> std::ops::RangeInclusive<u8> {
         let max = match (self.reversible, self.size) {
@@ -205,6 +220,12 @@ pub struct EncodeOptions {
     /// A TLM marker (A.7.1) with the tile-part lengths.
     pub tlm: bool,
     pub profile: Profile,
+    /// HTJ2K (ITU-T T.814): the high-throughput block coder for every code-block. With the
+    /// Part 1 profile or an IMF profile ([`ImfProfile`]: SMPTE ST 2067-21 Annex I, APP2.HT.REV /
+    /// APP2.HT.IRV); DCI has no HT. With a byte limit each code-block is coded once per
+    /// bit-plane it may stop at (its HT cleanup pass at that plane) and rate control picks one
+    /// of those codings.
+    pub ht: bool,
 }
 
 impl EncodeOptions {
@@ -223,6 +244,7 @@ impl EncodeOptions {
             tile_part_per_component: false,
             tlm: false,
             profile: Profile::Part1,
+            ht: false,
         }
     }
 
@@ -240,13 +262,16 @@ impl EncodeOptions {
             progression: Progression::Cprl,
             code_block: (5, 5),
             precincts: vec![(7, 7), (8, 8)],
-            mct: false,
+            // the ICT on X'Y'Z': libdcp's dcpverify requires it and every DCI decoder applies its
+            // inverse (DCSS §4.3.2); plan CFA4-DCPVAL-LIBDCP-001
+            mct: true,
             step: 1.0,
             max_bytes: Some(250_000_000 / 8 / fps),
             max_component_bytes: Some(200_000_000 / 8 / fps),
             tile_part_per_component: true,
             tlm: true,
             profile,
+            ht: false,
         }
     }
 
@@ -259,6 +284,16 @@ impl EncodeOptions {
     /// Digital Cinema 4K at `fps` frames per second.
     pub fn cinema_4k(fps: u32) -> Self {
         Self::cinema(Profile::Cinema4k, 6, fps)
+    }
+
+    /// An IMF HTJ2K profile (SMPTE ST 2067-21 Annex I, APP2.HT.REV / APP2.HT.IRV) for the same
+    /// pictures as [`EncodeOptions::imf`]: the HT block coder, and the most decomposition levels
+    /// Table I.1 and the picture allow.
+    pub fn imf_ht(profile: ImfProfile, width: u32, height: u32, fps_num: u32, fps_den: u32) -> Self {
+        let base = Self::imf(profile, width, height, fps_num, fps_den);
+        let fit = (width.min(height).max(1).ilog2()).min(32) as u8;
+        let levels = (*ImfProfile::levels_ht(width, height).end()).min(fit).max(1);
+        EncodeOptions { ht: true, levels, ..base }
     }
 
     /// An IMF profile ([`ImfProfile`]) for `width` × `height` pictures at `fps_num / fps_den`
@@ -284,6 +319,7 @@ impl EncodeOptions {
             tile_part_per_component: true,
             tlm: true,
             profile: Profile::Imf(profile),
+            ht: false,
         }
     }
 }
@@ -308,12 +344,36 @@ struct Job {
     limit: u32,
 }
 
+/// One HTJ2K coding of a block: its cleanup segment, the refinement segment (SigProp, and with
+/// three `passes` MagRef) when it has one. `zero` is the number of planes its cleanup pass codes
+/// until the block's Mb turns it into the missing MSBs of the packet header.
+struct HtCoding {
+    zero: u32,
+    cleanup: Vec<u8>,
+    refine: Vec<u8>,
+    passes: u32,
+}
+
 /// A coded code-block and its rate-distortion hull: (passes, bytes, slope), slopes falling.
 struct Coded {
     c: usize,
     zero: u32,
+    /// HTJ2K with a byte limit: one independent coding per truncation point of `enc.passes`
+    /// (missing MSBs, cleanup pass and refinement passes); a selection of `n` passes means the `n`-th coding.
+    ht: Vec<HtCoding>,
     enc: t1::Encoded,
     hull: Vec<(u32, usize, f64)>,
+    /// Coefficients whose index was clipped to the block's `limit`.
+    saturated: u64,
+}
+
+/// What an encode did besides the codestream.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct EncodeStats {
+    /// Quantization indices clipped to the largest value the guard bits and exponents carry
+    /// (2K Digital Cinema writes 1 guard bit, as libdcp's encoder and verifier expect, so the rare
+    /// coefficients beyond the band's nominal range saturate).
+    pub saturated: u64,
 }
 
 /// Encodes `image` as a JPEG 2000 codestream (`.j2c`).
@@ -321,8 +381,17 @@ pub fn encode(image: &Image, opts: &EncodeOptions) -> Result<Vec<u8>> {
     encode_with(image, opts, true)
 }
 
+/// [`encode`], with the encoder's [`EncodeStats`].
+pub fn encode_with_stats(image: &Image, opts: &EncodeOptions) -> Result<(Vec<u8>, EncodeStats)> {
+    encode_inner(image, opts, true)
+}
+
 /// [`encode`]; `early` lets code-blocks stop below the predicted rate-control threshold.
 fn encode_with(image: &Image, opts: &EncodeOptions, early: bool) -> Result<Vec<u8>> {
+    encode_inner(image, opts, early).map(|(out, _)| out)
+}
+
+fn encode_inner(image: &Image, opts: &EncodeOptions, early: bool) -> Result<(Vec<u8>, EncodeStats)> {
     validate(image, opts)?;
     let ncomp = image.components.len();
     let levels = opts.levels;
@@ -371,21 +440,51 @@ fn encode_with(image: &Image, opts: &EncodeOptions, early: bool) -> Result<Vec<u
             Quant { style: if opts.reversible { 0 } else { 2 }, guard: 1, steps }
         })
         .collect();
-    // guard bits: enough for the largest index of every band
-    let mut guard = 2u8;
-    for ((p, q), cf) in image.components.iter().zip(&quants).zip(&coeffs) {
-        for band in 0..q.steps.len() {
-            let (r, bi) = band_position(band);
-            let (e, _) = q.step(band, levels)?;
-            let orient = if band == 0 { 0 } else { (bi + 1) as u8 };
-            let (_, step) = quant(q, band, levels, p.precision, orient)?;
-            let max = match cf {
-                Coeffs::Int(b) => b.get(r).and_then(|x| x.get(bi)).map_or(0, |v| v.iter().map(|c| c.unsigned_abs()).max().unwrap_or(0)),
-                Coeffs::Float(b) => b.get(r).and_then(|x| x.get(bi)).map_or(0, |v| v.iter().map(|c| (c.abs() / step) as u32).max().unwrap_or(0)),
-            };
-            let planes = 32 - max.leading_zeros();
-            let need = (i64::from(planes) + 1 - i64::from(e)).clamp(0, 7) as u8;
-            guard = guard.max(need);
+    // IMF HTJ2K, irreversible: the subband magnitude bits (guard bits + exponent - 1) stay within
+    // the constrained MAGBP set B (ST 2067-21 Table I.3), so the steps are no finer than B allows
+    let htirv = match opts.profile {
+        Profile::Imf(_) if opts.ht && !opts.reversible => Some(imf_ht_b(image.components.first().map_or(8, |c| c.precision), levels, mct, false)),
+        _ => None,
+    };
+    let clamp = |quants: &mut [Quant], guard: u8| {
+        if let Some(b) = htirv {
+            let cap = (b + 1).saturating_sub(u32::from(guard)).min(31) as u8;
+            for q in quants.iter_mut() {
+                for s in &mut q.steps {
+                    if s.0 > cap {
+                        *s = (cap, 0);
+                    }
+                }
+            }
+        }
+    };
+    // guard bits: 1 for 2K Digital Cinema (libdcp's verifier requires it and its encoder writes
+    // it; indices beyond the nominal range saturate, plan CFA4-DCPVAL-LIBDCP-001 v1.1 D8), else
+    // enough for the largest index of every band (one when the MAGBP cap leaves the room)
+    let mut guard = if opts.profile == Profile::Cinema2k || htirv.is_some() { 1u8 } else { 2u8 };
+    clamp(&mut quants, guard);
+    let mut settled = false;
+    while !settled {
+        let before = guard;
+        for ((p, q), cf) in image.components.iter().zip(&quants).zip(&coeffs).filter(|_| opts.profile != Profile::Cinema2k) {
+            for band in 0..q.steps.len() {
+                let (r, bi) = band_position(band);
+                let (e, _) = q.step(band, levels)?;
+                let orient = if band == 0 { 0 } else { (bi + 1) as u8 };
+                let (_, step) = quant(q, band, levels, p.precision, orient)?;
+                let max = match cf {
+                    Coeffs::Int(b) => b.get(r).and_then(|x| x.get(bi)).map_or(0, |v| v.iter().map(|c| c.unsigned_abs()).max().unwrap_or(0)),
+                    Coeffs::Float(b) => b.get(r).and_then(|x| x.get(bi)).map_or(0, |v| v.iter().map(|c| (c.abs() / step) as u32).max().unwrap_or(0)),
+                };
+                let planes = 32 - max.leading_zeros();
+                let need = (i64::from(planes) + 1 - i64::from(e)).clamp(0, 7) as u8;
+                guard = guard.max(need);
+            }
+        }
+        // more guard bits leave less room for the exponents under the MAGBP cap: settle
+        settled = htirv.is_none() || guard == before || guard >= 7;
+        if !settled {
+            clamp(&mut quants, guard);
         }
     }
     for q in &mut quants {
@@ -408,6 +507,9 @@ fn encode_with(image: &Image, opts: &EncodeOptions, early: bool) -> Result<Vec<u
                     let band = res.bands.get(bi).ok_or(Error::Invalid("subband"))?;
                     for cb in &pb.blocks {
                         let rect = Rect { u0: cb.x0 - band.rect.u0, v0: cb.y0 - band.rect.v0, u1: cb.x1 - band.rect.u0, v1: cb.y1 - band.rect.v0 };
+                        if opts.ht && band.mb > crate::t1::MAX_PLANES {
+                            return Err(Error::Unsupported("HTJ2K subband with more than 30 bit-planes"));
+                        }
                         let limit = if band.mb >= 30 { (1 << 30) - 1 } else { (1u32 << band.mb) - 1 };
                         jobs.push(Job { c, r, bi, rect, band_w: band.rect.w(), orient: band.orient, step: band.step, limit });
                     }
@@ -424,12 +526,14 @@ fn encode_with(image: &Image, opts: &EncodeOptions, early: bool) -> Result<Vec<u
     };
     // `stop`: the slope (weighted distortion per byte) below which a block's bit-planes are left
     // uncoded
+    let limited = opts.max_bytes.is_some() || opts.max_component_bytes.is_some();
     let code = |j: &Job, stop: f64| -> Result<Coded> {
         let cf = coeffs.get(j.c).ok_or(Error::Invalid("component"))?;
         let mb = comps.get(j.c).and_then(|tc| tc.res.get(j.r)).and_then(|res| res.bands.get(j.bi)).map_or(0, |b| b.mb);
         let w = weight(j);
-        let enc = code_block(cf, j, if stop.is_finite() && stop > 0.0 { stop / w.max(1e-30) } else { 0.0 })?;
-        Ok(Coded { c: j.c, zero: mb.saturating_sub(enc.planes), hull: hull(&enc.passes, w), enc })
+        let (enc, alts, saturated) = code_block(cf, j, opts.ht, limited, if stop.is_finite() && stop > 0.0 { stop / w.max(1e-30) } else { 0.0 })?;
+        let ht = alts.into_iter().map(|a| HtCoding { zero: mb.saturating_sub(a.zero), ..a }).collect();
+        Ok(Coded { c: j.c, zero: mb.saturating_sub(enc.planes), hull: hull(&enc.passes, w), enc, ht, saturated })
     };
     let mut coded = if !early || (opts.max_bytes.is_none() && opts.max_component_bytes.is_none()) {
         map(&jobs, |j| code(j, 0.0))?
@@ -470,7 +574,7 @@ fn encode_with(image: &Image, opts: &EncodeOptions, early: bool) -> Result<Vec<u
     if out.len() != total || !fits(total, &sizes) {
         return Err(Error::Invalid("byte limit below the size of the headers"));
     }
-    Ok(out)
+    Ok((out, EncodeStats { saturated: coded.iter().map(|b| b.saturated).sum() }))
 }
 
 /// Every how many code-blocks one is coded in full to predict the slope thresholds.
@@ -702,6 +806,10 @@ fn validate(image: &Image, opts: &EncodeOptions) -> Result<()> {
     if samples > MAX_SAMPLES {
         return Err(Error::TooLarge);
     }
+    // DCI is Part 1 only; HTJ2K goes with no profile or an IMF profile (ST 2067-21 Annex I)
+    if opts.ht && !matches!(opts.profile, Profile::Part1 | Profile::Imf(_)) {
+        return Err(Error::Unsupported("HTJ2K with a Digital Cinema profile"));
+    }
     let (xcb, ycb) = opts.code_block;
     if !(2..=10).contains(&xcb) || !(2..=10).contains(&ycb) || xcb + ycb > 12 {
         return Err(Error::Invalid("code-block size"));
@@ -727,7 +835,7 @@ fn validate(image: &Image, opts: &EncodeOptions) -> Result<()> {
             || !levels_ok
             || w > max_w
             || h > max_h
-            || !imf.levels(w).contains(&opts.levels)
+            || !(if opts.ht { ImfProfile::levels_ht(w, h) } else { imf.levels(w) }).contains(&opts.levels)
             || opts.reversible != imf.reversible
             || opts.code_block != (5, 5)
             || opts.progression != Progression::Cprl
@@ -744,14 +852,7 @@ fn validate(image: &Image, opts: &EncodeOptions) -> Result<()> {
         Profile::Cinema4k => (4096, 2160, 1..=6),
     };
     let dci = image.components.len() == 3 && image.components.iter().all(|p| p.precision == 12 && !p.signed && p.dx == 1 && p.dy == 1);
-    if !dci
-        || w > max_w
-        || h > max_h
-        || !levels.contains(&opts.levels)
-        || opts.reversible
-        || opts.mct
-        || opts.code_block != (5, 5)
-        || opts.progression != Progression::Cprl
+    if !dci || w > max_w || h > max_h || !levels.contains(&opts.levels) || opts.reversible || opts.code_block != (5, 5) || opts.progression != Progression::Cprl
     {
         return Err(Error::Invalid("image or options outside the Digital Cinema profile"));
     }
@@ -878,11 +979,16 @@ fn component_weights(n: usize, mct: bool, reversible: bool) -> Vec<f64> {
 }
 
 /// Quantizes and codes one code-block, down to the bit-plane `stop` allows ([`t1::encode`]).
-fn code_block(cf: &Coeffs, j: &Job, stop: f64) -> Result<t1::Encoded> {
+/// HTJ2K: one cleanup pass with every bit-plane; with `limited` (a byte limit), also one coding
+/// per coarser plane it could stop at, returned as (coded planes, codeword), coarsest first, the
+/// passes of the [`t1::Encoded`] being their truncation points.
+/// Also returns how many of the block's indices saturated at `j.limit`.
+fn code_block(cf: &Coeffs, j: &Job, ht: bool, limited: bool, stop: f64) -> Result<(t1::Encoded, Vec<HtCoding>, u64)> {
     let (w, h) = (j.rect.w(), j.rect.h());
     let mut q = Vec::with_capacity(w * h);
     let mut exact = Vec::with_capacity(w * h);
     let limit = j.limit as i64;
+    let mut saturated = 0u64;
     match cf {
         Coeffs::Int(bands) => {
             let band = bands.get(j.r).and_then(|b| b.get(j.bi)).ok_or(Error::Invalid("subband"))?;
@@ -891,6 +997,7 @@ fn code_block(cf: &Coeffs, j: &Job, stop: f64) -> Result<t1::Encoded> {
                 let row = band.get(y as usize * bw + j.rect.u0 as usize..y as usize * bw + j.rect.u1 as usize).ok_or(Error::Invalid("code-block"))?;
                 for &c in row {
                     let v = i64::from(c).clamp(-limit, limit) as i32;
+                    saturated += u64::from(v != c);
                     q.push(v);
                     exact.push(c as f32);
                 }
@@ -904,14 +1011,101 @@ fn code_block(cf: &Coeffs, j: &Job, stop: f64) -> Result<t1::Encoded> {
                 let row = band.get(y as usize * bw + j.rect.u0 as usize..y as usize * bw + j.rect.u1 as usize).ok_or(Error::Invalid("code-block"))?;
                 for &c in row {
                     let x = c * inv;
-                    let m = (x.abs() as i64).min(limit) as i32;
+                    let whole = x.abs() as i64;
+                    saturated += u64::from(whole > limit);
+                    let m = whole.min(limit) as i32;
                     q.push(if x < 0.0 { -m } else { m });
                     exact.push(x);
                 }
             }
         }
     }
-    Ok(t1::encode(&q, &exact, w, h, j.orient, stop))
+    if ht {
+        if !limited {
+            // one cleanup pass with every bit-plane: the decoder takes Mb - 1 missing MSBs
+            return Ok((
+                match ht::encode(&q, w, h)? {
+                    Some(data) => {
+                        let dist = exact.iter().map(|&x| f64::from(x).powi(2)).sum();
+                        t1::Encoded { passes: vec![t1::Pass { len: data.len(), dist }], data, planes: 1, truncated: false }
+                    }
+                    None => t1::Encoded::default(),
+                },
+                Vec::new(),
+                saturated,
+            ));
+        }
+        let (enc, alts) = ht_codings(&q, &exact, w, h)?;
+        return Ok((enc, alts, saturated));
+    }
+    Ok((t1::encode(&q, &exact, w, h, j.orient, stop), Vec::new(), saturated))
+}
+
+/// The HTJ2K codings of a block for rate control, with the squared error each removes from the
+/// all-zero block. For each plane `s` from the most significant non-zero one down to 0: the
+/// cleanup pass of the indices with their `s` lowest bits dropped (the decoder then takes
+/// Mb - 1 - s missing MSBs and puts each magnitude back at plane `s`, in the middle of its
+/// interval); and, from plane 1 up, the cleanup pass at plane `s + 1` with the SigProp pass, and
+/// with the SigProp and MagRef passes, of plane `s`. They are ordered by size, the truncation
+/// points of rate control.
+fn ht_codings(q: &[i32], exact: &[f32], w: usize, h: usize) -> Result<(t1::Encoded, Vec<HtCoding>)> {
+    let top = 32 - q.iter().map(|v| v.unsigned_abs()).max().unwrap_or(0).leading_zeros();
+    let energy: f64 = exact.iter().map(|&x| f64::from(x).powi(2)).sum();
+    // the squared error of reconstructing sample `i` as `half / 2` (the decoder's half units)
+    let err = |half: &dyn Fn(usize) -> u64| -> f64 { exact.iter().enumerate().map(|(i, &x)| (f64::from(x).abs() - half(i) as f64 / 2.0).powi(2)).sum() };
+    let mut points: Vec<(usize, f64, HtCoding)> = Vec::new();
+    let mut coarse = vec![0i32; q.len()];
+    for s in (0..top).rev() {
+        for (o, &v) in coarse.iter_mut().zip(q) {
+            let m = (v.unsigned_abs() >> s) as i32;
+            *o = if v < 0 { -m } else { m };
+        }
+        if let Some(data) = ht::encode(&coarse, w, h)? {
+            let error = err(&|i| {
+                let m = u64::from(coarse[i].unsigned_abs());
+                if m == 0 { 0 } else { (2 * m + 1) << s }
+            });
+            points.push((data.len(), energy - error, HtCoding { zero: 1 + s, cleanup: data, refine: Vec::new(), passes: 1 }));
+        }
+        if s == 0 || s + 1 > top {
+            continue;
+        }
+        let Some(r) = ht::encode_refined(q, w, h, s)? else { continue };
+        let mag = |i: usize| u64::from(q[i].unsigned_abs());
+        let sig = |i: usize| mag(i) >> (s + 1);
+        if !r.spp.is_empty() {
+            let error = err(&|i| {
+                if sig(i) > 0 {
+                    (2 * sig(i) + 1) << (s + 1)
+                } else if r.newly[i] {
+                    3 << s
+                } else {
+                    0
+                }
+            });
+            let len = r.cleanup.len() + r.spp.len();
+            points.push((len, energy - error, HtCoding { zero: 2 + s, cleanup: r.cleanup.clone(), refine: r.spp.clone(), passes: 2 }));
+        }
+        if !r.mrp.is_empty() {
+            let error = err(&|i| {
+                if sig(i) > 0 {
+                    (4 * sig(i) + 2 * (mag(i) >> s & 1) + 1) << s
+                } else if r.newly[i] {
+                    3 << s
+                } else {
+                    0
+                }
+            });
+            let mut refine = r.spp.clone();
+            refine.extend_from_slice(&r.mrp);
+            let len = r.cleanup.len() + refine.len();
+            points.push((len, energy - error, HtCoding { zero: 2 + s, cleanup: r.cleanup, refine, passes: 3 }));
+        }
+    }
+    points.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.total_cmp(&b.1)));
+    let passes = points.iter().map(|p| t1::Pass { len: p.0, dist: p.1 }).collect();
+    let alts = points.into_iter().map(|p| p.2).collect();
+    Ok((t1::Encoded { passes, data: Vec::new(), planes: 1, truncated: false }, alts))
 }
 
 /// The convex hull of a block's truncation points (0, 0), (len_k, w·dist_k): (passes, bytes,
@@ -988,6 +1182,21 @@ fn select(coded: &[Coded], th: &[f64]) -> Vec<u32> {
         .collect()
 }
 
+/// Parameter B of the constrained MAGBP codestream set of an IMF HTJ2K codestream (ST 2067-21
+/// Tables I.2 and I.3): the bound on the magnitude bits of every subband. The tables list the
+/// bit depths 8, 10, 12 and 16 (Ssiz 7, 9, 11, 15); another depth takes the row of the next
+/// larger one, which only loosens the bound.
+fn imf_ht_b(precision: u8, levels: u8, mct: bool, reversible: bool) -> u32 {
+    let row = [8u8, 10, 12, 16].iter().position(|&d| precision <= d).unwrap_or(3);
+    if reversible {
+        // SGcod.C = 0, NL <= 5 is the base; the transform and more than 5 levels each add one
+        [11, 13, 15, 19][row] + u32::from(mct) + u32::from(levels > 5)
+    } else {
+        // the multiple-component transform matters from 12 bits on
+        [9, 11, 13, 17][row] + u32::from(mct && row >= 2)
+    }
+}
+
 /// SOC and the main header: SIZ, COD, QCD (QCC where a component differs), POC for the 4K
 /// profile; the TLM marker is added by [`assemble`].
 fn main_header(image: &Image, opts: &EncodeOptions, quants: &[Quant], mct: bool) -> Result<Vec<u8>> {
@@ -999,8 +1208,11 @@ fn main_header(image: &Image, opts: &EncodeOptions, quants: &[Quant], mct: bool)
         Profile::Part1 => 0,
         Profile::Cinema2k => 3,
         Profile::Cinema4k => 4,
+        // an HTJ2K IMF codestream (ST 2067-21 Annex I) names no Part 1 profile: Rsiz is the
+        // Part 15 flag alone, its constraints are in Ccap15
+        Profile::Imf(_) if opts.ht => 0,
         Profile::Imf(imf) => imf.rsiz(),
-    };
+    } | if opts.ht { 0x4000 } else { 0 };
     marker(&mut o, 0xFF51, |s| {
         s.extend(rsiz.to_be_bytes());
         for v in [image.width, image.height, 0, 0, image.width, image.height, 0, 0] {
@@ -1011,6 +1223,31 @@ fn main_header(image: &Image, opts: &EncodeOptions, quants: &[Quant], mct: bool)
             s.extend([(p.precision - 1) | if p.signed { 0x80 } else { 0 }, p.dx, p.dy]);
         }
     })?;
+    // CAP (T.814 A.3): Part 15 only, HT code-blocks only, one HT set each, no ROI, the
+    // irreversible flag and the largest subband magnitude bits Mb (B) as Bp
+    if opts.ht {
+        let mut b = quants.iter().flat_map(|q| q.steps.iter().map(move |&(e, _)| u32::from(q.guard) + u32::from(e))).max().unwrap_or(1).saturating_sub(1);
+        if matches!(opts.profile, Profile::Imf(_)) {
+            // APP2.HT.REV / APP2.HT.IRV: the constrained MAGBP set of Tables I.2 and I.3
+            let precision = image.components.first().map_or(8, |c| c.precision);
+            let table = imf_ht_b(precision, opts.levels, mct, opts.reversible);
+            if b > table {
+                return Err(Error::Invalid("subband magnitude bits above the IMF HTJ2K MAGBP set"));
+            }
+            b = table;
+        }
+        let bp = match b {
+            0..=8 => 0,
+            9..=27 => b - 8,
+            28..=47 => 13 + (b >> 2),
+            _ => 31,
+        } as u16;
+        let ccap15 = if opts.reversible { 0 } else { 0x20 } | bp;
+        marker(&mut o, 0xFF50, |s| {
+            s.extend(0x0002_0000u32.to_be_bytes());
+            s.extend(ccap15.to_be_bytes());
+        })?;
+    }
     // COD
     let defined = !opts.precincts.is_empty();
     marker(&mut o, 0xFF52, |s| {
@@ -1018,7 +1255,8 @@ fn main_header(image: &Image, opts: &EncodeOptions, quants: &[Quant], mct: bool)
         s.push(opts.progression as u8);
         s.extend(1u16.to_be_bytes());
         s.push(u8::from(mct));
-        s.extend([opts.levels, opts.code_block.0 - 2, opts.code_block.1 - 2, 0, u8::from(opts.reversible)]);
+        let style = if opts.ht { crate::ht::STYLE_HT } else { 0 };
+        s.extend([opts.levels, opts.code_block.0 - 2, opts.code_block.1 - 2, style, u8::from(opts.reversible)]);
         if defined {
             for r in 0..=usize::from(opts.levels) {
                 let (x, y) = opts.precincts.get(r).or(opts.precincts.last()).copied().unwrap_or((15, 15));
@@ -1115,8 +1353,13 @@ fn assemble(
             let blocks = (start..start + pb.blocks.len())
                 .map(|i| {
                     let (b, &n) = (coded.get(i)?, sel.get(i)?);
-                    let len = b.enc.passes.get((n as usize).checked_sub(1)?)?.len;
-                    Some(Contribution { zero: b.zero, passes: n, data: b.enc.data.get(..len)? })
+                    let k = (n as usize).checked_sub(1)?;
+                    if !b.ht.is_empty() {
+                        let a = b.ht.get(k)?;
+                        return Some(Contribution { zero: a.zero, passes: a.passes, data: &a.cleanup, refine: &a.refine });
+                    }
+                    let len = b.enc.passes.get(k)?.len;
+                    Some(Contribution { zero: b.zero, passes: n, data: b.enc.data.get(..len)?, refine: &[] })
                 })
                 .collect();
             bands.push((pb.cw, blocks));

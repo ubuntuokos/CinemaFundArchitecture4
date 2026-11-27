@@ -18,7 +18,7 @@ const WIN: usize = 16 + 5;
 /// coordinates to the picture.
 #[cfg(test)]
 #[inline]
-fn fetch_window<S: Sample>(p: PlaneRef<S>, x: i32, y: i32, bw: usize, bh: usize, win: &mut [S; WIN * WIN]) {
+fn fetch_window<S: Sample>(p: PlaneRef<'_, S>, x: i32, y: i32, bw: usize, bh: usize, win: &mut [S; WIN * WIN]) {
     let x0 = x - 2;
     let y0 = y - 2;
     let ww = bw + 5;
@@ -96,7 +96,7 @@ fn vtap_row<S: Sample>(rows: [&[S]; 6], out: &mut [i32], n: usize) {
 /// (block position + (mv >> 2)); (fx, fy) the quarter-sample fraction. Output stride is `os`.
 #[cfg(test)]
 #[allow(clippy::too_many_arguments)]
-pub fn mc_luma<S: Sample>(p: PlaneRef<S>, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [S], os: usize, max: i32) {
+pub fn mc_luma<S: Sample>(p: PlaneRef<'_, S>, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [S], os: usize, max: i32) {
     let mut win = [S::default(); WIN * WIN];
     let (x0, y0) = (x - 2, y - 2);
     let inside = x0 >= 0 && y0 >= 0 && x0 as usize + bw + 5 <= p.width && y0 as usize + bh + 5 <= p.height;
@@ -221,7 +221,7 @@ pub fn mc_luma_win<S: Sample>(src: &[S], ss: usize, fx: u32, fy: u32, bw: usize,
 /// eighth-sample fraction (fx, fy).
 #[cfg(test)]
 #[allow(clippy::too_many_arguments)]
-pub fn mc_chroma<S: Sample>(p: PlaneRef<S>, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [S], os: usize) {
+pub fn mc_chroma<S: Sample>(p: PlaneRef<'_, S>, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [S], os: usize) {
     let maxx = p.width as i32 - 1;
     let maxy = p.height as i32 - 1;
     let inside = x >= 0 && y >= 0 && x + bw as i32 <= maxx && y + bh as i32 <= maxy;
@@ -340,7 +340,7 @@ mod reference {
     /// Luma sample interpolation for a bw x bh block. (x, y) is the integer sample position
     /// (block position + (mv >> 2)); (fx, fy) the quarter-sample fraction. Output stride is `os`.
     #[allow(clippy::too_many_arguments)]
-    pub fn mc_luma_ref(p: PlaneRef<u8>, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [u8], os: usize) {
+    pub fn mc_luma_ref(p: PlaneRef<'_, u8>, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [u8], os: usize) {
         let mut win = [0u8; WIN * WIN];
         fetch_window(p, x, y, bw, bh, &mut win);
         // sample G at (r, c) in block coordinates is win[(r + 2) * WIN + c + 2]

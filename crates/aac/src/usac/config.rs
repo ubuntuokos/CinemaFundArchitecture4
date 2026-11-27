@@ -95,7 +95,7 @@ pub struct UsacConfig {
 }
 
 /// `escapedValue(n1, n2, n3)`.
-pub fn escaped_value(br: &mut BitReader, n1: u32, n2: u32, n3: u32) -> Result<u32> {
+pub fn escaped_value(br: &mut BitReader<'_>, n1: u32, n2: u32, n3: u32) -> Result<u32> {
     let mut v = br.read_bits(n1)?;
     if v == (1 << n1) - 1 {
         let add = if n2 > 0 { br.read_bits(n2)? } else { 0 };
@@ -107,7 +107,7 @@ pub fn escaped_value(br: &mut BitReader, n1: u32, n2: u32, n3: u32) -> Result<u3
     Ok(v)
 }
 
-fn sbr_config(br: &mut BitReader) -> Result<SbrConfig> {
+fn sbr_config(br: &mut BitReader<'_>) -> Result<SbrConfig> {
     let mut c = SbrConfig {
         harmonic_sbr: br.read_flag()?,
         inter_tes: br.read_flag()?,
@@ -140,7 +140,7 @@ fn sbr_config(br: &mut BitReader) -> Result<SbrConfig> {
     Ok(c)
 }
 
-fn mps212_config(br: &mut BitReader, stereo_config_index: u8) -> Result<Mps212Config> {
+fn mps212_config(br: &mut BitReader<'_>, stereo_config_index: u8) -> Result<Mps212Config> {
     let mut c = Mps212Config {
         freq_res: br.read_bits(3)? as u8,
         fixed_gain_dmx: br.read_bits(3)? as u8,
@@ -185,7 +185,7 @@ impl UsacConfig {
     }
 
     /// Parse `UsacConfig()` (also used for the configuration inside an `AudioPreRoll()`).
-    pub fn parse(br: &mut BitReader) -> Result<UsacConfig> {
+    pub fn parse(br: &mut BitReader<'_>) -> Result<UsacConfig> {
         let sfi = br.read_bits(5)? as usize;
         let sample_rate = if sfi == 0x1f { br.read_bits(24)? } else { USAC_RATES.get(sfi).copied().unwrap_or(0) };
         if sample_rate == 0 || sample_rate > 96_000 {

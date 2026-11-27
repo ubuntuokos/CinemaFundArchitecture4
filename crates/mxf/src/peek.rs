@@ -20,8 +20,9 @@ pub struct HeaderPeek {
     pub file_packages: Vec<[u8; 32]>,
 }
 
-/// Read the header partition pack and header metadata only.
-pub fn peek(src: &(impl ByteSource + ?Sized)) -> Result<HeaderPeek> {
+/// The header partition's operational pattern label, primer and local sets (key, value) in file
+/// order, read without walking the essence.
+pub(crate) fn header_sets(src: &(impl ByteSource + ?Sized)) -> Result<(Option<Ul>, Primer, Vec<(Ul, Vec<u8>)>)> {
     let head = read_upto(src, 0, 65_536 + 32)?;
     let at = find_header_partition(&head).ok_or_else(|| Error::NotMxf("no header partition pack".into()))? as u64;
     let hdr = read_upto(src, at, 25)?;
@@ -46,7 +47,7 @@ pub fn peek(src: &(impl ByteSource + ?Sized)) -> Result<HeaderPeek> {
     let want = if header_bytes > 0 { header_bytes.min(MAX_HEADER) } else { 1 << 20 };
     let region = read_upto(src, start, want as usize)?;
     let mut primer = Primer::default();
-    let mut md = Metadata::default();
+    let mut sets = Vec::new();
     let mut pos = 0usize;
     while let Some(key) = region.get(pos..pos + 16) {
         let key = Ul(key.try_into().unwrap_or([0; 16]));
@@ -56,11 +57,21 @@ pub fn peek(src: &(impl ByteSource + ?Sized)) -> Result<HeaderPeek> {
         let Some(v) = region.get(vstart..vend) else { break };
         match classify(&key) {
             KeyClass::Primer => primer = Primer::parse(v),
-            KeyClass::LocalSet => md.push(Set::parse(key, v, &primer)),
+            KeyClass::LocalSet => sets.push((key, v.to_vec())),
             KeyClass::Fill => {}
             _ => break,
         }
         pos = vend;
+    }
+    Ok((op_label, primer, sets))
+}
+
+/// Read the header partition pack and header metadata only.
+pub fn peek(src: &(impl ByteSource + ?Sized)) -> Result<HeaderPeek> {
+    let (op_label, primer, sets) = header_sets(src)?;
+    let mut md = Metadata::default();
+    for (key, v) in &sets {
+        md.push(Set::parse(*key, v, &primer));
     }
     let preface_op = md.of_kind(st::PREFACE).next().and_then(|p| p.ul(tag::OPERATIONAL_PATTERN));
     let umid = |s: &Set| s.get(tag::PACKAGE_UID).and_then(|v| v.get(..32)).and_then(|b| b.try_into().ok());

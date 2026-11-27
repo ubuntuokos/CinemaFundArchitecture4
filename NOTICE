@@ -66,3 +66,11 @@ The AMR-NB and AMR-WB decoders in crates/amr are ported from opencore-amr: Copyr
 PacketVideo; portions (C) 2004 and 2007 3GPP Organizational Partners (ARIB, ATIS, CCSA, ETSI, TTA,
 TTC), 3GPP TS 26.073 and 26.173. Licensed under the Apache License, Version 2.0. See
 crates/amr/LICENSE.opencore-amr and crates/amr/NOTICE.opencore-amr.
+
+The live studio (crates/obs, apps/cfa4-studio-host) runs libobs, the core of OBS Studio
+(https://obsproject.com): Copyright (C) Lain Bailey and the OBS Studio contributors, licensed under
+the GNU General Public License, version 2 or later (some files ISC, MIT, BSD or LGPL-2.1-or-later).
+CFA4 builds the unmodified 33.0.1 release (scripts/dev/build-libobs-33.0.1.sh); packages that ship
+it include its COPYING, BUILDINFO (source URL and SHA-256) and SHA256SUMS in share/doc/libobs. The
+C declarations in crates/obs/src/libobs/ffi.rs are transcribed from its headers. CFA4 is not made,
+sponsored or endorsed by the OBS Project and uses none of its trademarks or logos.

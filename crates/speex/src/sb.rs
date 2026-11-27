@@ -37,7 +37,7 @@ pub(crate) enum Low {
 }
 
 impl Low {
-    fn decode(&mut self, bits: &mut Bits, out: &mut [f32], innov_save: &mut [f32]) -> i32 {
+    fn decode(&mut self, bits: &mut Bits<'_>, out: &mut [f32], innov_save: &mut [f32]) -> i32 {
         match self {
             Low::Nb(d) => d.decode(bits, out, Some(innov_save)),
             Low::Sb(d) => d.decode(bits, out, Some(innov_save)),
@@ -134,7 +134,7 @@ impl Sb {
     }
 
     /// `sb_decode`: one frame (`2 * frame_size` samples) into `out`.
-    pub(crate) fn decode(&mut self, bits: &mut Bits, out: &mut [f32], mut innov_save: Option<&mut [f32]>) -> i32 {
+    pub(crate) fn decode(&mut self, bits: &mut Bits<'_>, out: &mut [f32], mut innov_save: Option<&mut [f32]>) -> i32 {
         let full = 2 * self.frame_size;
         let Some(out) = out.get_mut(..full) else { return -2 };
         let (lo, hi) = out.split_at_mut(self.frame_size);

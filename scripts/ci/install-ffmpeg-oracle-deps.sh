@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ubuntu 26.04 packages for the pinned FFmpeg 9.0.2 test oracle build and the
+# Ubuntu 26.04 packages for the pinned FFmpeg test oracle build and the
 # Rust release tests that call it. Shared by ci-linux.yml (rust-release-tests)
 # and ci-cache-warm.yml, so both build FFmpeg and the Rust dependencies the
 # same way and the caches they write and read stay identical.
@@ -32,14 +32,43 @@ sudo apt-get install -y --no-install-recommends \
   libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
   libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils libjxl-tools \
   "${oracle_dev_packages[@]}"
+# RFC 4175 / ST 2110-20 oracle (cfa4-st2110 tests): gst-launch-1.0 with rtpvrawpay / rtpvrawdepay
+sudo apt-get install -y --no-install-recommends gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good
 # JPEG 2000 / HTJ2K oracles (the tests skip without them)
 sudo apt-get install -y --no-install-recommends libopenjp2-tools grokj2k-tools \
   || echo "::warning::libopenjp2-tools / grokj2k-tools unavailable: OpenJPEG and HTJ2K oracle tests skip"
+# XML Signature and Canonical XML oracles for the KDM signature tests (cfa4-dcp; they skip without them)
+sudo apt-get install -y --no-install-recommends xmlsec1 python3-lxml \
+  || echo "::warning::xmlsec1 / python3-lxml unavailable: the XML signature oracle tests skip"
 # Speex reference encoder / decoder (speexenc, speexdec 1.2.1, built from source) for the Speex
 # oracle tests (they skip without them)
 bash "$(dirname "$0")/install-speex.sh" \
   || echo "::warning::speex tools unavailable: Speex oracle tests skip"
+# Musepack oracle `mpcenc` and `cfa4-mpc-oracle` (musepack_src_r475, built from the pinned
+# source archive; the Musepack oracle tests skip without them)
+bash "$(dirname "$0")/install-musepack-oracle.sh" \
+  || echo "::warning::Musepack oracle build failed: the Musepack oracle tests skip"
 # AMR oracle `cfa4-amr-oracle` (opencore-amr + vo-amrwbenc, built from the pinned upstream tags;
 # the AMR oracle tests skip without it)
 bash "$(dirname "$0")/install-amr-oracle.sh" \
   || echo "::warning::cfa4-amr-oracle build failed: the AMR oracle tests skip"
+# G.729 oracle `cfa4-g729-oracle` (bcg729 1.1.2, built from the pinned upstream tag; the
+# G.729 oracle tests skip without it)
+bash "$(dirname "$0")/install-g729-oracle.sh" \
+  || echo "::warning::cfa4-g729-oracle build failed: the G.729 oracle tests skip"
+# LCEVC oracle `lcevc_oracle` (V-Nova LCEVCdec 4.3.1 + crates/lcevc/tests/oracle/lcevc_oracle.c,
+# built from the pinned upstream tag; the LCEVC oracle test skips without it)
+bash "$(dirname "$0")/install-lcevc-oracle.sh" \
+  || echo "::warning::lcevc_oracle build failed: the LCEVC oracle test skips"
+# AVS2 oracles `davs2`, `xavs2` and their 10-bit builds (pinned upstream commits; the AVS2 oracle
+# tests skip without them)
+bash "$(dirname "$0")/install-avs2-oracle.sh" \
+  || echo "::warning::AVS2 oracle build failed: the AVS2 oracle tests skip"
+# AVS3 oracles `uavs3d`, `uavs3e` and their 10-bit builds (pinned upstream commits; the AVS3 oracle
+# tests skip without them)
+bash "$(dirname "$0")/install-avs3-oracle.sh" \
+  || echo "::warning::AVS3 oracle build failed: the AVS3 oracle tests skip"
+# MPEG-5 EVC oracles `xevdb_app` / `xeveb_app` (xevd v0.8.0, xeve v0.7.1, Baseline builds from the
+# pinned upstream tags; the EVC oracle tests skip without them)
+bash "$(dirname "$0")/install-evc-oracle.sh" \
+  || echo "::warning::xevd / xeve build failed: the EVC oracle tests skip"

@@ -179,7 +179,7 @@ const ASSET: &[&str] = &[
     "MarkerList",
 ];
 
-pub(crate) fn read(doc: &Document, standard: Standard) -> Composition {
+pub(crate) fn read(doc: &Document<'_>, standard: Standard) -> Composition {
     let mut r = Reader::new(doc);
     let root = doc.root_element();
     let p = "CompositionPlaylist";

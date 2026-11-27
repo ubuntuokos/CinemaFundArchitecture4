@@ -122,7 +122,7 @@ fn luma(f: &VideoFrame) -> (Luma, bool, u32) {
             let (nominal, clip) = limits(bits, full);
             (count(planes[0].as_slice(), n, nominal, clip), full, bits)
         }
-        PixelData::Rgba8(_) | PixelData::RgbaF32(_) => {
+        PixelData::Rgba8(_) | PixelData::RgbaF32(_) | PixelData::Rgb16 { .. } => {
             let (nominal, clip) = limits(8, true);
             (count(&f.luma8(), n, nominal, clip), true, 8)
         }
@@ -169,7 +169,16 @@ fn encode_png(rgba: &[u8], w: u32, h: u32) -> Result<Vec<u8>, String> {
 
 /// Lay the thumbnails out in a grid and encode it.
 fn compose(thumbs: &[(u64, Option<f64>, Vec<u8>, usize, usize)]) -> Result<ContactSheet, String> {
-    let cols = SHEET_COLUMNS.min(thumbs.len()).max(1);
+    compose_columns(thumbs, SHEET_COLUMNS)
+}
+
+/// A contact sheet of the given thumbnails `(frame, ms, RGBA, width, height)` in `columns` columns
+/// (at least one, at most one per thumbnail), the same drawing the QC report uses.
+pub fn compose_columns(thumbs: &[(u64, Option<f64>, Vec<u8>, usize, usize)], columns: usize) -> Result<ContactSheet, String> {
+    if thumbs.iter().any(|t| t.2.len() != t.3.saturating_mul(t.4).saturating_mul(4)) {
+        return Err("a thumbnail's pixel data does not match its size".into());
+    }
+    let cols = columns.min(thumbs.len()).max(1);
     let rows = thumbs.len().div_ceil(cols);
     let cw = thumbs.iter().map(|t| t.3).max().unwrap_or(1);
     let ch = thumbs.iter().map(|t| t.4).max().unwrap_or(1);
@@ -299,6 +308,7 @@ mod tests {
             color: ColorInfo::default(),
             par: (1, 1),
             pts: cfa4_time::Tick(0),
+            layout: Default::default(),
         }
     }
 

@@ -26,8 +26,9 @@ for script in \
   scripts/dev/test-vendored-ui.sh \
   scripts/ci/check-package-docs.sh \
   scripts/ci/install-ffmpeg-oracle-deps.sh \
-  scripts/ci/install-ffmpeg-9.0.2.sh \
-  scripts/dev/fetch-ffmpeg-9.0.2.sh; do
+  scripts/ci/install-ffmpeg.sh \
+  scripts/dev/fetch-ffmpeg.sh \
+  scripts/release/fetch-flatpak-sources.sh; do
   bash -n "$script"
 done
 # Strict GPU hardware log parser regression (only shell + temporary logs,
@@ -39,6 +40,9 @@ bash scripts/ci/check-package-docs.sh
 python3 -m py_compile python/cfa4_devtools/native_media_e2e.py python/tests/test_native_media_e2e.py
 PYTHONPATH=python python3 -m unittest discover -s python/tests -p 'test_native_media_e2e.py' -v
 python3 -m unittest discover -s scripts/ci -p 'test_cfa4_xdg.py' -v
+# CFA4-FFMPEG-9.1-001 R1: the pinned FFmpeg version is written only in packaging/ffmpeg-version.env.
+python3 -m unittest discover -s scripts/ci -p 'test_check_ffmpeg_version.py' -v
+python3 scripts/ci/check_ffmpeg_version.py
 python3 - <<'PY'
 from pathlib import Path
 import ast
@@ -47,16 +51,21 @@ import tomllib
 root = Path.cwd()
 workflow = (root / ".github/workflows/ci-linux.yml").read_text()
 assert "  platform-scope:" in workflow
-assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 10
+assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 12
 assert "types: [opened, synchronize, reopened, labeled]" in workflow
 # Merge queue (owner decision 2026-11-07, #719): every full job also runs on merge_group.
 assert "\n  merge_group:\n" in workflow
-assert workflow.count("github.event_name == 'merge_group'") == 10
-assert workflow.count("    needs: platform-scope") == 10
-assert workflow.count("    runs-on: ubuntu-26.04") == 12
+assert workflow.count("github.event_name == 'merge_group'") == 12
+assert workflow.count("    needs: platform-scope") == 11
+# Python 3.14 (owner decision 2026-11-14, CFA4-TITLE-CREDITS-001 Q6) is the 11th full job, non-blocking (not in the gate needs).
+assert workflow.count("    runs-on: ubuntu-26.04") == 14
 # Required merge gate (owner decision 2026-10-31): fails unless every blocking full job succeeded.
 assert "  full-validation-gate:" in workflow and "    name: full-validation-gate" in workflow
 assert "if: always() && github.event_name != 'push'" in workflow
+# The non-blocking Qt GUI tests with the real engine have their own job, outside the gate's needs
+# (owner decision 2026-11-24), so a hanging GUI test does not hold the gate back.
+gate = workflow[workflow.index("  full-validation-gate:"):]
+assert "  qt-gui-real-engine:" in workflow and "qt-gui-real-engine" not in gate.split("    steps:")[0]
 assert 'info.get("result") != "success"' in workflow, "a skipped job must fail the gate"
 assert "audit-gpu-hardware.sh" not in workflow, "physical GPU gate must not run on hosted CI"
 assert "CFA4_REQUIRE_GPU_FX" in (root / "crates/gpu/src/fx_tests.rs").read_text()

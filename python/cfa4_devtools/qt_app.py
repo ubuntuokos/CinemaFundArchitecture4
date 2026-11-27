@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         from PySide6.QtCore import QTimer
         from PySide6.QtGui import QAction, QKeySequence
-        from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QVBoxLayout, QWidget
+        from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QMenu, QPushButton, QVBoxLayout, QWidget
 
         from cfa4_devtools.qt_settings import SettingsDialog
         from cfa4_devtools.settings_backend import MEDIA_BACKENDS_PAGE
@@ -115,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
         # tests: every menu item's automation id, so menu reachability is checked without a display
         for menu_action in window.menuBar().actions():
             menu = menu_action.menu()
-            for action in menu.actions() if menu is not None else []:
+            for action in menu.actions() if isinstance(menu, QMenu) else []:
                 print(action.objectName())
     refresh()
     window.show()

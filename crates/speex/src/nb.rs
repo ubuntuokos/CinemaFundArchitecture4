@@ -140,7 +140,7 @@ impl Nb {
     }
 
     /// `speex_inband_handler` for a Speex in-band request (only stereo is acted on).
-    fn inband(&mut self, bits: &mut Bits) {
+    fn inband(&mut self, bits: &mut Bits<'_>) {
         let id = bits.unpack(4);
         if id == INBAND_STEREO
             && let Some(st) = self.stereo.as_mut()
@@ -165,7 +165,7 @@ impl Nb {
 
     /// `nb_decode`: one 160-sample frame into `out`; the innovation is copied to `innov_save`
     /// when given. Returns 0, -1 (end of the packet) or -2 (corrupt stream).
-    pub(crate) fn decode(&mut self, bits: &mut Bits, out: &mut [f32], mut innov_save: Option<&mut [f32]>) -> i32 {
+    pub(crate) fn decode(&mut self, bits: &mut Bits<'_>, out: &mut [f32], mut innov_save: Option<&mut [f32]>) -> i32 {
         let Some(out) = out.get_mut(..FRAME) else { return -2 };
         let m = loop {
             if bits.remaining() < 5 {

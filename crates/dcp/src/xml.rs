@@ -25,12 +25,12 @@ impl<'a, 'input> Reader<'a, 'input> {
         Reader { doc, issues: Vec::new() }
     }
 
-    pub fn pos(&self, node: Node) -> Pos {
+    pub fn pos(&self, node: Node<'_, '_>) -> Pos {
         let p = self.doc.text_pos_at(node.range().start);
         Pos { line: p.row, column: p.col }
     }
 
-    pub fn issue(&mut self, kind: IssueKind, path: &str, node: Node, message: impl Into<String>) {
+    pub fn issue(&mut self, kind: IssueKind, path: &str, node: Node<'_, '_>, message: impl Into<String>) {
         let pos = self.pos(node);
         self.issues.push(Issue { kind, path: path.to_string(), pos, message: message.into() });
     }
@@ -185,17 +185,17 @@ pub(crate) fn is_date_time(t: &str) -> bool {
 }
 
 /// The element is in the namespace of its document's root element.
-pub(crate) fn in_document_ns(node: Node) -> bool {
+pub(crate) fn in_document_ns(node: Node<'_, '_>) -> bool {
     node.tag_name().namespace() == node.document().root_element().tag_name().namespace()
 }
 
 /// `ds:Signature` (XML-DSig) is a child of `node`.
-pub(crate) fn has_signature(node: Node) -> bool {
+pub(crate) fn has_signature(node: Node<'_, '_>) -> bool {
     node.children().any(|c| c.is_element() && c.tag_name().name() == "Signature" && c.tag_name().namespace() == Some(crate::ns::XMLDSIG))
 }
 
 /// `{namespace}name`, or `name` without a namespace.
-pub(crate) fn qualified(node: Node) -> String {
+pub(crate) fn qualified(node: Node<'_, '_>) -> String {
     let n = node.tag_name();
     match n.namespace() {
         Some(ns) => format!("{{{ns}}}{}", n.name()),

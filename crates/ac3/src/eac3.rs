@@ -121,7 +121,7 @@ pub(crate) struct Bsi {
 }
 
 /// Read syncinfo and bsi (§E2.2.1-2), leaving `r` at the audio frame.
-pub(crate) fn read_bsi(r: &mut Bits) -> Result<Bsi> {
+pub(crate) fn read_bsi(r: &mut Bits<'_>) -> Result<Bsi> {
     r.skip(16); // syncword
     let strmtyp = r.read(2) as u8;
     r.skip(3 + 11); // substreamid, frmsiz
@@ -271,7 +271,7 @@ pub(crate) struct FrameInfo {
 
 impl FrameInfo {
     /// Read the audio frame. `words` is the syncframe size in 16-bit words.
-    pub(crate) fn read(r: &mut Bits, bsi: &Bsi, acmod: usize, lfeon: bool, nblocks: usize, words: usize) -> Result<FrameInfo> {
+    pub(crate) fn read(r: &mut Bits<'_>, bsi: &Bsi, acmod: usize, lfeon: bool, nblocks: usize, words: usize) -> Result<FrameInfo> {
         let nf = NFCHANS[acmod & 7];
         let six = bsi.numblkscod == 3;
         let (expstre, ahte) = if six { (r.bit(), r.bit()) } else { (true, false) };
@@ -433,7 +433,7 @@ impl Spx {
     }
 
     /// Read the strategy and coordinates of block `blk`.
-    pub(crate) fn read(&mut self, r: &mut Bits, blk: usize, acmod: usize, nf: usize) -> Result<()> {
+    pub(crate) fn read(&mut self, r: &mut Bits<'_>, blk: usize, acmod: usize, nf: usize) -> Result<()> {
         if blk == 0 || r.bit() {
             self.inu = r.bit();
             if self.inu {

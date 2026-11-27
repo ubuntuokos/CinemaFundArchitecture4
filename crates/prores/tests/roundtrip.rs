@@ -134,3 +134,50 @@ fn profile_identifiers() {
     assert_eq!(Profile::Proxy.chroma(), ChromaFormat::Yuv422);
     assert_eq!(Profile::P4444Xq.chroma(), ChromaFormat::Yuv444);
 }
+
+/// Interlaced frames (PROCODEC-002 WP6) are coded as two field pictures with the interlaced scan
+/// and come back woven, with their field order, as well as progressive frames do.
+#[test]
+fn interlaced_frames_round_trip() {
+    for order in [Interlace::TopFieldFirst, Interlace::BottomFieldFirst] {
+        for (profile, w, h) in [(Profile::Hq, 640u32, 360u32), (Profile::P4444, 333, 201), (Profile::Hq, 17, 3), (Profile::Hq, 64, 2)] {
+            let chroma = profile.chroma();
+            let mut src = synth(w, h, chroma, 10, chroma == ChromaFormat::Yuv444, 3);
+            src.interlace = order;
+            let coded = Encoder::new(profile, w, h).encode(&src).unwrap();
+            assert_eq!(probe(&coded).unwrap().interlace, order);
+            let dec = decode_frame_with(&coded, &DecodeOptions { bit_depth: Some(10), threads: true }).unwrap();
+            assert_eq!(dec.interlace, order);
+            assert_eq!(dec.alpha, src.alpha, "{order:?} {w}x{h}: alpha is lossless");
+            let py = psnr(&dec.y, &src.y, 1023.0);
+            let pc = psnr(&[dec.cb, dec.cr].concat(), &[src.cb, src.cr].concat(), 1023.0);
+            assert!(py > 40.0 && pc > 40.0, "{order:?} {profile:?} {w}x{h}: Y {py:.2} dB, C {pc:.2} dB");
+        }
+    }
+    let mut one = Frame::new(8, 1, ChromaFormat::Yuv422, 10, false);
+    one.interlace = Interlace::TopFieldFirst;
+    assert!(Encoder::new(Profile::Hq, 8, 1).encode(&one).is_err(), "one line has no second field");
+}
+
+/// Two fields that differ (motion between them) code far better as fields than as a frame.
+#[test]
+fn interlaced_coding_keeps_the_fields_apart() {
+    let (w, h) = (320u32, 240u32);
+    let mut src = synth(w, h, ChromaFormat::Yuv422, 10, false, 5);
+    // the bottom field is the picture shifted by 9 pixels: combing on every edge
+    let shifted = synth(w + 9, h, ChromaFormat::Yuv422, 10, false, 5);
+    for y in (1..h as usize).step_by(2) {
+        for x in 0..w as usize {
+            src.y[y * w as usize + x] = shifted.y[y * (w as usize + 9) + x + 9];
+        }
+    }
+    let mut size_and_psnr = |order| {
+        src.interlace = order;
+        let coded = Encoder::new(Profile::Standard, w, h).encode(&src).unwrap();
+        let dec = decode_frame_with(&coded, &DecodeOptions { bit_depth: Some(10), threads: true }).unwrap();
+        psnr(&dec.y, &src.y, 1023.0)
+    };
+    let progressive = size_and_psnr(Interlace::Progressive);
+    let fields = size_and_psnr(Interlace::TopFieldFirst);
+    assert!(fields > progressive + 1.0, "fields {fields:.2} dB vs frame {progressive:.2} dB");
+}

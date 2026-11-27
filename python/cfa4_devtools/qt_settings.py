@@ -179,6 +179,8 @@ class SettingsDialog(QDialog):
 
     def _load(self) -> None:
         cli, data_dir = self.cli, self.data_dir
+        if cli is None:  # only called with a CLI (see __init__)
+            return
         self._run(lambda: run_load(cli, data_dir), self._loaded, self._load_failed)
         self._refresh_hardware()
         self._refresh_codecs()
@@ -259,6 +261,8 @@ class SettingsDialog(QDialog):
         self.enablers.clear()
         while self.stack.count():
             old = self.stack.widget(0)
+            if old is None:  # cannot happen while count() > 0
+                break
             self.stack.removeWidget(old)
             old.deleteLater()
         first: QTreeWidgetItem | None = None
@@ -496,8 +500,9 @@ class SettingsDialog(QDialog):
             return
         while lay.count():
             item = lay.takeAt(0)
-            if item is not None and item.widget() is not None:
-                item.widget().deleteLater()
+            widget = item.widget() if item is not None else None
+            if widget is not None:
+                widget.deleteLater()
         self._fill_backends()
 
     def _fill_backends(self) -> None:
@@ -610,8 +615,9 @@ class SettingsDialog(QDialog):
             return
         while self.codec_layout.count():
             item = self.codec_layout.takeAt(0)
-            if item is not None and item.widget() is not None:
-                item.widget().deleteLater()
+            widget = item.widget() if item is not None else None
+            if widget is not None:
+                widget.deleteLater()
         self._fill_codecs()
 
     def _fill_codecs(self) -> None:
@@ -693,8 +699,9 @@ class SettingsDialog(QDialog):
             return
         while self.accel_layout.count():
             item = self.accel_layout.takeAt(0)
-            if item is not None and item.widget() is not None:
-                item.widget().deleteLater()
+            widget = item.widget() if item is not None else None
+            if widget is not None:
+                widget.deleteLater()
         self._fill_accelerators()
 
     def _fill_accelerators(self) -> None:

@@ -35,7 +35,7 @@ pub struct TnsData {
 }
 
 impl TnsData {
-    pub fn parse(br: &mut BitReader, info: &IcsInfo) -> Result<TnsData> {
+    pub fn parse(br: &mut BitReader<'_>, info: &IcsInfo) -> Result<TnsData> {
         let short = info.is_short();
         let mut t = TnsData::default();
         for w in 0..info.num_windows() {

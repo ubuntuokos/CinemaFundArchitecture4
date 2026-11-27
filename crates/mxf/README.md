@@ -20,12 +20,13 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 381-1 | 2005 | MPEG video mapping (MPEG-2 identified, MPEG video descriptor; decoded by `cfa4-mpeg2v` in `cfa4-codecs`); writer: ES container, element keys, MPEG video descriptor, index flags |
 | SMPTE ST 381-3 | 2013 | AVC byte-stream mapping and AVC sub-descriptor |
 | SMPTE ST 382 | 2007 | AES3 and Broadcast Wave audio mapping (wave / AES3 descriptors) |
+| SMPTE ST 381-4 | 2017 | AAC in MXF (reader): essence container (Table 8), sound coding label (Tables 5–6), MPEG sound element key |
 | SMPTE ST 331 | 2011 | element data of 8-channel AES3 sound (D-10; reader and writer), ST 12-1 time code metadata of the system item |
 | SMPTE ST 385 | 2012 | SDTI-CP compatible system item (writer: system metadata pack, package metadata set) |
 | SMPTE ST 2067-201 | 2019 | IAB track files: IAB essence descriptor (set 0x7B), clip-wrapped container, element type 0x0D (labels from the SMPTE registers) |
 | SMPTE RDD 9 | 2013 | MPEG long GOP coding labels (Table 6: MP@HL, 422P@HL, MP@H-14) for the writer; the XDCAM HD422 OP1a layout (`WriterConfig::rdd9`) |
 | SMPTE ST 384 | 2005 | uncompressed picture mapping: container label (mapping 05h, frame / clip / line wrapping), element types 02h / 03h / 04h |
-| SMPTE ST 377-1 | 2019, G.1, G.2.22–G.2.25, G.2.35, G.2.40 | uncompressed layouts: stored / sampled / display rectangles, image start / end fill, the Y'CbCr layout labels of G.2.25, Reversed Byte Order, Padding Bits, RGBA Pixel Layout and Component Min / Max Ref |
+| SMPTE ST 377-1 | 2019, G.1, G.2.22–G.2.25, G.2.35, G.2.40 | uncompressed layouts: stored / sampled / display rectangles, image start / end fill, the Y'CbCr layout labels of G.2.25, Reversed Byte Order, Padding Bits, RGBA Pixel Layout (with X'Y'Z', split, float and palette codes), Palette, Palette Layout and Component Min / Max Ref |
 | SMPTE ST 386 | 2004 | D-10 (IMX) mapping: container label, sound element type; writer: content packages on a 512-byte KAG, constant-size index with delta entries, Annex A descriptor values |
 | SMPTE ST 2019-4 | 2009 | VC-3 (DNxHD / DNxHR) mapping |
 | SMPTE RDD 44 | 2017 | Apple ProRes mapping |
@@ -33,9 +34,10 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 330 | 2011 | basic UMIDs of the written packages |
 | SMPTE ST 429-3 / 429-4 | 2023 | D-Cinema track files (writer): OP-Atom frame wrapping, header metadata only in the header partition, UUID-based package UMIDs, channel assignment; JPEG 2000 picture mapping |
 | SMPTE ST 429-18 | 2023 | Immersive audio track files (writer and reader): data element key, essence container, IAB data essence descriptor and sub-descriptor |
-| SMPTE ST 429-5 | 2023 | Timed text track files (reader): TimedTextDescriptor (set 0x64) and TimedTextResourceSubDescriptor (set 0x65) with their dynamic properties, the clip-wrapped timed text element (item type 0x17), the timed text essence container label; also the IMF timed text track files of ST 2067-2 |
-| SMPTE ST 436-1 | 2013 (revision of 436M-2006) | ANC packets (reader): the ANC packet essence container (mapping 0Eh), frame-wrapped ANC elements (item 17h, element type 02h), ANC structures with 8-bit and 10-bit payload codings and every Annex B padding scheme, the ANC Data Descriptor (set 5Ch) sample rate |
+| SMPTE ST 429-5 | 2023 | Timed text track files (reader and D-Cinema writer): TimedTextDescriptor (set 0x64) and TimedTextResourceSubDescriptor (set 0x65) with their dynamic properties, the clip-wrapped timed text element (item type 0x17), the timed text essence container label; also the IMF timed text track files of ST 2067-2 |
+| SMPTE ST 436-1 | 2013 (revision of 436M-2006) | ANC packets (reader): the ANC packet essence container (mapping 0Eh), frame-wrapped ANC elements (item 17h, element type 02h) and VI elements (element type 01h, VBI line essence container 0Dh, VBI Data Descriptor 5Bh, 1/8/10-bit sample codings), ANC structures with 8-bit and 10-bit payload codings and every Annex B padding scheme, the ANC Data Descriptor (set 5Ch) sample rate; writer: the ANC data track with 8-bit coded packets |
 | SMPTE ST 410 | (via ST 429-5 clause 6) | generic stream partitions: the ancillary resources (fonts, PNG subpictures) of timed text track files, found by BodySID |
+| SMPTE ST 429-6 | 2023 | Encrypted track files (reader): Cryptographic Context set, Encrypted Triplet pack, AES-128-CBC decryption with the Check Value, HMAC-SHA1 MIC (MDMK key or the Annex B legacy key) |
 | SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
 | SMPTE ST 2067-2 / 2067-5 | 2020 | IMF track files (writer): OP1a, KAG 1, at least 8 KiB of fill after the header, primary package, frame-wrapped pictures in 60 s essence partitions each followed by an index partition, clip-wrapped 24-bit sound at the sample rate with a constant-rate index, UMIDs, the MCA channel assignment, reference image edit rate and audio alignment level |
 | SMPTE ST 2067-21 | 2026 | IMF App 2E pictures (writer): RGBA (QE.1 / QE.2 component ranges) or CDCI (narrow-range levels) descriptor, the JPEG 2000 sub-descriptor with coding style, quantization and J2CLayout |
@@ -49,6 +51,22 @@ Implemented from the SMPTE documents (editions used):
 ancillary resources (fonts, images: id, MIME type, generic stream). `open` reports such a file as
 `Unsupported` (it has no picture or sound). `cfa4-engine` imports the XML as a caption track
 (ST 428-7 D-Cinema subtitles through `cfa4_captions::dcst`, IMSC1 through `cfa4_captions::ttml`).
+In an encrypted track file (ST 429-6) the document and the resources are Encrypted Triplets
+(`Region::plain`, `TimedText::encryption`): `read_document` / `read_resource` decrypt them with
+the subtitle key (MDSK) from the key ring, or fail with `Error::Encrypted` naming its Key ID.
+
+`write_timed_text(cfg, xml, resources)` writes a D-Cinema timed text track file (DCP subtitle
+export, #938): the closed and complete header metadata in the header partition (OP-Atom, the file
+package as the primary package, a timecode and a data track, the TimedTextDescriptor and one
+TimedTextResourceSubDescriptor per resource with dynamic local tags 8050h-8055h), the XML
+clip-wrapped in BodySID 1, each resource alone in a generic stream partition (BodySID 2, 3, …,
+no fill before its KLV), the single index entry of 7.2 in the footer (IndexSID 129) and a random
+index pack that lists the generic stream partitions too (6.3). With `TimedTextConfig::imf` it
+writes an IMF timed text track file instead (ST 2067-2 5.4, IMF subtitle export, #1234): OP1a
+(internal, streamable, uni-track; ST 2067-5 5.2.1), 8 KiB of fill after the header metadata, and
+`languages` as the RFC 5646 Language Tag List item (Annex H, dynamic tag 8056h), which
+`open_timed_text` returns as `TimedText::languages`. `regxml::essence_descriptor` maps the timed
+text descriptor and its resource sub-descriptors for the IMF playlist.
 
 The `test-util` feature exposes `testing::build_timed_text` and the other synthetic file builders
 for tests in other crates.
@@ -61,8 +79,27 @@ container; `read_anc(src)` returns every ANC element of the first ANC data track
 line number, wrapping and coding and the low 8 bits of its words from the DID through the user
 data. `AncData::cdps` lists the caption distribution packets (DID 61h, SDID 01h, SMPTE ST 334-2);
 `cfa4-engine` decodes them with `cfa4_captions::mcc::decode_cdps` into a caption track when such
-a file is imported (#929). VI lines (element type 01h) are not read yet; writing ANC data on
-export is still to come.
+a file is imported (#929). `AncData::cea608` lists the byte pairs of ST 334-1 Annex B CEA-608
+packets (DID 61h, SDID 02h) with their field. VI elements (element type 01h, the VBI line
+essence container, mapping 0Dh, VBI Data Descriptor 5Bh) are read too, also from files that
+have only them: `AncData::vi` holds each frame's `ViLine`s (line number, wrapping, coding and the
+samples as 10-bit values: 1-bit samples black 64 / white 940, 8-bit ones shifted up, 10-bit ones
+three per word), and `ViLine::field2` tells the field. The engine decodes digitised line 21 from
+them with `cfa4_captions::cea608::decode_line21` and imports each CEA-608 channel (CC1–CC4) as
+a caption track when there are no CDPs (#1005). Files with line-wrapped uncompressed pictures (ST 384) and no ST 436
+track: `has_anc` lists them too, and `read_anc` gathers the ST 291 packets of their VANC / HANC
+data elements (types 09h / 0Ah) per picture, found in the luma, colour difference or multiplexed
+samples (8-bit layouts, v210 / planar 10-bit with the checksum checked, 16-bit), on the stored
+line of the system element before them shifted by the Video Line Map (#1060).
+
+Writing (#1004): `WriterConfig::anc` adds an ANC data track to an OP1a file with pictures (also
+RDD 9; not D-10, whose content packages have no data item): the ANC Data Descriptor (set 5Ch),
+the ST 436 essence container label, and per content package one frame-wrapped ANC element after
+the picture and sound, from `MxfWriter::push_anc` (an empty element when none was pushed), in
+its own index slice. `anc_element(packets)` builds an element value with the 8-bit luma coding
+(04h). `cfa4-export` uses it for `ExportSettings::mxf_anc_captions`: the first caption track as
+one CDP per frame (`cfa4_captions::mcc::CdpStream`, CEA-608 field 1 and CEA-708 service 1) on
+VANC line 9, at every ST 334-2 rate (23.976, 24, 25, 29.97, 30, 50, 59.94, 60 fps).
 
 ## Peeking at the header
 
@@ -109,29 +146,50 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   orders by the bitstream (`cfa4-codecs` uses the AVC picture order counts).
 - **Codecs.** From the picture essence coding label, then the essence container label, then the
   essence bytes: AVC / AVC-Intra, VC-3, ProRes (profile from the label), MPEG-2 (decoded in `cfa4-codecs`),
-  MPEG-4 visual, JPEG 2000 (decoded in `cfa4-codecs` with `cfa4-j2k`), DV, uncompressed.
+  MPEG-4 visual (the Simple Studio Profile decoded in `cfa4-codecs` with `cfa4-sstp`), JPEG 2000
+  (decoded in `cfa4-codecs` with `cfa4-j2k`), DV, uncompressed.
 - **Uncompressed pictures** (`uncompressed`, ST 384). `Layout::of` takes the layout from the
   picture essence coding label (the nine Y'CbCr layouts of ST 377-1 G.2.25: 8-bit 4:4:4, UYVY,
   YUY2, planar 4:2:2 and 4:2:0, v210, planar 10-bit, 12- and 16-bit Cb Y Cr Y), else from the
   descriptor: RGBA Pixel Layout (R, G, B, A and fill components up to 16 bits, Component Min /
-  Max Ref rescaled to full range), or CDCI depth, subsampling, Reversed Byte Order and Padding
+  Max Ref rescaled to full range; components split into upper and lower fields `R`…`r`; DCDM
+  X' Y' Z' codes D8h–DAh, converted to RGB in `cfa4-codecs`; HALF, 32- and 64-bit float
+  components, clipped to 0–1 and scaled to 16 bits, read most significant byte first because
+  ST 377-1 does not name a byte order; palette indices `P` looked up in the Palette with its
+  Palette Layout, an index past the end is black), or CDCI depth, subsampling, Reversed Byte Order and Padding
   Bits (10-bit 4:2:2 without a label is v210). `decode` unpacks one edit unit into planes: image
   start / end fill skipped, separate fields woven (field 1 on the even lines), the display
   rectangle given from the sampled and display offsets. G.2.25 draws every layout as big-endian
   bit-fields; v210 and planar 10-bit are read as files store them: little-endian 32-bit words,
   first component in the low bits (FFmpeg decodes our v210 files identically). A clip-wrapped
-  element without an index is split by the edit unit size. Not supported: line wrapping (the
-  track is listed as unknown with a warning), X'Y'Z' and palette pixel layouts, float
-  components.
+  element without an index is split by the edit unit size. Line wrapping (ST 384 6.3): the
+  picture elements (one per stored line) are gathered into pictures, each starting at a "start of
+  stored data" system element (14h 01h 01h), or counted by the stored size when a file has no
+  system elements; a picture whose lines do not add up is left out with a warning; the fill
+  data elements are skipped, and the VANC / HANC ones go to `read_anc` (#1060). Not supported: palettes with float entries.
   `PictureInfo::rgb` tells R'G'B' components (RGBA descriptor or GBR coding equations).
 - **Sound.** PCM chunks (frame- or clip-wrapped) with sample counts; `read_pcm` decodes
   little-endian 8/16/24/32-bit PCM (wave / AES3 descriptors) and ST 331 AES3 elements (D-10).
   Immersive Audio (IAB, `Codec::Iab`): one `Sample` per IABitstream frame, from frame-wrapped
   elements, the index of a clip-wrapped element, or, without an index, the frames' own
-  tag-length framing; decoded by `cfa4-iab`.
+  tag-length framing; decoded by `cfa4-iab`. AAC (`Codec::Aac`, ST 381-4: the AAC essence
+  container or the MPEG-2 / MPEG-4 AAC sound coding label): one `Sample` per element; the audio
+  frames (ADTS or LATM/LOAS; ADIF is not read) are decoded back to back by `cfa4-codecs`.
 - **Timecode.** The material package timecode component (start frame count, rounded base,
   drop frame), falling back to the file package's; `Timecode::format` gives `HH:MM:SS:FF` /
   `HH:MM:SS;FF`.
+
+- **Encrypted track files** (ST 429-6, #933). The Cryptographic Context set gives each encrypted
+  track its Key ID (`EssenceTrack::encryption`); Encrypted Triplets are filed under the Source Key
+  of the triplet they wrap, so tracks, samples and chunks build as usual. `read_sample` /
+  `read_pcm` decrypt them (AES-128-CBC, Check Value test; the HMAC-SHA1 MIC is checked when a MIC
+  key is loaded, or, without an MDMK in the KDM, with the key earlier editions derive from the
+  content key, ST 429-6 Annex B / FIPS 186-2 (`crypt::legacy_mic_key`), once the first triplet
+  matches it) with the content key from the in-memory key ring (`crypt::add_key`, filled from a
+  KDM by `cfa4-dcp` and the engine's `dcp.loadKdm`); without it they fail with `Error::Encrypted`
+  naming the Key ID. `MxfFile::missing_keys` lists the Key IDs still missing (the engine reports
+  them as `needsKey` in `source.inspect` and the Project panel rows, and the Qt GUI shows
+  "KDM required"). Keys are never written anywhere; `crypt::clear_keys` overwrites them.
 
 - **OP1b–OP3c** (ST 391, 392, 393, 407, 408). A material track whose sequence holds several
   source clips plays them back to back as one `EssenceTrack`. Each clip contributes its own
@@ -139,14 +197,25 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   packages, each in its own essence container, and those packages may reuse track numbers,
   because elements are matched by track number and body SID. Before a long-GOP clip's first
   presented picture, the pictures it needs for decoding are kept as hidden samples: a `pts` no
-  presented picture uses, and absent from `display_order`. Fillers are left out with a warning.
-  Clips whose essence differs from the first clip's are also left out with a warning. That
-  covers a different codec, edit rate, picture size or sound format. For OPxc (alternate
-  packages), the first material package is read.
+  presented picture uses, and absent from `display_order`. Fillers play as blank: they become
+  `EssenceTrack::gaps` (presentation edit unit, length), and so do clips whose package is not in
+  the file and clips whose essence differs from the first clip's (codec, edit rate, picture size
+  or sound format; with a warning). The stored essence holds the rest:
+  `EssenceTrack::essence_position` maps a presentation edit unit to it (`None` in a gap) and
+  `EssenceTrack::sound_runs` splits a sound range into stored runs. `cfa4-codecs` shows black
+  pictures and plays silence in the gaps (#1008). AES3 elements (D-10) are cut exactly where a
+  clip starts or ends inside one (29.97 Hz cadence): `Chunk::skip` counts the sample frames of
+  the element before the clip. For OPxc (alternate packages), the first material package is
+  read. Long-GOP clips with B pictures and no index temporal offsets take their presentation
+  order from the bitstream: `open_with_order` hands each such clip's picture starts to the
+  caller's `PresentationOrder` (`cfa4-codecs` reads the H.264 picture order counts) before the
+  clips are cut. Without one (`open`, or a codec it cannot read) they keep the stored order, with
+  a warning (#1008).
 
-Not supported: gaps (fillers) inside edit lists (#1008), external essence (OP-Atom
-material packages whose other tracks live in other files are opened track by track), partial or
-encrypted essence (ST 429-6), and descriptive metadata (parsed sets are ignored).
+Not supported: external essence (OP-Atom
+material packages whose other tracks live in other files are opened track by track), partial
+essence, clip-wrapped encrypted essence, and descriptive metadata
+(parsed sets are ignored).
 
 ## Writing a file
 
@@ -210,7 +279,15 @@ w.finish()?;
   channel assignment label with `WriterConfig::mca` labels (the soundfield group with its MCA
   title, title version, audio content and element kind, `McaTitles`), `reference_image_edit_rate` and
   `reference_audio_alignment_level`, a constant-rate index partition after the essence. The IMP
-  package (CPL, PKL, ASSETMAP) and the export option are #1011.
+  package (CPL, PKL, ASSETMAP) is written by the IMF export (`crates/export/src/imf_out.rs`, #1011).
+- **RegXML essence descriptors** (`regxml::essence_descriptor`, ST 2001-1, #1011): the top-level
+  file package's descriptor and its sub-descriptors (JPEG 2000, MCA labels) as the RegXML
+  fragment a ST 2067-3 composition playlist carries in its `EssenceDescriptorList`, read from the
+  header partition: groups, elements and types in the `r0` / `r1` / `r2` register namespaces,
+  integers in decimal, enumerations by name, rationals as `n/d`, labels as `urn:smpte:ul:` and
+  UUIDs as `urn:uuid:`, arrays and strong references nested in place. Checked item by item against
+  the descriptors of the MERIDIAN test IMP (Netflix Photon, Apache-2.0); element names follow the
+  SMPTE metadata registers as regxmllib's test dictionaries (BSD-2-Clause) list them.
 - **Index tables** (ST 377-1 §11): VBR entries per edit unit — stream offset (from the first
   essence byte; clip-wrapped: from the element value), key-frame offset, flags (`0x80` random
   access, `0xC0` AVC IDR with its parameter sets, `0x22` P, `0x33` B) and temporal offsets from the
@@ -229,7 +306,11 @@ w.finish()?;
   elementary stream (ST 381-1: container `02 04 60`, element types 0x05 / 0x06, the MPEG video
   descriptor with SingleSequence, ConstantBframes, CodedContentType, LowDelay, ClosedGOP,
   IdenticalGOP, MaxGOP, BPictureCount, ProfileAndLevel and BitRate under dynamic tags, the RDD 9
-  Table 6 coding labels for MP@HL / MP@H-14 / 422P@HL long GOP; random access entries flagged
+  Table 6 coding labels for MP@HL / MP@H-14 / 422P@HL long GOP, and RDD 9's annex picture
+  values: whole-macroblock stored height (1088), the ST 274 / ST 296 signal standard and video
+  line map (42 or 26); `PictureDesc::field_dominance` writes interlaced pictures as separate
+  fields (544 stored, 540 sampled lines, line map 21 / 584, the field dominance, CodedContentType
+  interlaced); random access entries flagged
   with their sequence header, P and B entries with the naive prediction flags of ST 381-1 A.2;
   without `rdd9` no SDTI-CP system item or AES3 elements; with `WriterConfig::rdd9` the strict
   RDD 9 layout: per content package the ST 385 system item (bitmap 5Ch, the time code as the user
@@ -244,11 +325,103 @@ w.finish()?;
   compatible content package per frame: the ST 385 system item with the time code of the frame,
   the picture element padded to the SMPTE 356 frame size, one 8-channel AES3 element of ST 331
   (1920 samples, or 1601 / 1602 with the 5-sequence count), each item filled to the 512-byte KAG;
-  a constant-size index with three delta entries; CDCI descriptor with separate fields, the
+  a constant-size index with three delta entries; CDCI descriptor with separate fields (field 1
+  first unless `field_dominance` says 2), the
   vertical interval and BT.601 labels, generic sound descriptor of 4 or 8 channels), Broadcast
   Wave PCM (ST 382: container `02 06 01/02`, element types 0x01 / 0x02).
 - `write_opatom_pcm(&OpAtomPcm, &[i32])` builds a complete in-memory OP-Atom PCM file (AAF media
   consolidation); `encode_pcm` interleaves planar f32 as little-endian PCM.
+
+## AS-02 bundle manifest
+
+`as02` reads, writes and checks the `manifest.xml` of an AMWA AS-02 (MXF Versioning) bundle: the
+file list with roles (Annex B), identifiers (a file whose own id is a UMID gets the UUID or UMID URN
+of 9.2.1), sizes, paths and media integrity checks, and the layout rules of 4.3.7 / 4.3.8 (version
+files in the root, essence components under `media/`, a folder entry per subfolder, a simple bundle
+with one version file named like the folder). It does not open the MXF files.
+`as02_version::read_version` reads a version file (OP1b / OP2 / OP3 header metadata with external
+essence): the material package's tracks with their clips (file package UMID, track, start,
+duration; fillers), each file package's network locator, and the breaches of sections 4.3.5 / 5.2
+/ 5.4 in `problems`. `write_version` writes one (OP1b, material package plus a file package copy with
+a network locator per component, no essence, no Essence Container Data, no index); the file package
+copies carry the component's full file descriptor ([`as02_version::copy_descriptor`]). The engine imports a bundle
+(`file.import`). The exporter (`ExportSettings::mxf_as02`, MXF OP1a; `mxfAs02` in `file.exportMedia`)
+writes a simple bundle: the output path is the folder, the picture and each audio channel are mono
+OP1a files in `media/` with file packages of their own, then the version file and `manifest.xml`
+(checked with `check_simple` before it is written), `shim.xml` and an MD5 media integrity check for every file. `mxfAs02Versions` (sequence ids) adds more sequences to the same bundle as further versions (`<bundle>_v2.mxf`, own components each; the manifest is then checked with the general rules). Versions that cut the same media the same way share component files (`mxfAs02Share`, on by default; #1719): every output frame gets a signature (media, exact source time, clip and track settings; frames with effects other than the intrinsic fixed ones, transitions, speed changes, titles, nested sequences, track effects or mixer automation have none), a later version points its timeline at the earlier version's files for frames with equal signatures and encodes only the rest, one numbered component file set per run (`<bundle>_v2_p2_V.mxf`). Sound is shared only at frame rates with a whole number of samples per frame. A version made only of shared frames has just its version file.
+
+## AS-11 descriptive metadata
+
+`as11_shim` checks a file against the AS-11 shims `UK DPP HD` and `UK DPP SD` (version 1.1, from
+the Apache-2.0 AMWA specifications): `check_metadata` (Core and UK DPP conditions, enumerations,
+text limits, picture ratios, audio track layouts) and `check_essence` (picture coding and format,
+channel count, 24-bit 48 kHz audio). The export wiring is a follow-up.
+
+`as11` reads and writes AMWA AS-11 descriptive metadata in OP1a files: the AS-11 Core framework,
+the Segmentation framework (part number / total on a timeline track with the programme parts) and
+the UK DPP framework, laid out as bmx writes them (static DM tracks 5001 / 5101, segmentation track
+5002, DMSchemes labels in the Preface, dynamic local tags). Set `WriterConfig::as11` to an `As11`
+(Core is required; UK DPP `TotalNumberOfParts` and `TotalProgrammeDuration` are filled from the
+segments); `MxfFile::as11` returns what a file carries. `parse_framework_text` and
+`parse_segments_text` read the bmx text forms (`Name: value` lines; `part/total start duration`
+with timecodes or frame counts). Codec shims (AVC-Intra, XDCAM HD422, D-10) are not enforced.
+
+### AS-07 (Archive and Preservation, Baseband Shim)
+
+`as07::check_baseband` (and `baseband_problems`) checks a read file against Appendix J of AMWA AS-07
+(`specs/amwa/as-07-mxf-archive-and-preservation-spec.pdf`): OP1a, one picture track of JPEG 2000 or ST 384
+uncompressed pictures with 8, 10, 12 or 16 bit components, no clip wrapping, linear PCM sound at 48 kHz, 16 or
+24 bit. The uncompressed OP1a exports (v210, UYVY with 24-bit PCM) keep the shim, so they are the AS-07
+master export (tested, #1366); there is no JPEG 2000 OP1a export yet. `MxfFile::dm_schemes` lists the preface's
+DMSchemes; a file that lists the AS-07 core scheme (`as07::CORE_SCHEME`, which every AS-07 file has) gets the
+breaches as `AS-07 Baseband Shim: …` warnings when it is opened, so an import logs them. DMS-AS-07 metadata, the
+raster subset, several timecodes, captions and content integrity are not
+covered.
+
+`as03::file_problems` checks a read file: OP1a, a timecode, the DMS-AS-03 framework and the essence
+against the general provisions and the named shim (`facts_of` takes the video bit rate from the
+stored pictures when the file runs a second or more). The partition layout, content integrity
+tracks and the other frameworks are not checked (#1485).
+
+### AS-10 (MXF for Production)
+
+`As11::as10` holds the AMWA AS-10 v1.1 DMS_AS_10_Core framework (`ShimName` required; `Type`,
+`MainTitle`, `SubTitle`, `TitleDescription`, `OrganizationName`, `PersonName`,
+`LocationDescription`, and the spanning items `CommonSpanningID` (a UMID as 64 hex digits),
+`SpanningNumber`, `CumulativeDuration`): one static DM track in the material package and the
+DMS_AS_10_Core label in the Preface. An AS-10 file needs no AS-11 Core. The labels and keys are
+section 7.5 of the specification (`specs/amwa/as-10-mxf-for-production-spec.pdf`). `as10` holds the
+four shims of section 8.2 (CNN, NRK, HIGH / CANAL, JVC) and `check_shim` compares what an export
+writes (profile and level, chroma format, frame size, audio channels and bit depth, bit rate) with the
+named shim; an unknown shim name is a shim of the user's own and is not checked. The XDCAM HD422
+export writes the NRK and HIGH shims' essence; the 4:2:0 shims (CNN, JVC) need 1440x1080 MP@HL /
+MP@H-14 pictures, which CFA4 does not encode yet. The growing-file and spanning-file rules of
+section 6 (open and incomplete header partitions) are not written.
+
+### AS-03 (MXF Program Delivery)
+
+`As11::as03` holds the AMWA AS-03 rev 1.0 DMS-AS-03 framework (`IdentifierKind`, `Identifier`,
+`ShimName`, `SignalStandard` and `IntendedAFD` required; `SlateTitle`, `NOLACode`, `Rating`,
+`NielsenStreamIdentifier` optional, all UTF-16 strings): one static DM track in the material
+package and the DMS-AS-03 label in the Preface. An AS-03 file needs no AS-11 Core. `as03` holds the
+three PBS NGIS shims of the annexes (HD Playout, HD Distribution, SD) and `check_shim` compares what
+an export writes (MPEG-2 or H.264, frame size, bit rate, audio channels, bit depth and rate) with the
+named shim and with the general provisions (5 to 50 Mbit/s, 48 kHz PCM, up to 16 channels); an
+unknown shim name is a shim of the user's own and keeps only the general provisions. The DMS-NGIS
+and DMS-PODS / PBCore schemes of the shims, the segmentation SOM / EOM track, the content integrity
+tracks, the OP1a full index table layout and the 1-minute partitions are not written.
+
+### AS-12 (MXF Commercials Delivery)
+
+`As11::as12` holds the AMWA AS-12 (2013) Ad-ID advertisement identification: a DMS_AS_12_Framework
+(`ShimName`, which is `Ad-ID Digital Identification` and filled in when not given) whose `Slate`
+strong reference points to the DMS_AS_12_AdID_Slate descriptive object with the eleven Ad-ID items
+of annex A, all required (`adid_prefix`, `adid_code`, `ad_title` up to 128 characters, `Brand`,
+`Advertiser` and `agency_office_location` up to 64, `Product` up to 32, `Length`, `Medium`,
+`sd_flag`, `Parent`): one static DM track in the material package and the DMS_AS_12 label in the
+Preface. AS-12 goes beside an AS-11 Core, AS-10 or AS-03 framework (5.1), and the writer refuses it
+alone. The AS-02 rule (every version file, no component file) is for the AS-02 export (#1477); other
+AS-12 shims than Ad-ID are not defined by the specification.
 
 ## Tests
 
@@ -257,7 +430,8 @@ w.finish()?;
   600 random mutations never panic and only list fully-present samples. An OP3a writer with two
   file packages that share track numbers checks several things:
   - edit lists across packages: picture bytes, PCM values, and reads that cross a clip boundary;
-  - fillers;
+  - fillers and clips of other files as gaps (picture positions, sound runs);
+  - AES3 elements cut inside at 29.97 Hz (`src/write/tests.rs`);
   - hidden long-GOP references;
   - hostile start positions and durations.
 - `crates/codecs/tests/mxf_oracle.rs` (FFmpeg-written fixtures, FFmpeg as the decode oracle):
@@ -269,7 +443,11 @@ w.finish()?;
   and v210 files is bit-exact too.
 - `src/uncompressed/tests.rs`: every labelled layout packed and unpacked at three sizes, the bit
   order of each table entry by hand, descriptor fallbacks (CDCI, RGBA with fill and video-range
-  codes), field weaving with start / end fill, display rectangles, hostile sizes. `cargo xtask fixtures codecs` pre-generates them.
+  codes, X'Y'Z', split components, HALF / f32 / f64 floats, palettes), field weaving with start / end fill, display rectangles, hostile sizes. `cargo xtask fixtures codecs` pre-generates them.
+- `src/write/tests.rs` `line_wrapped_uncompressed_pictures_are_gathered_line_by_line`: our
+  frame-wrapped UYVY file rewritten line by line (system, fill data and picture elements), a
+  missing line, and a file without system elements; `line_wrapped_vanc_packets_are_read_as_anc`:
+  CDPs in the VANC luma samples of UYVY and v210 lines, by frame and line, a bad checksum.
 - `src/write/tests.rs`: writer output read back by `open`: OP1a with two sound tracks pushed in
   uneven chunks (durations, codec label, aspect, PCM exact, index slices, closed partitions),
   29.97 sound per edit unit (1601/1602), a long-GOP AVC index (presentation order, key and B

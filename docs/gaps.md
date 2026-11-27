@@ -2,7 +2,7 @@
 
 > **Nem cél / Non-goal (2026-10-30):** a Windows-, macOS- és Android-paritás nem cél. A CFA4 kizárólag Ubuntu/Kubuntu 26.04 AMD64-re készül; a célalkalmazás más platformokon elérhető funkciói csak a Linuxra átültethető részükben számítanak. Az Apple-formátumok (ProRes, Apple Log, QuickTime/MOV) támogatása formátum, nem platform, ezért marad. / Windows, macOS and Android parity is not a goal; CFA4 targets Ubuntu 26.04 AMD64 only. Apple formats stay supported.
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-11 · **Change:** minor (`cfa4-metrics`, G1) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-21 · **Change:** minor (datamosh, G18) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 Every known shortfall, one entry each, ranked by what most stops an editor using CFA4 for real
 work. This is the work list: agents should prefer it over adding checklist items. Numbers are in
@@ -143,12 +143,25 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   `cfa4-project`) against a reference of folder paths or bare names (default the local
   `plan/premiere/effects.json` / `transitions.json`), placement by folder, Presets and the other
   area out of scope.
-- **Missing:** the other areas (commands, panels, preferences, formats), fidelity tiers (exact,
-  approximate, stub), a CI job, and a committed `docs/parity-checklist.md`.
-- **Evidence:** the 92% menu figure in this pass came from an ad hoc label-matching script; it has
-  not yet been re-measured with the tool.
-- **Estimate:** 8–17 h left (the menu snapshot is local-only, so CI needs a committed, Adobe-free
-  list of menu paths for `--reference`, or the check runs only where `plan/` exists).
+- **Also done (CFA4-PARITY-G7, [plan](plans/CFA4-PARITY-G7-2026-11-20.md)):** the menu measurement
+  reads the live Qt 6 GUI (`--area menus`; `menus-egui` keeps the frozen egui bar), plus
+  `--area commands` (the engine registry), `--area panels` (Qt docks) and `--area all` (one report,
+  summary table first, every failure listed). Fidelity tiers (exact, approximate, stub, unrated; an
+  item with no annotation is *unrated*, `exact` needs evidence) come from `xtask/parity/fidelity.json`
+  and automatic panel stubs. Committed, text-only references (schema 1, every item names the
+  `docs/**/*.md` it comes from; `--check-reference` is part of `cargo xtask ci`) exist for **panels and
+  menus**. `xtask/parity/thresholds.json` holds the least present and exact *counts* per area;
+  `cargo xtask parity --ci` fails below them and hints when one can be raised;
+  `--check-ratchet --base REF` fails when a count is lowered or removed; `docs/parity-checklist.md` is
+  generated from the committed references (`--write-checklist`; `--check-checklist` is part of
+  `cargo xtask ci`).
+- **Measured (committed references, 2026-11-23):** panels 24/28 present (1 stub, 23 unrated), menus
+  16/17 present (16 unrated); no item is rated exact yet.
+- **Missing:** committed references for **commands, effects and transitions** (they stay "not
+  measured" under `--committed` / `--ci`: the committed docs do not hold the full lists, so the owner
+  decides whether to add the names to docs or commit names-only lists), preferences and formats, the
+  `parity` CI job (next PR), and behaviour tests (G1): a tier is an annotation, not a behaviour test.
+- **Estimate:** 4–8 h left (CI job, references for the other areas).
 
 ## G8. UI fidelity: monitor handles, Effect Controls, docking
 
@@ -189,6 +202,8 @@ distributions are not targets.
   sequences (#828): scan-line, uncompressed / RLE / ZIPS / ZIP, half / float / uint, RGB(A) or
   luminance, decoded to linear float frames and bit-exact against ffmpeg; PXR24 (lossy 24-bit
   float, 16 lines per chunk) decodes too, bit-exact against OpenEXR (via OpenImageIO, #828).
+  A `chromaticities` attribute (ACES AP0 / AP1, P3, Rec.2020, custom) converts to the Rec.709
+  working primaries with Bradford white adaptation (CFA4-PROCODEC-002 WP3).
   IAB immersive audio (SMPTE ST 2098-2) in DCP / IMF MXF (#82): PCM and DLC lossless assets,
   Beds, remaps and Objects, rendered to 7.1 for playback.
 - **Missing:** DTS:X heights / objects on their own speakers (#130), DTS Express, 14-bit DTS,
@@ -199,14 +214,14 @@ distributions are not targets.
   incl. R3D NE, ARRIRAW, Sony RAW / X-OCN, Canon RAW, BRAW, ProRes RAW; #345, #383), DCP
   composition (CPL) import (#101; JPEG 2000 MXF picture tracks import since #77), interlaced and
   stereoscopic JPEG 2000 MXF (#102), JPEG XS MXF, the rest of CinemaDNG (lossy / JPEG XL DNG, MXF-wrapped, opcode lists, Raw
-  settings; DNG frames and folders import since #1065); stills: PSD, EXR beyond scan-line RLE / ZIP / PXR24 (PIZ, B44, DWA,
+  settings; DNG frames and folders import since #1065); stills: PSD, EXR beyond scan-line RLE / ZIP / PXR24 / PIZ (B44, DWA,
   tiled, multi-part, deep), AVIF / JPEG items inside HEIF,
   AI / EPS, and the rarer DPX layout, run-length encoding (Targa and DPX stills and sequences import
-  since #821, packed 10/12-bit and Y'CbCr DPX since #841, deeper than 8 bits kept at 8); transparent
+  since #821, packed 10/12-bit and Y'CbCr DPX since #841, read at their stored depth with time code and frame rate since #1155); transparent
   video (#402); Sony start timecode in `rtmd` (#460); stereo 3D flag (#500); MKV multi-audio (#601).
 - **CFA4 candidates after GPL-3.0-or-later** ([ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) §6):
   LibRaw (LGPL-2.1 / CDDL-1.0) for camera RAW, libheif (LGPL-3.0) for HEIF / HEIC, both also
-  through OpenImageIO; OpenEXR for PIZ / B44 / DWA, tiled, multi-part and deep EXR. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
+  through OpenImageIO; OpenEXR for B44 / DWA, tiled, multi-part and deep EXR. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 120–200 h (camera RAW alone 60–100 h, and some SDKs have licences we cannot use:
   clean-room from public specs only where specs exist). Docs: [codec-parity.md](codec-parity.md),
   [file-format-parity.md](file-format-parity.md).
@@ -222,9 +237,8 @@ distributions are not targets.
 - **CFA4 decision (2026-10-24, ADR 0003 §4):** no closed plug-ins are loaded and there is no GPL
   plug-in exception; the capabilities of useful, indispensable closed plug-ins are implemented in
   our own code. Hosts load only GPL-3-compatible plug-ins.
-- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): an OpenFX host loading Natron's
-  openfx-misc (GPL-2.0-or-later: keying, colour, transform and tracking, retime, deinterlace,
-  denoise, sharpen); an LV2 host on lilv (ISC); frei0r (GPL-2.0-or-later). Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
+- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): an OpenFX host whose first pack is our own clean-room implementation of the openfx-misc capability list (keying, colour, transform and tracking, retime, deinterlace,
+  denoise, sharpen; owner decision 2026-11-21, ADR 0003 §14: no Natron code is taken); an LV2 host on lilv (ISC); frei0r (GPL-2.0-or-later). Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 
 ## G12. AI features
 
@@ -235,8 +249,9 @@ distributions are not targets.
   narration (#278), scene edit detection, colour match.
 - **Candidates from the glitch-effect review (2026-10-30):** a subject-masked glitch (Pixel Sort,
   Block Glitch or Databend only on a person or object) needs the same segmentation model as Object
-  Mask; the reviewed example, h43lb1t0/PixelSorter, uses YOLOv8 (AGPL-3.0), which CFA4 cannot ship,
-  so it needs an openly licensed model. Beat-synced glitch bursts (keyframing the Glitch effects on
+  Mask; the reviewed example, h43lb1t0/PixelSorter, uses YOLOv8 (AGPL-3.0), which CFA4 can offer
+  only as an optional AGPL worker in its own process (owner decision 2026-11-22, `docs/licensing.md`
+  §3); the default needs an openly licensed model. Beat-synced glitch bursts (keyframing the Glitch effects on
   music onsets) need no model beyond beat detection.
 - **Needs:** openly licensed models we can ship. **150–300 h.**
 - **Candidates from the marketing-video review (2026-10-26)** (ideas only, for the AI plan; the
@@ -262,6 +277,14 @@ distributions are not targets.
     existing Skin Smoothing effect to faces.
   - *Background blur / replace*: Robust Video Matting (GPL-3.0) for the subject matte; MODNet
     (Apache-2.0) as the fallback.
+    The same matte also gives a *transparent background* (subject over the tracks below) and a
+    *screen recording as the background* (EffectsSDK review, 2026-11-13).
+  - *Portrait Lighting*: brighten the subject and darken the background (EffectsSDK review); needs
+    the subject matte above, the grading itself is not AI.
+  - *Face-framed Auto Reframe*: keep a detected face (YuNet, BSD-3) at a set share of the frame
+    ("smart zoom"); today's Auto Reframe follows a classical saliency centroid.
+  - *3D head avatars* driven by face tracking (EffectsSDK review): needs an openly licensed face
+    landmark / blendshape model and avatar assets; no candidate checked yet.
   - *AI foley*: MMAudio (code MIT, weights CC BY-NC 4.0): blocked until a commercially usable
     model exists (see [kdenlive-parity.md](kdenlive-parity.md) 12.1).
 
@@ -269,8 +292,8 @@ distributions are not targets.
 
 - **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), DVD / Blu-ray (#244, #245), MPEG-2
   field pictures / dual prime (#274), P-STD / T-STD buffer models in the multiplexer (#277), field-aware scaling and field-rate rendering for interlaced export (#275), MP2 audio (#267), JPEG 2000 MXF
-  (the `cfa4-j2k` encoder with the DCI 2K / 4K profiles exists, #81; SMPTE DCP export is done, #115),
-  AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
+  (the `cfa4-j2k` encoder with the DCI 2K / 4K and IMF profiles exists, #81, #931; SMPTE DCP export is done, #115; IMF App 2E package export, #1011, with IMSC1 subtitles, captions or forced narrative, #1234),
+  AS-10 / AS-11, XDCAM HD MXF, P2, PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   AC-3 / E-AC-3 audio (the `cfa4-ac3` encoder exists, #86; export wiring #119),
   interlaced encoding other than MPEG-2, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding
   (#171–#180).
@@ -344,7 +367,7 @@ distributions are not targets.
 
 ## G18. Effects depth: approximations and missing behaviour
 
-- **Missing:** Warp Stabilizer is 2-D (Premiere's is 3-D subspace), Morph Cut has no face tracking
+- **Missing:** Warp Stabilizer's Subspace Warp is a mesh warp over smoothed feature trajectories now, but its analysis is not stored on disk yet and it has no rolling-shutter model (Perspective is a real homography), Morph Cut has no face tracking
   (and occlusion edges are soft), Lumetri HDR-aware maths, multicam paging beyond 16 angles,
   redesigned 26.0 mask tools (a stored, re-editable
   corner radius: rounding bakes fillets into the path, so a rounded corner cannot be re-rounded later).
@@ -354,10 +377,18 @@ distributions are not targets.
   Setting applied as a parameter preset (#458); rectangle and polygon masks round their corners
   with circular fillets (`masks.add` `cornerRadius`, `masks.roundCorners`, every path keyframe;
   #813), from an on-monitor corner-roundness handle with a live preview (one undo step per drag;
-  #844); Shift snaps pen mask segments and dragged-out Bézier handles to 45° steps (#853), and
-  Shift constrains vertex and whole-mask drags to 45° steps from the press point (#1408).
-- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): Natron openfx-misc effects (keyers,
-  colour, tracking, retime), Rubber Band (GPL-2.0-or-later) for audio time-stretch and pitch shift,
+  #844); Warp Stabilizer's analysis is stored in the media cache (`Analysis` folder, keyed by the
+  media fingerprint, source range and analysis settings), so a clip is analysed once, not after
+  every restart; its Perspective method fits a RANSAC homography per frame step, smooths the
+  four corner paths and warps projectively (keystone and tilt; `render::homography`,
+  `vfx::perspective`); Shift snaps pen mask segments and dragged-out Bézier handles to 45° steps (#853), and
+  Shift constrains vertex and whole-mask drags to 45° steps from the press point (#1408); a real
+  codec datamosh with CFA4's own H.264 encoder and decoder, as the Datamosh transition (Grunge &
+  Distort: B's P pictures decoded onto A; #1409) and the Datamosh Bloom effect (Glitch: one P
+  picture repeated; #1430), and the encoder's `inter_only` switch (no intra macroblocks in P
+  pictures) behind both as Clean Blocks off, for a "dirtier" mosh; no FFmpeg.
+- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): clean-room OpenFX effects with the openfx-misc capability list (keyers,
+  colour, tracking, retime; ADR 0003 §14: no Natron code), Rubber Band (GPL-2.0-or-later) for audio time-stretch and pitch shift,
   frei0r effects. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 60–110 h.
 
@@ -385,3 +416,5 @@ distributions are not targets.
 | 2026-10-26 | minor | G10: JPEG 2000 MXF import, DCP picture tracks included (#77) |
 | 2026-10-26 | minor | G12: AI candidates from the repository reviews (word-highlight captions, low light, face detection, background matting, foley) |
 | 2026-11-11 | minor | G1: `cfa4-metrics` (CIEDE2000 ΔE, SSIM) as the harness's scoring layer |
+| 2026-11-21 | minor | G18: real codec datamosh (Datamosh transition, Datamosh Bloom effect) |
+| 2026-11-23 | minor | G18: encoder `inter_only` switch, Clean Blocks on the datamosh |

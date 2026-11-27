@@ -82,7 +82,7 @@ impl Tree {
     }
 
     #[inline]
-    fn decode(&self, br: &mut BitReader) -> Result<u32> {
+    fn decode(&self, br: &mut BitReader<'_>) -> Result<u32> {
         let mut node = 0usize;
         loop {
             let bit = br.read_bits(1)? as usize;
@@ -105,7 +105,7 @@ fn trees() -> &'static [Tree; 12] {
 
 /// Decode one scalefactor difference (`-60..=60`).
 #[inline]
-pub fn decode_sf(br: &mut BitReader) -> Result<i32> {
+pub fn decode_sf(br: &mut BitReader<'_>) -> Result<i32> {
     Ok(trees()[0].decode(br)? as i32 - 60)
 }
 
@@ -123,7 +123,7 @@ pub fn sf_bits(diff: i32) -> u32 {
 }
 
 /// Decode one codeword of codebook `cb` (1..=11) into `out[..dim]`, including sign bits and escapes.
-pub fn decode_spectral(br: &mut BitReader, cb: u8, out: &mut [i32]) -> Result<()> {
+pub fn decode_spectral(br: &mut BitReader<'_>, cb: u8, out: &mut [i32]) -> Result<()> {
     let b = book(cb);
     let mut idx = trees()[cb as usize].decode(br)?;
     for i in (0..b.dim).rev() {

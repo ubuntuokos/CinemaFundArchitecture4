@@ -38,6 +38,21 @@ $ARGUMENTS
 - Csak olyan PR-t, amit a tulajdonos **ebben a hívásban** kifejezetten jóváhagyott. Egy
   hívásban több PR is jóváhagyható; ilyenkor a megadott sorrendben, egymás után dolgozol.
 - Egyenként: ág frissítése a `main`-hez, zöld `full-validation-gate` azon a fejen, utána merge.
+- **CodeRabbit** (`docs/coordination.md` §2.9 és §3.4): csak **kockázatos** PR-ra vonatkozik.
+  Hogy egy PR kockázatos-e, azt a fájllistájából (`gh api --paginate $R/pulls/<n>/files`;
+  átnevezésnél a `previous_filename` is számít) magad döntöd el a §2.9 listája szerint, nem a leírásban álló jelzésből. Kockázatos PR-on
+  beolvasztás előtt (köteg esetén minden kötegbe szánt eredeti PR-on) ellenőrizd mindhárom
+  feltételt (`R=repos/ubuntuokos/CinemaFundArchitecture4`). Ha a keret elfogyott, a PR vár:
+  (a) kérés: `gh api --paginate $R/issues/<n>/comments` – van `@coderabbitai review`;
+  (b) befejezett review: `gh api --paginate "$R/commits/<fej-sha>/check-runs?check_name=CodeRabbit"` – a
+  legkésőbb indult `CodeRabbit` check-run
+  `success` („Finished”, nem `neutral` „Review rate limited”), és `completed_at`-je az utolsó
+  kérésnél későbbi;
+  (c) nincs megválaszolatlan megállapítás: `gh api $R/pulls/<n>/ccr/review_threads` (a
+  Claude Code proxy végpontja; máshol GraphQL `reviewThreads { isResolved }`), és a PR minden
+  (korábbi és legutóbbi) CodeRabbit-review törzsében szál nélkül közölt megállapításokra is van válasz a PR-megjegyzések között.
+  Ha bármelyik hiányzik, ne olvaszd be és ne tedd kötegbe: a PR a (c) kategóriába kerül, és
+  a PR-ban jelzed a fejlesztőnek. Dependabot-PR-ra és magára a köteg-PR-ra nem vonatkozik.
 - **Köteg** (`/gazda köteg #12 #15 …`, `docs/coordination.md` §3a): `scripts/dev/gazda-koteg.sh`
   összerakja a köteg-ágat és megnyitja a köteg-PR-t a `cfa4-full-validation` címkével. Zöld kapu
   után a köteg-PR-t **csak merge committal** olvasztod be, majd ellenőrzöd, hogy minden bekerült
@@ -47,6 +62,24 @@ $ARGUMENTS
   ágakat (a beolvasztott köteg-ágat is) felsorolod.
 - Kiváltott PR-t csak megjegyzéssel zársz le, megnevezve, mi váltotta ki.
 - Ha egy ütközést csak más PR-jába vagy ágába nyúlva lehetne feloldani, előbb kérdezel.
+
+## Ágtulajdon (docs/coordination.md §2.4, §2.12, §2.13; CFA4-BRANCH-OWNERSHIP-001 T4, T7)
+- **Átvétel.** A PR-on végzett első írás (ághoz igazítás, ütközésfeloldás, commit) előtt, ha a PR-nak van
+  fejlesztő-tulajdonosa, beírod a PR leírásába és egy megjegyzésbe: `Gazda átvette: <saját session>, ÉÉÉÉ-HH-NN`
+  (a `Claude-Session:` sorban szereplő azonosítóddal). Tiszta `update-branch` (ütközés nélküli main-merge)
+  nem commit a fejlesztő munkájába, ahhoz sor nem kell. Köteg-ágat és a köteg-PR-t te birtokolod.
+- **Beolvasztás előtt** nézd a `branch-ownership` checket a PR mostani fején. Idegen commit (piros) esetén a PR
+  a (c) kategóriába kerül, és jelzed a tulajdonosnak; nem olvasztod be.
+- **Csak hibátlan PR kerül hozzád.** Hiba (CodeRabbit-megállapítás, piros kapu, ütközés, amit a fejlesztő
+  tud javítani) esetén alapesetben **nem javítasz**: beírod `Gazda visszaadta: <fejlesztő session>, ÉÉÉÉ-HH-NN`
+  (leírás + megjegyzés), és jelzed a PR-ban. A fejlesztő javít, kéri a CodeRabbitet, és a hibátlan PR újra hozzád jön.
+- **Kivétel, csak a tulajdonos kérésére** (a hívásban kimondva): ha a fejlesztő túlterhelt és a PR-ra máshol
+  szükség van, előbb beírod `Gazda javítja tulajdonosi kérésre: <ok>, ÉÉÉÉ-HH-NN`, aztán javítasz. Kockázatos PR-on
+  te kéred a CodeRabbitet és te kezeled a megállapításait; a PR csak hibátlanul olvasztható be.
+- **CodeRabbit átvétel után** (D8): ha csak ütközésmentes main-merge került a fejre, nem kérsz új review-t;
+  más commit után a (a)–(c) feltételek az új fejre érvényesek, és te kéred újra (`@coderabbitai review`).
+- Köteg esetén a `scripts/dev/gazda-koteg.sh` a köteg-PR leírásába beírja a felhasznált PR-okat és fejeiket;
+  ezt használja a `branch-ownership` ellenőrzés a köteg-ágon (D3). Ne szerkeszd ki a listát.
 
 ## Befejezés
 Egy sor a `docs/coordination-log.md`-be, rövid jelentés a tulajdonosnak, majd **megállsz**.

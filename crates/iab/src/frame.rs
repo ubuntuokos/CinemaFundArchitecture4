@@ -415,7 +415,7 @@ impl Frame {
 }
 
 /// Plex(n) (5.2): an n-bit field whose all-ones value escapes to a field twice as wide.
-pub(crate) fn plex(r: &mut BitReader, n: u32) -> Result<u32> {
+pub(crate) fn plex(r: &mut BitReader<'_>, n: u32) -> Result<u32> {
     let mut width = n;
     loop {
         let v = r.read_bits(width)?;
@@ -630,7 +630,7 @@ fn text(b: &[u8]) -> String {
     String::from_utf8_lossy(&b[..end]).into_owned()
 }
 
-fn gain(r: &mut BitReader) -> Result<Gain> {
+fn gain(r: &mut BitReader<'_>) -> Result<Gain> {
     Ok(match r.read_bits(2)? {
         0 => Gain::Unity,
         1 => Gain::Silent,
@@ -639,7 +639,7 @@ fn gain(r: &mut BitReader) -> Result<Gain> {
     })
 }
 
-fn zone_gain(r: &mut BitReader) -> Result<ZoneGain> {
+fn zone_gain(r: &mut BitReader<'_>) -> Result<ZoneGain> {
     Ok(match r.read_bits(2)? {
         0 => ZoneGain::Zero,
         1 => ZoneGain::Unity,
@@ -648,7 +648,7 @@ fn zone_gain(r: &mut BitReader) -> Result<ZoneGain> {
     })
 }
 
-fn decorrelation(r: &mut BitReader) -> Result<Decorrelation> {
+fn decorrelation(r: &mut BitReader<'_>) -> Result<Decorrelation> {
     Ok(match r.read_bits(2)? {
         0 => Decorrelation::None,
         1 => Decorrelation::Max,
@@ -658,7 +658,7 @@ fn decorrelation(r: &mut BitReader) -> Result<Decorrelation> {
 }
 
 /// AudioDescription and its text, at a byte boundary.
-fn description(r: &mut BitReader) -> Result<Description> {
+fn description(r: &mut BitReader<'_>) -> Result<Description> {
     let bits = r.read_bits(8)? as u8;
     let mut text = None;
     if bits & 0x80 != 0 {

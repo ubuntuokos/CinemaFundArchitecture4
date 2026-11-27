@@ -61,6 +61,7 @@ pub(crate) fn yuv_frame(w: u32, h: u32) -> Arc<VideoFrame> {
         color: cfa4_color::ColorInfo::REC709,
         par: (1, 1),
         pts: Default::default(),
+        layout: Default::default(),
     })
 }
 

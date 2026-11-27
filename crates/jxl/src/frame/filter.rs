@@ -23,7 +23,7 @@ impl Default for Gabor {
 impl<Ctx> Bundle<Ctx> for Gabor {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, _ctx: Ctx) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, _ctx: Ctx) -> Result<Self> {
         let gab_enabled = bitstream.read_bool()?;
         if !gab_enabled {
             return Ok(Self::Disabled);
@@ -92,7 +92,7 @@ impl Default for EpfParams {
 impl Bundle<Encoding> for EdgePreservingFilter {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, encoding: Encoding) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, encoding: Encoding) -> Result<Self> {
         let iters = bitstream.read_bits(2)?;
         if iters == 0 {
             return Ok(Self::Disabled);
@@ -155,7 +155,7 @@ impl Default for EpfSigma {
 impl Bundle<Encoding> for EpfSigma {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, encoding: Encoding) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, encoding: Encoding) -> Result<Self> {
         Ok(Self {
             quant_mul: if encoding == Encoding::VarDct { bitstream.read_f16_as_f32()? } else { 0.46 },
             pass0_sigma_scale: bitstream.read_f16_as_f32()?,

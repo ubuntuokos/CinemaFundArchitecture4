@@ -552,8 +552,9 @@ fn settings_column(app: &mut Cfa4App, ui: &mut egui::Ui, rect: Rect) {
             }
         });
         row(ui, &t, tl!("Format"), |ui| {
-            let labels: Vec<(String, bool)> = Format::ALL.iter().map(|f| (f.label().to_string(), cfa4_engine::export::available(*f))).collect();
-            if let Some(i) = combo(ui, &mut reg, "export.format", ex.settings.format.label(), &labels, ui.available_width() - 4.0) {
+            let reasons: Vec<Option<String>> = Format::ALL.iter().map(|f| cfa4_engine::export::unavailable_reason(*f)).collect();
+            let labels: Vec<(String, Option<&str>)> = Format::ALL.iter().zip(&reasons).map(|(f, why)| (f.label().to_string(), why.as_deref())).collect();
+            if let Some(i) = combo_why(ui, &mut reg, "export.format", ex.settings.format.label(), &labels, ui.available_width() - 4.0) {
                 let f = Format::ALL[i];
                 if f != ex.settings.format {
                     // a format switch starts from that format's defaults (keeping size / rate / range)
@@ -697,7 +698,7 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
     });
     row(ui, t, tl!("Field Order"), |ui| {
         let o = [FieldOrder::Progressive, FieldOrder::UpperFirst, FieldOrder::LowerFirst];
-        let labels: Vec<(String, bool)> = o.iter().map(|f| (f.label().to_string(), *f == FieldOrder::Progressive || s.format == Format::Mpeg2)).collect();
+        let labels: Vec<(String, bool)> = o.iter().map(|f| (f.label().to_string(), *f == FieldOrder::Progressive || s.codes_interlaced())).collect();
         if let Some(i) = combo(ui, reg, "export.video.fieldOrder", s.field_order.label(), &labels, 160.0) {
             s.field_order = o[i];
         }
@@ -839,8 +840,23 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
         }
         Format::DnxHr => {
             row(ui, t, tl!("Profile"), |ui| {
-                let keys = ["lb", "sq", "hq", "hqx"];
-                let labels = ["DNxHR LB", "DNxHR SQ", "DNxHR HQ", "DNxHR HQX (10-bit)"];
+                let keys = ["lb", "sq", "hq", "hqx", "hd1235", "hd1238", "hd1237", "hd1253", "hd1241", "hd1243", "hd1242", "hd1250", "hd1251", "hd1252"];
+                let labels = [
+                    "DNxHR LB",
+                    "DNxHR SQ",
+                    "DNxHR HQ",
+                    "DNxHR HQX (10-bit)",
+                    "DNxHD 1080p 10-bit (CID 1235)",
+                    "DNxHD 1080p 8-bit (CID 1238)",
+                    "DNxHD 1080p 8-bit (CID 1237)",
+                    "DNxHD 1080p 36 (CID 1253)",
+                    "DNxHD 1080i 10-bit (CID 1241)",
+                    "DNxHD 1080i 8-bit (CID 1243)",
+                    "DNxHD 1080i 8-bit (CID 1242)",
+                    "DNxHD 720p 10-bit (CID 1250)",
+                    "DNxHD 720p 8-bit (CID 1251)",
+                    "DNxHD 720p 8-bit (CID 1252)",
+                ];
                 let cur = keys.iter().position(|k| *k == s.dnx_profile).unwrap_or(2);
                 if let Some(i) = combo(ui, reg, "export.video.dnxProfile", labels[cur], &opts(&labels), 220.0) {
                     s.dnx_profile = keys[i].into();
@@ -883,10 +899,21 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
                     ExrCompression::Rle => "RLE",
                     ExrCompression::Zips => tl!("ZIP (1 scan line)"),
                     ExrCompression::Zip => tl!("ZIP (16 scan lines)"),
+                    ExrCompression::Piz => "PIZ",
                 };
                 let labels: Vec<&str> = ExrCompression::ALL.iter().map(|&c| label(c)).collect();
                 if let Some(i) = combo(ui, reg, "export.video.exrCompression", label(s.exr_compression), &opts(&labels), 220.0) {
                     s.exr_compression = ExrCompression::ALL[i];
+                }
+            });
+        }
+        Format::DpxSequence => {
+            row(ui, t, tl!("Bit Depth"), |ui| {
+                // 12 and 16 bits can carry alpha (the checkbox below appears with them)
+                let labels = ["10-bit", "12-bit", "16-bit"];
+                let cur = [10u8, 12, 16].iter().position(|&b| b == s.dpx_bit_depth).unwrap_or(0);
+                if let Some(i) = combo(ui, reg, "export.video.dpxBitDepth", labels[cur], &opts(&labels), 220.0) {
+                    s.dpx_bit_depth = [10u8, 12, 16][i];
                 }
             });
         }
@@ -1190,15 +1217,32 @@ fn preview_column(app: &mut Cfa4App, ui: &mut egui::Ui, rect: Rect, seq_id: cfa4
     child.add_space(4.0);
     let est = child.label(egui::RichText::new(tlf!("Estimated file size: {size}", size = format_bytes(sum.estimated_bytes))).color(t.text_dim));
     reg.add("export.estimate", est.rect, sum.estimated_size.clone());
+    // settings the encoders cannot honour: say why before Export is pressed, not after
+    let problem = ex.settings.validate().err().map(|e| e.to_string());
+    if let Some(why) = &problem {
+        child.add_space(4.0);
+        let red = child.visuals().error_fg_color;
+        let r = child.add(egui::Label::new(egui::RichText::new(why).color(red)).wrap());
+        reg.add("export.problem", r.rect, why.clone());
+    }
+    let ready = problem.is_none();
     // buttons
     let go = Rect::from_min_size(pos2(rect.max.x - 120.0, rect.max.y - 44.0), vec2(104.0, 30.0));
     let queue = Rect::from_min_size(pos2(go.min.x - 132.0, go.min.y), vec2(122.0, 30.0));
-    let qresp = ui.interact(queue, egui::Id::new("export-queue-send"), Sense::click());
-    ui.painter().rect_stroke(queue, 15.0, egui::Stroke::new(1.0, if qresp.hovered() { t.text } else { t.text_dim }), egui::StrokeKind::Inside);
-    ui.painter().text(queue.center(), Align2::CENTER_CENTER, tl!("Send to Queue"), Tokens::semibold(12.5), t.text);
+    let sense = if ready { Sense::click() } else { Sense::hover() };
+    let qresp = ui.interact(queue, egui::Id::new("export-queue-send"), sense);
+    ui.painter().rect_stroke(queue, 15.0, egui::Stroke::new(1.0, if ready && qresp.hovered() { t.text } else { t.text_dim }), egui::StrokeKind::Inside);
+    ui.painter().text(queue.center(), Align2::CENTER_CENTER, tl!("Send to Queue"), Tokens::semibold(12.5), if ready { t.text } else { t.text_dim });
     reg.add("export.sendToQueue", queue, "Send to Queue");
-    let resp = ui.interact(go, egui::Id::new("export-go"), Sense::click());
-    ui.painter().rect_filled(go, 15.0, if resp.hovered() { t.accent_hover } else { t.accent });
+    let resp = ui.interact(go, egui::Id::new("export-go"), sense);
+    let fill = if !ready {
+        t.text_dim
+    } else if resp.hovered() {
+        t.accent_hover
+    } else {
+        t.accent
+    };
+    ui.painter().rect_filled(go, 15.0, fill);
     ui.painter().text(go.center(), Align2::CENTER_CENTER, tl!("Export"), Tokens::semibold(13.0), Color32::WHITE);
     reg.add("export.button", go, "Export");
     reg.flush(app);

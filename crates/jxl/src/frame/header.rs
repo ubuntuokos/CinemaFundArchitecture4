@@ -184,7 +184,7 @@ struct CanvasSizeParams<'a> {
 }
 
 impl FrameHeader {
-    fn test_full_image(canvas_size: CanvasSizeParams) -> bool {
+    fn test_full_image(canvas_size: CanvasSizeParams<'_>) -> bool {
         let CanvasSizeParams { x0, y0, width, height, size, .. } = canvas_size;
 
         if x0 > 0 || y0 > 0 {
@@ -196,7 +196,7 @@ impl FrameHeader {
         (right >= size.width as i64) && (bottom >= size.height as i64)
     }
 
-    fn resets_canvas(blending_mode: BlendMode, canvas_size: CanvasSizeParams) -> bool {
+    fn resets_canvas(blending_mode: BlendMode, canvas_size: CanvasSizeParams<'_>) -> bool {
         blending_mode == BlendMode::Replace && (!canvas_size.have_crop || Self::test_full_image(canvas_size))
     }
 
@@ -377,7 +377,7 @@ impl FrameType {
 impl<Ctx> Bundle<Ctx> for FrameType {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, _ctx: Ctx) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, _ctx: Ctx) -> Result<Self> {
         Ok(match bitstream.read_bits(2)? {
             0 => Self::RegularFrame,
             1 => Self::LfFrame,
@@ -398,7 +398,7 @@ pub enum Encoding {
 impl<Ctx> Bundle<Ctx> for Encoding {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, _ctx: Ctx) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, _ctx: Ctx) -> Result<Self> {
         Ok(match bitstream.read_bits(1)? {
             0 => Self::VarDct,
             _ => Self::Modular,
@@ -440,7 +440,7 @@ impl FrameFlags {
 impl<Ctx> Bundle<Ctx> for FrameFlags {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, _ctx: Ctx) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, _ctx: Ctx) -> Result<Self> {
         Ok(Self(bitstream.read_u64()?))
     }
 }
@@ -459,7 +459,7 @@ pub enum BlendMode {
 impl<Ctx> Bundle<Ctx> for BlendMode {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, _ctx: Ctx) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, _ctx: Ctx) -> Result<Self> {
         Ok(match bitstream.read_u32(0, 1, 2, 3 + U(2))? {
             0 => Self::Replace,
             1 => Self::Add,

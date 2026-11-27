@@ -9,7 +9,7 @@ use crate::image::Image;
 
 /// Per-pixel A/B mix at weight `k`, both sampled (clamped) at (sx, sy).
 #[inline]
-fn ab(t: &Tx, sx: f32, sy: f32, k: f32) -> [f32; 4] {
+fn ab(t: &Tx<'_>, sx: f32, sy: f32, k: f32) -> [f32; 4] {
     if k <= 0.0 {
         t.sac(sx, sy)
     } else if k >= 1.0 {
@@ -21,7 +21,7 @@ fn ab(t: &Tx, sx: f32, sy: f32, k: f32) -> [f32; 4] {
 
 /// RGB-split sample: red from (+d), blue from (−d).
 #[inline]
-fn split(t: &Tx, x: f32, y: f32, d: f32, k: f32) -> [f32; 4] {
+fn split(t: &Tx<'_>, x: f32, y: f32, d: f32, k: f32) -> [f32; 4] {
     let c = ab(t, x, y, k);
     if d.abs() < 0.25 {
         return c;
@@ -31,7 +31,7 @@ fn split(t: &Tx, x: f32, y: f32, d: f32, k: f32) -> [f32; 4] {
     [r[0], c[1], b[2], c[3].max(r[3]).max(b[3])]
 }
 
-pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
+pub(super) fn apply(id: &str, t: &Tx<'_>) -> Option<Image> {
     let p = t.p;
     let (w, h) = (t.wf, t.hf);
     let env = bell(p);
@@ -81,6 +81,52 @@ pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
                 };
                 let kb = 1.0 - smoothstep(-soft, soft, d);
                 mix(burnt, t.pb(x, y), kb)
+            })
+        }
+        "tear_away" => {
+            // A tears along a ragged seam through the middle; the halves pull apart and tilt
+            // outwards (each about its outer bottom corner), showing B behind. The torn edges show
+            // a band of paper fibre that widens as the tear opens. Computed in (u, v): u across the
+            // seam, v along it, so the vertical tear is the same code with the axes swapped.
+            let vertical = t.choice("orientation") == 1;
+            let (uw, vh) = if vertical { (h, w) } else { (w, h) };
+            let rough = t.px("roughness");
+            let fibre_w = t.px("edge_width");
+            let paper = t.color("edge_color");
+            let tilt = t.num("rotation").clamp(0.0, 45.0).to_radians();
+            let e = super::ease_in(p);
+            let band = fibre_w * smoothstep(0.0, 0.15, p);
+            let th = tilt * e;
+            // far enough that both halves have left the frame at p = 1
+            let reach = uw / 2.0 + 2.0 * rough + fibre_w + vh * tilt.sin() + 2.0;
+            let du = e * reach;
+            let size = (vh / 6.0).max(4.0);
+            let seam = move |v: f32| uw / 2.0 + (fbm(v / size, 0.37, s) - 0.5) * 2.0 * rough;
+            let fibre = move |v: f32| band * (0.55 + 0.9 * fbm(v / (size * 0.12), 4.1, s.wrapping_add(17)));
+            let (sn, cs) = th.sin_cos();
+            let cover = |d: f32| smoothstep(-0.75, 0.75, d);
+            paint(t.w, t.h, |x, y| {
+                let (u, v) = if vertical { (y, x) } else { (x, y) };
+                let at = |pu: f32, pv: f32| if vertical { t.sac(pv, pu) } else { t.sac(pu, pv) };
+                // left half: rotated by −th about (0, vh), shifted by −du; invert that
+                let (lu, lv) = (u + du, v - vh);
+                let (lu, lv) = (lu * cs + lv * sn, -lu * sn + lv * cs + vh);
+                // right half: rotated by +th about (uw, vh), shifted by +du
+                let (ru, rv) = (u - du - uw, v - vh);
+                let (ru, rv) = (ru * cs - rv * sn + uw, ru * sn + rv * cs + vh);
+                let mut o = t.pb(x, y);
+                for (pu, pv, sign) in [(lu, lv, 1.0f32), (ru, rv, -1.0)] {
+                    // signed depth inside this half (> 0 inside), and into its fibre band
+                    let depth = sign * (seam(pv) - pu);
+                    let k = cover(depth);
+                    if k <= 0.0 {
+                        continue;
+                    }
+                    let fw = fibre(pv);
+                    let half = if fw > 0.0 { mix(paper, at(pu, pv), cover(depth - fw)) } else { at(pu, pv) };
+                    o = mix(o, half, k);
+                }
+                o
             })
         }
         "earthquake" => {

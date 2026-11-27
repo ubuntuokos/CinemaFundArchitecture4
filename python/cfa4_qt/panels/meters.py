@@ -184,7 +184,7 @@ def readout_rows(r: QRectF, units: bool) -> list[tuple[str, QPointF, QPointF]]:
     """The four readout rows: label and where its left text and right value sit."""
     pitch = _row_pitch()
     ys = [r.top() + pitch / 2.0 + 1.0 + k * pitch for k in range(4)]
-    return [(label, QPointF(r.left() + 6.0, y), QPointF(r.right() - 6.0, y)) for label, y in zip(("M", "S", "I", "TP"), ys)]
+    return [(label, QPointF(r.left() + 6.0, y), QPointF(r.right() - 6.0, y)) for label, y in zip(("M", "S", "I", "TP"), ys, strict=True)]
 
 
 class AudioMetersPanel(QWidget):

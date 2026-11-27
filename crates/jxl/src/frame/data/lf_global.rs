@@ -41,7 +41,7 @@ impl<'a, 'b> LfGlobalParams<'a, 'b> {
 impl<S: Sample> Bundle<LfGlobalParams<'_, '_>> for LfGlobal<S> {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, params: LfGlobalParams) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, params: LfGlobalParams<'_, '_>) -> Result<Self> {
         let LfGlobalParams { image_header, frame_header: header, .. } = params;
         let image_size = (header.width * header.height) as u64;
 
@@ -160,7 +160,7 @@ impl<S: Sample> GlobalModular<S> {
 impl<S: Sample> Bundle<LfGlobalParams<'_, '_>> for GlobalModular<S> {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, params: LfGlobalParams) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, params: LfGlobalParams<'_, '_>) -> Result<Self> {
         let LfGlobalParams { image_header, frame_header: header, tracker, allow_partial } = params;
         let span = crate::tracing::span!(crate::tracing::Level::TRACE, "Decode GlobalModular");
         let _guard = span.enter();

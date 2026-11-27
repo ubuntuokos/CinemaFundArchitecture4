@@ -12,11 +12,16 @@
 //! (ST 429-18, a CPL `AuxData` asset) and the main sound becomes 16 channels with the FSK
 //! synchronisation signal (ST 429-19).
 //!
+//! With subtitles (#938) the sequence's first caption track becomes an ST 428-7 subtitle reel in
+//! an ST 429-5 timed text track file (the font, Inter Regular unless the user picks one, embedded
+//! as its ancillary resource), the CPL's `MainSubtitle` and the ST 429-16
+//! `MainSubtitleLanguageList`.
+//!
 //! Unencrypted and unsigned (no KDM, no XML signature): a DCP that servers ingest as an OV.
 //! The composition edit rate is the DCI rate nearest the export's (24, 25, 30, 48, 50 or 60; 4K
 //! 24, 25 or 30).
 
-use std::io::{Read, Write};
+use std::io::Read;
 
 use cfa4_mxf::{FrameInfo, MxfWriter, PackageIds, Pattern, PictureDesc, Rational, SoundDesc, StartTimecode, Timestamp, Umid, WriterConfig};
 use cfa4_time::FrameRate;
@@ -173,6 +178,12 @@ pub(crate) fn validate(s: &ExportSettings) -> Result<()> {
     if dcp_language(s).is_none() {
         return Err(ExportError::Unsupported(format!("DCP language {:?} is not an RFC 5646 tag such as en-US or hu-HU", s.dcp_language)));
     }
+    if rfc5646(&s.dcp_subtitle_language).is_none() {
+        return Err(ExportError::Unsupported(format!("DCP subtitle language {:?} is not an RFC 5646 tag such as en-US or hu-HU", s.dcp_subtitle_language)));
+    }
+    if s.dcp_subtitles && dcp_subtitle_language(s).is_none_or(str::is_empty) {
+        return Err(ExportError::Unsupported("DCP subtitles need a language: set the subtitle or the package language".into()));
+    }
     crate::dcp_iab::validate(s)
 }
 
@@ -180,7 +191,21 @@ pub(crate) fn validate(s: &ExportSettings) -> Result<()> {
 /// when it has the RFC 5646 shape (a 2-3 letter primary language subtag, then 1-8 character
 /// alphanumeric subtags, at most 35 characters), `None` otherwise.
 pub fn dcp_language(s: &ExportSettings) -> Option<&str> {
-    let tag = s.dcp_language.trim();
+    rfc5646(&s.dcp_language)
+}
+
+/// The DCP subtitle language: [`ExportSettings::dcp_subtitle_language`], else the package's
+/// [`dcp_language`] (`Some("")` when neither is set, `None` when the tag is malformed).
+pub fn dcp_subtitle_language(s: &ExportSettings) -> Option<&str> {
+    match rfc5646(&s.dcp_subtitle_language)? {
+        "" => dcp_language(s),
+        tag => Some(tag),
+    }
+}
+
+/// `Some("")` for an empty `tag`, the trimmed tag when it has the RFC 5646 shape, else `None`.
+fn rfc5646(tag: &str) -> Option<&str> {
+    let tag = tag.trim();
     if tag.is_empty() {
         return Some("");
     }
@@ -238,14 +263,17 @@ pub fn dcp_isdcf_name(s: &ExportSettings, title: &str, date: &str) -> String {
         DcpAspect::Scope => "S",
         DcpAspect::Full => "C",
     };
-    let lang = match dcp_language(s).and_then(|t| t.split('-').next()).filter(|p| !p.is_empty()) {
+    let code = |t: Option<&str>| match t.and_then(|t| t.split('-').next()).filter(|p| !p.is_empty()) {
         Some(p) => p.to_ascii_uppercase(),
-        None => "XX".into(),
+        None => "XX".to_string(),
     };
+    let lang = code(dcp_language(s));
+    // subtitles in their own track file: the subtitle language in upper case (ISDCF)
+    let subs = if s.dcp_subtitles { code(dcp_subtitle_language(s)) } else { "XX".into() };
     let audio = if DcpImmersive::of(s) == DcpImmersive::Off { "51" } else { "IAB" };
     let res = if DcpResolution::of(s) == DcpResolution::FourK { "4K" } else { "2K" };
     let date: String = date.chars().filter(char::is_ascii_digit).take(8).collect();
-    format!("{short}_{kind}-1_{aspect}_{lang}-XX_{audio}_{res}_{date}_SMPTE_OV")
+    format!("{short}_{kind}-1_{aspect}_{lang}-{subs}_{audio}_{res}_{date}_SMPTE_OV")
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -275,20 +303,35 @@ pub fn dcdm_code(t: f32) -> i32 {
 /// chromatic adaptation), reference white at 48 cd/m².
 pub fn rgba_to_xyz12(rgba: &[u8], w: usize, h: usize) -> [Vec<i32>; 3] {
     let lut: Vec<f32> = (0..=255u8).map(srgb_linear).collect();
+    xyz12(w, h, |i| {
+        let lin = |c: usize| rgba.get(i * 4 + c).and_then(|v| lut.get(usize::from(*v))).copied().unwrap_or(0.0);
+        [lin(0), lin(1), lin(2)]
+    })
+}
+
+/// [`rgba_to_xyz12`] from straight sRGB R'G'B' floats (3 per pixel, 0..1), which keep the
+/// precision of 10/12-bit sources.
+pub fn rgbf_to_xyz12(rgb: &[f32], w: usize, h: usize) -> [Vec<i32>; 3] {
+    xyz12(w, h, |i| {
+        let lin = |c: usize| rgb.get(i * 3 + c).map_or(0.0, |&v| cfa4_color::srgb_to_linear(v.clamp(0.0, 1.0)));
+        [lin(0), lin(1), lin(2)]
+    })
+}
+
+/// X'Y'Z' planes of a `w` x `h` picture whose pixel `i` has linear sRGB `lin(i)`.
+fn xyz12(w: usize, h: usize, lin: impl Fn(usize) -> [f32; 3] + Sync) -> [Vec<i32>; 3] {
     let n = w.saturating_mul(h);
+    let w = w.max(1);
     let mut planes = [vec![0i32; n], vec![0i32; n], vec![0i32; n]];
     let [px, py, pz] = &mut planes;
-    let rows = rgba.par_chunks(w.max(1) * 4).zip(px.par_chunks_mut(w.max(1))).zip(py.par_chunks_mut(w.max(1))).zip(pz.par_chunks_mut(w.max(1)));
-    rows.for_each(|(((src, x), y), z)| {
-        for (k, p) in src.chunks_exact(4).enumerate() {
-            let lin = |i: usize| p.get(i).and_then(|v| lut.get(usize::from(*v))).copied().unwrap_or(0.0);
-            let (r, g, b) = (lin(0), lin(1), lin(2));
+    let rows = px.par_chunks_mut(w).zip(py.par_chunks_mut(w)).zip(pz.par_chunks_mut(w)).enumerate();
+    rows.for_each(|(row, ((x, y), z))| {
+        for (k, ((x, y), z)) in x.iter_mut().zip(y.iter_mut()).zip(z.iter_mut()).enumerate() {
+            let [r, g, b] = lin(row * w + k);
             let t = |m: [f32; 3]| m[0] * r + m[1] * g + m[2] * b;
-            if let (Some(x), Some(y), Some(z)) = (x.get_mut(k), y.get_mut(k), z.get_mut(k)) {
-                *x = dcdm_code(t(RGB_TO_XYZ[0]));
-                *y = dcdm_code(t(RGB_TO_XYZ[1]));
-                *z = dcdm_code(t(RGB_TO_XYZ[2]));
-            }
+            *x = dcdm_code(t(RGB_TO_XYZ[0]));
+            *y = dcdm_code(t(RGB_TO_XYZ[1]));
+            *z = dcdm_code(t(RGB_TO_XYZ[2]));
         }
     });
     planes
@@ -297,19 +340,28 @@ pub fn rgba_to_xyz12(rgba: &[u8], w: usize, h: usize) -> [Vec<i32>; 3] {
 /// JPEG 2000 for DCPs: X'Y'Z' in the DCI 2K or 4K profile. Frames are collected and coded
 /// [`DcpEncoder::batch`] at a time in parallel (each one is independent; the coder alone keeps a
 /// core busy), so packets come out up to a batch late and in order.
+/// A picture as the exporter hands it over: RGBA8, or sRGB R'G'B' floats from deep sources.
+enum Pixels {
+    Rgba8(Vec<u8>),
+    Float(Vec<f32>),
+}
+
 struct DcpEncoder {
     opts: cfa4_j2k::EncodeOptions,
     rate: FrameRate,
-    /// RGBA8 frames (width, height, pixels) waiting for their batch.
-    pending: Vec<(u32, u32, Vec<u8>)>,
+    /// Frames waiting for their batch.
+    pending: Vec<(u32, u32, Pixels)>,
     batch: usize,
 }
 
 impl DcpEncoder {
-    fn code(&self, w: u32, h: u32, rgba: &[u8]) -> Result<Vec<u8>> {
-        let [x, y, z] = timed(Stage::Convert, || rgba_to_xyz12(rgba, w as usize, h as usize));
+    fn code(&self, w: u32, h: u32, px: &Pixels) -> Result<Vec<u8>> {
+        let [x, y, z] = timed(Stage::Convert, || match px {
+            Pixels::Rgba8(rgba) => rgba_to_xyz12(rgba, w as usize, h as usize),
+            Pixels::Float(rgb) => rgbf_to_xyz12(rgb, w as usize, h as usize),
+        });
         let plane = |data: Vec<i32>| cfa4_j2k::Plane { width: w, height: h, precision: 12, signed: false, dx: 1, dy: 1, data };
-        let image = cfa4_j2k::Image { width: w, height: h, components: vec![plane(x), plane(y), plane(z)], mct: false };
+        let image = cfa4_j2k::Image { width: w, height: h, components: vec![plane(x), plane(y), plane(z)], mct: true };
         cfa4_j2k::encode(&image, &self.opts).map_err(|e| ExportError::Encode(format!("JPEG 2000: {e}")))
     }
 
@@ -330,8 +382,12 @@ impl VideoEncoder for DcpEncoder {
     fn timescale(&self) -> u32 {
         u32::try_from(self.rate.num).unwrap_or(24)
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
-        self.pending.push((f.width, f.height, f.rgba.to_vec()));
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
+        let px = match f.hdr {
+            Some(rgb) => Pixels::Float(rgb.to_vec()),
+            None => Pixels::Rgba8(f.rgba.to_vec()),
+        };
+        self.pending.push((f.width, f.height, px));
         if self.pending.len() >= self.batch { self.drain() } else { Ok(Vec::new()) }
     }
     fn flush(&mut self) -> Result<Vec<EncodedPacket>> {
@@ -442,7 +498,7 @@ pub(crate) fn sha1(data: &[u8]) -> [u8; 20] {
 
 /// A version 4 (random) UUID made from a hash of `seed` (callers make the seed unique: output
 /// path, time, role).
-fn uuid(seed: &str) -> [u8; 16] {
+pub(crate) fn uuid(seed: &str) -> [u8; 16] {
     let h = sha1(seed.as_bytes());
     let mut u = [0u8; 16];
     u.copy_from_slice(&h[..16]);
@@ -451,13 +507,13 @@ fn uuid(seed: &str) -> [u8; 16] {
     u
 }
 
-fn uuid_text(u: &[u8; 16]) -> String {
+pub(crate) fn uuid_text(u: &[u8; 16]) -> String {
     let hex: String = u.iter().map(|b| format!("{b:02x}")).collect();
     format!("{}-{}-{}-{}-{}", &hex[0..8], &hex[8..12], &hex[12..16], &hex[16..20], &hex[20..32])
 }
 
 /// Text for XML element content.
-fn xml_text(s: &str) -> String {
+pub(crate) fn xml_text(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
         match c {
@@ -472,16 +528,16 @@ fn xml_text(s: &str) -> String {
     out
 }
 
-fn base64(data: &[u8]) -> String {
+pub(crate) fn base64(data: &[u8]) -> String {
     cfa4_project::gtemplate::base64_encode(data)
 }
 
 /// `name` inside the folder `dir`.
-fn join(dir: &str, name: &str) -> String {
+pub(crate) fn join(dir: &str, name: &str) -> String {
     std::path::Path::new(dir).join(name).to_string_lossy().into_owned()
 }
 
-fn io(e: impl std::fmt::Display) -> ExportError {
+pub(crate) fn io(e: impl std::fmt::Display) -> ExportError {
     ExportError::Io(e.to_string())
 }
 
@@ -493,9 +549,8 @@ fn finish_hashed(out: Out, settings: &ExportSettings, path: &str) -> Result<(u64
             let hash = sha1(&data);
             Ok((crate::write_output(settings, path, data)?, hash))
         }
-        Out::File(mut w) => {
-            w.flush().map_err(io)?;
-            drop(w);
+        file @ (Out::File(_) | Out::Atomic(_)) => {
+            file.publish(path)?;
             let mut f = std::fs::File::open(path).map_err(|e| io(format!("{path}: {e}")))?;
             let mut s = Sha1::new();
             let mut buf = vec![0u8; 1 << 20];
@@ -536,6 +591,34 @@ pub(crate) struct DcpSetup<'a> {
     pub audio: bool,
     /// The picture inside the container (black bars excluded), for the ST 429-16 active area.
     pub active: (u32, u32),
+    /// The subtitles (#938), timed from the first exported frame.
+    pub subtitles: Option<cfa4_captions::Document>,
+}
+
+/// The subtitle font of an export: the file of [`ExportSettings::dcp_subtitle_font`], else the
+/// bundled Inter Regular. An OpenType or TrueType font (`OTTO`, `true` or version 1.0 sfnt).
+pub(crate) fn subtitle_font(s: &ExportSettings) -> Result<Vec<u8>> {
+    let path = s.dcp_subtitle_font.trim();
+    if path.is_empty() {
+        return Ok(cfa4_text::fonts::INTER_REGULAR.to_vec());
+    }
+    let size = std::fs::metadata(path).map_err(|e| io(format!("subtitle font {path}: {e}")))?.len();
+    if size > cfa4_mxf::MAX_RESOURCE_BYTES {
+        return Err(ExportError::Unsupported(format!("subtitle font {path} is {size} bytes, over the 64 MiB a timed text resource may hold")));
+    }
+    let data = std::fs::read(path).map_err(|e| io(format!("subtitle font {path}: {e}")))?;
+    let sfnt = matches!(data.get(..4), Some([0, 1, 0, 0] | b"OTTO" | b"true"));
+    if !sfnt {
+        return Err(ExportError::Unsupported(format!("subtitle font {path} is not an OpenType or TrueType font file")));
+    }
+    Ok(data)
+}
+
+/// Subtitles of a DCP in progress: the cues, the language and the font.
+struct Subtitles {
+    doc: cfa4_captions::Document,
+    language: String,
+    font: Vec<u8>,
 }
 
 /// A DCP export in progress: the two track files are written as the export runs; the XML at the
@@ -552,6 +635,8 @@ pub(crate) struct DcpMux {
     /// The RFC 5646 spoken language ("" = none).
     language: String,
     issued: String,
+    /// The issue time, for the timed text track file's header.
+    modified: Timestamp,
     picture: Option<([u8; 16], String, MxfWriter<Out>)>,
     sound: Option<([u8; 16], String, MxfWriter<Out>)>,
     /// The IAB track and the 16-channel main sound of an immersive audio DCP.
@@ -560,6 +645,7 @@ pub(crate) struct DcpMux {
     fallback: Option<crate::dcp_iab::IabFallback>,
     /// The main sound's MCA labels and their sub-descriptor instance ids (the CPL repeats them).
     mca: Vec<(cfa4_mxf::McaLabel, [u8; 16])>,
+    subtitles: Option<Subtitles>,
     frames: u64,
 }
 
@@ -580,7 +666,7 @@ pub(crate) fn active_area(content: (u32, u32), stored: (u32, u32)) -> (u32, u32)
 }
 
 impl DcpMux {
-    pub fn new(s: DcpSetup) -> Result<Self> {
+    pub fn new(s: DcpSetup<'_>) -> Result<Self> {
         let settings = s.settings;
         let dir = settings.path.clone();
         if settings.sink.is_none() {
@@ -633,6 +719,10 @@ impl DcpMux {
             None => Vec::new(),
         };
         let fallback = immersive.then(|| crate::dcp_iab::IabFallback::of(settings));
+        let subtitles = match s.subtitles {
+            Some(doc) => Some(Subtitles { doc, language: dcp_subtitle_language(settings).unwrap_or_default().to_string(), font: subtitle_font(settings)? }),
+            None => None,
+        };
         let immersive = match (&sound, immersive) {
             (Some((sound_id, _, _)), true) => {
                 let id = uuid(&format!("{seed}|iab"));
@@ -655,11 +745,13 @@ impl DcpMux {
             active: active_area(s.active, (s.width, s.height)),
             language,
             issued,
+            modified: t,
             picture,
             sound,
             immersive,
             fallback,
             mca,
+            subtitles,
             frames: 0,
         })
     }
@@ -724,20 +816,25 @@ impl DcpMux {
             Some((id, name, w, units)) => Some(Asset { units: Some(units), ..track(id, name, w)? }),
             None => None,
         };
-        let mut write = |name: String, xml: String, id: [u8; 16]| -> Result<Asset> {
+        let mut write_file = |name: String, data: Vec<u8>, id: [u8; 16], mime: &'static str| -> Result<Asset> {
             let path = join(&dir, &name);
-            let data = xml.into_bytes();
             let hash = sha1(&data);
             let size = crate::write_output(settings, &path, data)?;
             total += size;
             files.push(path);
-            Ok(Asset { id, name, size, hash, mime: "text/xml", units: None })
+            Ok(Asset { id, name, size, hash, mime, units: None })
         };
+        let subtitle = match self.subtitle_track_file()? {
+            Some((id, data)) => Some(write_file(format!("sub_{}.mxf", uuid_text(&id)), data, id, "application/mxf")?),
+            None => None,
+        };
+        let mut write = |name: String, xml: String, id: [u8; 16]| write_file(name, xml.into_bytes(), id, "text/xml");
         let cpl_id = uuid(&format!("{}|cpl", self.seed));
-        let cpl = write(format!("cpl_{}.xml", uuid_text(&cpl_id)), self.cpl(cpl_id, &picture, sound.as_ref(), aux.as_ref()), cpl_id)?;
+        let cpl = write(format!("cpl_{}.xml", uuid_text(&cpl_id)), self.cpl(cpl_id, &picture, sound.as_ref(), subtitle.as_ref(), aux.as_ref()), cpl_id)?;
         let pkl_id = uuid(&format!("{}|pkl", self.seed));
         let mut assets = vec![&cpl, &picture];
         assets.extend(sound.as_ref());
+        assets.extend(subtitle.as_ref());
         assets.extend(aux.as_ref());
         let pkl = write(format!("pkl_{}.xml", uuid_text(&pkl_id)), self.pkl(pkl_id, &assets), pkl_id)?;
         assets.insert(0, &pkl);
@@ -747,6 +844,46 @@ impl DcpMux {
         let vol = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VolumeIndex xmlns=\"http://www.smpte-ra.org/schemas/429-9/2007/AM\">\n  <Index>1</Index>\n</VolumeIndex>\n";
         write("VOLINDEX.xml".into(), vol.into(), am_id)?;
         Ok((total, files))
+    }
+
+    /// The subtitle track file (ST 429-5): the ST 428-7 reel of the cues inside the composition
+    /// with the font as its one ancillary resource; (asset id, file bytes).
+    fn subtitle_track_file(&self) -> Result<Option<([u8; 16], Vec<u8>)>> {
+        let Some(sub) = &self.subtitles else { return Ok(None) };
+        let id = uuid(&format!("{}|subtitle", self.seed));
+        let xml_id = uuid(&format!("{}|subtitle-reel", self.seed));
+        let font_id = uuid(&format!("{}|subtitle-font", self.seed));
+        // cues past the last frame are cut there
+        let rate = self.rate;
+        let end = rate.tick_of(i64::try_from(self.frames).unwrap_or(i64::MAX));
+        let mut doc = sub.doc.clone();
+        doc.cues.retain_mut(|c| {
+            c.end = c.end.min(end);
+            c.start < c.end
+        });
+        let opts = cfa4_captions::dcst::ReelOptions {
+            id: format!("urn:uuid:{}", uuid_text(&xml_id)),
+            title: self.title.clone(),
+            issue_date: self.issued.clone(),
+            reel_number: 1,
+            language: sub.language.clone(),
+            edit_rate: (rate.num, rate.den),
+            font: Some(("font1".into(), format!("urn:uuid:{}", uuid_text(&font_id)))),
+            size: cfa4_captions::dcst::DEFAULT_SIZE,
+        };
+        let xml = cfa4_captions::dcst::write_reel(&doc, &opts);
+        let er = Rational::new(i32::try_from(rate.num).unwrap_or(24), i32::try_from(rate.den).unwrap_or(1));
+        let ids = PackageIds {
+            material: Umid::dcinema(uuid(&format!("{}|material", self.seed))),
+            file: Umid::dcinema(id),
+            material_name: self.title.clone(),
+            file_name: format!("{} subtitles", self.title),
+        };
+        let mut cfg = cfa4_mxf::TimedTextConfig::new(er, i64::try_from(self.frames).unwrap_or(i64::MAX), xml_id, cfa4_captions::dcst::NAMESPACE_2010, ids);
+        cfg.modified = self.modified;
+        let font = cfa4_mxf::TimedTextResource { id: font_id, mime: cfa4_mxf::write::MIME_OPENTYPE.into(), data: sub.font.clone() };
+        let data = cfa4_mxf::write_timed_text(&cfg, xml.as_bytes(), &[font]).map_err(io)?;
+        Ok(Some((id, data)))
     }
 
     fn header(&self, out: &mut String, id: [u8; 16]) {
@@ -759,7 +896,7 @@ impl DcpMux {
 
     /// Composition playlist (ST 429-7): one reel, main picture, main sound and the immersive
     /// audio `AuxData` of ST 429-18 clause 14.
-    fn cpl(&self, id: [u8; 16], picture: &Asset, sound: Option<&Asset>, aux: Option<&Asset>) -> String {
+    fn cpl(&self, id: [u8; 16], picture: &Asset, sound: Option<&Asset>, subtitle: Option<&Asset>, aux: Option<&Asset>) -> String {
         let rate = format!("{} {}", self.rate.num, self.rate.den);
         let mut x =
             String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CompositionPlaylist xmlns=\"http://www.smpte-ra.org/schemas/429-7/2006/CPL\">\n");
@@ -787,7 +924,8 @@ impl DcpMux {
         x.push_str("        <MainMarkers>\n");
         x.push_str(&format!("          <Id>urn:uuid:{}</Id>\n", uuid_text(&uuid(&format!("{}|markers", self.seed)))));
         x.push_str(&format!("          <EditRate>{rate}</EditRate>\n          <IntrinsicDuration>{0}</IntrinsicDuration>\n", self.frames));
-        x.push_str(&format!("          <EntryPoint>0</EntryPoint>\n          <Duration>{}</Duration>\n", self.frames));
+        // no EntryPoint or Duration: optional in ST 429-7, rejected by libdcp's dcpverify
+        // (plan CFA4-DCPVAL-LIBDCP-001 v1.1 D6)
         x.push_str("          <MarkerList>\n");
         for (label, offset) in [("FFOC", 1), ("LFOC", self.frames.saturating_sub(1).max(1))] {
             x.push_str(&format!(
@@ -804,6 +942,12 @@ impl DcpMux {
             x.push_str("        <MainSound>\n");
             track(&mut x, a);
             x.push_str("        </MainSound>\n");
+        }
+        if let (Some(a), Some(sub)) = (subtitle, &self.subtitles) {
+            x.push_str("        <MainSubtitle>\n");
+            track(&mut x, a);
+            x.push_str(&format!("          <Language>{}</Language>\n", xml_text(&sub.language)));
+            x.push_str("        </MainSubtitle>\n");
         }
         self.composition_metadata(&mut x, sound.is_some());
         if let Some(a) = aux {
@@ -838,6 +982,9 @@ impl DcpMux {
             x.push_str(&format!(
                 "          <meta:{area}>\n            <meta:Width>{w}</meta:Width>\n            <meta:Height>{h}</meta:Height>\n          </meta:{area}>\n"
             ));
+        }
+        if let Some(sub) = &self.subtitles {
+            x.push_str(&format!("          <meta:MainSubtitleLanguageList>{}</meta:MainSubtitleLanguageList>\n", xml_text(&sub.language)));
         }
         // the ISDCF application: IAB Profile 1 (Doc 15 4.2) or the RDD 52 DCP constraints profile
         let (name, value) =

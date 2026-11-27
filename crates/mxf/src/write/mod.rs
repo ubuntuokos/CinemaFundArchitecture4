@@ -36,9 +36,17 @@
 //! [`WriterConfig::iab`] the immersive audio track file of ST 429-18 (one IABitstream frame per
 //! data element, [`MxfWriter::push_data`]).
 
+mod as02_version;
 mod labels;
 #[cfg(test)]
 mod tests;
+mod timed_text;
+
+pub use as02_version::{
+    ComponentSpec, MAX_VERSION_CLIPS, MAX_VERSION_COMPONENTS, MAX_VERSION_TRACKS, VersionClipSpec, VersionConfig, VersionTrackKind, VersionTrackSpec,
+    write_version,
+};
+pub use timed_text::{MAX_TIMED_TEXT_RESOURCES, MIME_OPENTYPE, MIME_PNG, TimedTextConfig, TimedTextResource, write_timed_text};
 
 use std::collections::VecDeque;
 use std::io::{self, Seek, SeekFrom, Write};
@@ -425,6 +433,11 @@ pub struct PictureDesc {
     /// [`Pattern::Imf`] R'G'B': full-range quantization (ST 2067-21 QE.2) instead of the
     /// narrow range of QE.1.
     pub full_range: bool,
+    /// Interlaced pictures: the field first in time (ST 377-1 G.2.13; 1 the upper, 2 the lower),
+    /// written as separate fields with that field dominance (MPEG-2 frames, or ProRes edit units
+    /// holding both field pictures). `None`: progressive frames. Type D-10 is always separate
+    /// fields, field 1 first unless this says 2.
+    pub field_dominance: Option<u8>,
 }
 
 impl PictureDesc {
@@ -454,6 +467,7 @@ impl PictureDesc {
             j2k: None,
             rgb: false,
             full_range: false,
+            field_dominance: None,
         }
     }
 
@@ -652,6 +666,16 @@ pub struct WriterConfig {
     pub reference_image_edit_rate: Option<Rational>,
     /// Sound tracks: the alignment level in dBFS, e.g. -20 (ST 2067-2 Annex E).
     pub reference_audio_alignment_level: Option<i8>,
+    /// An ANC data track (ST 436-1): one frame-wrapped ANC element per content package, the last
+    /// element of the package, from [`MxfWriter::push_anc`]. OP1a with pictures (also RDD 9), not
+    /// D-10.
+    pub anc: bool,
+    /// AMWA AS-11 descriptive metadata (OP1a): the Core framework, the programme parts and the UK
+    /// DPP framework as DM tracks of the material package ([`crate::as11`]).
+    pub as11: Option<crate::as11::As11>,
+    /// Further DM scheme labels to list in the preface's DMSchemes (e.g. the AS-07 core scheme
+    /// [`crate::as07::CORE_SCHEME`]); the AS-11 schemes are added from `as11`.
+    pub dm_schemes: Vec<[u8; 16]>,
 }
 
 /// One ST 377-4 multichannel audio label: a soundfield group (`channel` is `None`) or an audio
@@ -706,6 +730,9 @@ impl WriterConfig {
             rdd9: false,
             reference_image_edit_rate: None,
             reference_audio_alignment_level: None,
+            anc: false,
+            as11: None,
+            dm_schemes: Vec::new(),
         }
     }
 }
@@ -758,6 +785,8 @@ enum TrackKind {
     Aes3,
     /// One channel of an RDD 9 sound track: a frame-wrapped AES3 element (ST 382).
     Channel(usize),
+    /// ANC packets (ST 436-1).
+    Anc,
 }
 
 /// The sound of an RDD 9 content package.
@@ -918,6 +947,8 @@ struct TrackW {
 
 /// Header region: header metadata plus reserved fill, rewritten in place by `finish`.
 const HEADER_RESERVE: usize = 4096;
+/// First instance number of the AS-11 sets (clear of the essence, index and partition sets).
+const AS11_UID: u32 = 0x4153_0000;
 /// IMF track files: at least 8 KiB of fill after the header metadata (ST 2067-5 5.1.1), on top
 /// of the usual room for the metadata growing by `finish`.
 const IMF_HEADER_RESERVE: usize = HEADER_RESERVE + 8192;
@@ -963,6 +994,10 @@ pub struct MxfWriter<W: Write + Seek> {
     // OP1a
     pending: VecDeque<(Vec<u8>, FrameInfo)>,
     sound_buf: Vec<Vec<u8>>,
+    /// ANC element values not yet written (one per content package, in order).
+    anc_buf: VecDeque<Vec<u8>>,
+    /// The AS-11 frameworks as stored.
+    as11: Option<crate::as11::Encoded>,
     // OP-Atom
     clip_len: u64,
     clip_kl: u64,
@@ -1164,6 +1199,22 @@ impl<W: Write + Seek> MxfWriter<W> {
                 }
             }
         }
+        if cfg.anc
+            && (cfg.pattern != Pattern::Op1a || cfg.picture.is_none() || matches!(cfg.picture.as_ref().map(|p| p.coding), Some(PictureCoding::D10 { .. })))
+        {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "an ANC data track is written in OP1a files with pictures (not D-10)"));
+        }
+        let as11 = match &cfg.as11 {
+            Some(a) => {
+                if cfg.pattern != Pattern::Op1a {
+                    return Err(io::Error::new(io::ErrorKind::InvalidInput, "AS-10 / AS-11 metadata is written in OP1a files"));
+                }
+                let tc = cfg.timecode.unwrap_or(StartTimecode { frames: 0, rate: cfg.edit_rate, drop_frame: false });
+                let clock = crate::as11::Clock { start: tc.frames, base: tc.rounded_base() };
+                Some(crate::as11::Encoded::new(a, clock).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?)
+            }
+            None => None,
+        };
         if cfg.sound.iter().any(|s| s.sample_rate == 0 || s.channels == 0 || !(1..=32).contains(&s.bits)) {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "invalid PCM sound description"));
         }
@@ -1248,6 +1299,10 @@ impl<W: Write + Seek> MxfWriter<W> {
             tracks.push(TrackW { id, kind: TrackKind::Sound(k), element_key: element_key(0x16, ns, if clip { 0x02 } else { 0x01 }, k as u8 + 1), container });
             id += 1;
         }
+        if cfg.anc {
+            // the data item follows the picture and sound items (ST 379-1 7.3)
+            tracks.push(TrackW { id, kind: TrackKind::Anc, element_key: ANC_ELEMENT, container: EC_ANC });
+        }
         let base = w.stream_position()?;
         let nsound = cfg.sound.len();
         let mut me = MxfWriter {
@@ -1268,6 +1323,8 @@ impl<W: Write + Seek> MxfWriter<W> {
             imf_parts: Vec::new(),
             pending: VecDeque::new(),
             sound_buf: vec![Vec::new(); nsound],
+            anc_buf: VecDeque::new(),
+            as11,
             clip_len: 0,
             clip_kl: 0,
             samples: 0,
@@ -1531,6 +1588,31 @@ impl<W: Write + Seek> MxfWriter<W> {
         self.emit(false)
     }
 
+    /// Push the ANC element value (ST 436-1 Table 7, e.g. from [`crate::anc::anc_element`]) of
+    /// the next content package. Call it before that frame's [`MxfWriter::push_picture`]; a
+    /// content package written without one gets an empty element (no ANC packets).
+    pub fn push_anc(&mut self, element: &[u8]) -> io::Result<()> {
+        if !self.cfg.anc {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "this MXF file has no ANC data track"));
+        }
+        // ahead of the pictures by a bounded amount: the caller pairs them frame by frame
+        if self.anc_buf.len() > self.pending.len() + 1024 {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "ANC elements pushed far ahead of their pictures"));
+        }
+        self.anc_buf.push_back(element.to_vec());
+        Ok(())
+    }
+
+    /// The ANC element of the next content package, as a KLV (empty without an ANC track).
+    fn next_anc(&mut self) -> Option<Vec<u8>> {
+        let t = self.tracks.iter().find(|t| t.kind == TrackKind::Anc)?;
+        let key = t.element_key;
+        let v = self.anc_buf.pop_front().unwrap_or_else(|| vec![0, 0]);
+        let mut el = Vec::with_capacity(v.len() + 20);
+        klv(&mut el, &key, &v);
+        Some(el)
+    }
+
     /// Whether the edit units are pictures or IAB frames (one pushed element each).
     fn framed(&self) -> bool {
         self.cfg.picture.is_some() || self.cfg.iab.is_some()
@@ -1597,6 +1679,10 @@ impl<W: Write + Seek> MxfWriter<W> {
                     slices.push(cp.len() as u32);
                 }
                 klv(&mut cp, &self.tracks[first_sound + k].element_key, &chunk);
+            }
+            if let Some(anc) = self.next_anc() {
+                slices.push(cp.len() as u32);
+                cp.extend_from_slice(&anc);
             }
             let info = pic.map(|p| p.1).unwrap_or_else(FrameInfo::intra);
             self.entries.push(Entry { offset: self.pos - self.essence_start, slices, info });
@@ -1692,7 +1778,14 @@ impl<W: Write + Seek> MxfWriter<W> {
                 klv(&mut cp, &self.tracks[1 + k].element_key, &ch);
                 fill_to(&mut cp, at + el);
             }
-            self.entries.push(Entry { offset: self.stream, slices: vec![slice], info });
+            let mut slices = vec![slice];
+            if let Some(anc) = self.next_anc() {
+                slices.push(cp.len() as u32);
+                cp.extend_from_slice(&anc);
+                let end = kag_aligned(cp.len());
+                fill_to(&mut cp, end);
+            }
+            self.entries.push(Entry { offset: self.stream, slices, info });
             self.stream += cp.len() as u64;
             self.put(&cp)?;
         }
@@ -1766,13 +1859,17 @@ impl<W: Write + Seek> MxfWriter<W> {
         let iab_primer = if cfg.iab.is_some() { IAB_PRIMER } else { &[] };
         let mca_primer = if cfg.mca.is_empty() { &[] } else { MCA_PRIMER };
         let mpeg_primer = if matches!(cfg.picture.as_ref().map(|p| p.coding), Some(PictureCoding::Mpeg2 { .. })) { MPEG_PRIMER } else { &[] };
-        let d10_primer = if self.d10.is_some() { D10_PRIMER } else { &[] };
+        // the field and signal standard properties: D-10, MPEG-2 (RDD 9) and interlaced pictures
+        let fields = cfg.picture.as_ref().is_some_and(|p| p.field_dominance.is_some());
+        let d10_primer = if self.d10.is_some() || !mpeg_primer.is_empty() || fields { D10_PRIMER } else { &[] };
+        let as11_primer = if self.as11.is_some() { crate::as11::primer() } else { Vec::new() };
         let primer: Vec<Vec<u8>> = PRIMER
             .iter()
             .chain(iab_primer)
             .chain(mca_primer)
             .chain(mpeg_primer)
             .chain(d10_primer)
+            .chain(as11_primer.iter())
             .map(|(t, ul)| {
                 let mut e = t.to_be_bytes().to_vec();
                 e.extend_from_slice(ul);
@@ -1791,7 +1888,14 @@ impl<W: Write + Seek> MxfWriter<W> {
             s.p(0x3B08, &self.uid(2000));
         }
         let ec: Vec<&[u8]> = containers.iter().map(|c| &c[..]).collect();
-        s.p(0x3B0A, &batch(&ec, 16)).p(0x3B0B, &batch(&[], 16));
+        let mut schemes = self.as11.as_ref().map(crate::as11::Encoded::schemes).unwrap_or_default();
+        for l in &cfg.dm_schemes {
+            if !schemes.contains(l) {
+                schemes.push(*l);
+            }
+        }
+        let schemes: Vec<&[u8]> = schemes.iter().map(|c| &c[..]).collect();
+        s.p(0x3B0A, &batch(&ec, 16)).p(0x3B0B, &batch(&schemes, 16));
         s.write(&mut out);
         // Identification
         let mut s = Set::new(0x30, self.uid(2));
@@ -1813,7 +1917,27 @@ impl<W: Write + Seek> MxfWriter<W> {
         for (pkg, base) in [(0u8, 1000u32), (1, 2000)] {
             let material = pkg == 0;
             let n = 1 + self.tracks.len() as u32;
-            let track_uids: Vec<[u8; 16]> = (0..n).map(|k| self.uid(base + 1 + 3 * k)).collect();
+            let mut track_uids: Vec<[u8; 16]> = (0..n).map(|k| self.uid(base + 1 + 3 * k)).collect();
+            if material && let Some(a) = &self.as11 {
+                if !a.core.is_empty() {
+                    track_uids.push(self.uid(AS11_UID));
+                }
+                if !a.segments.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x100));
+                }
+                if !a.ukdpp.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x200));
+                }
+                if !a.as10.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x300));
+                }
+                if !a.as03.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x400));
+                }
+                if !a.as12.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x500));
+                }
+            }
             let mut s = Set::new(if material { 0x36 } else { 0x37 }, self.uid(base));
             let (umid, name) = if material { (cfg.ids.material, &cfg.ids.material_name) } else { (cfg.ids.file, &cfg.ids.file_name) };
             s.p(0x4401, &umid.0);
@@ -1852,7 +1976,7 @@ impl<W: Write + Seek> MxfWriter<W> {
                         ai += 1;
                         (DEF_SOUND, format!("A{ai}"))
                     }
-                    TrackKind::Iab => (DEF_DATA, "D1".to_string()),
+                    TrackKind::Iab | TrackKind::Anc => (DEF_DATA, "D1".to_string()),
                 };
                 let number = if material { 0 } else { u32::from_be_bytes(t.element_key[12..16].try_into().unwrap_or([0; 4])) };
                 let file = cfg.ids.file;
@@ -1860,6 +1984,9 @@ impl<W: Write + Seek> MxfWriter<W> {
                     let (src, src_track) = if material { (file, t.id) } else { (Umid([0; 32]), 0) };
                     s.i64(0x1201, 0).p(0x1101, &src.0).u32(0x1102, src_track);
                 });
+            }
+            if material && let Some(a) = &self.as11 {
+                self.as11_tracks(&mut out, a, d);
             }
         }
         // Descriptors
@@ -1925,28 +2052,54 @@ impl<W: Write + Seek> MxfWriter<W> {
                             .p(0x3201, &p.coding.coding_label())
                             .p(0x3210, &TC_470)
                             .p(0x321A, &CE_601)
-                            .u8(0x3212, 1)
+                            .u8(0x3212, p.field_dominance.unwrap_or(1))
                             .u8(0x3303, 4);
                     } else {
-                        s.u8(0x320C, 0)
+                        // separate fields code the height of one field; MPEG-2 stores whole
+                        // macroblocks (RDD 9 Annex: 1088 or 544 stored lines for 1080 sampled)
+                        let fields = u32::from(p.field_dominance.is_some()) + 1;
+                        let sampled = p.height / fields;
+                        let stored = if mpeg.is_some() { p.height.div_ceil(16 * fields) * 16 } else { sampled };
+                        // ST 377-1 G.2.16 / RDD 9: the first line of each field (ST 274 / ST 296)
+                        let line_map: (u32, u32) = match (mpeg.is_some(), p.height, fields) {
+                            (true, 1080, 2) => (21, 584),
+                            (true, 1080, _) => (42, 0),
+                            (true, 720, _) => (26, 0),
+                            // ProRes field pictures: ST 274 (1080) or ITU-R BT.656 (576)
+                            (false, 1080, 2) => (21, 584),
+                            (false, 576, 2) => (23, 336),
+                            _ => (0, 0),
+                        };
+                        s.u8(0x320C, u8::from(fields == 2))
                             .u32(0x3203, p.width)
-                            .u32(0x3202, p.height)
+                            .u32(0x3202, stored)
                             .u32(0x3205, p.width)
-                            .u32(0x3204, p.height)
+                            .u32(0x3204, sampled)
                             .u32(0x3209, p.width)
-                            .u32(0x3208, p.height)
+                            .u32(0x3208, sampled)
                             .rat(0x320E, p.aspect)
-                            .p(0x320D, &batch(&[&0u32.to_be_bytes(), &0u32.to_be_bytes()], 4))
+                            .p(0x320D, &batch(&[&line_map.0.to_be_bytes(), &line_map.1.to_be_bytes()], 4))
                             .p(0x3201, &p.coding.coding_label())
                             .p(0x3210, &tcl)
                             .p(0x321A, &ce)
                             .p(0x3219, &cp);
+                        if mpeg.is_some() {
+                            // RDD 9 Annex: ST 274 (1080) or ST 296 (720) signal standard
+                            match p.height {
+                                1080 => s.u8(0x3215, 4),
+                                720 => s.u8(0x3215, 5),
+                                _ => &mut s,
+                            };
+                        }
+                        if let Some(f) = p.field_dominance {
+                            s.u8(0x3212, f);
+                        }
                     }
                     s.u32(0x3301, depth).u32(0x3302, p.subsampling.0).u32(0x3308, p.subsampling.1).u32(0x3304, black).u32(0x3305, white).u32(0x3306, range);
                     if let Some((pl, max_gop, b, closed, bit_rate)) = mpeg {
                         s.u8(TAG_MPEG, 1)
                             .u8(TAG_MPEG + 1, 0)
-                            .u8(TAG_MPEG + 2, 1)
+                            .u8(TAG_MPEG + 2, if p.field_dominance.is_some() { 2 } else { 1 })
                             .u8(TAG_MPEG + 3, u8::from(b == 0))
                             .u8(TAG_MPEG + 4, u8::from(closed))
                             .u8(TAG_MPEG + 5, 0)
@@ -1995,6 +2148,16 @@ impl<W: Write + Seek> MxfWriter<W> {
                 TrackKind::Iab => {
                     let Some(ia) = cfg.iab else { continue };
                     self.iab_descriptor(&mut out, uid, t, ia, d);
+                }
+                TrackKind::Anc => {
+                    // ST 436-1 Table 11: the ANC data descriptor (a generic data essence descriptor)
+                    let mut s = Set::new(0x5C, uid);
+                    s.u32(0x3006, t.id).rat(0x3001, cfg.edit_rate);
+                    if d.essence >= 0 {
+                        s.i64(0x3002, d.essence);
+                    }
+                    s.p(0x3004, &t.container);
+                    s.write(&mut out);
                 }
                 TrackKind::Sound(i) => {
                     let sd = cfg.sound[i];
@@ -2089,8 +2252,8 @@ impl<W: Write + Seek> MxfWriter<W> {
             .p(0x3210, &TC_DCDM)
             .u32(0x3406, max)
             .u32(0x3407, 0)
-            // X', Y', Z' (D8h, D9h, DAh) of `depth` bits each
-            .p(0x3401, &[0xD8, p.depth as u8, 0xD9, p.depth as u8, 0xDA, p.depth as u8, 0, 0]);
+            // X', Y', Z' (D8h, D9h, DAh) of `depth` bits each; RGBALayout is always 8 pairs (ST 377-1)
+            .p(0x3401, &[0xD8, p.depth as u8, 0xD9, p.depth as u8, 0xDA, p.depth as u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
         if p.j2k.is_some() {
             s.refs(TAG_SUB_DESCRIPTORS, &[sub_uid]);
         }
@@ -2132,8 +2295,10 @@ impl<W: Write + Seek> MxfWriter<W> {
         let layout = if p.rgb {
             // Table 10: QE.1 narrow or QE.2 full range
             let (min, max) = if p.full_range { (0, (1u32 << depth) - 1) } else { (16u32 << (depth - 8), 235u32 << (depth - 8)) };
-            s.u32(0x3406, max).u32(0x3407, min).u8(0x3405, 0).p(0x3401, &[b'R', n, b'G', n, b'B', n, 0, 0]);
-            [b'R', n, b'G', n, b'B', n, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            // RGBALayout is always 8 pairs (ST 377-1): a shorter PixelLayout breaks RegXML readers
+            let layout = [b'R', n, b'G', n, b'B', n, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            s.u32(0x3406, max).u32(0x3407, min).u8(0x3405, 0).p(0x3401, &layout);
+            layout
         } else {
             // Table 12 (COLOR.1-5, 7, 8)
             s.p(0x321A, &ce)
@@ -2185,6 +2350,113 @@ impl<W: Write + Seek> MxfWriter<W> {
         c.p(0x0201, &def).i64(0x0202, duration);
         component(&mut c);
         c.write(out);
+    }
+
+    /// The AS-11 DM tracks of the material package: static tracks holding the Core and UK DPP
+    /// frameworks, a timeline track whose DM segments hold the programme parts (gaps and the rest
+    /// of the programme are fillers).
+    fn as11_tracks(&self, out: &mut Vec<u8>, a: &crate::as11::Encoded, d: Durations) {
+        use crate::as11::{DEF_DESCRIPTIVE, Item, tag};
+        let framework = |out: &mut Vec<u8>, key: [u8; 16], uid: [u8; 16], items: &[(&'static Item, Vec<u8>)]| {
+            let mut s = Set { key, v: Vec::new() };
+            s.p(0x3C0A, &uid);
+            for (i, v) in items {
+                s.p(tag(i), v);
+            }
+            s.write(out);
+        };
+        let static_track = |out: &mut Vec<u8>, base: u32, (name, id): (&str, u32), key: [u8; 16], items: &[(&'static Item, Vec<u8>)]| {
+            let (t, q, g, f) = (self.uid(base), self.uid(base + 1), self.uid(base + 2), self.uid(base + 3));
+            let mut s = Set::new(0x3A, t);
+            s.u32(0x4801, id).u32(0x4804, 0).p(0x4802, &utf16(name)).p(0x4803, &q);
+            s.write(out);
+            let mut s = Set::new(0x0F, q);
+            s.p(0x0201, &DEF_DESCRIPTIVE).refs(0x1001, &[g]);
+            s.write(out);
+            let mut s = Set::new(0x41, g);
+            s.p(0x0201, &DEF_DESCRIPTIVE).p(0x6101, &f);
+            s.write(out);
+            framework(out, key, f, items);
+        };
+        if !a.core.is_empty() {
+            static_track(out, AS11_UID, crate::as11::CORE_TRACK, crate::as11::CORE_FRAMEWORK_KEY, &a.core);
+        }
+        if !a.segments.is_empty() {
+            let base = AS11_UID + 0x100;
+            let (name, id) = crate::as11::SEGMENTATION_TRACK;
+            // the components: a filler for each gap, a DM segment per part, a filler to the end
+            let mut comps: Vec<(i64, Option<usize>)> = Vec::new();
+            let mut next = 0i64;
+            for (k, sg) in a.segments.iter().enumerate() {
+                if sg.start > next {
+                    comps.push((sg.start - next, None));
+                }
+                comps.push((sg.duration, Some(k)));
+                next = sg.start.saturating_add(sg.duration);
+            }
+            if d.essence > next {
+                comps.push((d.essence - next, None));
+                next = d.essence;
+            }
+            let uids: Vec<[u8; 16]> = (0..comps.len() as u32).map(|k| self.uid(AS11_UID + 0x1000 + 2 * k)).collect();
+            let mut s = Set::new(0x3B, self.uid(base));
+            s.u32(0x4801, id).u32(0x4804, 0).p(0x4802, &utf16(name)).rat(0x4B01, self.cfg.edit_rate).i64(0x4B02, 0).p(0x4803, &self.uid(base + 1));
+            s.write(out);
+            let mut s = Set::new(0x0F, self.uid(base + 1));
+            s.p(0x0201, &DEF_DESCRIPTIVE).i64(0x0202, next).refs(0x1001, &uids);
+            s.write(out);
+            for ((dur, part), (uid, k)) in comps.iter().zip(uids.iter().zip(0u32..)) {
+                match part.and_then(|p| a.segments.get(p)) {
+                    Some(sg) => {
+                        let fw = self.uid(AS11_UID + 0x1000 + 2 * k + 1);
+                        let mut s = Set::new(0x41, *uid);
+                        s.p(0x0201, &DEF_DESCRIPTIVE).i64(0x0202, *dur).p(0x6101, &fw);
+                        s.write(out);
+                        let items = crate::as11::SEGMENTATION_ITEMS;
+                        let values: Vec<(&'static Item, Vec<u8>)> =
+                            items.iter().zip([sg.part_number, sg.part_total]).map(|(i, v)| (i, v.to_be_bytes().to_vec())).collect();
+                        framework(out, crate::as11::SEGMENTATION_FRAMEWORK_KEY, fw, &values);
+                    }
+                    None => {
+                        let mut s = Set::new(0x09, *uid);
+                        s.p(0x0201, &DEF_DESCRIPTIVE).i64(0x0202, *dur);
+                        s.write(out);
+                    }
+                }
+            }
+        }
+        if !a.ukdpp.is_empty() {
+            static_track(out, AS11_UID + 0x200, crate::as11::UKDPP_TRACK, crate::as11::UKDPP_FRAMEWORK_KEY, &a.ukdpp);
+        }
+        if !a.as10.is_empty() {
+            static_track(out, AS11_UID + 0x300, crate::as11::AS10_TRACK, crate::as11::AS10_FRAMEWORK_KEY, &a.as10);
+        }
+        if !a.as03.is_empty() {
+            static_track(out, AS11_UID + 0x400, crate::as11::AS03_TRACK, crate::as11::AS03_FRAMEWORK_KEY, &a.as03);
+        }
+        if !a.as12.is_empty() {
+            // the framework holds the shim name and a strong reference to the Ad-ID slate
+            let base = AS11_UID + 0x500;
+            let (name, id) = crate::as11::AS12_TRACK;
+            let (t, q, g, f, slate) = (self.uid(base), self.uid(base + 1), self.uid(base + 2), self.uid(base + 3), self.uid(base + 4));
+            let mut s = Set::new(0x3A, t);
+            s.u32(0x4801, id).u32(0x4804, 0).p(0x4802, &utf16(name)).p(0x4803, &q);
+            s.write(out);
+            let mut s = Set::new(0x0F, q);
+            s.p(0x0201, &DEF_DESCRIPTIVE).refs(0x1001, &[g]);
+            s.write(out);
+            let mut s = Set::new(0x41, g);
+            s.p(0x0201, &DEF_DESCRIPTIVE).p(0x6101, &f);
+            s.write(out);
+            let mut s = Set { key: crate::as11::AS12_FRAMEWORK_KEY, v: Vec::new() };
+            s.p(0x3C0A, &f);
+            for (i, v) in &a.as12 {
+                s.p(tag(i), v);
+            }
+            s.p(tag(&crate::as11::AS12_SLATE), &slate);
+            s.write(out);
+            framework(out, crate::as11::ADID_SLATE_KEY, slate, &a.adid);
+        }
     }
 
     /// Index table segments for the essence written.
@@ -2312,6 +2584,10 @@ impl<W: Write + Seek> MxfWriter<W> {
                 let el = self.rdd9_element_size(l);
                 let mut v = vec![delta_entry(0, 0, 0), delta_entry(-1, 0, D10_KAG)];
                 v.extend((0..l.elements).map(|k| delta_entry(0, 1, k * el)));
+                if self.cfg.anc {
+                    // the ANC element in slice 2
+                    v.push(delta_entry(0, 2, 0));
+                }
                 v
             }
             None => (0..n_el).map(|k| delta_entry(0, k.min(nslices) as u8, 0)).collect(),
@@ -2361,6 +2637,9 @@ impl<W: Write + Seek> MxfWriter<W> {
             self.w.seek(SeekFrom::Start(self.base + end))?;
         }
         let d = Durations { essence: self.essence_units() };
+        if let Some(a) = &self.as11 {
+            crate::as11::check_segments(&a.segments, Some(d.essence)).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
+        }
         let meta = self.metadata(d);
         // IMF: the index partition follows the last essence partition (ST 2067-2 5.1.4); the
         // footer holds neither metadata nor index

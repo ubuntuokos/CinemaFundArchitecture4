@@ -52,6 +52,7 @@
 	Apply Video Transition	Примени видео прелаз
 	Assembly	Склапање
 	Attach Proxies…	Прикључи проксије…
+	Find Camera Proxies	Пронађи проксије камере
 	Audio	Аудио
 	Audio Channels…	Аудио канали…
 	Audio Clip Mixer	Миксер аудио клипова
@@ -1844,6 +1845,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP фасцикла: JPEG 2000 3996×2160 (1,85:1), 5.1 24-битни 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP фасцикла: JPEG 2000 4096×1716 (2,39:1), 5.1 24-битни 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (интероперабилни мастер пакет)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF фасцикла: JPEG 2000 1920×1080, 5.1 24-битни 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF фасцикла: JPEG 2000 3840×2160, 5.1 24-битни 48 kHz PCM
+	Episode	Епизода
+	Event highlights	Најзанимљивији тренуци догађаја
+	Event	Догађај
+	Lossless (reversible JPEG 2000)	Без губитака (реверзибилни JPEG 2000)
+	Package language	Језик пакета
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B слике
@@ -1880,6 +1891,7 @@
 	Counter	Бројач
 	Typewriter	Писаћа машина
 	Word by Word	Реч по реч
+	Scramble	Мешање
 	Animator	Аниматор
 	Animator Duration	Трајање аниматора
 	Animator Delay	Кашњење аниматора
@@ -1999,6 +2011,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10-битни за HDR)
 	10-bit RGB	10-битни RGB
 	12-bit X'Y'Z'	12-битни X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-битни R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF са губицима
+	JPEG 2000 IMF reversible	JPEG 2000 IMF реверзибилни
 	16-bit half float	16-битни покретни зарез половичне прецизности
 	linear	линеарно
 	uncompressed	некомпресовано
@@ -2912,6 +2927,10 @@
 	Sharpen Amount	Количина изоштравања
 	Shift Center To	Помери средиште на
 	Show Focus Area	Прикажи област фокуса
+	Rack Focus	Пребацивање фокуса
+	Focus Point A	Тачка фокуса A
+	Focus Point B	Тачка фокуса B
+	Rack	Пребацивање
 	Show Only Noise	Прикажи само шум
 	Shrink	Скупи
 	Shutter Angle	Угао затварача
@@ -3608,7 +3627,7 @@
 	Six-Point Pin	Качење у шест тачака
 	Upper Center	Горе у средини
 	Lower Center	Доле у средини
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Користи FFmpeg за датотеке које CFA4 машина не може да отвори (FFmpeg 9.0.2 или новији, GPL-3 верзија)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Користи FFmpeg за датотеке које CFA4 машина не може да отвори (FFmpeg 9.1 или новији, GPL-3 верзија)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Користи системски GStreamer за датотеке које не могу да отворе ни машина ни FFmpeg
 	Analyze Source for Smart Cut	Анализирај извор за паметни рез
 	Plan Smart Cut	Планирај паметни рез
@@ -4163,6 +4182,11 @@ export.summary	Low	низак
 	Burn Size	Величина изгоревања
 	Ember Width	Ширина жара
 	Ember Color	Боја жара
+	Tear Away	Цепање
+	Tear Roughness	Храпавост поцепотине
+	Paper Edge Width	Ширина ивице папира
+	Stamp Cut	Исечак марке
+	Perforations	Перфорација
 	Check Text Legibility	Провери читљивост текста
 	Clear Legibility Markers	Уклони ознаке читљивости
 	Text legibility: no problems found	Читљивост текста: нису пронађени проблеми
@@ -4202,6 +4226,9 @@ export.summary	Low	низак
 	Dither	Распршивање
 	Pattern	Узорак
 	Cell Size	Величина ћелије
+	Pixelate	Пикселизација
+	Cell Shape	Облик ћелије
+	LED	LED
 	Cyan Angle	Угао цијан
 	Magenta Angle	Угао магента
 	Yellow Angle	Угао жуте
@@ -4367,6 +4394,10 @@ export.summary	Low	низак
 	{n} more	Још {n}
 	Block	Блок
 	parallel	паралелно
+	page {page}: a spine's vertical position works on card pages only; it is ignored	страница {page}: вертикални положај осе важи само на страницама картица; занемарује се
+	on a card: centered on {y} px	на картици: центрирано на {y} px
+	on a card: starts at {y} px	на картици: почиње на {y} px
+	on a card: ends at {y} px	на картици: завршава се на {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	На страници (OBS га узима из извора прегледача)
@@ -4439,7 +4470,12 @@ export.summary	Low	низак
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	страница {page}: трајање се постиже променом брзине померања (размаци би морали да порасту више од 20 пута)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	страница {page}: прелаз захтева да се странице додирују (размак 0); изоставља се
 	page {page}: there is no transition “{name}”; the pages cut	страница {page}: нема прелаза „{name}”; странице се мењају резом
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	положај осе „{value}” није подржан (подржан је помак у пикселима, по жељи уз „parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	положај осе „{value}” није подржан (подржан је помак у пикселима, по жељи уз „parallel” / „Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	страница {page}: кука сеже даље уназад него што има оса; качи се на прву осу или започиње своју
+	hooked {n} spines back: its {from} meets this spine's {to}	закачено {n} оса уназад: њен {from} спаја се са {to} ове осе
+	top	горња ивица
+	middle	средина
+	bottom	доња ивица
 	vertical gap “{value}” is not a number	вертикални размак „{value}” није број
 	picture “{file}” was not found or cannot be read; it is left out	слика „{file}” није пронађена или се не може прочитати; изоставља се
 	video “{file}” was not found or cannot be read; it is left out	видео „{file}” није пронађен или се не може прочитати; изоставља се
@@ -4502,3 +4538,435 @@ export.summary	Low	низак
 	accept	прихватљиво
 	the engine did not start the check	машина није покренула проверу
 	the engine sent no report	машина није послала извештај
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a некомпресовано 10-битно 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, некомпресовани 10-битни Y'CbCr 4:2:2 у распореду v210 (SMPTE ST 384), 24-битни PCM 48 kHz, почетни временски код
+	Write the captions as ANC data (CEA-608/708)	Упиши титлове као ANC податке (CEA-608/708)
+	Load KDM…	Учитај KDM…
+	Forget DCP Keys	Заборави DCP кључеве
+	Load KDM	Учитај KDM
+	KDM file	KDM датотека
+	Private key (PEM)	Приватни кључ (PEM)
+	{title}: {count} keys loaded	{title}: учитано кључева: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кључеви остају само у меморији, до команде Заборави DCP кључеве или краја сесије.
+	DCP keys forgotten	DCP кључеви заборављени
+	Choose the KDM file and the private key.	Изаберите KDM датотеку и приватни кључ.
+	Load even if the certificate chain is not verified	Учитај и са непровереним ланцем сертификата
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Пакет: учитано {loaded} од {total} KDM, {other} за друге примаоце
+	Not loaded: {path}: {problem}	Није учитано: {path}: {problem}
+	Signature verified: {chain}	Потпис проверен: {chain}
+	Signature not verified: {problem}	Потпис није проверен: {problem}
+	KDM required	Потребан је KDM
+	Encrypted: load the KDM with content key {keys}	Шифровано: учитајте KDM са кључем садржаја {keys}
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Синхронизација временског кода
+	TimecodeSync	Синхронизација временског кода
+	Chase	Праћење
+	Follow external timecode during playback	Прати спољни временски код током репродукције
+	Lock after	Закључај након
+	Keep playing without signal for	Настави репродукцију без сигнала још
+	External frame rate	Спољна брзина кадрова
+	Offset (added to the external timecode)	Помак (додаје се спољном временском коду)
+	LTC	LTC
+	LTC input device	Улазни уређај за LTC
+	LTC input channel	Улазни канал за LTC
+	Send LTC during playback	Шаљи LTC током репродукције
+	LTC output device	Излазни уређај за LTC
+	LTC output channel	Излазни канал за LTC
+	LTC level	Ниво LTC-а
+	dBFS	dBFS
+	MIDI Timecode	MIDI временски код
+	MTC input port (empty = CFA4 port)	Улазни MTC порт (празно = порт CFA4)
+	Send MIDI Timecode during playback	Шаљи MIDI временски код током репродукције
+	MTC output port (empty = CFA4 port)	Излазни MTC порт (празно = порт CFA4)
+	Send timecode ahead of the picture by	Шаљи временски код испред слике за
+	LTC (audio input)	LTC (аудио улаз)
+	MIDI Timecode (MIDI input)	MIDI временски код (MIDI улаз)
+	Same as the sequence	Исто као секвенца
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Стање синхронизације временског кода
+	Chase External Timecode	Прати спољни временски код
+	Send LTC	Шаљи LTC
+	Send MIDI Timecode	Шаљи MIDI временски код
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Преглед студија уживо
+	Live studio: stopped	Студио уживо: заустављен
+	Live studio: {state}	Студио уживо: {state}
+	Live studio: {error}	Студио уживо: {error}
+	restarted after {count} crashes (last: {exit})	поново покренут после {count} падова (последњи: {exit})
+	software backend: {reason}	софтверска позадина: {reason}
+	Start studio	Покрени студио
+	Stop studio	Заустави студио
+	Add Studio Scene	Додај сцену студија
+	Live	Уживо
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Уводна шпица
+	Chapter Title	Наслов поглавља
+	Lower Third	Доњи натпис
+	page {page}: graphics template “{template}” was not found; “{used}” is used	страница {page}: графички шаблон „{template}” није пронађен; користи се „{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	страница {page}: графички шаблон „{template}” нема поље за сав текст блока; остатак се изоставља
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	страница {page}: поље шаблона „{control}” → „{part}” се не користи (нема такве текстуалне контроле или није заглавље, тело или реп)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	страница {page}: слике се изостављају на страницама наслова, уводне шпице, поглавља и доњег натписа
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Аутоматска боја
+	Auto Contrast	Аутоматски контраст
+	Auto Levels	Аутоматски нивои
+	Temporal Smoothing (seconds)	Временско изглађивање (секунде)
+	Scene Detect	Откривање сцена
+	Black Clip	Одсецање црне
+	White Clip	Одсецање беле
+	Snap Neutral Midtones	Неутрални средњи тонови
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Слика у слици 35% горе лево
+	Picture-in-picture: 35 % scale in the upper left	Слика у слици: размера 35 % горе лево
+	PiP 35% Lower Left	Слика у слици 35% доле лево
+	Picture-in-picture: 35 % scale in the lower left	Слика у слици: размера 35 % доле лево
+	PiP 35% Lower Right	Слика у слици 35% доле десно
+	Picture-in-picture: 35 % scale in the lower right	Слика у слици: размера 35 % доле десно
+	Split Screen Left	Подељени екран лево
+	Split screen: the middle half of the picture fills the left half of the frame	Подељени екран: средња половина слике испуњава леву половину кадра
+	Split Screen Right	Подељени екран десно
+	Split screen: the middle half of the picture fills the right half of the frame	Подељени екран: средња половина слике испуњава десну половину кадра
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Јачина линија
+	Line Count	Број линија
+	Mask	Маска
+	Mask Strength	Јачина маске
+	Corner Darkening	Тамњење углова
+	Aperture Grille	Апертурна решетка
+	Shadow Mask	Маска сенке
+	Slot Mask	Маска са прорезима
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Уљана слика
+	Detail	Детаљи
+	Texture	Текстура
+	Facet	Фасете
+	Daubs	Мрље
+	Dry Brush	Сува четкица
+	Fresco	Фреска
+	Knife	Шпахтла
+	Sponge	Сунђер
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Сортирање пиксела
+	Sort By	Сортирај по
+	Lower Threshold	Доњи праг
+	Upper Threshold	Горњи праг
+	Ascending	Растуће
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Временско уклањање шума
+	Frames Each Side	Сличица са сваке стране
+	Motion Threshold	Праг покрета
+	Show Motion	Прикажи покрет
+	No signal	Нема сигнала
+	Locating	Позиционирање
+	Locked	Синхронизовано
+	Freewheel	Слободан ход
+	Scrubbing	Померање
+	Sending	Слање
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Титлови са прве стазе титлова
+	The package language	Језик пакета
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (уграђени) или датотека OpenType / TrueType
+	Subtitle language	Језик титлова
+	Subtitle font	Фонт титлова
+	Fonts	Фонтови
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 делови
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Повезано
+	Device	Уређај
+	Devices	Уређаји
+	Disabled	Онемогућено
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Није повезано
+	OSC	OSC
+	Use	Користи
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI монитор
+	Press Start Monitor, then move a control.	Притисните „Покрени монитор“, а затим померите контролу.
+	Start Monitor	Покрени монитор
+	Stop Monitor	Заустави монитор
+	… {count} messages not shown (too many at once)	… {count} порука није приказано (превише одједном)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Контролна површина је затражила {command}, која не постоји.
+	Assignments	Додељивања
+	Cancel Learn	Откажи учење
+	Control	Контрола
+	Learn	Научи
+	Remove this assignment	Уклони ово додељивање
+	{control} runs {command}.	{control} покреће {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Дугме {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} панорама (дугме)
+	{strip} Volume (fader)	{strip} јачина (фејдер)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Контролне површине
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Доделе се покрећу притиском дугмета (фејдер или дугме се рачуна као притиснуто после половине); фејдер или дугме додељено траци миксера помера јачину или панораму. Прстен shuttle на ShuttlePRO пушта брзинама профила, а точак jog корача по кадру. Бесконачни енкодери и одговор контролеру (лампице, моторни фејдери) долазе у каснијој верзији.
+	First message (ms)	Прва порука (ms)
+	Silence (ms)	Тишина (ms)
+	Waiting for the control to settle…	Чека се да се контрола смири…
+	Type: {hint}. Confirm this assignment.	Тип: {hint}. Потврдите ову доделу.
+	That control is already assigned. Confirm replaces it.	Та контрола је већ додељена. Потврда је замењује.
+	Learn timed out.	Учење је истекло.
+	Confirm	Потврди
+	Reject	Одбаци
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Приказује сваку MIDI поруку са контролера чим стигне, да се види да ли контролер шаље и шта. MIDI сат, Active Sensing и MIDI временски код се изостављају.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Изаберите команду (или траку миксера за фејдер или дугме), притисните Учи, затим дугме или померите контролу преко половине. Потврда чува доделу. У реду чува доделе.
+	All devices	Сви уређаји
+	Builtin: {name}	Уграђени: {name}
+	Capturing	Снимање
+	Confirmed	Потврђено
+	Conflict	Сукоб
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Повежите MIDI контролер или ShuttlePRO да бисте уредили његов профил.
+	Control Surfaces…	Контролне површине…
+	Filter messages	Филтрирај поруке
+	Idle	Неактиван
+	Kernel dropped: {count}	Језгро је одбацило: {count}
+	Learn Assignments…	Учење додела…
+	Load profile	Учитај профил
+	MIDI Monitor…	MIDI монитор…
+	Mute shuttle sound	Искључи звук shuttle-а
+	No conflicts.	Нема сукоба.
+	No profile warnings.	Нема упозорења профила.
+	No project profile is stored.	Профил пројекта није сачуван.
+	OK writes the preferences and the profile file together.	У реду уписује подешавања и датотеку профила заједно.
+	Online	На мрежи
+	Pending	На чекању
+	Pickup (14-bit)	Хватање (14 бита)
+	Pickup (7-bit)	Хватање (7 бита)
+	Profile warnings	Упозорења профила
+	Rejected	Одбијено
+	Show Active Sensing	Прикажи Active Sensing
+	Show MIDI Clock	Прикажи MIDI сат
+	Show MIDI Time Code	Прикажи MIDI временски код
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Датотека профила је оштећена. Подешавања и уграђени профил остају у употреби.
+	Timed out	Време је истекло
+	Type: {hint}	Тип: {hint}
+	User profile file	Датотека профила корисника
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} примљено, {dispatched} прослеђено, {coalesced} спојено, {stalls} чекања, {errors} грешака
+
+# Control Surfaces settings page (CS-1, #1187)
+	Looking for devices…	Тражење уређаја…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Није пронађен ниједан MIDI контролер ни jog/shuttle уређај. Прикључите један и притисните Освежи.
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Користи контролне површине (MIDI контролери, jog/shuttle уређаји)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Додела контрола командама, MIDI Learn и MIDI монитор долазе у каснијој верзији; до тада се избори овде памте.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO у стилу Kdenlive-а
+	Generic MIDI	Општи MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Читај из LTC звука
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Пронађи SMPTE LTC у звуку клипа и употреби временски код који даје првом кадру
+	Read Timecode from LTC Audio	Читај временски код из LTC звука
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Гласови
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: прилагоди брзину репродукције уместо прескакања
+	User bits	Кориснички битови
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Сегментација
+	Marker Type	Тип маркера
+	Chapter	Поглавље
+	Segmentation (AS-11 programme part)	Сегментација (део програма AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Конвертер AT9/AT3
+	AT9/AT3 Converter…	Конвертер AT9/AT3…
+	Files to convert:	Датотеке за конверзију:
+	Add Files	Додај датотеке
+	Add Files…	Додај датотеке…
+	Convert to:	Конвертуј у:
+	Bit rate:	Брзина протока:
+	Sample format:	Формат узорака:
+	Output folder:	Излазна фасцикла:
+	Output Folder	Излазна фасцикла
+	Next to each source file	Поред сваке изворне датотеке
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Датотеке AT9 и ATRAC3plus конвертују се у WAV; кодирање AT9, ATRAC3plus и MP3 још није доступно.
+	Convert	Конвертуј
+	Add the files to convert first.	Прво додајте датотеке за конверзију.
+	Done: {n} file(s) converted.	Готово: конвертовано датотека: {n}.
+	Converting {name}…	Конвертовање {name}…
+	Stopping…	Заустављање…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, здружени стерео)
+	16-bit	16-битни
+	24-bit	24-битни
+	32-bit float	32-битни покретни зарез
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Остатак
+	Motion Boost	Појачање покрета
+	Recovery	Опоравак
+	Encode Resolution	Резолуција кодирања
+	Half	Пола
+	Quarter	Четвртина
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh цветање
+	Start Time (seconds)	Време почетка (секунде)
+	Repeats	Понављања
+	Clean Blocks	Чисти блокови
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Примени недавно коришћен ефекат на изабране клипове
+	Disable all effects	Искључи све ефекте
+	Enable all effects	Укључи све ефекте
+	No recent effects	Нема недавних ефеката
+	Recent effects	Недавни ефекти
+	Switch every effect of the selected clips off	Искључује сваки ефекат изабраних клипова
+	Switch every effect of the selected clips on	Укључује сваки ефекат изабраних клипова
+	Merged	Спојено
+	Per Channel	По каналу
+	Channel Zoom	Зумирање канала
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Бирач баланса белог (кликните неутралну тачку на програмском монитору; Esc отказује)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Менаџер задатака
+	Background jobs	Позадински послови
+	Exports	Извози
+	Shared task queue	Заједнички ред задатака
+	Task	Задатак
+	State	Стање
+	Details	Детаљи
+	Time left	Преостало време
+	Scheduled	Заказано
+	Queued	У реду чекања
+	Waiting for resources	Чека ресурсе
+	Blocked	Блокирано
+	Running	Ради
+	Paused	Паузирано
+	Cancelling	Отказивање
+	Interactive	Интерактивно
+	Speculative	Спекулативно
+	Final render	Завршни рендер
+	Show finished	Прикажи завршено
+	Nothing is running.	Ништа се не извршава.
+	Not reported by this engine yet.	Овај механизам то још не пријављује.
+	Not available: {why}	Није доступно: {why}
+	{name} waits: {why}	{name} чека: {why}
+	{running} running · {waiting} waiting	{running} се извршава · {waiting} чека
+	{n} active	{n} активних
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Чека вашу одлуку
+	Run now	Покрени сада
+	Next slot	Следећи термин
+	Missed its start	Пропуштен почетак
+	Missed its start at {time}	Пропуштен почетак у {time}
+	Starts at {time}	Почиње у {time}
+	Subtitle kind	Врста титлова
+	Subtitles	Титлови
+	Captions for the hearing impaired	Титлови за особе оштећеног слуха
+	Forced narrative	Принудна нарација (forced narrative)
+	Silence	Тишина
+	Detect Silence	Откриј тишину
+	Remove Silence	Уклони тишину
+	Clear Silence Markers	Обриши ознаке тишине
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Изаберите фасциклу DCP-а.
+	DCP Validation	Провера DCP-а
+	DCP folder	Фасцикла DCP-а
+	DCP folder (the one holding ASSETMAP)	Фасцикла DCP-а (она која садржи ASSETMAP)
+	Evidence	Доказ
+	How to fix	Како исправити
+	Interrupted	Прекинуто
+	Not applicable	Није применљиво
+	Report	Извештај
+	Report saved: {path}	Извештај сачуван: {path}
+	Required	Обавезно
+	Rule	Правило
+	Rules	Правила
+	Save JSON…	Сачувај JSON…
+	Save Markdown…	Сачувај Markdown…
+	Save report	Сачувај извештај
+	Skipped	Прескочено
+	Standard: {standard}	Стандард: {standard}
+	Validate	Провери
+	Validate DCP…	Провери DCP…
+	the engine sent no profiles	механизам није послао ниједан профил
+	{n} files checked	Проверено датотека: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Упиши AS-02 пакет (путања је фасцикла)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Активни воксел:
+	Bounds:	Границе:
+	Voxel attributes	Атрибути воксела
+	Voxel size:	Величина воксела:
+	points	тачке
+
+# WP3 DPX bit depth
+	Bit Depth	Битна дубина
+
+# AS-02 versions
+	AS-02 Versions	AS-02 верзије
+	Tick the sequences to write as further versions in the AS-02 bundle	Означите секвенце које ће бити уписане као додатне верзије у AS-02 пакету
+	Delete Short Clips	Обриши кратке клипове
+	A stored combination does not run a command yet.	Сачувана комбинација још не покреће наредбу.
+	Action hint	Наговештај радње
+	Add combination	Додај комбинацију
+	Add mapping	Додај доделу
+	Button Learn	Учење тастера
+	Button Test	Проба тастера
+	Button name	Име тастера
+	Cancel feedback	Сигнал отказивања
+	Combination editor	Уређивач комбинација
+	Context	Контекст
+	Delete profile	Обриши профил
+	Detected buttons	Откривени тастери
+	Draw the gesture with a button held.	Нацртајте покрет док држите тастер.
+	Error feedback	Сигнал грешке
+	Evdev device	Evdev уређај
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev чита само изабрани уређај, и тек кад га каснија фаза укључи. Ова верзија остаје на Qt путу.
+	Execution feedback	Сигнал извршења
+	Follow the system	Прати систем
+	Gesture	Покрет
+	Gesture Learn	Учење покрета
+	Gesture editor	Уређивач покрета
+	Gesture profiles	Профили покрета
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Покрети остају искључени док их не укључите. Укључивање не блокира мени панела.
+	HUD	HUD
+	Hand	Рука
+	High contrast	Висок контраст
+	Hold time	Време држања
+	Input access	Приступ улазу
+	Left-handed	Леворук
+	Mapping	Додела
+	Maximum length	Највећа дужина
+	Maximum time	Највеће време
+	Minimum length	Најмања дужина
+	Mirror ergonomic gestures	Пресликај ергономске покрете
+	Mouse Gestures	Покрети миша
+	Mouse Gestures…	Покрети миша…
+	No buttons yet. Press one in Button Learn or Button Test.	Још нема тастера. Притисните један у учењу или у проби.
+	Press	Притисак
+	Qt pointer (this application)	Qt показивач (ова апликација)
+	Recognition preview	Преглед препознавања
+	Reduced animation	Смањена анимација
+	Right-handed	Деснорук
+	Roles	Улоге
+	Save gesture	Сачувај покрет
+	Save profile	Сачувај профил
+	Show the gesture HUD	Прикажи HUD покрета
+	Slop	Зазор
+	Spatial gesture	Просторни покрет
+	Thresholds	Прагови
+	Trail	Траг
+	Use gestures in the window	Користи покрете у прозору

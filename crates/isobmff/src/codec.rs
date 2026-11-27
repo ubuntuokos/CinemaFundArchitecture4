@@ -611,11 +611,11 @@ impl AacConfig {
 /// Decode (audio object type, sampling frequency, channel configuration) from an AudioSpecificConfig.
 pub fn parse_asc(asc: &[u8]) -> Option<(u8, u32, u8)> {
     let mut r = BitReader::new(asc);
-    let aot = |r: &mut BitReader| -> Option<u8> {
+    let aot = |r: &mut BitReader<'_>| -> Option<u8> {
         let t = r.read_bits(5).ok()? as u8;
         if t == 31 { Some(32 + r.read_bits(6).ok()? as u8) } else { Some(t) }
     };
-    let rate = |r: &mut BitReader| -> Option<u32> {
+    let rate = |r: &mut BitReader<'_>| -> Option<u32> {
         let i = r.read_bits(4).ok()? as usize;
         if i == 15 { r.read_bits(24).ok() } else { AAC_RATES.get(i).copied() }
     };
@@ -1176,7 +1176,7 @@ fn parse_colr(p: &[u8]) -> Result<ColorInfo> {
     })
 }
 
-fn descriptor(c: &mut Cur) -> Result<(u8, usize)> {
+fn descriptor(c: &mut Cur<'_>) -> Result<(u8, usize)> {
     let tag = c.u8()?;
     let mut len = 0usize;
     for _ in 0..4 {

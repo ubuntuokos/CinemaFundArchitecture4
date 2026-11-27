@@ -97,7 +97,7 @@ pub(crate) fn load_lf_groups<S: Sample>(
     frame: &IndexedFrame,
     lf_global: &LfGlobal<S>,
     lf_groups: &mut std::collections::HashMap<u32, LfGroup<S>>,
-    mlf_groups: Vec<TransformedModularSubimage<S>>,
+    mlf_groups: Vec<TransformedModularSubimage<'_, S>>,
     lf_region: Region,
     pool: &JxlThreadPool,
 ) -> Result<Option<ImageWithRegion>> {

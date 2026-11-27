@@ -34,6 +34,7 @@ pub const CPL_REEL_SYNC: &str = "DCP.CPL.005";
 pub const STD_CONSISTENT: &str = "DCP.STD.001";
 pub const MXF_TRACK_FILES: &str = "DCP.MXF.001";
 pub const J2K_CODESTREAM: &str = "DCP.J2K.001";
+pub const PIC_FORMAT: &str = "DCP.PIC.001";
 pub const AUD_PCM: &str = "DCP.AUD.001";
 pub const AUD_LOUDNESS: &str = "DCP.AUD.002";
 pub const IAB_TRACK: &str = "DCP.IAB.001";
@@ -65,6 +66,7 @@ pub const RULES: &[Rule] = &[
     r(STD_CONSISTENT, "Every document is of the profile's standard (SMPTE or Interop)", "DCP-03"),
     r(MXF_TRACK_FILES, "Track files are valid MXF of the declared kind", "DCP-06"),
     r(J2K_CODESTREAM, "Picture codestreams follow the DCI JPEG 2000 profiles", "DCP-06"),
+    r(PIC_FORMAT, "Picture size, aspect ratio and frame rate are of a cinema format", "DCP-06"),
     r(AUD_PCM, "Sound track files are 24-bit 48/96 kHz PCM with a valid channel layout", "DCP-07"),
     r(AUD_LOUDNESS, "Loudness and peaks are measured and within the profile", "DCP-07"),
     r(IAB_TRACK, "Immersive audio track files are valid IAB", "DCP-07"),

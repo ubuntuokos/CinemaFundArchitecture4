@@ -3,7 +3,7 @@
 use std::io::Cursor;
 
 use super::*;
-use crate::{Codec, OperationalPattern, PartitionKind, TrackKind, Wrapping, open};
+use crate::{Codec, EssenceTrack, OperationalPattern, PartitionKind, SoundFormat, TrackKind, Wrapping, open};
 
 fn prores_like(i: usize) -> Vec<u8> {
     let mut v = vec![0, 0, 0, 40];
@@ -912,7 +912,12 @@ fn rdd9_rejects_other_essence() {
 }
 /// Three uncompressed pictures of `layout` (32×4), each a different flat colour.
 fn build_uncompressed(pattern: Pattern, layout: crate::UncompressedLayout) -> (Vec<u8>, Vec<Vec<u8>>) {
+    build_uncompressed_with(pattern, layout, &[])
+}
+
+fn build_uncompressed_with(pattern: Pattern, layout: crate::UncompressedLayout, dm_schemes: &[[u8; 16]]) -> (Vec<u8>, Vec<Vec<u8>>) {
     let mut cfg = WriterConfig::new(pattern, Rational::new(25, 1), PackageIds::from_seed("raw", "Raw Clip"));
+    cfg.dm_schemes = dm_schemes.to_vec();
     cfg.picture = Some(PictureDesc::new(PictureCoding::Uncompressed { layout }, 48, 4));
     let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
     let mut pictures = Vec::new();
@@ -970,6 +975,180 @@ fn clip_wrapped_uncompressed_without_an_index_splits_by_picture_size() {
     assert_eq!(track.samples.len(), 3);
     assert_eq!(track.wrapping, Wrapping::Clip);
     assert_eq!(f.read_sample(&bytes[..], 0, 2).unwrap(), pictures[2]);
+}
+
+/// Rewrites every frame-wrapped picture element of `bytes` as ST 384 line wrapping: a system
+/// element (start of stored data / start of line), a fill data element before the first line,
+/// then one picture element per stored line of `line` bytes.
+fn line_wrap(bytes: &[u8], line: usize) -> Vec<u8> {
+    line_wrap_with(bytes, line, &|_| None)
+}
+
+/// [`line_wrap`], with a VANC data element (ST 384 7.2, type 09h) of the samples `vanc(picture)`
+/// after a "start of line" system element for stored line 9, before each picture's first line.
+fn line_wrap_with(bytes: &[u8], line: usize, vanc: &dyn Fn(usize) -> Option<Vec<u8>>) -> Vec<u8> {
+    let mut out = Vec::new();
+    let mut picture = 0;
+    let mut at = 0;
+    while at + 17 <= bytes.len() {
+        let key: [u8; 16] = bytes[at..at + 16].try_into().unwrap();
+        let (len, n) = crate::klv::ber_length(&bytes[at + 16..]).unwrap();
+        let v = &bytes[at + 16 + n..at + 16 + n + len as usize];
+        if key[12] == 0x15 && key[14] == 0x02 {
+            for (l, chunk) in v.chunks(line).enumerate() {
+                let mut sys = key;
+                sys[5] = 0x05;
+                sys[12..16].copy_from_slice(&[0x14, 0x01, if l == 0 { 0x01 } else { 0x02 }, 0x00]);
+                let mut pack = (l as u32 + 1).to_be_bytes().to_vec();
+                pack.extend_from_slice(&[0; 4]);
+                crate::testing::klv(&mut out, sys, &pack);
+                if l == 0 {
+                    let mut data = key;
+                    data[12..16].copy_from_slice(&[0x17, 0x01, 0x08, 0x01]);
+                    crate::testing::klv(&mut out, data, &[0xEE; 4]);
+                    if let Some(samples) = vanc(picture) {
+                        let mut sys = key;
+                        sys[5] = 0x05;
+                        sys[12..16].copy_from_slice(&[0x14, 0x01, 0x02, 0x00]);
+                        crate::testing::klv(&mut out, sys, &[0, 0, 0, 9, 0, 0, 0, 0]);
+                        let mut data = key;
+                        data[12..16].copy_from_slice(&[0x17, 0x02, 0x09, 0x01]);
+                        crate::testing::klv(&mut out, data, &samples);
+                    }
+                }
+                let mut pic = key;
+                pic[14] = 0x04;
+                crate::testing::klv(&mut out, pic, chunk);
+            }
+            picture += 1;
+        } else {
+            out.extend_from_slice(&bytes[at..at + 16 + n + len as usize]);
+        }
+        at += 16 + n + len as usize;
+    }
+    // the essence container label: line wrapping (ST 384 Table 5)
+    for i in 0..out.len().saturating_sub(8) {
+        if out[i..i + 6] == [0x0D, 0x01, 0x03, 0x01, 0x02, 0x05] && out[i + 7] == 0x01 {
+            out[i + 7] = 0x03;
+        }
+    }
+    out
+}
+
+#[test]
+fn line_wrapped_uncompressed_pictures_are_gathered_line_by_line() {
+    use crate::uncompressed::{Layout, decode};
+    let layout = crate::UncompressedLayout::Uyvy8;
+    let (bytes, pictures) = build_uncompressed(Pattern::Op1a, layout);
+    let lined = line_wrap(&bytes, 96);
+    assert!(lined.len() > bytes.len());
+    let f = open(&lined[..]).unwrap();
+    let t = f.tracks.iter().position(|t| t.kind == TrackKind::Picture).unwrap();
+    let track = &f.tracks[t];
+    assert_eq!((track.codec, track.wrapping, track.samples.len()), (Codec::Uncompressed, Wrapping::Line, 3), "{:?}", f.warnings);
+    let pi = track.picture.as_ref().unwrap();
+    let l = Layout::of(pi).unwrap();
+    for (i, want) in pictures.iter().enumerate() {
+        let s = f.read_sample(&lined[..], t, i).unwrap();
+        assert_eq!(&s, want);
+        let pic = decode(&l, pi, &s).unwrap();
+        assert_eq!((pic.planes[0][0], pic.planes[2][0]), (16 + i as u16, 200 - i as u16));
+    }
+    // a picture with a line missing is left out; the system elements keep the others in step
+    let first_line = lined.windows(4).position(|w| w == [0x15, 0x01, 0x04, 0x01]).unwrap() - 12;
+    let mut short = lined[..first_line].to_vec();
+    short.extend_from_slice(&lined[first_line + 16 + 4 + 96..]);
+    let f = open(&short[..]).unwrap();
+    let track = &f.tracks[t];
+    assert_eq!(track.samples.len(), 2, "{:?}", f.warnings);
+    assert_eq!(f.read_sample(&short[..], t, 0).unwrap(), pictures[1]);
+    assert!(f.warnings.iter().any(|w| w.contains("1 line-wrapped picture(s)")), "{:?}", f.warnings);
+    // without system elements, the lines are counted
+    let mut bare = lined.clone();
+    for i in 0..bare.len() - 16 {
+        if bare[i..i + 4] == [0x06, 0x0E, 0x2B, 0x34] && bare[i + 12..i + 14] == [0x14, 0x01] {
+            bare[i..i + 16].copy_from_slice(&KLV_FILL);
+        }
+    }
+    let f = open(&bare[..]).unwrap();
+    assert_eq!(f.tracks[t].samples.len(), 3, "{:?}", f.warnings);
+    assert_eq!(f.read_sample(&bare[..], t, 2).unwrap(), pictures[2]);
+}
+
+/// 10-bit ST 291 words of a packet: ancillary data flag, DID / SDID / DC and user data words
+/// with even parity in b8 and its inverse in b9, then the checksum.
+fn st291_words(did: u8, sdid: u8, udw: &[u8]) -> Vec<u16> {
+    let par = |b: u8| {
+        let p = u16::from(b.count_ones() % 2 == 1);
+        u16::from(b) | p << 8 | (1 - p) << 9
+    };
+    let mut w = vec![0, 0x3FF, 0x3FF, par(did), par(sdid), par(udw.len() as u8)];
+    w.extend(udw.iter().map(|&b| par(b)));
+    let sum = w[3..].iter().fold(0u16, |a, &x| a.wrapping_add(x & 0x1FF)) & 0x1FF;
+    w.push(sum | (!sum >> 8 & 1) << 9);
+    w
+}
+
+/// #1060: ST 291 packets in the line-wrapped VANC data elements of uncompressed pictures reach
+/// `read_anc`: in the luma samples of 8-bit UYVY and of v210, with the stored line of the system
+/// element before them and the frame of the start of stored data; a bad 10-bit checksum is not a
+/// packet, and a file without VANC packets reads as ANC data with empty frames.
+#[test]
+fn line_wrapped_vanc_packets_are_read_as_anc() {
+    let cdp = |seq: u8| vec![0x96, 0x69, 0x08, 0x4F, 0x43, 0x00, seq, 0x74];
+    for (layout, line) in [(crate::UncompressedLayout::Uyvy8, 96), (crate::UncompressedLayout::V210, 128)] {
+        let (bytes, _) = build_uncompressed(Pattern::Op1a, layout);
+        let samples = |picture: usize, corrupt: bool| -> Option<Vec<u8>> {
+            if picture == 1 {
+                return None;
+            }
+            let mut words = st291_words(0x61, 0x01, &cdp(picture as u8));
+            if corrupt {
+                let last = words.len() - 1;
+                words[last] ^= 1;
+            }
+            // the packet in the luma samples, colour difference samples at black
+            let eight = layout == crate::UncompressedLayout::Uyvy8;
+            // 8-bit samples carry the low 8 bits of each word
+            let black = if eight { 0x80 } else { 0x200 };
+            let mut seq: Vec<u16> = words.iter().flat_map(|&y| [black, if eight { y & 0xFF } else { y }]).collect();
+            while !seq.len().is_multiple_of(6) {
+                seq.push(black);
+            }
+            Some(match layout {
+                crate::UncompressedLayout::Uyvy8 => seq.iter().map(|&w| w as u8).collect(),
+                _ => seq.chunks(3).flat_map(|c| (u32::from(c[0]) | u32::from(c[1]) << 10 | u32::from(c[2]) << 20).to_le_bytes()).collect(),
+            })
+        };
+        let lined = line_wrap_with(&bytes, line, &|p| samples(p, false));
+        assert!(crate::has_anc(&lined[..lined.len().min(65_536)]), "{layout:?}");
+        let a = crate::read_anc(&lined[..]).unwrap();
+        assert_eq!(a.edit_rate, Rational::new(25, 1));
+        assert_eq!(a.frames.len(), 3, "{layout:?} {:?}", a.warnings);
+        assert!(a.frames[1].is_empty());
+        for f in [0, 2] {
+            let p = &a.frames[f];
+            assert_eq!(p.len(), 1, "{layout:?} frame {f}: {p:?}");
+            assert_eq!((p[0].line, p[0].wrapping, p[0].coding), (9, 1, if layout == crate::UncompressedLayout::Uyvy8 { 4 } else { 7 }));
+            assert!(p[0].is_cdp());
+            assert_eq!(p[0].user_data(), &cdp(f as u8)[..]);
+        }
+        assert_eq!(a.cdps().iter().map(|c| c.0).collect::<Vec<_>>(), vec![0, 2]);
+        // the pictures still read
+        let f = open(&lined[..]).unwrap();
+        assert_eq!(f.tracks.iter().find(|t| t.kind == TrackKind::Picture).map(|t| t.samples.len()), Some(3));
+        if layout == crate::UncompressedLayout::V210 {
+            let bad = crate::read_anc(&line_wrap_with(&bytes, line, &|p| samples(p, true))[..]).unwrap();
+            assert!(bad.frames.iter().all(Vec::is_empty), "{:?}", bad.frames);
+        }
+        let none = crate::read_anc(&line_wrap(&bytes, line)[..]).unwrap();
+        assert_eq!(none.frames.len(), 3);
+        assert!(none.cdps().is_empty());
+    }
+    // frame-wrapped uncompressed pictures have no ANC data
+    let (bytes, _) = build_uncompressed(Pattern::Op1a, crate::UncompressedLayout::Uyvy8);
+    assert!(!crate::has_anc(&bytes[..bytes.len().min(65_536)]));
+    assert!(crate::read_anc(&bytes[..]).is_err());
 }
 
 #[test]
@@ -1104,6 +1283,9 @@ fn imf_picture_track_file() {
     // the sub-descriptor carries COD, QCD and the R10 G10 B10 layout
     assert!(f.windows(10).any(|w| w == [0x01, 0x04, 0x00, 0x01, 0x01, 0x05, 0x03, 0x03, 0x00, 0x00]));
     assert!(f.windows(8).any(|w| w == [b'R', 10, b'G', 10, b'B', 10, 0, 0]));
+    // PixelLayout (3401h) is the full 8-pair RGBALayout: Photon's RegXML reader rejects a shorter one
+    let pixel_layout = [0x34, 0x01, 0x00, 0x10, b'R', 10, b'G', 10, b'B', 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert!(f.windows(20).any(|w| w == pixel_layout));
     // truncation never panics
     for cut in (0..f.len()).step_by(211) {
         if let Ok(m) = open(&f[..cut]) {
@@ -1271,4 +1453,694 @@ fn j2k_sub_descriptor_from_hostile_codestreams() {
         }
     }
     assert!(J2kSubDescriptor::from_codestream(b"not j2k").is_none());
+}
+
+/// Edit list clips of 29.97 Hz AES3 sound (1601.6 sample frames per edit unit) start and end
+/// inside AES3 elements: the elements are cut there, exactly.
+#[test]
+fn edit_list_clips_cut_aes3_elements() {
+    let rate = Rational::new(30000, 1001);
+    let mut cfg = d10_config(30, 525, rate);
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 4, bits: 24 }];
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    let n = 12;
+    let total = 8008 * n / 5;
+    let mut a = 0;
+    for i in 0..n {
+        let k = 1500.min(total - a);
+        w.push_sound(0, &pcm24x4(a, k)).unwrap();
+        a += k;
+        w.push_picture(&d10_picture(i, 90_000), FrameInfo::intra()).unwrap();
+    }
+    w.push_sound(0, &pcm24x4(a, total - a)).unwrap();
+    let f = w.finish().unwrap().into_inner();
+    let mut m = open(&f).unwrap();
+    let ai = m.track_of_kind(TrackKind::Sound).unwrap();
+    let t = m.tracks[ai].clone();
+    assert_eq!(t.sound_format, SoundFormat::Aes3Element);
+    let orig = m.read_pcm(&f, ai, 0, total).unwrap();
+    // clip 1: edit units 1..4 = sample frames 1601..6405 (3 x 1601.6, floored); clip 2: 7..9 = 11211..14414, both inside elements
+    let clip = |start: i64, dur: i64| crate::file::Part {
+        track: EssenceTrack { start_position: start, duration: Some(dur), ..t.clone() },
+        gap_before: 0,
+        gap_after: 0,
+    };
+    let mut warnings = Vec::new();
+    let joined = crate::file::concat(vec![clip(1, 3), clip(7, 2)], &mut warnings).unwrap();
+    assert!(warnings.is_empty(), "{warnings:?}");
+    assert_eq!(joined.stored_sample_frames(), (6405 - 1601) + (14414 - 11211));
+    m.tracks[ai] = joined;
+    let got = m.read_pcm(&f, ai, 0, 4804 + 3203).unwrap();
+    for c in 0..4 {
+        assert_eq!(got[c][..4804], orig[c][1601..6405], "channel {c}, clip 1");
+        assert_eq!(got[c][4804..], orig[c][11211..14414], "channel {c}, clip 2");
+    }
+    // reads starting inside cut elements (1601 and 6405 are inside the 1602-frame elements
+    // 0..1602 and 4805..6406)
+    assert_eq!(m.read_pcm(&f, ai, 1, 3).unwrap()[2], orig[2][1602..1605]);
+    assert_eq!(m.read_pcm(&f, ai, 4802, 4).unwrap()[1], [&orig[1][6403..6405], &orig[1][11211..11213]].concat());
+}
+
+/// One CDP-like ANC packet on VANC line 9 for frame `i` (DID 61h, SDID 01h).
+fn anc_packet(i: usize) -> crate::AncPacket {
+    crate::AncPacket { line: 9, wrapping: 0x01, coding: 4, words: vec![0x61, 0x01, 4, 0x96, 0x69, i as u8, 0x74] }
+}
+
+#[test]
+fn anc_data_track_round_trips_through_read_anc() {
+    // OP1a UYVY pictures with a PCM track, and RDD 9 with reordered pictures and a KAG
+    for rdd9 in [false, true] {
+        let rate = Rational::new(30000, 1001);
+        let mut cfg = if rdd9 { rdd9_config(rate, 2) } else { WriterConfig::new(Pattern::Op1a, rate, PackageIds::from_seed("anc", "ANC Clip")) };
+        if !rdd9 {
+            cfg.picture = Some(PictureDesc::new(PictureCoding::Uncompressed { layout: crate::UncompressedLayout::Uyvy8 }, 16, 2));
+            cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 2, bits: 16 }];
+        }
+        cfg.anc = true;
+        let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+        let n = 7;
+        for i in 0..n {
+            // frame 3 carries no ANC packet; frame 5 none pushed at all (an empty element)
+            if i != 5 {
+                let packets = if i == 3 { Vec::new() } else { vec![anc_packet(i)] };
+                w.push_anc(&crate::anc_element(&packets)).unwrap();
+            }
+            if rdd9 {
+                w.push_sound(0, &vec![0; 1602 * 6]).unwrap();
+                w.push_picture(&d10_picture(i, 3000), rdd9_frame(i)).unwrap();
+            } else {
+                w.push_sound(0, &vec![0; 1602 * 4]).unwrap();
+                w.push_picture(&[0x80; 64], FrameInfo::intra()).unwrap();
+            }
+        }
+        let f = w.finish().unwrap().into_inner();
+        assert!(crate::has_anc(&f));
+        let a = crate::read_anc(&f[..]).unwrap();
+        assert_eq!(a.edit_rate, rate);
+        assert!(a.warnings.is_empty(), "{:?}", a.warnings);
+        assert_eq!(a.frames.len(), n, "rdd9 {rdd9}");
+        let with: Vec<usize> = (0..n).filter(|&i| !a.frames[i].is_empty()).collect();
+        assert_eq!(with, vec![0, 1, 2, 4, 6], "rdd9 {rdd9}");
+        assert_eq!(a.frames[0][0].words, anc_packet(0).words);
+        assert_eq!(a.frames[6][0].words, anc_packet(6).words);
+        assert_eq!((a.frames[0][0].line, a.frames[0][0].coding), (9, 4));
+        // the picture and sound tracks are still read as before
+        let m = open(&f).unwrap();
+        assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+        let pic = m.track_of_kind(TrackKind::Picture).unwrap();
+        assert_eq!(m.tracks[pic].samples.len(), n);
+        assert!(m.track_of_kind(TrackKind::Sound).is_some());
+    }
+}
+
+#[test]
+fn anc_data_track_is_refused_where_it_does_not_fit() {
+    let ids = || PackageIds::from_seed("anc", "ANC Clip");
+    let mut atom = WriterConfig::new(Pattern::OpAtom, Rational::new(25, 1), ids());
+    atom.picture = Some(PictureDesc::new(PictureCoding::Vc3 { cid: 1272 }, 64, 36));
+    atom.anc = true;
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), atom).is_err());
+    let mut sound_only = WriterConfig::new(Pattern::Op1a, Rational::new(25, 1), ids());
+    sound_only.sound = vec![SoundDesc { sample_rate: 48_000, channels: 2, bits: 16 }];
+    sound_only.anc = true;
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), sound_only).is_err());
+    let mut d10 = WriterConfig::new(Pattern::Op1a, Rational::new(25, 1), ids());
+    d10.picture = Some(PictureDesc::new(PictureCoding::D10 { mbps: 50, lines: 625 }, 720, 608));
+    d10.anc = true;
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), d10).is_err());
+    // without an ANC track push_anc is an error
+    let mut plain = WriterConfig::new(Pattern::Op1a, Rational::new(25, 1), ids());
+    plain.picture = Some(PictureDesc::new(PictureCoding::Vc3 { cid: 1272 }, 64, 36));
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), plain).unwrap();
+    assert!(w.push_anc(&[0, 0]).is_err());
+}
+
+/// #1011: the CPL EssenceDescriptor of an IMF picture track file (RegXML, ST 2067-2 6.8): the
+/// RGBA descriptor with its JPEG 2000 sub-descriptor nested, values in the ST 2001-1 forms.
+#[test]
+fn imf_picture_regxml() {
+    let (cfg, _) = imf_picture_config(Rational::new(24, 1), true);
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..5 {
+        w.push_picture(&imf_j2k(0x0411, 1920, 1080, i), FrameInfo::intra()).unwrap();
+    }
+    let f = w.finish().unwrap().into_inner();
+    let x = crate::regxml::essence_descriptor(&f).unwrap();
+    assert!(x.starts_with("<r0:RGBADescriptor xmlns:r0=\"http://www.smpte-ra.org/reg/395/2014/13/1/aaf\""), "{x}");
+    for want in [
+        "<r1:SampleRate>24/1</r1:SampleRate>",
+        "<r1:EssenceLength>5</r1:EssenceLength>",
+        "<r1:LinkedTrackID>2</r1:LinkedTrackID>",
+        "<r1:ContainerFormat>urn:smpte:ul:060e2b34.0401010d.0d010301.020c0600</r1:ContainerFormat>",
+        "<r1:PictureCompression>urn:smpte:ul:060e2b34.0401010d.04010202.03010203</r1:PictureCompression>",
+        "<r1:FrameLayout>FullFrame</r1:FrameLayout>",
+        "<r1:ImageAspectRatio>16/9</r1:ImageAspectRatio>",
+        "<r1:ComponentMaxRef>940</r1:ComponentMaxRef>",
+        "<r1:ComponentMinRef>64</r1:ComponentMinRef>",
+        "<r1:ScanningDirection>ScanningDirection_LeftToRightTopToBottom</r1:ScanningDirection>",
+        "<r0:JPEG2000SubDescriptor>",
+        "<r1:Rsiz>1041</r1:Rsiz>",
+        "<r2:Ssiz>9</r2:Ssiz>",
+        "<r1:CodingStyleDefault>01040001010503030000778888888888</r1:CodingStyleDefault>",
+        "<r2:Code>CompRed</r2:Code>",
+        "<r2:ComponentSize>10</r2:ComponentSize>",
+    ] {
+        assert!(x.contains(want), "{want} missing in\n{x}");
+    }
+    assert_eq!(x.matches("<r1:InstanceID>urn:uuid:").count(), 2);
+    assert_eq!(x.matches("<r2:RGBAComponent>").count(), 16, "PixelLayout and J2CLayout, 8 pairs each");
+    for cut in (0..f.len().min(20_000)).step_by(101) {
+        let _ = crate::regxml::essence_descriptor(&f[..cut]);
+    }
+}
+
+/// #1011: the RegXML of an IMF sound track file: Wave descriptor, MCA sub-descriptors with the
+/// soundfield group's titles, the ST 2067-2 Annex E items.
+#[test]
+fn imf_sound_regxml() {
+    let mut ids = PackageIds::from_seed("imf-snd-x", "Main");
+    ids.file = Umid::dcinema([0x33; 16]);
+    let mut cfg = WriterConfig::new(Pattern::Imf, Rational::new(48_000, 1), ids);
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 1, bits: 24 }];
+    cfg.reference_image_edit_rate = Some(Rational::new(25, 1));
+    cfg.reference_audio_alignment_level = Some(-20);
+    cfg.mca = vec![
+        McaLabel {
+            dictionary: [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x03, 0x02, 0x02, 0x20, 0x01, 0, 0, 0],
+            link: [0x44; 16],
+            symbol: "sgMono & <x>".into(),
+            name: "Mono".into(),
+            channel: None,
+            language: Some("hu".into()),
+            group: None,
+            titles: Some(McaTitles { title: "Film".into(), title_version: "1".into(), content_kind: "PRM".into(), element_kind: "FULL".into() }),
+        },
+        McaLabel {
+            dictionary: [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x03, 0x02, 0x01, 0x03, 0, 0, 0, 0],
+            link: [0x45; 16],
+            symbol: "chC".into(),
+            name: "Center".into(),
+            channel: Some(1),
+            language: None,
+            group: Some([0x44; 16]),
+            titles: None,
+        },
+    ];
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    w.push_sound(0, &vec![0u8; 3 * 4800]).unwrap();
+    let f = w.finish().unwrap().into_inner();
+    let x = crate::regxml::essence_descriptor(&f).unwrap();
+    assert!(x.starts_with("<r0:WAVEPCMDescriptor "), "{x}");
+    for want in [
+        "<r1:SampleRate>48000/1</r1:SampleRate>",
+        "<r1:EssenceLength>4800</r1:EssenceLength>",
+        "<r1:AudioSampleRate>48000/1</r1:AudioSampleRate>",
+        "<r1:Locked>True</r1:Locked>",
+        "<r1:ChannelCount>1</r1:ChannelCount>",
+        "<r1:QuantizationBits>24</r1:QuantizationBits>",
+        "<r1:BlockAlign>3</r1:BlockAlign>",
+        "<r1:AverageBytesPerSecond>144000</r1:AverageBytesPerSecond>",
+        "<r1:ChannelAssignment>urn:smpte:ul:060e2b34.0401010d.04020210.04010000</r1:ChannelAssignment>",
+        "<r1:ReferenceImageEditRate>25/1</r1:ReferenceImageEditRate>",
+        "<r1:ReferenceAudioAlignmentLevel>-20</r1:ReferenceAudioAlignmentLevel>",
+        "<r0:SoundfieldGroupLabelSubDescriptor>",
+        "<r1:MCALabelDictionaryID>urn:smpte:ul:060e2b34.0401010d.03020220.01000000</r1:MCALabelDictionaryID>",
+        "<r1:MCALinkID>urn:uuid:44444444-4444-4444-4444-444444444444</r1:MCALinkID>",
+        "<r1:MCATagSymbol>sgMono &amp; &lt;x&gt;</r1:MCATagSymbol>",
+        "<r1:RFC5646SpokenLanguage>hu</r1:RFC5646SpokenLanguage>",
+        "<r1:MCATitle>Film</r1:MCATitle>",
+        "<r1:MCATitleVersion>1</r1:MCATitleVersion>",
+        "<r1:MCAAudioContentKind>PRM</r1:MCAAudioContentKind>",
+        "<r1:MCAAudioElementKind>FULL</r1:MCAAudioElementKind>",
+        "<r0:AudioChannelLabelSubDescriptor>",
+        "<r1:MCAChannelID>1</r1:MCAChannelID>",
+        "<r1:SoundfieldGroupLinkID>urn:uuid:44444444-4444-4444-4444-444444444444</r1:SoundfieldGroupLinkID>",
+    ] {
+        assert!(x.contains(want), "{want} missing in\n{x}");
+    }
+}
+
+/// A real IMF track file (`CFA4_IMF_SAMPLE`): its descriptor maps to RegXML. Checked by hand
+/// against the MERIDIAN CPL of the Photon test IMP: every value of the audio descriptor and every
+/// mapped value of the picture descriptor are equal.
+#[test]
+fn imf_sample_regxml() {
+    let Ok(path) = std::env::var("CFA4_IMF_SAMPLE") else { return };
+    let f = std::fs::read(&path).unwrap();
+    let x = crate::regxml::essence_descriptor(&f).unwrap();
+    assert!(x.contains("<r1:InstanceID>urn:uuid:"), "{x}");
+}
+
+/// An IMF timed text track file (ST 2067-2 5.4): OP1a (internal, streamable, uni-track), 8 KiB of
+/// fill after the header metadata, the RFC 5646 language tag list, and a RegXML descriptor that
+/// names every timed text item.
+#[test]
+fn imf_timed_text_track_file() {
+    let doc = br#"<?xml version="1.0" encoding="UTF-8"?><tt xmlns="http://www.w3.org/ns/ttml" xml:lang="hu"><body/></tt>"#;
+    let ids = PackageIds { material: Umid::dcinema([7; 16]), file: Umid::dcinema([9; 16]), material_name: "Title".into(), file_name: "Title subtitles".into() };
+    let mut cfg = TimedTextConfig::new(Rational::new(24, 1), 48, [0x11; 16], "http://www.w3.org/ns/ttml/profile/imsc1/text", ids);
+    cfg.imf = true;
+    cfg.languages = "hu-HU".into();
+    let f = write_timed_text(&cfg, doc, &[]).unwrap();
+    let tt = crate::open_timed_text(&f).unwrap();
+    assert!(tt.warnings.is_empty(), "{:?}", tt.warnings);
+    assert_eq!((tt.edit_rate, tt.duration, tt.resource_id), (Rational::new(24, 1), Some(48), Some([0x11; 16])));
+    assert_eq!(tt.namespace.as_deref(), Some("http://www.w3.org/ns/ttml/profile/imsc1/text"));
+    assert_eq!(tt.languages.as_deref(), Some("hu-HU"));
+    assert_eq!(tt.read_document(&f).unwrap(), doc);
+    let peek = crate::peek(&f).unwrap();
+    assert_eq!(peek.operational_pattern, OperationalPattern::Generalized { item: 1, package: 1 });
+    // every partition pack names OP1a with the uni-track qualifier (ST 2067-5 5.2.1)
+    let op = op1a(false);
+    assert!(f.windows(16).filter(|w| *w == op).count() >= 4, "header, body, footer packs and the preface");
+    assert!(!f.windows(16).any(|w| w == OP_ATOM));
+    // fill of at least 8 KiB inside the header metadata
+    let fill = f.windows(16).position(|w| w == KLV_FILL).expect("fill");
+    let hbc = u64::from_be_bytes(f[20 + 32..20 + 40].try_into().unwrap()) as usize;
+    let element = f.windows(16).position(|w| w == TIMED_TEXT_ELEMENT).expect("timed text element");
+    assert!(fill < element && hbc >= 8192, "fill at {fill}, element at {element}, header byte count {hbc}");
+    let xml = crate::regxml::essence_descriptor(&f[..]).unwrap();
+    for item in [
+        "<r0:TimedTextDescriptor ",
+        "<r1:ResourceID>urn:uuid:11111111-1111-1111-1111-111111111111</r1:ResourceID>",
+        "<r1:UCSEncoding>UTF-8</r1:UCSEncoding>",
+        "<r1:NamespaceURI>http://www.w3.org/ns/ttml/profile/imsc1/text</r1:NamespaceURI>",
+        "<r1:RFC5646LanguageTagList>hu-HU</r1:RFC5646LanguageTagList>",
+        "<r1:SampleRate>24/1</r1:SampleRate>",
+    ] {
+        assert!(xml.contains(item), "{item} in {xml}");
+    }
+    // with a resource: the sub-descriptor is nested in the descriptor
+    let png = TimedTextResource { id: [0x22; 16], mime: MIME_PNG.into(), data: b"\x89PNG\r\n\x1a\nfake".to_vec() };
+    let g = write_timed_text(&cfg, doc, &[png]).unwrap();
+    let xml = crate::regxml::essence_descriptor(&g[..]).unwrap();
+    assert!(xml.contains("<r0:TimedTextResourceSubDescriptor>") && xml.contains("<r1:MIMEMediaType>image/png</r1:MIMEMediaType>"), "{xml}");
+    assert!(xml.contains("<r1:EssenceStreamID>2</r1:EssenceStreamID>"), "{xml}");
+    // a language list that is not RFC 5646 tags is refused
+    assert!(write_timed_text(&TimedTextConfig { languages: "hu\"><x".into(), ..cfg.clone() }, doc, &[]).is_err());
+    for cut in (0..f.len()).step_by(101) {
+        let _ = crate::open_timed_text(&f[..cut]);
+    }
+}
+
+/// ST 429-5: the document clip-wrapped, each resource in its own generic stream partition, read
+/// back by the timed text reader; the header peek sees the D-Cinema file package; cutting the
+/// file anywhere never panics.
+#[test]
+fn timed_text_track_file_round_trips() {
+    let doc = br#"<?xml version="1.0" encoding="UTF-8"?><SubtitleReel xmlns="http://www.smpte-ra.org/schemas/428-7/2010/DCST"><Id>urn:uuid:11111111-1111-4111-8111-111111111111</Id></SubtitleReel>"#;
+    let font: Vec<u8> = b"\x00\x01\x00\x00".iter().copied().chain((0..5000u32).map(|i| (i * 7) as u8)).collect();
+    let png = b"\x89PNG\r\n\x1a\nfake".to_vec();
+    let ids = PackageIds { material: Umid::dcinema([7; 16]), file: Umid::dcinema([9; 16]), material_name: "Reel".into(), file_name: "Reel subtitle".into() };
+    let cfg = TimedTextConfig::new(Rational::new(25, 1), 250, [0x11; 16], "http://www.smpte-ra.org/schemas/428-7/2010/DCST", ids);
+    let resources = vec![
+        TimedTextResource { id: [0x21; 16], mime: MIME_OPENTYPE.into(), data: font.clone() },
+        TimedTextResource { id: [0x22; 16], mime: MIME_PNG.into(), data: png.clone() },
+    ];
+    let f = write_timed_text(&cfg, doc, &resources).unwrap();
+    assert!(crate::is_timed_text(&f));
+    let tt = crate::open_timed_text(&f).unwrap();
+    assert!(tt.warnings.is_empty(), "{:?}", tt.warnings);
+    assert_eq!((tt.edit_rate, tt.duration, tt.resource_id), (Rational::new(25, 1), Some(250), Some([0x11; 16])));
+    assert_eq!(tt.ucs_encoding.as_deref(), Some("UTF-8"));
+    assert_eq!(tt.namespace.as_deref(), Some("http://www.smpte-ra.org/schemas/428-7/2010/DCST"));
+    assert_eq!(tt.read_document(&f).unwrap(), doc);
+    assert_eq!(tt.resources.len(), 2);
+    assert_eq!((tt.resources[0].id, tt.resources[0].stream_id, tt.resources[0].mime.as_deref()), ([0x21; 16], 2, Some(MIME_OPENTYPE)));
+    assert_eq!((tt.resources[1].id, tt.resources[1].stream_id, tt.resources[1].mime.as_deref()), ([0x22; 16], 3, Some(MIME_PNG)));
+    assert_eq!(tt.read_resource(&f, 0).unwrap(), font);
+    assert_eq!(tt.read_resource(&f, 1).unwrap(), png);
+    let peek = crate::peek(&f).unwrap();
+    assert_eq!(peek.operational_pattern, OperationalPattern::Atom);
+    assert_eq!(peek.file_packages.first().map(|u| u[16..].to_vec()), Some(vec![9u8; 16]));
+    // the random index pack lists every partition: header, body, two generic streams, footer
+    let rip_len = u32::from_be_bytes(f[f.len() - 4..].try_into().unwrap()) as usize;
+    let rip = &f[f.len() - rip_len..];
+    assert_eq!(rip[..16], RIP_KEY);
+    let pairs: Vec<(u32, u64)> = rip[20..rip_len - 4]
+        .chunks_exact(12)
+        .map(|c| (u32::from_be_bytes(c[..4].try_into().unwrap()), u64::from_be_bytes(c[4..].try_into().unwrap())))
+        .collect();
+    assert_eq!(pairs.iter().map(|p| p.0).collect::<Vec<_>>(), [0, 1, 2, 3, 0]);
+    for (sid, off) in &pairs {
+        let k = &f[*off as usize..*off as usize + 16];
+        assert_eq!(k[..13], partition_key(2, 4)[..13], "partition pack at {off}");
+        let body_sid = u32::from_be_bytes(f[*off as usize + 20 + 60..*off as usize + 20 + 64].try_into().unwrap());
+        assert_eq!(body_sid, *sid);
+        if *sid >= 2 {
+            assert_eq!(k[14], 0x11, "generic stream partition");
+            // the resource KLV follows the pack directly (ST 429-5 6.1)
+            let pack_len = 20 + u32::from_be_bytes([0, f[*off as usize + 17], f[*off as usize + 18], f[*off as usize + 19]]) as usize;
+            assert_eq!(f[*off as usize + pack_len..*off as usize + pack_len + 16], GENERIC_STREAM_ELEMENT);
+        }
+    }
+    // a resource id may not repeat, nor be the document's
+    let dup = vec![resources[0].clone(), TimedTextResource { id: [0x21; 16], ..resources[1].clone() }];
+    assert!(write_timed_text(&cfg, doc, &dup).is_err());
+    let own = vec![TimedTextResource { id: [0x11; 16], ..resources[0].clone() }];
+    assert!(write_timed_text(&cfg, doc, &own).is_err());
+    assert!(write_timed_text(&TimedTextConfig { edit_rate: Rational::new(0, 1), ..cfg.clone() }, doc, &[]).is_err());
+    // without resources: header, body, footer
+    let bare = write_timed_text(&cfg, doc, &[]).unwrap();
+    assert!(crate::open_timed_text(&bare).unwrap().resources.is_empty());
+    for cut in (0..f.len()).step_by(97) {
+        let _ = crate::open_timed_text(&f[..cut]);
+        let _ = crate::peek(&f[..cut]);
+    }
+    if std::process::Command::new("ffprobe").arg("-version").output().is_ok() {
+        let p = std::env::temp_dir().join(format!("cfa4-tt-{}.mxf", std::process::id()));
+        std::fs::write(&p, &f).unwrap();
+        let out =
+            std::process::Command::new("ffprobe").args(["-v", "error", "-show_entries", "format=format_name", "-of", "csv=p=0"]).arg(&p).output().unwrap();
+        let _ = std::fs::remove_file(&p);
+        assert!(out.status.success() && String::from_utf8_lossy(&out.stdout).trim() == "mxf", "{}", String::from_utf8_lossy(&out.stderr));
+    }
+}
+
+fn kv(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
+    pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
+}
+
+/// #96: the AS-11 Core, Segmentation and UK DPP frameworks (bmx's test values) read back.
+#[test]
+fn as11_metadata_reads_back() {
+    use crate::as11::{As11, Segment};
+    let core = kv(&[
+        ("SeriesTitle", "Holby City Series 5"),
+        ("ProgrammeTitle", "Holby City Series 5, Episode 10: Depths of Devotion"),
+        ("EpisodeTitleNumber", "Depths of Devotion"),
+        ("ShimName", "UK DPP HD"),
+        ("ShimVersion", "1.1"),
+        ("AudioTrackLayout", "3"),
+        ("PrimaryAudioLanguage", "eng"),
+        ("ClosedCaptionsPresent", "false"),
+    ]);
+    let ukdpp = kv(&[
+        ("ProductionNumber", "LDXA123B/71"),
+        ("Synopsis", "Doctors, nurses, patients etc."),
+        ("Originator", "Maverick Productions"),
+        ("CopyrightYear", "2011"),
+        ("Distributor", "Rick Distributors"),
+        ("PictureRatio", "16/9"),
+        ("ThreeD", "false"),
+        ("ProductPlacement", "true"),
+        ("PSEPass", "1"),
+        ("PSEManufacturer", "Harding"),
+        ("PSEVersion", "1.0 alpha"),
+        ("SecondaryAudioLanguage", "zxx"),
+        ("TertiaryAudioLanguage", "zxx"),
+        ("AudioLoudnessStandard", "0"),
+        ("LineUpStart", "01:00:00:01"),
+        ("IdentClockStart", "2"),
+        ("AudioDescriptionPresent", "false"),
+        ("OpenCaptionsPresent", "false"),
+        ("SigningPresent", "1"),
+        ("CompletionDate", "2011-08-01"),
+        ("ContactEmail", "eric@maverick.co.uk"),
+        ("ContactTelephoneNumber", "02074079302"),
+    ]);
+    let segments = vec![Segment { start: 2, duration: 5, part_number: 1, part_total: 2 }, Segment { start: 7, duration: 2, part_number: 2, part_total: 2 }];
+    let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+    cfg.sound.truncate(1);
+    cfg.as11 = Some(As11 { core: core.clone(), segments: segments.clone(), ukdpp: ukdpp.clone(), ..Default::default() });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg.clone()).unwrap();
+    for i in 0..10 {
+        w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
+        w.push_sound(0, &pcm16(i * 1920, 1920)).unwrap();
+    }
+    let bytes = w.finish().unwrap().into_inner();
+    let f = open(&bytes).unwrap();
+    assert_eq!(f.tracks.len(), 2, "the DM tracks are not essence tracks");
+    let a = f.as11.unwrap();
+    let sorted = |mut v: Vec<(String, String)>| {
+        v.sort();
+        v
+    };
+    assert_eq!(sorted(a.core), sorted(core.clone()));
+    assert_eq!(a.segments, [segments.clone(), vec![]].concat());
+    // the writer fills in the parts and their duration
+    let mut want = ukdpp.clone();
+    for (k, v) in &mut want {
+        if k == "IdentClockStart" {
+            *v = "01:00:00:02".into();
+        }
+    }
+    want.push(("TotalNumberOfParts".into(), "2".into()));
+    want.push(("TotalProgrammeDuration".into(), "7".into()));
+    assert_eq!(sorted(a.ukdpp), sorted(want));
+
+    // a missing required item, an unknown item, a bad value and parts past the end are refused
+    let refuse = |as11: As11| {
+        let mut c = cfg.clone();
+        c.as11 = Some(as11);
+        match MxfWriter::new(Cursor::new(Vec::new()), c) {
+            Err(e) => e.to_string(),
+            Ok(mut w) => {
+                w.push_picture(&prores_like(0), FrameInfo::intra()).unwrap();
+                w.push_sound(0, &pcm16(0, 1920)).unwrap();
+                w.finish().err().unwrap().to_string()
+            }
+        }
+    };
+    let e = refuse(As11 { core: core[1..].to_vec(), ..Default::default() });
+    assert!(e.contains("SeriesTitle is required"), "{e}");
+    let e = refuse(As11 { core: [core.clone(), kv(&[("Nope", "1")])].concat(), ..Default::default() });
+    assert!(e.contains("unknown AS-11 item"), "{e}");
+    let mut bad = core.clone();
+    bad[4].1 = "one.two".into();
+    assert!(refuse(As11 { core: bad, ..Default::default() }).contains("ShimVersion"));
+    let e = refuse(As11 { core: core.clone(), segments: segments.clone(), ukdpp: vec![], ..Default::default() });
+    assert!(e.contains("after the programme"), "{e}");
+    let e = refuse(As11 { core: core.clone(), segments: vec![segments[1], segments[0]], ukdpp: vec![], ..Default::default() });
+    assert!(e.contains("starts before"), "{e}");
+}
+
+/// #1254: AMWA AS-10 metadata (a DMS_AS_10 framework, no AS-11 Core needed) reads back, and
+/// malformed AS-10 metadata is refused.
+#[test]
+fn as10_metadata_round_trips() {
+    use crate::as11::{As11, Segment};
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let umid = "060a2b340101010501010d4313000000".to_string() + "0123456789abcdef0123456789abcdef";
+    let as10 = kv(&[
+        ("ShimName", "NRK_HD_2012"),
+        ("MainTitle", "Tést"),
+        ("Type", "News"),
+        ("CommonSpanningID", &umid),
+        ("SpanningNumber", "2"),
+        ("CumulativeDuration", "250"),
+    ]);
+    let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+    cfg.sound.truncate(1);
+    cfg.as11 = Some(As11 { as10: as10.clone(), ..Default::default() });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..4 {
+        w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
+        w.push_sound(0, &pcm16(i * 1920, 1920)).unwrap();
+    }
+    let bytes = w.finish().unwrap().into_inner();
+    let f = open(&bytes).unwrap();
+    assert_eq!(f.tracks.len(), 2, "the DM track is not an essence track");
+    let a = f.as11.unwrap();
+    assert!(a.core.is_empty() && a.segments.is_empty() && a.ukdpp.is_empty());
+    let sorted = |mut v: Vec<(String, String)>| {
+        v.sort();
+        v
+    };
+    assert_eq!(sorted(a.as10), sorted(as10.clone()));
+    // a missing ShimName, an unknown item, a bad UMID and AS-10 with parts but no Core are refused
+    let refuse = |a: As11| {
+        let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+        cfg.as11 = Some(a);
+        MxfWriter::new(Cursor::new(Vec::new()), cfg).err().unwrap().to_string()
+    };
+    assert!(refuse(As11 { as10: kv(&[("MainTitle", "x")]), ..Default::default() }).contains("ShimName"));
+    assert!(refuse(As11 { as10: kv(&[("ShimName", "x"), ("Nope", "1")]), ..Default::default() }).contains("Nope"));
+    assert!(refuse(As11 { as10: kv(&[("ShimName", "x"), ("CommonSpanningID", "1234")]), ..Default::default() }).contains("CommonSpanningID"));
+    let part = Segment { start: 0, duration: 2, part_number: 1, part_total: 1 };
+    assert!(refuse(As11 { as10: as10.clone(), segments: vec![part], ..Default::default() }).contains("Core"));
+}
+
+#[test]
+fn as03_metadata_round_trips() {
+    use crate::as11::As11;
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let as03 = kv(&[
+        ("IdentifierKind", "ISAN"),
+        ("Identifier", "ISAN 0000-0001-8947-0000-8-0000-0000-D"),
+        ("ShimName", "PBS NGIS HD Playout"),
+        ("SignalStandard", "1920/1080/59.94i/16:9"),
+        ("IntendedAFD", "1000 FullHD"),
+        ("SlateTitle", "Tést"),
+        ("Rating", "TV-G"),
+    ]);
+    let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+    cfg.sound.truncate(1);
+    cfg.as11 = Some(As11 { as03: as03.clone(), ..Default::default() });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..4 {
+        w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
+        w.push_sound(0, &pcm16(i * 1920, 1920)).unwrap();
+    }
+    let bytes = w.finish().unwrap().into_inner();
+    let f = open(&bytes).unwrap();
+    assert_eq!(f.tracks.len(), 2, "the DM track is not an essence track");
+    let a = f.as11.unwrap();
+    assert!(a.core.is_empty() && a.segments.is_empty() && a.ukdpp.is_empty() && a.as10.is_empty());
+    let sorted = |mut v: Vec<(String, String)>| {
+        v.sort();
+        v
+    };
+    assert_eq!(sorted(a.as03), sorted(as03.clone()));
+    // a missing required item, an unknown item and AS-03 with parts but no Core are refused
+    let refuse = |a: As11| {
+        let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+        cfg.as11 = Some(a);
+        MxfWriter::new(Cursor::new(Vec::new()), cfg).err().unwrap().to_string()
+    };
+    assert!(refuse(As11 { as03: kv(&[("ShimName", "x")]), ..Default::default() }).contains("is required"));
+    let mut bad = as03.clone();
+    bad.push(("Nope".into(), "1".into()));
+    assert!(refuse(As11 { as03: bad, ..Default::default() }).contains("Nope"));
+    let part = crate::as11::Segment { start: 0, duration: 2, part_number: 1, part_total: 1 };
+    assert!(refuse(As11 { as03, segments: vec![part], ..Default::default() }).contains("Core"));
+}
+
+#[test]
+fn as12_adid_round_trips_beside_as03() {
+    use crate::as11::{ADID_SHIM_NAME, As11};
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let as03 = kv(&[
+        ("IdentifierKind", "Ad-ID"),
+        ("Identifier", "ABCD1234000H"),
+        ("ShimName", "STATION"),
+        ("SignalStandard", "1920/1080/25p/16:9"),
+        ("IntendedAFD", "1000 FullHD"),
+    ]);
+    let adid = kv(&[
+        ("adid_prefix", "ABCD"),
+        ("adid_code", "1234000H"),
+        ("ad_title", "Spot"),
+        ("Brand", "Joe's Bakery"),
+        ("Product", "Baked Goods"),
+        ("Advertiser", "Joe's Bakery"),
+        ("agency_office_location", "Agency, Budapest"),
+        ("Length", "30"),
+        ("Medium", "Television"),
+        ("sd_flag", "N"),
+        ("Parent", "Joe Holding"),
+    ]);
+    let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+    cfg.sound.truncate(1);
+    cfg.as11 = Some(As11 { as03: as03.clone(), as12: adid.clone(), ..Default::default() });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..4 {
+        w.push_picture(&prores_like(i), FrameInfo::intra()).unwrap();
+        w.push_sound(0, &pcm16(i * 1920, 1920)).unwrap();
+    }
+    let bytes = w.finish().unwrap().into_inner();
+    let f = open(&bytes).unwrap();
+    assert_eq!(f.tracks.len(), 2, "the DM tracks are not essence tracks");
+    let a = f.as11.unwrap();
+    let sorted = |mut v: Vec<(String, String)>| {
+        v.sort();
+        v
+    };
+    assert_eq!(sorted(a.as03), sorted(as03.clone()));
+    let mut want = adid.clone();
+    want.push(("ShimName".into(), ADID_SHIM_NAME.into()));
+    assert_eq!(sorted(a.as12), sorted(want));
+    // AS-12 alone, a wrong shim name, a missing item and an over-long title are refused
+    let refuse = |a: As11| {
+        let mut cfg = op1a_config(Rational::new(25, 1), PictureCoding::ProRes { profile: 3 });
+        cfg.as11 = Some(a);
+        MxfWriter::new(Cursor::new(Vec::new()), cfg).err().unwrap().to_string()
+    };
+    assert!(refuse(As11 { as12: adid.clone(), ..Default::default() }).contains("beside"));
+    let mut wrong = adid.clone();
+    wrong.push(("ShimName".into(), "Other".into()));
+    assert!(refuse(As11 { as03: as03.clone(), as12: wrong, ..Default::default() }).contains("ShimName"));
+    assert!(refuse(As11 { as03: as03.clone(), as12: adid[1..].to_vec(), ..Default::default() }).contains("adid_prefix is required"));
+    let mut long = adid.clone();
+    long[2].1 = "x".repeat(129);
+    assert!(refuse(As11 { as03, as12: long, ..Default::default() }).contains("128"));
+}
+
+#[test]
+fn as07_baseband_shim_check() {
+    use crate::as07::{baseband_problems, check_baseband};
+    // uncompressed 10-bit pictures in OP1a with frame wrapping conform
+    let (bytes, _) = build_uncompressed(Pattern::Op1a, crate::UncompressedLayout::V210);
+    let f = open(&bytes[..]).unwrap();
+    assert_eq!(check_baseband(&f), Ok(()), "{:?}", baseband_problems(&f));
+    // OP-Atom is not OP1a and its pictures are clip wrapped
+    let (bytes, _) = build_uncompressed(Pattern::OpAtom, crate::UncompressedLayout::V210);
+    let f = open(&bytes[..]).unwrap();
+    let e = check_baseband(&f).unwrap_err();
+    assert!(e.contains("OP1a") && e.contains("clip wrapped"), "{e}");
+    // a ProRes file has the wrong picture coding
+    let f = open(&build_op1a()[..]).unwrap();
+    let e = check_baseband(&f).unwrap_err();
+    assert!(e.contains("not JPEG 2000"), "{e}");
+}
+
+#[test]
+fn as03_file_conformance_check() {
+    use crate::as03::file_problems;
+    use crate::as11::As11;
+    let kv = |v: &[(&str, &str)]| -> Vec<(String, String)> { v.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() };
+    let as03 = kv(&[
+        ("IdentifierKind", "ISAN"),
+        ("Identifier", "ISAN 0000-0001-8947-0000-8-0000-0000-D"),
+        ("ShimName", "PBS NGIS HD Playout"),
+        ("SignalStandard", "1920/1080/25i/16:9"),
+        ("IntendedAFD", "1000 FullHD"),
+    ]);
+    let rate = Rational::new(25, 1);
+    let build = |as11: Option<As11>, frame_bytes: usize| {
+        let mut cfg = rdd9_config(rate, 4);
+        cfg.as11 = as11;
+        let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+        let n = 26;
+        let mut a = 0;
+        for i in 0..n {
+            w.push_sound(0, &pcm24x4(a, 1920)).unwrap();
+            a += 1920;
+            w.push_picture(&d10_picture(i, frame_bytes), rdd9_frame(i)).unwrap();
+        }
+        open(&w.finish().unwrap().into_inner()).unwrap()
+    };
+    // MPEG-2 1080 at 25 Mbit/s with the framework: conforms
+    let f = build(Some(As11 { as03: as03.clone(), ..Default::default() }), 125_000);
+    assert_eq!(file_problems(&f), Vec::<String>::new());
+    // no framework, and a rate far from the shim's
+    let f = build(None, 125_000);
+    assert!(file_problems(&f).iter().any(|e| e.contains("no DMS-AS-03")));
+    let f = build(Some(As11 { as03, ..Default::default() }), 250_000);
+    let e = file_problems(&f).join("; ");
+    assert!(e.contains("50.0 Mbit/s") && e.contains("PBS NGIS HD Playout"), "{e}");
+}
+
+/// A file that lists the AS-07 core scheme claims the AS-07 shims, so the reader reports where it
+/// breaks the Baseband Shim as warnings; other files get none.
+#[test]
+fn as07_files_get_baseband_shim_warnings_on_open() {
+    use crate::as07::{CORE_SCHEME, claims_as07};
+    let layout = crate::UncompressedLayout::V210;
+    let shim = |f: &crate::MxfFile| f.warnings.iter().filter(|w| w.starts_with("AS-07 Baseband Shim")).count();
+    // OP-Atom breaks the shim; without the scheme label nothing is said
+    let (bytes, _) = build_uncompressed(Pattern::OpAtom, layout);
+    let f = open(&bytes[..]).unwrap();
+    assert!(!claims_as07(&f));
+    assert_eq!(shim(&f), 0);
+    // with the label the breaches are warnings
+    let (bytes, _) = build_uncompressed_with(Pattern::OpAtom, layout, &[CORE_SCHEME]);
+    let f = open(&bytes[..]).unwrap();
+    assert!(claims_as07(&f) && f.dm_schemes.contains(&crate::Ul(CORE_SCHEME)));
+    assert!(shim(&f) >= 2, "{:?}", f.warnings);
+    // a conforming OP1a file with the label has none
+    let (bytes, _) = build_uncompressed_with(Pattern::Op1a, layout, &[CORE_SCHEME]);
+    let f = open(&bytes[..]).unwrap();
+    assert!(claims_as07(&f));
+    assert_eq!(shim(&f), 0, "{:?}", f.warnings);
 }

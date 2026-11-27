@@ -279,7 +279,7 @@ impl Encoder {
 
     /// Encode one picture; returns its temporal unit (frames are coded in display order, so each
     /// call returns one packet).
-    pub fn encode(&mut self, frame: &YuvFrame, pts: i64) -> Result<Vec<Packet>, EncodeError> {
+    pub fn encode(&mut self, frame: &YuvFrame<'_>, pts: i64) -> Result<Vec<Packet>, EncodeError> {
         let src = self.source(frame)?;
         let key = self.frames == 0 || (self.cfg.keyint > 0 && self.since_key >= self.cfg.keyint as u64);
         if key {
@@ -371,7 +371,7 @@ impl Encoder {
     }
 
     /// The input in the frame buffer geometry with edge replication, at the coded bit depth.
-    fn source(&self, f: &YuvFrame) -> Result<Source, EncodeError> {
+    fn source(&self, f: &YuvFrame<'_>) -> Result<Source, EncodeError> {
         let (vw, vh) = (self.cfg.width as usize, self.cfg.height as usize);
         let aw = vw.div_ceil(128) * 128 + 160;
         let ah = vh.div_ceil(128) * 128 + 160;

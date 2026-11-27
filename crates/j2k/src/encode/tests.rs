@@ -169,6 +169,52 @@ fn tlm(cs: &[u8]) -> Vec<usize> {
     cs[at + 6..at + 2 + len].chunks(5).map(|e| u32::from_be_bytes(e[1..5].try_into().unwrap()) as usize).collect()
 }
 
+/// The guard bits of the QCD marker segment.
+fn qcd_guard(cs: &[u8]) -> u8 {
+    let at = cs.windows(2).position(|w| w == [0xFF, 0x5C]).expect("QCD");
+    cs[at + 4] >> 5
+}
+
+#[test]
+fn cinema_2k_saturates_with_one_guard_bit() {
+    // 12-bit X'Y'Z' pictures: grey, coloured, and the extreme of full-range steps (0 ↔ 4095)
+    let (w, h) = (256u32, 136u32);
+    let grey = {
+        let mut img = picture(w, h, &[(12, false, 1, 1); 3], 5);
+        let first = img.components[0].data.clone();
+        for p in &mut img.components {
+            p.data.clone_from(&first);
+        }
+        img
+    };
+    let colour = picture(w, h, &[(12, false, 1, 1); 3], 77);
+    let extreme = {
+        let mut img = picture(w, h, &[(12, false, 1, 1); 3], 9);
+        for (c, p) in img.components.iter_mut().enumerate() {
+            for (k, v) in p.data.iter_mut().enumerate() {
+                let (x, y) = (k as u32 % w, k as u32 / w);
+                // single-pixel lines, checkerboards and blocks, each component shifted
+                let on = match (x / 64 + c as u32) % 3 {
+                    0 => x % 2 == 0,
+                    1 => (x + y) % 2 == 0,
+                    _ => (x / 8 + y / 8) % 2 == 0,
+                };
+                *v = if on { 4095 } else { 0 };
+            }
+        }
+        img
+    };
+    for (name, img) in [("grey", &grey), ("colour", &colour), ("extreme", &extreme)] {
+        let (cs, stats) = encode_with_stats(img, &EncodeOptions::cinema_2k(24)).unwrap();
+        assert_eq!(qcd_guard(&cs), 1, "{name}");
+        let back = decode(&cs).unwrap();
+        let q = psnr(img, &back);
+        assert!(q >= 50.0, "{name}: {q:.2} dB, {} saturated", stats.saturated);
+        // saturation is for rare coefficients beyond the nominal range only
+        assert!(stats.saturated <= u64::from(w * h) * 3 / 1000, "{name}: {} saturated", stats.saturated);
+    }
+}
+
 #[test]
 fn cinema_2k_follows_the_profile() {
     let img = picture(256, 136, &[(12, false, 1, 1); 3], 21);
@@ -180,12 +226,18 @@ fn cinema_2k_follows_the_profile() {
     assert_eq!(&cs[..4], [0xFF, 0x4F, 0xFF, 0x51]);
     assert_eq!(&cs[6..8], [0, 3], "Rsiz");
     let h = crate::parse_header(&cs).unwrap();
-    assert_eq!((h.levels, h.layers, h.reversible, h.progression), (5, 1, false, 4));
+    assert_eq!((h.levels, h.layers, h.reversible, h.progression, h.mct), (5, 1, false, 4, true));
+    assert_eq!(qcd_guard(&cs), 1, "2K Digital Cinema: 1 guard bit");
     let parts = tile_parts(&cs);
     assert_eq!(parts.len(), 3);
     assert_eq!(tlm(&cs), parts);
     let back = decode(&cs).unwrap();
     assert!(psnr(&img, &back) > 50.0, "{}", psnr(&img, &back));
+    // without the component transform the profile still holds (CFA4 DCPs before 2026-11)
+    let no_mct = EncodeOptions { mct: false, ..EncodeOptions::cinema_2k(24) };
+    let cs0 = encode(&img, &no_mct).unwrap();
+    assert!(!crate::parse_header(&cs0).unwrap().mct);
+    assert!(psnr(&img, &decode(&cs0).unwrap()) > 50.0);
     // a tight budget per frame and per component
     let opts = EncodeOptions { max_bytes: Some(9_000), max_component_bytes: Some(3_500), ..EncodeOptions::cinema_2k(24) };
     let cs = encode(&img, &opts).unwrap();
@@ -202,6 +254,7 @@ fn cinema_4k_puts_the_4k_level_in_its_own_tile_parts() {
     let cs = encode(&img, &EncodeOptions::cinema_4k(24)).unwrap();
     assert_eq!(&cs[6..8], [0, 4], "Rsiz");
     assert!(cs.windows(2).any(|w| w == [0xFF, 0x5F]), "POC");
+    assert_eq!(qcd_guard(&cs), 2, "4K Digital Cinema: 2 guard bits");
     let parts = tile_parts(&cs);
     assert_eq!(parts.len(), 6);
     assert_eq!(tlm(&cs), parts);
@@ -273,6 +326,61 @@ fn imf_codestreams_follow_the_profile() {
     assert!(!bad(&img, &EncodeOptions::imf(p, 64, 64, 25, 1)));
 }
 
+/// IMF App 2E HTJ2K (ST 2067-21 Annex I): Rsiz is the Part 15 flag alone, Ccap15 carries the
+/// constrained MAGBP set of Tables I.2 / I.3 and the HTIRV bit, and the rest of the codestream
+/// follows the IMF profile layout (one tile, CPRL, 32 × 32 blocks, one tile-part per component,
+/// TLM).
+#[test]
+fn imf_htj2k_codestreams_follow_annex_i() {
+    let ccap15 = |cs: &[u8]| {
+        let cap = 4 + usize::from(u16::from_be_bytes([cs[4], cs[5]]));
+        assert_eq!(&cs[cap..cap + 8], &[0xFF, 0x50, 0, 8, 0, 2, 0, 0], "CAP: Part 15 only");
+        u16::from_be_bytes([cs[cap + 8], cs[cap + 9]])
+    };
+    // APP2.HT.REV, 10-bit 4:4:4, 5 levels with the RCT: B = 13 + 1 = 14 (Table I.2), Bp = 6
+    let img = picture(256, 144, &[(10, false, 1, 1); 3], 41);
+    let p = ImfProfile::select(256, 144, 3, 24, 1, true, 0).unwrap();
+    let opts = EncodeOptions::imf_ht(p, 256, 144, 24, 1);
+    let cs = encode(&img, &opts).unwrap();
+    assert_eq!(u16::from_be_bytes([cs[6], cs[7]]), 0x4000, "Rsiz");
+    assert_eq!(ccap15(&cs), 6, "HTREV, MAGBP for B = 14");
+    let h = crate::parse_header(&cs).unwrap();
+    assert_eq!((h.levels, h.layers, h.reversible, h.progression), (5, 1, true, 4));
+    let parts = tile_parts(&cs);
+    assert_eq!(parts.len(), 3);
+    assert_eq!(tlm(&cs), parts);
+    assert!(cs.windows(2).all(|w| w != [0xFF, 0x5F]), "no POC");
+    assert_eq!(decode(&cs).unwrap().components, img.components);
+    // Table I.2: 16-bit without the transform, more than 5 levels (4K class): B = 19 + 1
+    let wide = picture(2100, 8, &[(16, false, 1, 1); 3], 5);
+    let p4 = ImfProfile::select(2100, 8, 3, 24, 1, true, 0).unwrap();
+    let no_mct = EncodeOptions { mct: false, ..EncodeOptions::imf_ht(p4, 2100, 8, 24, 1) };
+    assert_eq!(no_mct.levels, 3, "the picture is 8 lines high");
+    let no_mct = EncodeOptions { levels: 6, ..no_mct };
+    let cs = encode(&wide, &no_mct).unwrap();
+    assert_eq!(ccap15(&cs), 20 - 8, "MAGBP for B = 20");
+    assert_eq!(decode(&cs).unwrap().components, wide.components);
+    // APP2.HT.IRV, 8-bit 4:4:4: B = 9, the HTIRV bit; subband bits stay within it
+    let img = picture(320, 180, &[(8, false, 1, 1); 3], 43);
+    let p = ImfProfile::select(320, 180, 3, 25, 1, false, 100_000_000).unwrap();
+    let opts = EncodeOptions::imf_ht(p, 320, 180, 25, 1);
+    let cs = encode(&img, &opts).unwrap();
+    assert_eq!(ccap15(&cs), 0x20 | 1, "HTIRV, MAGBP for B = 9");
+    assert!(qcd_guard(&cs) >= 1);
+    assert!(psnr(&img, &decode(&cs).unwrap()) > 35.0);
+    // 12-bit 4:2:2 (no component transform): B = 13
+    let img = picture(320, 180, &[(12, false, 1, 1), (12, false, 2, 1), (12, false, 2, 1)], 44);
+    let cs = encode(&img, &opts).unwrap();
+    assert_eq!(ccap15(&cs), 0x20 | 5, "HTIRV, MAGBP for B = 13");
+    assert!(psnr(&img, &decode(&cs).unwrap()) > 40.0);
+    // the sublevel's byte limit still applies, and what the profile forbids is refused
+    let tight = EncodeOptions { max_bytes: Some(6_000), ..opts.clone() };
+    assert!(encode(&img, &tight).unwrap().len() <= 6_000);
+    let bad = |o: &EncodeOptions| encode(&img, o).is_err();
+    assert!(bad(&EncodeOptions { code_block: (6, 6), ..opts.clone() }));
+    assert!(bad(&EncodeOptions { progression: Progression::Lrcp, ..opts.clone() }));
+}
+
 #[test]
 fn bad_input_is_an_error() {
     let img = picture(16, 16, &[(8, false, 1, 1)], 1);
@@ -332,6 +440,7 @@ fn random_options_never_panic() {
             tile_part_per_component: r(2) == 0,
             tlm: r(2) == 0,
             profile: Profile::Part1,
+            ht: r(3) == 0,
         };
         let Ok(cs) = encode(&img, &opts) else { continue };
         let back = decode(&cs).unwrap();
@@ -380,4 +489,69 @@ fn refine_agrees_with_search() {
         };
         assert_eq!(refine(n, guess, ok).unwrap(), search(n, ok).unwrap(), "n {n} cut {cut} guess {guess:?}");
     }
+}
+
+#[test]
+fn htj2k_round_trips_and_matches_the_part_1_coder() {
+    let shapes: [&[(u8, bool, u8, u8)]; 5] =
+        [&[(8, false, 1, 1); 3], &[(1, false, 1, 1)], &[(16, false, 1, 1), (16, false, 2, 1), (16, false, 2, 1)], &[(12, true, 1, 1)], &[(10, false, 1, 2); 4]];
+    for (k, comps) in shapes.iter().enumerate() {
+        let img = picture(77, 45, comps, 7 + k as u32);
+        for cb in [(6, 6), (2, 2), (10, 2), (3, 7)] {
+            let ht = EncodeOptions { ht: true, code_block: cb, ..EncodeOptions::lossless() };
+            let back = decode(&encode(&img, &ht).unwrap()).unwrap();
+            assert_eq!(back.components, img.components, "{comps:?} {cb:?}");
+        }
+        // with every bit-plane coded, both block coders give the same reconstruction
+        let lossy = EncodeOptions::lossy(1.5);
+        let part1 = decode(&encode(&img, &lossy).unwrap()).unwrap();
+        let ht = decode(&encode(&img, &EncodeOptions { ht: true, ..lossy }).unwrap()).unwrap();
+        assert_eq!(ht.components, part1.components, "{comps:?} lossy");
+    }
+}
+
+#[test]
+fn htj2k_header_and_limits() {
+    let img = picture(64, 32, &[(8, false, 1, 1); 3], 3);
+    let cs = encode(&img, &EncodeOptions { ht: true, ..EncodeOptions::lossless() }).unwrap();
+    // SIZ Rsiz with bit 14, then CAP: Pcap with Part 15, Ccap15 reversible with Bp for B = 11
+    assert_eq!(&cs[0..4], &[0xFF, 0x4F, 0xFF, 0x51]);
+    assert_eq!(u16::from_be_bytes([cs[6], cs[7]]), 0x4000);
+    let cap = 4 + usize::from(u16::from_be_bytes([cs[4], cs[5]]));
+    assert_eq!(&cs[cap..cap + 10], &[0xFF, 0x50, 0, 8, 0, 2, 0, 0, 0, 3]);
+    // COD code-block style: HT
+    assert_eq!(&cs[cap + 10..cap + 12], &[0xFF, 0x52]);
+    assert_eq!(cs[cap + 10 + 12], 0x40);
+    let lossy = encode(&img, &EncodeOptions { ht: true, ..EncodeOptions::lossy(1.0) }).unwrap();
+    assert_eq!(lossy[cap + 9] & 0x20, 0x20, "irreversible flag in Ccap15");
+    let dci = EncodeOptions { ht: true, ..EncodeOptions::cinema_2k(24) };
+    assert!(matches!(encode(&img, &dci), Err(Error::Unsupported(_))));
+}
+
+#[test]
+fn htj2k_meets_byte_limits_close_to_the_part_1_coder() {
+    let img = picture(160, 96, &[(10, false, 1, 1); 3], 11);
+    let full = encode(&img, &EncodeOptions { ht: true, ..EncodeOptions::lossless() }).unwrap().len();
+    let mut last = 0.0;
+    for limit in [full / 40, full / 12, full / 4, full / 2] {
+        for opts in [EncodeOptions::lossy(0.25), EncodeOptions::lossless()] {
+            let ht = EncodeOptions { ht: true, max_bytes: Some(limit), ..opts.clone() };
+            let cs = encode(&img, &ht).unwrap();
+            assert!(cs.len() <= limit, "{} > {limit}", cs.len());
+            let q_ht = psnr(&img, &decode(&cs).unwrap());
+            let q_p1 = psnr(&img, &decode(&encode(&img, &EncodeOptions { max_bytes: Some(limit), ..opts.clone() }).unwrap()).unwrap());
+            // whole cleanup planes plus SigProp / MagRef of the next one, so a little below Part 1
+            assert!(q_ht > q_p1 - 1.5, "limit {limit} reversible {}: HT {q_ht:.2} dB, Part 1 {q_p1:.2} dB", opts.reversible);
+            if !opts.reversible {
+                assert!(q_ht >= last, "{q_ht} after {last}");
+                last = q_ht;
+            }
+        }
+    }
+    // per-component limits too
+    let opts = EncodeOptions { ht: true, max_component_bytes: Some(full / 10), ..EncodeOptions::lossy(0.25) };
+    assert!(psnr(&img, &decode(&encode(&img, &opts).unwrap()).unwrap()) > 25.0);
+    // a limit above the lossless size changes nothing
+    let roomy = encode(&img, &EncodeOptions { ht: true, max_bytes: Some(full * 2), ..EncodeOptions::lossless() }).unwrap();
+    assert_eq!(decode(&roomy).unwrap().components, img.components);
 }

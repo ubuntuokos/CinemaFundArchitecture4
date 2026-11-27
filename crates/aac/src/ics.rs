@@ -66,7 +66,7 @@ impl IcsInfo {
         self.group_len[..g].iter().map(|&l| l as usize).sum()
     }
 
-    pub fn parse(br: &mut BitReader, sf_index: u8) -> Result<IcsInfo> {
+    pub fn parse(br: &mut BitReader<'_>, sf_index: u8) -> Result<IcsInfo> {
         if br.read_bits(1)? != 0 {
             // ics_reserved_bit; tolerated by most decoders
         }

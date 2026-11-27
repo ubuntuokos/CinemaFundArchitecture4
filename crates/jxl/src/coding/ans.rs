@@ -33,7 +33,7 @@ const _: () = {
 
 impl Histogram {
     // log_alphabet_size: 5 + u(2)
-    pub fn parse(bitstream: &mut Bitstream, log_alphabet_size: u32) -> CodingResult<Self> {
+    pub fn parse(bitstream: &mut Bitstream<'_>, log_alphabet_size: u32) -> CodingResult<Self> {
         #[derive(Debug)]
         struct WorkingBucket {
             dist: u16,
@@ -242,7 +242,7 @@ impl Histogram {
         Ok(Self { buckets, log_bucket_size, bucket_mask: (1 << log_bucket_size) - 1, single_symbol: None })
     }
 
-    fn read_u8(bitstream: &mut Bitstream) -> CodingResult<u8> {
+    fn read_u8(bitstream: &mut Bitstream<'_>) -> CodingResult<u8> {
         Ok(if bitstream.read_bool()? {
             let n = bitstream.read_bits(3)?;
             ((1 << n) + bitstream.read_bits(n as usize)?) as u8
@@ -254,7 +254,7 @@ impl Histogram {
 
 impl Histogram {
     #[inline(always)]
-    pub fn read_symbol(&self, bitstream: &mut Bitstream, state: &mut u32) -> CodingResult<u32> {
+    pub fn read_symbol(&self, bitstream: &mut Bitstream<'_>, state: &mut u32) -> CodingResult<u32> {
         let idx = *state & 0xfff;
         let i = (idx >> self.log_bucket_size) as usize;
         let pos = idx & self.bucket_mask;
@@ -284,7 +284,7 @@ impl Histogram {
     }
 }
 
-fn read_prefix(bitstream: &mut Bitstream) -> CodingResult<u16> {
+fn read_prefix(bitstream: &mut Bitstream<'_>) -> CodingResult<u16> {
     Ok(match bitstream.read_bits(3)? {
         0 => 10,
         1 => {

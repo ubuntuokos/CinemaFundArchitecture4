@@ -1,0 +1,15 @@
+[package]
+name = "cfa4-audit"
+description = "CFA4 common audit trail (layer L1, AU-1): canonical serialisation (RFC 8785 JCS, narrowed: no floats) and hash of an audit event, without a database"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }

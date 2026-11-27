@@ -75,7 +75,7 @@ pub struct PlaneView<'a> {
 }
 
 /// Loop filter one superblock (all planes, both passes) at (`row`, `col`) in MI units (8.8.2).
-pub fn filter_superblock(views: &mut [PlaneView; 3], mi: &MiGrid, f: &LfFrame, row: usize, col: usize) {
+pub fn filter_superblock(views: &mut [PlaneView<'_>; 3], mi: &MiGrid, f: &LfFrame, row: usize, col: usize) {
     for (plane, view) in views.iter_mut().enumerate() {
         for pass in 0..2 {
             filter_sb_plane(view, mi, f, plane, pass, row, col);
@@ -83,7 +83,7 @@ pub fn filter_superblock(views: &mut [PlaneView; 3], mi: &MiGrid, f: &LfFrame, r
     }
 }
 
-fn filter_sb_plane(v: &mut PlaneView, mi: &MiGrid, f: &LfFrame, plane: usize, pass: usize, row: usize, col: usize) {
+fn filter_sb_plane(v: &mut PlaneView<'_>, mi: &MiGrid, f: &LfFrame, plane: usize, pass: usize, row: usize, col: usize) {
     let (sub_x, sub_y) = if plane > 0 { (f.ss_x, f.ss_y) } else { (0, 0) };
     let (sub, edge_len) = if pass == 0 { (sub_x, 64 >> sub_y) } else { (sub_y, 64 >> sub_x) };
     let (mi_rows, mi_cols) = (f.mi_rows, f.mi_cols);

@@ -17,12 +17,12 @@ pub fn inverse_h<S: Sample>(merged: &mut MutableSubgrid<'_, S>) {
     }
 }
 
-fn inverse_h_i32(merged: &mut MutableSubgrid<i32>) {
+fn inverse_h_i32(merged: &mut MutableSubgrid<'_, i32>) {
     inverse_h_i32_base(merged)
 }
 
 #[allow(unreachable_code)]
-fn inverse_h_i16(merged: &mut MutableSubgrid<i16>) {
+fn inverse_h_i16(merged: &mut MutableSubgrid<'_, i16>) {
     inverse_h_i16_base(merged)
 }
 
@@ -97,12 +97,12 @@ pub fn inverse_v<S: Sample>(merged: &mut MutableSubgrid<'_, S>) {
     }
 }
 
-fn inverse_v_i32(merged: &mut MutableSubgrid<i32>) {
+fn inverse_v_i32(merged: &mut MutableSubgrid<'_, i32>) {
     inverse_v_i32_base(merged)
 }
 
 #[allow(unreachable_code)]
-fn inverse_v_i16(merged: &mut MutableSubgrid<i16>) {
+fn inverse_v_i16(merged: &mut MutableSubgrid<'_, i16>) {
     inverse_v_i16_base(merged)
 }
 

@@ -9,7 +9,13 @@ rust-version.workspace = true
 [lints]
 workspace = true
 
+[features]
+# Early AV2 decoding through the external `cfa4-av2-decode` helper (ADR 0010, AV2-LAB; also
+# needs CFA4_AV2_DECODER). Off by default until the router registration after G1 (plan X/7).
+av2-external = ["dep:cfa4-av2"]
+
 [dependencies]
+cfa4-av2 = { workspace = true, optional = true }
 cfa4-time = { workspace = true }
 cfa4-color = { workspace = true }
 cfa4-frame = { workspace = true }
@@ -18,6 +24,7 @@ cfa4-avi = { workspace = true }
 cfa4-adpcm = { workspace = true }
 cfa4-speex = { workspace = true }
 cfa4-amr = { workspace = true }
+cfa4-musepack = { workspace = true }
 cfa4-isobmff = { workspace = true }
 cfa4-matroska = { workspace = true }
 cfa4-mxf = { workspace = true }
@@ -25,6 +32,25 @@ cfa4-iab = { workspace = true }
 cfa4-mpegts = { workspace = true }
 cfa4-mpeg2v = { workspace = true }
 cfa4-ac3 = { workspace = true }
+cfa4-thp = { workspace = true }
+cfa4-mobiclip = { workspace = true }
+cfa4-tta = { workspace = true }
+cfa4-qdm2 = { workspace = true }
+cfa4-nstream = { workspace = true }
+cfa4-shorten = { workspace = true }
+cfa4-adx = { workspace = true }
+cfa4-twinvq = { workspace = true }
+cfa4-hca = { workspace = true }
+cfa4-tak = { workspace = true }
+cfa4-smacker = { workspace = true }
+cfa4-acm = { workspace = true }
+cfa4-roq = { workspace = true }
+cfa4-amv = { workspace = true }
+cfa4-mve = { workspace = true }
+cfa4-g729 = { workspace = true }
+cfa4-mace = { workspace = true }
+cfa4-truespeech = { workspace = true }
+cfa4-ilbc = { workspace = true }
 cfa4-dts = { workspace = true }
 cfa4-truehd = { workspace = true }
 cfa4-mpa = { workspace = true }
@@ -43,13 +69,35 @@ cfa4-cineform = { workspace = true }
 cfa4-av1 = { workspace = true }
 cfa4-apv = { workspace = true }
 cfa4-hap = { workspace = true }
+cfa4-canopus = { workspace = true }
+cfa4-theora = { workspace = true }
+cfa4-realmedia = { workspace = true }
+cfa4-bink = { workspace = true }
+cfa4-realvideo = { workspace = true }
+cfa4-realaudio = { workspace = true }
 cfa4-utvideo = { workspace = true }
 cfa4-huffyuv = { workspace = true }
+cfa4-lagarith = { workspace = true }
+cfa4-svq3 = { workspace = true }
+cfa4-svq1 = { workspace = true }
+cfa4-indeo45 = { workspace = true }
+cfa4-indeo3 = { workspace = true }
+cfa4-flic = { workspace = true }
+cfa4-indeo = { workspace = true }
+cfa4-cinepak = { workspace = true }
+cfa4-magicyuv = { workspace = true }
+cfa4-msvideo = { workspace = true }
 cfa4-ffv1 = { workspace = true }
 cfa4-dirac = { workspace = true }
+cfa4-sstp = { workspace = true }
+cfa4-evc = { workspace = true }
+cfa4-avs2 = { workspace = true }
+cfa4-avs3 = { workspace = true }
+cfa4-cavs = { workspace = true }
 cfa4-aac = { workspace = true }
 cfa4-opus = { workspace = true }
 rayon = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 log = { workspace = true }
 # Decode timing counters (`gop_stats`); std's Instant panics on wasm32.
@@ -60,6 +108,13 @@ symphonia = { version = "0.6.1", default-features = false, features = ["aac", "m
 
 [dev-dependencies]
 cfa4-ac3 = { workspace = true, features = ["test-util"] }
+cfa4-mxf = { workspace = true, features = ["test-util"] }
 cfa4-auro = { workspace = true }
+cfa4-cavs = { workspace = true, features = ["synth"] }
+cfa4-flic = { workspace = true, features = ["synth"] }
 cfa4-testkit = { workspace = true }
 serde_json = { workspace = true }
+
+[[test]]
+name = "av2_external"
+required-features = ["av2-external"]

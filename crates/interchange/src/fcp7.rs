@@ -74,7 +74,7 @@ fn generator_from(name: &str, id: &str, report: &mut Report) -> Generator {
     }
 }
 
-fn read_rate(n: Node) -> Option<FrameRate> {
+fn read_rate(n: Node<'_, '_>) -> Option<FrameRate> {
     let r = child(n, "rate")?;
     let tb = child_i64(r, "timebase")?;
     Some(rate_from_timebase(tb, child_bool(r, "ntsc").unwrap_or(false)))
@@ -117,13 +117,13 @@ struct Imp<'a, 'i, 'r> {
 }
 
 /// The `(sequence key, file key)` an audio clip item belongs to, if it references a file.
-fn clip_seq_file(c: Node) -> Option<(String, String)> {
+fn clip_seq_file(c: Node<'_, '_>) -> Option<(String, String)> {
     let seq = c.ancestors().skip(1).find(|a| a.has_tag_name("sequence"))?;
     Some((node_key(seq), node_key(child(c, "file")?)))
 }
 
 /// The 1-based `sourcetrack/trackindex` of an audio clip item.
-fn audio_track_index(c: Node) -> Option<i64> {
+fn audio_track_index(c: Node<'_, '_>) -> Option<i64> {
     let st = child(c, "sourcetrack")?;
     if child_text(st, "mediatype").is_some_and(|m| m != "audio") {
         return None;
@@ -131,7 +131,7 @@ fn audio_track_index(c: Node) -> Option<i64> {
     child_i64(st, "trackindex")
 }
 
-fn node_key(n: Node) -> String {
+fn node_key(n: Node<'_, '_>) -> String {
     match n.attribute("id") {
         Some(id) => id.to_string(),
         None => format!("#node{}", n.id().get()),
@@ -555,12 +555,12 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
         }
     }
 
-    fn filter(&mut self, ti: &mut TrackItem, f: Node, rate: FrameRate, frame: (u32, u32), src: (u32, u32)) {
+    fn filter(&mut self, ti: &mut TrackItem, f: Node<'_, '_>, rate: FrameRate, frame: (u32, u32), src: (u32, u32)) {
         let Some(e) = child(f, "effect") else { return };
         let enabled = child_bool(f, "enabled").unwrap_or(true);
         let id = child_text(e, "effectid").unwrap_or("");
         let name = child_text(e, "name").unwrap_or(id);
-        let params: Vec<Node> = children(e, "parameter").collect();
+        let params: Vec<Node<'_, '_>> = children(e, "parameter").collect();
         let find = |pid: &str| {
             params.iter().copied().find(|p| child_text(*p, "parameterid") == Some(pid) || child_text(*p, "name").is_some_and(|n| n.eq_ignore_ascii_case(pid)))
         };
@@ -635,7 +635,7 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
         }
     }
 
-    fn transition(&mut self, seq: &mut Sequence, kind: TrackKind, ti: usize, c: Node, rate: FrameRate) {
+    fn transition(&mut self, seq: &mut Sequence, kind: TrackKind, ti: usize, c: Node<'_, '_>, rate: FrameRate) {
         let start = child_i64(c, "start").unwrap_or(0);
         let end = child_i64(c, "end").unwrap_or(start);
         let (s, e) = (rate.tick_of(start), rate.tick_of(end));
@@ -711,12 +711,12 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
     }
 }
 
-fn read_color(v: Node) -> [f32; 4] {
+fn read_color(v: Node<'_, '_>) -> [f32; 4] {
     let c = |n: &str, d: f64| (child_f64(v, n).unwrap_or(d) / 255.0) as f32;
     [c("red", 0.0), c("green", 0.0), c("blue", 0.0), c("alpha", 255.0)]
 }
 
-fn read_param(p: Node, rate: FrameRate, map: impl Fn(f64) -> f64) -> Param {
+fn read_param(p: Node<'_, '_>, rate: FrameRate, map: impl Fn(f64) -> f64) -> Param {
     let v = child_f64(p, "value").unwrap_or(0.0);
     let mut pr = Param::new(ParamValue::Float(map(v)));
     for k in children(p, "keyframe") {
@@ -733,7 +733,7 @@ fn read_param(p: Node, rate: FrameRate, map: impl Fn(f64) -> f64) -> Param {
     pr
 }
 
-fn keyframe_interp(k: Node) -> Interpolation {
+fn keyframe_interp(k: Node<'_, '_>) -> Interpolation {
     match path_text(k, &["interpolation", "name"]).map(str::to_ascii_lowercase).as_deref() {
         Some("hold") => Interpolation::Hold,
         Some("bezier") | Some("fcpcurve") => Interpolation::Bezier,
@@ -741,11 +741,11 @@ fn keyframe_interp(k: Node) -> Interpolation {
     }
 }
 
-fn read_xy(v: Node) -> (f64, f64) {
+fn read_xy(v: Node<'_, '_>) -> (f64, f64) {
     (child_f64(v, "horiz").unwrap_or(0.0), child_f64(v, "vert").unwrap_or(0.0))
 }
 
-fn read_point_param(p: Node, rate: FrameRate, map: impl Fn(f64, f64) -> Vec2) -> Param {
+fn read_point_param(p: Node<'_, '_>, rate: FrameRate, map: impl Fn(f64, f64) -> Vec2) -> Param {
     let (x, y) = child(p, "value").map(read_xy).unwrap_or((0.0, 0.0));
     let mut pr = Param::new(ParamValue::Vec2(map(x, y)));
     for k in children(p, "keyframe") {
@@ -762,7 +762,7 @@ fn read_point_param(p: Node, rate: FrameRate, map: impl Fn(f64, f64) -> Vec2) ->
     pr
 }
 
-fn read_markers(n: Node, rate: FrameRate, b: &mut Builder) -> Vec<Marker> {
+fn read_markers(n: Node<'_, '_>, rate: FrameRate, b: &mut Builder) -> Vec<Marker> {
     let mut out = Vec::new();
     for m in children(n, "marker") {
         let in_f = child_i64(m, "in").unwrap_or(0);

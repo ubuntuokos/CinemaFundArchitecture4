@@ -88,6 +88,8 @@ fn codec_name(c: MxfVideoCodec) -> &'static str {
         MxfVideoCodec::ProRes => "prores",
         MxfVideoCodec::H264 => "h264",
         MxfVideoCodec::Mpeg2 | MxfVideoCodec::D10 | MxfVideoCodec::XdcamHd422 => "mpeg2video",
+        MxfVideoCodec::V210 => "v210",
+        MxfVideoCodec::Uyvy => "rawvideo",
     }
 }
 
@@ -176,7 +178,7 @@ fn mxf_formats_and_presets() {
     assert_eq!(s.audio_codec(), AudioCodec::Pcm);
     assert!(s.summary(1920, 1080, FrameRate::FPS_24, 48_000, Tick(TICKS_PER_SECOND)).format.contains("MXF OP1a (Apple ProRes)"));
     let names: Vec<String> = builtin_presets().into_iter().filter(|p| p.settings.format.is_mxf()).map(|p| p.name).collect();
-    assert_eq!(names.len(), 8, "{names:?}");
+    assert_eq!(names.len(), 9, "{names:?}");
     let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "mxf-op1a", "mxfVideoCodec": "d10"})).unwrap();
     assert_eq!((s.mxf_video_codec, s.video_format()), (MxfVideoCodec::D10, Format::Mpeg2));
     let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "mxf-op1a", "mxfVideoCodec": "xdcamHd422"})).unwrap();
@@ -421,6 +423,42 @@ fn d10_imx_op1a() {
     assert_eq!(theirs.len(), r.frames as usize * 720 * 512 * 2);
 }
 
+/// #1254: AS-10 metadata in an XDCAM HD422 file reads back; a shim named in the specification is
+/// checked against the essence, and AS-10 needs OP1a with MPEG-2.
+#[test]
+fn xdcam_hd422_as10_metadata_and_shims() {
+    let (p, seq, m) = project();
+    let xd = |path: &str, as10: &str| ExportSettings {
+        frame_size: Some((1280, 720)),
+        bitrate_kbps: 50_000,
+        max_bitrate_kbps: Some(50_000),
+        keyframe_distance: Some(12),
+        mpeg2_b_frames: Some(2),
+        mxf_as10: as10.into(),
+        ..settings(Format::MxfOp1a, MxfVideoCodec::XdcamHd422, path)
+    };
+    let err = |s: ExportSettings| match export(&p, seq, &s, &m, &Progress::default()) {
+        Err(ExportError::Unsupported(e)) => e,
+        other => panic!("expected a refusal, got {other:?}"),
+    };
+    // a shim of the specification: this file is 1280x720 with two channels, not what NRK needs
+    let e = err(xd(&tmp("as10_nrk.mxf"), "ShimName: NRK_HD_2012\n"));
+    assert!(e.contains("NRK_HD_2012") && e.contains("1280x720") && e.contains("8 ch"), "{e}");
+    assert!(err(xd(&tmp("as10_cnn.mxf"), "ShimName: CNN_HD_2012\n")).contains("MP@HL"));
+    assert!(err(xd(&tmp("as10_bad.mxf"), "MainTitle: no shim\n")).contains("ShimName"));
+    assert!(err(xd(&tmp("as10_unknown.mxf"), "ShimName: x\nNope: 1\n")).contains("Nope"));
+    assert!(err(ExportSettings { format: Format::MxfOpAtom, ..xd(&tmp("as10_atom.mxf"), "ShimName: x\n") }).contains("OP1a"));
+    // a shim of the user's own is not checked
+    let path = tmp("as10_own.mxf");
+    export(&p, seq, &xd(&path, "ShimName: STATION_HD_2026\nMainTitle: Híradó\nSpanningNumber: 0\n"), &m, &Progress::default()).unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let mx = cfa4_mxf::open(&bytes).unwrap();
+    assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
+    let mut a = mx.as11.unwrap().as10;
+    a.sort();
+    assert_eq!(a, vec![("MainTitle".to_string(), "Híradó".to_string()), ("ShimName".into(), "STATION_HD_2026".into()), ("SpanningNumber".into(), "0".into())]);
+}
+
 /// XDCAM HD422 (RDD 9): 4:2:2 MPEG-2 in system-item content packages with one mono AES3 element
 /// per channel. ffmpeg decodes the picture exactly as the elementary stream export of the same
 /// settings, and each audio stream sample-exact as the channel we read back.
@@ -480,5 +518,477 @@ fn xdcam_hd422_rdd9_op1a() {
         let v = j["streams"].as_array().unwrap().iter().find(|s| s["codec_type"] == "video").unwrap().clone();
         assert_eq!((v["codec_name"].as_str(), v["profile"].as_str(), v["pix_fmt"].as_str()), (Some("mpeg2video"), Some("4:2:2"), Some("yuv422p")));
         assert_eq!(v["nb_read_frames"], n.to_string());
+    }
+}
+
+/// Interlaced MPEG-2 in MXF (#949): XDCAM HD422 1080i at 25 fps as RDD 9's separate fields (544
+/// stored, 540 sampled lines per field, line map 21 / 584, field 1 first, coded content
+/// interlaced) holds the interlaced elementary stream, which ffprobe (oracle) reads as top field
+/// first; D-10 codes interlaced pictures upper field first. Rates, sizes and a lower-first D-10
+/// that RDD 9 / ST 356 do not have are refused.
+#[test]
+fn interlaced_mpeg2_mxf() {
+    let (p, seq, m) = project();
+    let xd = |path: &str| ExportSettings {
+        frame_size: Some((1920, 1080)),
+        frame_rate: Some(FrameRate::new(25, 1)),
+        bitrate_kbps: 50_000,
+        max_bitrate_kbps: Some(50_000),
+        keyframe_distance: Some(12),
+        mpeg2_b_frames: Some(2),
+        field_order: FieldOrder::UpperFirst,
+        ..settings(Format::MxfOp1a, MxfVideoCodec::XdcamHd422, path)
+    };
+    let refused = |s: ExportSettings| matches!(export(&p, seq, &s, &m, &Progress::default()), Err(ExportError::Unsupported(_)));
+    assert!(refused(ExportSettings { frame_rate: Some(FrameRate::FPS_24), ..xd(&tmp("xd_1080i24.mxf")) }), "RDD 9 has no 1080i at 24 fps");
+    assert!(refused(ExportSettings { frame_size: Some((1280, 720)), ..xd(&tmp("xd_720i.mxf")) }), "720 lines are progressive");
+    // ProRes in MXF codes field pictures (`op1a_prores_interlaced`); DNxHR stays progressive
+    assert!(refused(ExportSettings { mxf_video_codec: MxfVideoCodec::Dnxhr, ..xd(&tmp("xd_dnx_i.mxf")) }), "DNxHR in MXF is progressive");
+    let path = tmp("xd_1080i.mxf");
+    let r = export(&p, seq, &xd(&path), &m, &Progress::default()).unwrap();
+    let n = r.frames as usize;
+    let bytes = std::fs::read(&path).unwrap();
+    let mx = cfa4_mxf::open(&bytes).unwrap();
+    assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
+    let v = &mx.tracks[mx.track_of_kind(cfa4_mxf::TrackKind::Picture).unwrap()];
+    assert_eq!((v.codec, v.samples.len()), (cfa4_mxf::Codec::Mpeg2, n));
+    let pi = v.picture.as_ref().unwrap();
+    assert_eq!((pi.frame_layout, pi.stored_width, pi.stored_height, pi.display_height), (1, 1920, 544, 540));
+    assert_eq!((pi.frame_width(), pi.frame_height()), (1920, 1080));
+    // the descriptor's field properties, as RDD 9's annex table gives them
+    let find = |key: &[u8]| bytes.windows(key.len()).position(|w| w == key).map(|i| &bytes[i + key.len()..]);
+    assert_eq!(find(&[0x32, 0x0D, 0x00, 0x10]).map(|b| &b[..16]), Some(&[0, 0, 0, 2, 0, 0, 0, 4, 0, 0, 0, 21, 0, 0, 2, 0x48][..]), "video line map 21, 584");
+    assert_eq!(find(&[0x32, 0x12, 0x00, 0x01]).map(|b| b[0]), Some(1), "field dominance");
+    assert_eq!(find(&[0x32, 0x15, 0x00, 0x01]).map(|b| b[0]), Some(4), "signal standard ST 274");
+    let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("MXF 1080i decode") else { return };
+    let raw = ["-f", "rawvideo", "-pix_fmt", "yuv422p"];
+    let theirs = ffmpeg_raw(&ffmpeg, &path, "0:v:0", &raw);
+    assert_eq!(theirs.len(), n * 1920 * 1080 * 2);
+    let es = tmp("xd_1080i.m2v");
+    let ess = ExportSettings { format: Format::Mpeg2, mpeg2_container: "es".into(), mpeg2_422: true, ..xd(&es) };
+    export(&p, seq, &ess, &m, &Progress::default()).unwrap();
+    assert!(theirs == ffmpeg_raw(&ffmpeg, &es, "0:v:0", &raw), "the MXF essence is the interlaced elementary stream");
+    if let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("MXF 1080i probe") {
+        let j = ffprobe_json(&ffprobe, &path);
+        let v = j["streams"].as_array().unwrap().iter().find(|s| s["codec_type"] == "video").unwrap().clone();
+        assert_eq!((v["width"].as_u64(), v["height"].as_u64(), v["field_order"].as_str()), (Some(1920), Some(1080), Some("tt")), "{v}");
+        assert_eq!(v["nb_read_frames"], n.to_string());
+    }
+
+    // D-10: interlaced pictures in the separate-field layout it always has
+    let d10 = |path: &str| ExportSettings {
+        frame_size: Some((720, 576)),
+        frame_rate: Some(FrameRate::new(25, 1)),
+        pixel_aspect: Some((16, 15)),
+        bitrate_kbps: 50_000,
+        field_order: FieldOrder::UpperFirst,
+        ..settings(Format::MxfOp1a, MxfVideoCodec::D10, path)
+    };
+    assert!(refused(ExportSettings { field_order: FieldOrder::LowerFirst, ..d10(&tmp("d10_bff.mxf")) }), "D-10 is upper field first");
+    let path = tmp("d10_i.mxf");
+    let r = export(&p, seq, &d10(&path), &m, &Progress::default()).unwrap();
+    let n = r.frames as usize;
+    let bytes = std::fs::read(&path).unwrap();
+    let mx = cfa4_mxf::open(&bytes).unwrap();
+    let v = &mx.tracks[mx.track_of_kind(cfa4_mxf::TrackKind::Picture).unwrap()];
+    assert!(v.samples.iter().all(|s| s.key && s.size == 250_000));
+    let src = cfa4_codecs::open_bytes("x.mxf", bytes.clone().into()).unwrap();
+    let theirs = ffmpeg_raw(&ffmpeg, &path, "0:v:0", &raw);
+    let fsize = 720 * 608 * 2;
+    assert_eq!(theirs.len(), n * fsize);
+    for f in [0usize, n / 2, n - 1] {
+        let frame = &theirs[f * fsize..f * fsize + 720 * 608];
+        assert!(frame[..720 * 32].iter().all(|&y| y.abs_diff(16) <= 2), "frame {f}: vertical interval");
+        let t = FrameRate::new(25, 1).tick_of(f as i64) + Tick(1);
+        let ours = src.video_frame(FrameRequest::full(t)).unwrap();
+        let cfa4_frame::PixelData::Yuv8 { planes, .. } = &ours.data else { panic!("8-bit Y'CbCr") };
+        let (h, want) = if planes[0].len() == 720 * 608 { (608, frame) } else { (576, &frame[720 * 32..]) };
+        let worst = planes[0][..720 * h].iter().zip(want).map(|(a, b)| a.abs_diff(*b)).max().unwrap_or(0);
+        assert!(worst <= 4, "frame {f}: luma differs by {worst}");
+    }
+    if let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("MXF D-10 interlaced probe") {
+        let j = ffprobe_json(&ffprobe, &path);
+        let v = j["streams"].as_array().unwrap().iter().find(|s| s["codec_type"] == "video").unwrap().clone();
+        assert_eq!(v["field_order"].as_str(), Some("tt"), "{v}");
+    }
+}
+
+/// Uncompressed MXF (#946): v210 and UYVY pictures in OP1a and OP-Atom read back with our
+/// demuxer (layout, picture size, one picture per edit unit) and decode to the rendered frames
+/// within the 4:2:2 Rec. 709 round trip; ffprobe / ffmpeg (oracle) name the codec and decode
+/// the same pictures.
+#[test]
+fn uncompressed_v210_and_uyvy() {
+    let (p, seq, m) = project();
+    let leader = m.0.values().find(|s| s.info().video.is_some()).unwrap().clone();
+    let oracle = cfa4_testkit::ffprobe_or_skip("uncompressed MXF probe").zip(cfa4_testkit::ffmpeg_or_skip("uncompressed MXF decode"));
+    for (codec, layout, tol) in [(MxfVideoCodec::V210, cfa4_mxf::UncompressedLayout::V210, 6), (MxfVideoCodec::Uyvy, cfa4_mxf::UncompressedLayout::Uyvy8, 8)] {
+        for format in [Format::MxfOp1a, Format::MxfOpAtom] {
+            let path = tmp(&format!("unc_{codec:?}_{format:?}.mxf"));
+            let s = settings(format, codec, &path);
+            assert_eq!(s.video_format(), Format::MxfOp1a);
+            let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+            assert_eq!(r.frames, 24);
+            let bytes = std::fs::read(&path).unwrap();
+            let est = s.estimate_bytes(320, 180, FrameRate::FPS_24, 48_000, Tick(TICKS_PER_SECOND));
+            assert!(est >= 24 * layout.picture_bytes(320, 180), "{codec:?}: estimate {est}");
+            let mx = cfa4_mxf::open(&bytes).unwrap();
+            assert!(mx.warnings.is_empty(), "{codec:?} {format:?}: {:?}", mx.warnings);
+            let v = &mx.tracks[mx.track_of_kind(cfa4_mxf::TrackKind::Picture).unwrap()];
+            assert_eq!(v.samples.len(), 24, "{codec:?} {format:?}");
+            assert_eq!(v.codec, cfa4_mxf::Codec::Uncompressed, "{codec:?}");
+            let want = layout.picture_bytes(320, 180);
+            assert!(v.samples.iter().all(|x| u64::from(x.size) == want), "{codec:?}: {want} bytes per picture");
+            let src = cfa4_codecs::open_bytes("x.mxf", bytes.into()).unwrap();
+            for f in [0i64, 7, 23] {
+                let t = FrameRate::FPS_24.tick_of(f) + Tick(1);
+                let a = src.video_frame(FrameRequest::full(t)).unwrap().to_rgba8();
+                let b = leader.video_frame(FrameRequest::full(t)).unwrap().to_rgba8();
+                assert_eq!(a.len(), b.len());
+                // chroma is halved horizontally: compare where the picture is flat
+                let worst =
+                    a.chunks(4).zip(b.chunks(4)).map(|(x, y)| (0..3).map(|c| x[c].abs_diff(y[c])).max().unwrap_or(0)).filter(|d| *d <= 64).max().unwrap_or(0);
+                let close = a.chunks(4).zip(b.chunks(4)).filter(|(x, y)| (0..3).all(|c| x[c].abs_diff(y[c]) <= tol)).count();
+                assert!(close * 100 >= a.len() / 4 * 95, "{codec:?} frame {f}: {close} of {} pixels within {tol} (worst {worst})", a.len() / 4);
+            }
+            let Some((ffprobe, ffmpeg)) = &oracle else { continue };
+            let j = ffprobe_json(ffprobe, &path);
+            let v = j["streams"].as_array().unwrap().iter().find(|s| s["codec_type"] == "video").unwrap().clone();
+            assert_eq!(v["codec_name"], codec_name(codec), "{codec:?} {format:?}");
+            assert_eq!((v["width"].as_u64(), v["height"].as_u64(), v["nb_read_frames"].as_str()), (Some(320), Some(180), Some("24")), "{codec:?}");
+            let fmt = if codec == MxfVideoCodec::V210 { "yuv422p10le" } else { "uyvy422" };
+            let raw = ffmpeg_raw(ffmpeg, &path, "0:v", &["-frames:v", "1", "-f", "rawvideo", "-pix_fmt", fmt]);
+            let first = &std::fs::read(&path).unwrap();
+            let mx = cfa4_mxf::open(first).unwrap();
+            let pic = mx.read_sample(first, mx.track_of_kind(cfa4_mxf::TrackKind::Picture).unwrap(), 0).unwrap();
+            if codec == MxfVideoCodec::Uyvy {
+                assert!(raw == pic, "ffmpeg reads our UYVY bytes as they are");
+            } else {
+                assert_eq!(raw.len(), 320 * 180 * 2 * 2, "4:2:2 10-bit planes");
+            }
+        }
+    }
+}
+
+/// Interlaced ProRes in MXF (PROCODEC-002 WP6): two field pictures per edit unit and a
+/// descriptor of separate fields (half-height stored rectangle, field dominance, the 1080-line
+/// video line map); the frames read back interlaced, like the MOV export of the same settings.
+#[test]
+fn op1a_prores_interlaced() {
+    let (p, seq, m) = project();
+    for (order, want, ff) in
+        [(FieldOrder::UpperFirst, cfa4_frame::FieldOrder::TopFirst, "tt"), (FieldOrder::LowerFirst, cfa4_frame::FieldOrder::BottomFirst, "bb")]
+    {
+        let path = tmp(&format!("op1a_prores_{ff}.mxf"));
+        // 1920 × 1080: the size with a standard video line map
+        let mut s = ExportSettings { field_order: order, scale: 6.0, ..settings(Format::MxfOp1a, MxfVideoCodec::ProRes, &path) };
+        s.range = Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(8)));
+        assert!(s.codes_interlaced());
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let bytes = std::fs::read(&path).unwrap();
+        let mx = cfa4_mxf::open(&bytes).unwrap();
+        assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
+        let v = &mx.tracks[mx.track_of_kind(cfa4_mxf::TrackKind::Picture).unwrap()];
+        let pic = v.picture.as_ref().unwrap();
+        assert_eq!((pic.frame_layout, pic.stored_height, pic.frame_height(), pic.frame_width()), (1, 540, 1080, 1920), "{order:?}");
+        let src = cfa4_codecs::open_bytes("x.mxf", bytes.into()).unwrap();
+        assert_eq!(src.info().video.as_ref().unwrap().height, 1080);
+        let mov = tmp(&format!("op1a_prores_{ff}.mov"));
+        let ms = ExportSettings { format: Format::ProRes, multiplexer: Multiplexer::Mov, path: mov.clone(), ..s.clone() };
+        export(&p, seq, &ms, &m, &Progress::default()).unwrap();
+        let msrc = cfa4_codecs::open_bytes("x.mov", std::fs::read(&mov).unwrap().into()).unwrap();
+        for f in [0i64, 7] {
+            let t = FrameRate::FPS_24.tick_of(f) + Tick(1);
+            let a = src.video_frame(FrameRequest::full(t)).unwrap();
+            assert_eq!(a.layout.field_order, want, "{order:?}");
+            assert!(a.to_rgba8() == msrc.video_frame(FrameRequest::full(t)).unwrap().to_rgba8(), "{order:?}: frame {f} differs from the MOV export");
+        }
+        if let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("MXF ProRes field order") {
+            let j = ffprobe_json(&ffprobe, &path);
+            let st = j["streams"].as_array().unwrap().iter().find(|s| s["codec_type"] == "video").unwrap();
+            assert_eq!((st["codec_name"].as_str(), st["height"].as_i64()), (Some("prores"), Some(1080)), "{order:?}");
+            // ffprobe names the stored order (from the line map: field 1 first) and then the
+            // displayed one: "tt" upper first, "tb" lower first
+            let fo = st["field_order"].as_str().unwrap_or_default();
+            assert_eq!(fo.get(1..), Some(&ff[1..]), "{order:?}: {fo}");
+        }
+    }
+    // the other MXF codecs still write progressive frames only
+    let dnx = ExportSettings { field_order: FieldOrder::UpperFirst, ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &tmp("dnx_i.mxf")) };
+    assert!(!dnx.codes_interlaced() && dnx.validate().is_err());
+}
+
+/// AS-03 (MXF Program Delivery): the DMS-AS-03 framework is written and read back, the shim of
+/// the specification is checked against the essence, the required items are enforced.
+#[test]
+fn xdcam_hd422_as03_metadata_and_shims() {
+    let (p, seq, m) = project();
+    let required = "IdentifierKind: ISAN\nIdentifier: ISAN 0000-0001-8947-0000-8-0000-0000-D\nSignalStandard: 1280/720/25p/16:9\nIntendedAFD: 1000 FullHD\n";
+    let xd = |path: &str, as03: &str| ExportSettings {
+        frame_size: Some((1280, 720)),
+        bitrate_kbps: 25_000,
+        max_bitrate_kbps: Some(25_000),
+        keyframe_distance: Some(12),
+        mpeg2_b_frames: Some(2),
+        mxf_as03: as03.into(),
+        ..settings(Format::MxfOp1a, MxfVideoCodec::XdcamHd422, path)
+    };
+    let err = |s: ExportSettings| match export(&p, seq, &s, &m, &Progress::default()) {
+        Err(ExportError::Unsupported(e)) => e,
+        other => panic!("expected a refusal, got {other:?}"),
+    };
+    // the HD shim wants 1920x1080
+    let e = err(xd(&tmp("as03_hd.mxf"), &format!("{required}ShimName: PBS NGIS HD Playout\n")));
+    assert!(e.contains("PBS NGIS HD Playout") && e.contains("1280x720"), "{e}");
+    assert!(err(xd(&tmp("as03_missing.mxf"), "ShimName: x\n")).contains("is required"));
+    assert!(err(xd(&tmp("as03_unknown.mxf"), &format!("{required}ShimName: x\nNope: 1\n"))).contains("Nope"));
+    assert!(err(ExportSettings { format: Format::MxfOpAtom, ..xd(&tmp("as03_atom.mxf"), &format!("{required}ShimName: x\n")) }).contains("OP1a"));
+    // a shim of the user's own keeps the general provisions only
+    let path = tmp("as03_own.mxf");
+    export(&p, seq, &xd(&path, &format!("{required}ShimName: STATION_HD_2026\nSlateTitle: Híradó\n")), &m, &Progress::default()).unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let mx = cfa4_mxf::open(&bytes).unwrap();
+    assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
+    let mut a = mx.as11.unwrap().as03;
+    a.sort();
+    assert!(a.contains(&("SlateTitle".to_string(), "Híradó".to_string())) && a.contains(&("ShimName".into(), "STATION_HD_2026".into())), "{a:?}");
+    assert_eq!(a.len(), 6);
+}
+
+/// #1536: further sequences go into the same bundle as more versions, each with its own
+/// components (sharing off; #1719 covers the shared case) and version file; one manifest and one shim file list everything.
+#[test]
+fn as02_bundle_holds_several_versions() {
+    use cfa4_mxf::as02::{Manifest, Role};
+    let (p, seq, m) = project();
+    let dir = tmp("as02_versions");
+    let _ = std::fs::remove_dir_all(&dir);
+    let s = ExportSettings { mxf_as02: true, mxf_as02_share: false, mxf_as02_versions: vec![seq.0], ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &dir) };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert_eq!(r.frames, 48, "two 24-frame versions");
+    let name = std::path::Path::new(&dir).file_name().unwrap().to_string_lossy().to_string();
+    let man = Manifest::parse(&std::fs::read_to_string(format!("{dir}/manifest.xml")).unwrap()).unwrap();
+    assert_eq!(man.check(), Vec::<String>::new());
+    assert_eq!(man.bundle_name, name);
+    assert_eq!(man.versions().count(), 2);
+    assert_eq!(man.essence_components().count(), 6, "picture + two sound channels per version");
+    assert_eq!(man.files.iter().filter(|f| f.role == Role::Shim).count(), 1);
+    for f in man.files.iter().filter(|f| f.role != Role::Folder) {
+        assert!(std::path::Path::new(&format!("{dir}/{}", f.path)).is_file(), "{}", f.path);
+    }
+    for stem in [name.clone(), format!("{name}_v2")] {
+        let v = std::fs::read(format!("{dir}/{stem}.mxf")).unwrap();
+        let ver = cfa4_mxf::as02_version::read_version(&v).unwrap();
+        assert!(ver.problems.is_empty(), "{stem}: {:?}", ver.problems);
+        assert_eq!(ver.components.len(), 3, "{stem}");
+        for c in &ver.components {
+            let rel = c.locator.as_deref().unwrap();
+            assert!(rel.contains(&stem), "{stem} uses its own components, not {rel}");
+        }
+    }
+    // a version needs the bundle switch
+    let bad = ExportSettings { mxf_as02_versions: vec![seq.0], ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &dir) };
+    assert!(bad.validate().is_err());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A second sequence over the media of [`project`]: the first `shared` frames of the leader and
+/// the tone as in the first sequence, then `tail` frames of the leader from frame 30 on.
+fn add_cut(p: &mut Project, first: ItemId, shared: i64, tail: i64) -> ItemId {
+    let r = FrameRate::FPS_24;
+    let (v, a) = {
+        let q = p.sequence(first).unwrap();
+        (q.video_tracks[0].items[0].item, q.audio_tracks[0].items[0].item)
+    };
+    let seq = p.new_sequence("Cut", SequenceSettings { width: 320, height: 180, frame_rate: r, ..Default::default() }, 1, 1, None);
+    let len = shared + tail;
+    let v1 = p.make_track_item(v, TrackKind::Video, Tick::ZERO, TimeRange::new(Tick::ZERO, r.tick_of(shared)), r).unwrap();
+    let mut items = vec![v1];
+    if tail > 0 {
+        items.push(p.make_track_item(v, TrackKind::Video, r.tick_of(shared), TimeRange::new(r.tick_of(30), r.tick_of(tail)), r).unwrap());
+    }
+    let ai = p.make_track_item(a, TrackKind::Audio, Tick::ZERO, TimeRange::new(Tick::ZERO, r.tick_of(len)), r).unwrap();
+    let q = p.sequence_mut(seq).unwrap();
+    q.video_tracks[0].items.extend(items);
+    q.audio_tracks[0].items.push(ai);
+    seq
+}
+
+/// #1719: versions that cut the same material the same way share component files: the common
+/// frames are encoded once, and the version files point at them.
+#[test]
+fn as02_versions_share_components() {
+    use cfa4_mxf::as02::{Manifest, Role};
+    let (p, seq, m) = project();
+    let mut p = Arc::try_unwrap(p).ok().unwrap();
+    // the same first 12 frames and the same sound, then a different second half
+    let cut = add_cut(&mut p, seq, 12, 12);
+    // a short version that is entirely a part of the first: nothing of its own
+    let short = add_cut(&mut p, seq, 6, 0);
+    let p = Arc::new(p);
+    let dir = tmp("as02_shared");
+    let _ = std::fs::remove_dir_all(&dir);
+    let s = ExportSettings { mxf_as02: true, mxf_as02_versions: vec![cut.0, short.0], ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &dir) };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert_eq!(r.frames, 24 + 12, "the first version, and the 12 frames only the second has");
+    let name = std::path::Path::new(&dir).file_name().unwrap().to_string_lossy().to_string();
+    let man = Manifest::parse(&std::fs::read_to_string(format!("{dir}/manifest.xml")).unwrap()).unwrap();
+    assert_eq!(man.check(), Vec::<String>::new());
+    assert_eq!(man.versions().count(), 3);
+    assert_eq!(man.essence_components().count(), 6, "picture + two sound channels, twice (the short version has none)");
+    assert_eq!(man.files.iter().filter(|f| f.role == Role::Shim).count(), 1);
+    for f in man.files.iter().filter(|f| f.role != Role::Folder) {
+        assert!(std::path::Path::new(&format!("{dir}/{}", f.path)).is_file(), "{}", f.path);
+    }
+    let read = |stem: &str| cfa4_mxf::as02_version::read_version(&std::fs::read(format!("{dir}/{stem}.mxf")).unwrap()).unwrap();
+    let v1 = read(&name);
+    let v2 = read(&format!("{name}_v2"));
+    let v3 = read(&format!("{name}_v3"));
+    for v in [&v1, &v2, &v3] {
+        assert!(v.problems.is_empty(), "{:?}", v.problems);
+    }
+    let clips = |v: &cfa4_mxf::as02_version::VersionFile| -> Vec<Vec<(i64, i64)>> {
+        v.tracks.iter().map(|t| t.clips.iter().map(|c| (c.start, c.duration)).collect()).collect()
+    };
+    assert_eq!(clips(&v1), vec![vec![(0, 24)]; 3]);
+    // the second version: 12 frames of the first version's files, then 12 of its own
+    assert_eq!(clips(&v2), vec![vec![(0, 12), (0, 12)]; 3]);
+    let first_files: Vec<_> = v1.components.iter().map(|c| c.umid).collect();
+    for t in &v2.tracks {
+        assert!(first_files.contains(&t.clips[0].package.unwrap()), "the common frames come from the first version");
+        assert!(!first_files.contains(&t.clips[1].package.unwrap()), "the rest is the version's own");
+    }
+    assert_eq!(v2.components.len(), 6);
+    // the short version is cut from the first version's files alone
+    assert_eq!(clips(&v3), vec![vec![(0, 6)]; 3]);
+    assert!(v3.components.iter().all(|c| first_files.contains(&c.umid)));
+    // the own run of the second version is 12 frames long
+    let own = std::fs::read(format!("{dir}/media/{name}_v2_V.mxf")).unwrap();
+    assert_eq!(cfa4_mxf::open(&own).unwrap().tracks[0].samples.len(), 12);
+    // switching sharing off writes whole components for every version
+    let dir2 = tmp("as02_unshared");
+    let _ = std::fs::remove_dir_all(&dir2);
+    let off = ExportSettings { mxf_as02_share: false, path: dir2.clone(), ..s.clone() };
+    assert_eq!(export(&p, seq, &off, &m, &Progress::default()).unwrap().frames, 24 + 24 + 6);
+    let _ = std::fs::remove_dir_all(&dir);
+    let _ = std::fs::remove_dir_all(&dir2);
+}
+
+/// #1477: `mxf_as02` writes a simple AS-02 bundle: the version file and `manifest.xml` in the
+/// folder, the picture and each audio channel as a mono OP1a file under `media/`.
+#[test]
+fn as02_bundle_has_version_manifest_and_mono_components() {
+    use cfa4_mxf::as02::{Manifest, Role};
+    let (p, seq, m) = project();
+    let dir = tmp("as02_bundle");
+    let _ = std::fs::remove_dir_all(&dir);
+    let r = export(&p, seq, &ExportSettings { mxf_as02: true, ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &dir) }, &m, &Progress::default()).unwrap();
+    assert_eq!(r.frames, 24);
+    let name = std::path::Path::new(&dir).file_name().unwrap().to_string_lossy().to_string();
+    let xml = std::fs::read_to_string(format!("{dir}/manifest.xml")).unwrap();
+    let man = Manifest::parse(&xml).unwrap();
+    assert_eq!(man.check_simple(), Vec::<String>::new());
+    assert_eq!(man.bundle_name, name);
+    assert_eq!(man.essence_components().count(), 3, "picture + two audio channels");
+    // the shim file is in the root folder, listed in the manifest with its size, and reads back
+    let shim_file = man.files.iter().find(|f| f.role == cfa4_mxf::as02::Role::Shim).expect("the manifest lists the shim file");
+    assert_eq!(shim_file.path, "shim.xml");
+    let shim_xml = std::fs::read_to_string(format!("{dir}/shim.xml")).unwrap();
+    assert_eq!(shim_file.size, shim_xml.len() as u64);
+    assert!(!cfa4_mxf::as02::Shim::parse(&shim_xml).unwrap().name.is_empty());
+    for f in man.files.iter().filter(|f| f.role != Role::Folder) {
+        assert_eq!(std::fs::metadata(format!("{dir}/{}", f.path)).unwrap().len(), f.size, "{}", f.path);
+        // every file carries an MD5 over the whole file (9.2.5), checked against md5sum
+        let mic = f.mic.as_ref().unwrap_or_else(|| panic!("{} has no MIC", f.path));
+        assert_eq!((mic.kind.as_str(), mic.scope.as_str()), ("md5", "entire_file"), "{}", f.path);
+        if let Ok(o) = std::process::Command::new("md5sum").arg(format!("{dir}/{}", f.path)).output() {
+            assert_eq!(String::from_utf8_lossy(&o.stdout).split_whitespace().next(), Some(mic.value.as_str()), "{}", f.path);
+        }
+    }
+    // the components are mono OP1a files with one 24-frame track each
+    for (tag, kind) in [("V", cfa4_mxf::TrackKind::Picture), ("A1", cfa4_mxf::TrackKind::Sound), ("A2", cfa4_mxf::TrackKind::Sound)] {
+        let b = std::fs::read(format!("{dir}/media/{name}_{tag}.mxf")).unwrap();
+        let mx = cfa4_mxf::open(&b).unwrap();
+        assert_eq!(mx.operational_pattern.name(), "OP1a", "{tag}");
+        assert_eq!(mx.tracks.len(), 1, "{tag}");
+        assert_eq!(mx.tracks[0].kind, kind, "{tag}");
+        assert_eq!(mx.tracks[0].duration, Some(24), "{tag}");
+    }
+    // the version file reads back with one 24-frame clip per component
+    let v = std::fs::read(format!("{dir}/{name}.mxf")).unwrap();
+    let ver = cfa4_mxf::as02_version::read_version(&v).unwrap();
+    assert_eq!(ver.tracks.len(), 3);
+    assert!(ver.tracks.iter().all(|t| t.clips.len() == 1 && t.clips[0].duration == 24));
+    assert_eq!(ver.components.len(), 3);
+    // each file package copy carries the component's own file descriptor, property for property
+    for c in &ver.components {
+        let rel = c.locator.as_deref().unwrap();
+        let comp = std::fs::read(format!("{dir}/{rel}")).unwrap();
+        let mut theirs = cfa4_mxf::as02_version::copy_descriptor(&comp, Some(c.umid)).unwrap();
+        let mut ours = cfa4_mxf::as02_version::copy_descriptor(&v, Some(c.umid)).unwrap();
+        assert_eq!(ours.len(), theirs.len(), "{rel}");
+        assert!(ours[0].props.len() > 3, "{rel}: a full descriptor, not the minimal one");
+        for set in ours.iter_mut().chain(theirs.iter_mut()) {
+            set.props.sort();
+            set.uid = [0; 16];
+            set.sub.clear();
+        }
+        assert_eq!(ours, theirs, "{rel}");
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+    // refused with the single-file frameworks and for the codecs that interleave sound
+    let bad = |s: ExportSettings| s.validate().unwrap_err().to_string();
+    let base = ExportSettings { mxf_as02: true, ..settings(Format::MxfOp1a, MxfVideoCodec::Dnxhr, &tmp("as02_bad")) };
+    assert!(bad(ExportSettings { format: Format::MxfOpAtom, ..base.clone() }).contains("OP1a"));
+    assert!(bad(ExportSettings { mxf_anc_captions: true, ..base.clone() }).contains("AS-02"));
+    assert!(bad(ExportSettings { mxf_video_codec: MxfVideoCodec::XdcamHd422, ..base.clone() }).contains("mono"));
+}
+
+/// AS-12 (MXF Commercials Delivery): the Ad-ID identification is written beside an AS-03
+/// framework and read back; AS-12 alone or with a missing item is refused.
+#[test]
+fn xdcam_hd422_as12_adid_beside_as03() {
+    let (p, seq, m) = project();
+    let as03 = "IdentifierKind: Ad-ID\nIdentifier: ABCD1234000H\nShimName: STATION\nSignalStandard: 1280/720/25p/16:9\nIntendedAFD: 1000 FullHD\n";
+    let adid = "adid_prefix: ABCD\nadid_code: 1234000H\nad_title: Spot\nBrand: Joe\nProduct: Bread\nAdvertiser: Joe\nagency_office_location: Budapest\nLength: 30\nMedium: Television\nsd_flag: N\nParent: Joe Holding\n";
+    let xd = |path: &str, as03: &str, as12: &str| ExportSettings {
+        frame_size: Some((1280, 720)),
+        bitrate_kbps: 25_000,
+        max_bitrate_kbps: Some(25_000),
+        keyframe_distance: Some(12),
+        mpeg2_b_frames: Some(2),
+        mxf_as03: as03.into(),
+        mxf_as12: as12.into(),
+        ..settings(Format::MxfOp1a, MxfVideoCodec::XdcamHd422, path)
+    };
+    let err = |s: ExportSettings| match export(&p, seq, &s, &m, &Progress::default()) {
+        Err(ExportError::Unsupported(e)) => e,
+        other => panic!("expected a refusal, got {other:?}"),
+    };
+    assert!(err(xd(&tmp("as12_alone.mxf"), "", adid)).contains("beside"));
+    assert!(err(xd(&tmp("as12_missing.mxf"), as03, "adid_prefix: ABCD\n")).contains("is required"));
+    assert!(err(ExportSettings { format: Format::MxfOpAtom, ..xd(&tmp("as12_atom.mxf"), as03, adid) }).contains("OP1a"));
+    let path = tmp("as12_ok.mxf");
+    export(&p, seq, &xd(&path, as03, adid), &m, &Progress::default()).unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let mx = cfa4_mxf::open(&bytes).unwrap();
+    assert!(mx.warnings.is_empty(), "{:?}", mx.warnings);
+    let a = mx.as11.unwrap().as12;
+    assert_eq!(a.len(), 12, "{a:?}");
+    assert!(a.contains(&("Brand".to_string(), "Joe".to_string())) && a.contains(&("ShimName".into(), cfa4_mxf::as11::ADID_SHIM_NAME.into())));
+}
+
+/// #1366: the uncompressed MXF OP1a exports (ST 384, v210 10-bit and UYVY 8-bit) with 24-bit
+/// 48 kHz PCM keep the AS-07 Baseband Shim, so they serve as the AS-07 master export; a coded
+/// picture (DNxHR) does not.
+#[test]
+fn uncompressed_op1a_exports_keep_the_as07_baseband_shim() {
+    let (p, seq, m) = project();
+    for (codec, ok) in [(MxfVideoCodec::V210, true), (MxfVideoCodec::Uyvy, true), (MxfVideoCodec::Dnxhr, false)] {
+        let path = tmp(&format!("as07_{codec:?}.mxf"));
+        export(&p, seq, &settings(Format::MxfOp1a, codec, &path), &m, &Progress::default()).unwrap();
+        let f = cfa4_mxf::open(&std::fs::read(&path).unwrap()[..]).unwrap();
+        let r = cfa4_mxf::as07::check_baseband(&f);
+        assert_eq!(r.is_ok(), ok, "{codec:?}: {r:?}");
     }
 }

@@ -174,6 +174,11 @@ pub struct EncoderConfig {
     /// idr_pic_id of the first IDR picture (later IDRs alternate with it), so a spliced segment
     /// can differ from the IDR next to it.
     pub first_idr_pic_id: u16,
+    /// P and B pictures code no intra macroblocks: every block is predicted from a reference, so a
+    /// block the motion search matches poorly keeps (a warped copy of) the reference instead of
+    /// being refreshed. Meant for the datamosh, not for delivery: quality drops on new content.
+    /// IDR pictures are still intra. Off by default.
+    pub inter_only: bool,
 }
 
 impl EncoderConfig {
@@ -203,6 +208,7 @@ impl EncoderConfig {
             sps_id: 0,
             pps_id: 0,
             first_idr_pic_id: 0,
+            inter_only: false,
         }
     }
 }
@@ -401,6 +407,7 @@ impl Encoder {
                 decimate: true,
                 adaptive_t8: false,
                 always_intra: false,
+                no_inter_intra: cfg.inter_only,
                 cavlc_clamp: !cabac,
             },
             Preset::Balanced => EncParams {
@@ -419,6 +426,7 @@ impl Encoder {
                 decimate: true,
                 adaptive_t8: high,
                 always_intra: false,
+                no_inter_intra: cfg.inter_only,
                 cavlc_clamp: !cabac,
             },
             Preset::Quality => EncParams {
@@ -437,6 +445,7 @@ impl Encoder {
                 decimate: true,
                 adaptive_t8: high,
                 always_intra: true,
+                no_inter_intra: cfg.inter_only,
                 cavlc_clamp: !cabac,
             },
         };
@@ -594,11 +603,11 @@ impl Encoder {
     /// Encode one picture. Returns zero or more packets in decoding order, or
     /// [`Error::BadFrame`] if the planes are smaller than the configured size (same as
     /// [`Encoder::try_encode`]).
-    pub fn encode(&mut self, frame: &YuvFrame, pts: i64) -> Result<Vec<Packet>, Error> {
+    pub fn encode(&mut self, frame: &YuvFrame<'_>, pts: i64) -> Result<Vec<Packet>, Error> {
         self.try_encode(frame, pts)
     }
 
-    pub fn try_encode(&mut self, frame: &YuvFrame, pts: i64) -> Result<Vec<Packet>, Error> {
+    pub fn try_encode(&mut self, frame: &YuvFrame<'_>, pts: i64) -> Result<Vec<Packet>, Error> {
         let src = self.import(frame)?;
         let use_aq = self.cfg.aq_strength > 0.0 && !matches!(self.cfg.rate, RateControl::Qp(_));
         let (mbw, mbh, strength) = (self.params.mbw, self.params.mbh, self.cfg.aq_strength);
@@ -684,7 +693,7 @@ impl Encoder {
         }
     }
 
-    fn import(&mut self, f: &YuvFrame) -> Result<Frame, Error> {
+    fn import(&mut self, f: &YuvFrame<'_>) -> Result<Frame, Error> {
         let (w, h) = (self.cfg.width as usize, self.cfg.height as usize);
         let (cw, ch) = (w / 2, h / 2);
         if f.y_stride < w
@@ -819,7 +828,7 @@ impl Encoder {
         let mut bufs: Vec<(Frame, Vec<MbInfo>)> = jobs.iter_mut().filter_map(|j| Some((j.rec.take()?, std::mem::take(&mut j.mbs)))).collect();
         {
             let this = &*self;
-            let fencs: Vec<FrameEnc> = jobs
+            let fencs: Vec<FrameEnc<'_>> = jobs
                 .iter()
                 .map(|j| FrameEnc {
                     p: &this.params,
@@ -849,7 +858,7 @@ impl Encoder {
                 .collect();
             let deblock: Vec<bool> = jobs.iter().map(|j| j.hdr.slice_type != SliceType::B || capture).collect();
             type Task<'t> = (usize, usize, usize, usize, &'t mut [u8], &'t mut [u8], &'t mut [u8], &'t mut [MbInfo]);
-            let mut tasks: Vec<Task> = Vec::new();
+            let mut tasks: Vec<Task<'_>> = Vec::new();
             for (pi, (rec, mbs)) in bufs.iter_mut().enumerate() {
                 let ys = rec.y.stride;
                 let cs = rec.u.stride;
@@ -872,7 +881,7 @@ impl Encoder {
             }
             let ys = jobs_stride_y(mbw);
             let cs = jobs_stride_c(mbw);
-            let run = |(pi, k, r0, r1, y, u, v, m): Task| -> (usize, usize, SliceOut) {
+            let run = |(pi, k, r0, r1, y, u, v, m): Task<'_>| -> (usize, usize, SliceOut) {
                 let out = SliceEnc::new(&fencs[pi], Band { y: &mut *y, u: &mut *u, v: &mut *v, ys, cs }, &mut *m, r0, r1, k as u16).encode();
                 if deblock[pi] {
                     let mut by = BandPlane { data: y, stride: ys, pad: LUMA_PAD };
@@ -1012,3 +1021,6 @@ fn jobs_stride_y(mbw: usize) -> usize {
 fn jobs_stride_c(mbw: usize) -> usize {
     mbw * 8 + 2 * CHROMA_PAD
 }
+
+#[cfg(test)]
+mod inter_only_tests;

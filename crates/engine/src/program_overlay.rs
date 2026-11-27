@@ -7,6 +7,10 @@
 //! * `transform`: the selected effect's box while it is Motion or Transform of a selected clip
 //!   under the playhead (`toFrame`: clip pixels → frame; `outer`: where its Position is measured
 //!   → frame), with the values a drag starts from. Drags send `effects.setParam`.
+//! * `crop`: the selected effect's rectangle while it is Crop of a selected clip under the
+//!   playhead (`toFrame`: clip pixels → frame; `rect`: the kept part `[x0, y0, x1, y1]` in clip
+//!   pixels; `left` / `top` / `right` / `bottom` in percent, the values a drag starts from).
+//!   Drags send `effects.setParam` for those four parameters.
 //! * `mask`: the selected mask while its clip is selected and under the playhead: its contour,
 //!   expansion and feather contours, vertices and Bezier handles, the feather / expansion handles
 //!   and the corner-roundness handle, in clip pixels (`toFrame` maps them). Drags send
@@ -97,7 +101,7 @@ fn overlay(s: &mut Session, p: &Value) -> Result<Value> {
     let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let frame = (seq.settings.width.max(1), seq.settings.height.max(1));
     let ph = s.playhead();
-    let mut out = json!({"frame": [frame.0, frame.1], "clips": [], "transform": null, "mask": null});
+    let mut out = json!({"frame": [frame.0, frame.1], "clips": [], "transform": null, "crop": null, "mask": null});
     // pictures at the playhead, top-most first
     let mut clips = Vec::new();
     for tr in seq.video_tracks.iter().rev().filter(|t| t.enabled) {
@@ -116,6 +120,9 @@ fn overlay(s: &mut Session, p: &Value) -> Result<Value> {
     }
     if let Some(t) = transform(s, frame) {
         out["transform"] = t;
+    }
+    if let Some(c) = crop(s, frame) {
+        out["crop"] = c;
     }
     if let Some(m) = mask(s, frame, f64_p(p, "roundRadius")) {
         out["mask"] = m;
@@ -304,6 +311,51 @@ fn transform(s: &Session, frame: (u32, u32)) -> Option<Value> {
         "width": width,
         "rotation": rotation,
         "uniform": uniform,
+    }))
+}
+
+/// The selected effect's rectangle while it is Crop of a selected clip under the playhead: the part
+/// of the clip's picture it keeps, in clip pixels, and the matrix to frame pixels (Motion).
+fn crop(s: &Session, frame: (u32, u32)) -> Option<Value> {
+    let sel = s.state.selected_effect.as_ref()?;
+    if !s.state.selection.contains(&sel.clip) {
+        return None;
+    }
+    let seq = s.active_sequence()?;
+    let ph = s.playhead();
+    let (_, it) = seq.find_item(sel.clip)?;
+    if !it.range().contains(ph) {
+        return None;
+    }
+    // an adjustment layer has no picture of its own to crop a rectangle out of
+    if s.project.item(it.item).is_some_and(|pi| matches!(pi.kind, ItemKind::AdjustmentLayer { .. })) {
+        return None;
+    }
+    let index = sel.index(&it.effects)?;
+    let e = it.effects.get(index).filter(|e| e.enabled)?;
+    let def = e.def().filter(|d| d.id == "crop")?;
+    let mt = it.effect_time_at(ph);
+    let (to_frame, size) = clip_to_frame(s, it, mt, frame)?;
+    let (w, h) = (f64::from(size.0), f64::from(size.1));
+    let (left, top, right, bottom) = (e.f64_at("left", mt), e.f64_at("top", mt), e.f64_at("right", mt), e.f64_at("bottom", mt));
+    // as the render keeps it (`cfa4_render::gpufx`, "crop"): the part between the cropped edges
+    let rect = [left / 100.0 * w, top / 100.0 * h, w * (1.0 - right / 100.0), h * (1.0 - bottom / 100.0)];
+    if !rect.iter().chain([left, top, right, bottom].iter()).all(|x| x.is_finite()) {
+        return None;
+    }
+    Some(json!({
+        "clip": sel.clip.0,
+        "effect": index,
+        "effectId": e.effect,
+        "name": def.name,
+        "size": [size.0, size.1],
+        "toFrame": matrix(&to_frame)?,
+        "rect": rect,
+        "left": left,
+        "top": top,
+        "right": right,
+        "bottom": bottom,
+        "zoom": e.param("zoom").and_then(|p| p.value.as_bool()).unwrap_or(false),
     }))
 }
 

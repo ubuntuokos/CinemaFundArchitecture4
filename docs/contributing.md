@@ -9,7 +9,7 @@ of the crate you will change.
 | | All platforms |
 |---|---|
 | Rust | 1.97.1, pinned by `rust-toolchain.toml` (minimum 1.97; edition 2024), via [rustup](https://rustup.rs) |
-| wasm target | `rustup target add wasm32-unknown-unknown` (for `cargo xtask wasm`) |
+| wasm target (optional) | `rustup target add wasm32-unknown-unknown`, only for the opt-in legacy `cargo xtask wasm` |
 | Components | `rustup component add rustfmt clippy` |
 | ffmpeg + ffprobe (optional) | test oracle and fixture generator only; tests skip without it |
 
@@ -38,7 +38,7 @@ cargo run --release -p cfa4-cli -- mcp --demo    # headless MCP server on stdio
 | `CFA4_CONTROL_PORT` | Same as `--control <port>` |
 | `CFA4_CONTROL_TOKEN` | Required for `--control`: 64 random hex characters, inherited by authorized clients; [setup](control-protocol.md) |
 | `CFA4_CPU_COMPOSITE=1` | Disables the GPU compositor |
-| `CFA4_DEV_DESKTOP_ENTRY=1` | Linux, opt-in: a run from a source tree installs a user-level desktop entry (and the icons from `assets/app-icon`) so the taskbar shows the CFA4 icon. Nothing is written without it; packaged runs never write one |
+| `CFA4_DEV_DESKTOP_ENTRY=1` | Linux, opt-in: a run from a source tree installs a user-level desktop entry (and the icons from `assets/cfa4`) so the taskbar shows the CFA4 icon. Nothing is written without it; packaged runs never write one |
 | `CFA4_DATA_DIR` | Same as `--data-dir <dir>`: auto-save, crash recovery, settings and logs |
 | `RUST_LOG` | Log levels for standard error and the log file (see [Logs](#logs)) |
 
@@ -63,8 +63,7 @@ By default CFA4's own crates log at `info` and everything else at `warn`. `RUST_
 that with env_logger-style directives, for example `RUST_LOG=debug`,
 `RUST_LOG=warn,cfa4_codecs=trace` or `RUST_LOG=info,wgpu_core=warn`; a directive ending in `*`
 covers every target starting with it (`cfa4*=debug`). The logger is
-`apps/cfa4/src/logging.rs`; the realtime audio callbacks do not log. The web app logs to the
-browser console instead.
+`apps/cfa4/src/logging.rs`; the realtime audio callbacks do not log.
 
 ### Building with extra-fonts
 
@@ -78,9 +77,8 @@ CFA4_FONTS_DIR="$PWD/../extra-fonts" cargo run --release -p cfa4
 ```
 
 Use an absolute path: `build.rs` runs in `crates/text`, so a relative `CFA4_FONTS_DIR` would
-resolve from there. `crates/text/build.rs` reads its `fonts/manifest.txt` and embeds the fonts as
-`cfa4_text::fonts::CFA4_FONTS` (native: all of them; the web build: only BIZ UDPGothic
-Regular, to keep the wasm small). The Japanese ones become the last fallback of every UI font family
+resolve from there. `crates/text/build.rs` reads `fonts/manifest.txt` in that directory and embeds the fonts as
+`cfa4_text::fonts::CFA4_FONTS`. The Japanese ones become the last fallback of every UI font family
 (`crates/ui-egui/src/theme.rs`, BIZ UDPGothic first) and fallback faces in the text engine (Gothic
 for sans text, Mincho for serif text). Without `CFA4_FONTS_DIR`, `CFA4_FONTS` is empty and
 CFA4 uses its bundled and system fonts. A `CFA4_FONTS_DIR` that is not a checkout is a build
@@ -92,7 +90,6 @@ fallbacks in every UI font family, regardless of interface language (Japanese an
 points, so Japanese text keeps Japanese glyph forms; the Chinese faces cover hanzi the Japanese ones lack). Without those build inputs,
 native builds look up an installed Chinese face (for example Microsoft YaHei or Noto Sans CJK SC)
 once and reuse it across theme changes. No system font files are bundled or copied into the app.
-Web builds depend on the font faces selected by `crates/text/build.rs`; they cannot scan system fonts.
 `theme::tests::chinese_names_render_in_every_theme_and_font_family` verifies Chinese glyphs in the
 timeline's proportional, monospace, medium and semibold families under all three themes.
 
@@ -110,12 +107,15 @@ Every commit must pass all of these:
 
 | Gate | Command |
 |---|---|
-| Format | `cargo fmt --check` (`rustfmt.toml`: `max_width = 160`) |
-| Lints | `cargo clippy --workspace --all-targets -- -D warnings` |
-| Tests | `cargo test --workspace` |
+| Format | `cargo xtask fmt-check` (CFA4-owned crates; `rustfmt.toml`: `max_width = 160`) |
+| Lints | `cargo clippy --workspace --exclude cfa4-ui --all-targets --release -- -D warnings` |
+| Tests | `cargo test --workspace --exclude cfa4-ui --release` |
 | Layering | `cargo xtask layers` |
 | Assets | `cargo xtask assets` |
-| All of the above except tests | `cargo xtask ci` (runs clippy with `--release`; run the tests separately) |
+| All of the above except tests | `cargo xtask ci` (run the tests separately) |
+
+These are the commands CI runs. The vendored `cfa4-ui` has its own test job
+(`scripts/dev/test-vendored-ui.sh`).
 
 `cargo xtask wasm` (checks every L0–L4 crate and `cfa4-ui-egui` for `wasm32-unknown-unknown`) is opt-in legacy, not a gate: WASM is not a CFA4 target.
 
@@ -138,7 +138,7 @@ comes with a regression test; parsers, decoders and commands get fuzz / hostile-
 
 - One task per commit. The subject starts with the task id: `M3.2: trim mode engine — …`,
   `M9.9: Matroska/WebM import`. Milestones (`M0`–`M16`) are listed in
-  [ROADMAP.md](../ROADMAP.md). If your change has no task id, use the area: `docs: …`,
+  [roadmap.md](roadmap.md) (summary in [ROADMAP.md](../ROADMAP.md)). If your change has no task id, use the area: `docs: …`,
   `README: …`, `ROADMAP: …`.
 - Commit only green states (all gates pass).
 - When a milestone lands, update its row in [roadmap.md](roadmap.md) (status, what's done, estimates), the summary in `ROADMAP.md`, and the parity doc and [gaps.md](gaps.md) entry it moves, with their "Last updated" lines and revision history.
@@ -225,13 +225,16 @@ stream is cut into blocks (there are tests for this).
 
 ### A codec or container crate
 
-1. **Spec first.** Work only from the public specification (ITU-T, ISO/IEC, IETF RFCs, SMPTE,
-   published container specs). Never copy GPL/LGPL code, and follow AGENTS.md §2 on reading other
-   implementations. Name the spec edition in the crate README.
+1. **Spec first.** Work from the public specification (ITU-T, ISO/IEC, IETF RFCs, SMPTE,
+   published container specs) by default. Porting an existing implementation is allowed when its
+   licence is permitted by [licensing.md](licensing.md) §3 (GPL-3.0-compatible, file headers
+   checked) and the port is recorded in the reused-code register (§5) in the same commit
+   ([AGENTS.md](../AGENTS.md) §2). Name the spec edition, or the ported source and revision, in
+   the crate README.
 2. Create `crates/<name>` as an L0 crate that depends only on `cfa4-bitstream` (plus
    `thiserror` and optional `rayon` behind a `threads` feature). Add `[lints] workspace = true`, add
-   it to `[workspace.dependencies]`, and add it to `LAYERS` in `xtask/src/main.rs`. It must build
-   for wasm32.
+   it to `[workspace.dependencies]`, and add it to `LAYERS` in `xtask/src/main.rs`. Building for
+   wasm32 is not required (WASM is not a CFA4 target).
 3. Test it against ffmpeg as an oracle (see [testing.md](testing.md)):
    - generate fixtures with ffmpeg on first use into `target/fixtures/<crate>/`;
    - skip with a message when ffmpeg is missing;
@@ -244,6 +247,10 @@ stream is cut into blocks (there are tests for this).
    `crates/h264/README.md` as the model.
 
 ### A panel or widget
+
+New panels and widgets go in the Qt 6 GUI (`python/cfa4_qt/panels/`, [qt-gui.md](qt-gui.md)). The
+egui editor is frozen (bug and security fixes only, [qt-parity.md](qt-parity.md)); what follows
+describes it for such fixes.
 
 - Panels live in `crates/ui-egui/src/panels/` and are listed in `PanelKind`
   (`crates/ui-egui/src/dock.rs`).

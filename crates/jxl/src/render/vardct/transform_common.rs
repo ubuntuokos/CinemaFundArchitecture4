@@ -14,12 +14,12 @@ use crate::render::vardct::{
 
 #[inline(always)]
 pub fn transform_varblocks_inner(
-    lf: &[SharedSubgrid<f32>; 3],
+    lf: &[SharedSubgrid<'_, f32>; 3],
     coeff_out: &mut [MutableSubgrid<'_, f32>; 3],
     shifts_cbycr: [ChannelShift; 3],
-    block_info: &SharedSubgrid<BlockInfo>,
-    dct: fn(&mut MutableSubgrid<f32>, DctDirection),
-    transform: fn(&mut MutableSubgrid<f32>, TransformType),
+    block_info: &SharedSubgrid<'_, BlockInfo>,
+    dct: fn(&mut MutableSubgrid<'_, f32>, DctDirection),
+    transform: fn(&mut MutableSubgrid<'_, f32>, TransformType),
 ) {
     use TransformType::*;
 

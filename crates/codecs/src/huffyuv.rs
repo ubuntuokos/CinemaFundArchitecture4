@@ -1,4 +1,5 @@
-//! Our pure-Rust Huffyuv decoder (`cfa4-huffyuv`): AVI and Matroska (VfW FourCC) `HFYU`.
+//! Our pure-Rust Huffyuv decoder (`cfa4-huffyuv`): AVI and Matroska (VfW FourCC) `HFYU` and
+//! Huffyuv MT `HYMT`.
 
 use std::sync::Arc;
 
@@ -11,6 +12,14 @@ use crate::{CodecError, Result};
 /// The sample entry format of a Huffyuv stream; its `CodecConfig::Unknown` `raw` is the whole
 /// `BITMAPINFOHEADER` (the bit count at byte 14 and the extradata after byte 40 set the stream up).
 pub const HFYU: FourCc = FourCc(*b"HFYU");
+
+/// The sample entry format of a Huffyuv MT stream (`HYMT`, sliced packets).
+pub const HYMT: FourCc = FourCc(*b"HYMT");
+
+/// A sample entry for a Huffyuv MT stream of `w` x `h` with `BITMAPINFOHEADER` `bih`.
+pub fn sample_entry_mt(bih: &[u8], w: u16, h: u16) -> SampleEntry {
+    SampleEntry::video(HYMT, CodecConfig::Unknown { fourcc: HYMT, raw: bih.to_vec() }, w, h)
+}
 
 /// A sample entry for a Huffyuv stream of `w` x `h` with `BITMAPINFOHEADER` `bih`.
 pub fn sample_entry(bih: &[u8], w: u16, h: u16) -> SampleEntry {
@@ -32,10 +41,11 @@ pub struct HuffyuvDecoder {
 }
 
 impl HuffyuvDecoder {
-    pub fn new(width: u32, height: u32, bih: &[u8]) -> Result<Self> {
+    pub fn new(width: u32, height: u32, bih: &[u8], sliced: bool) -> Result<Self> {
         let bit_count = bih.get(14..16).map_or(0, |b| u16::from_le_bytes([b[0], b[1]]));
         let extra = bih.get(40..).unwrap_or_default();
-        let dec = cfa4_huffyuv::Decoder::new(width, height, bit_count, extra).map_err(|e| CodecError::Unsupported(format!("Huffyuv: {e}")))?;
+        let mut dec = cfa4_huffyuv::Decoder::new(width, height, bit_count, extra).map_err(|e| CodecError::Unsupported(format!("Huffyuv: {e}")))?;
+        dec.set_slices(sliced);
         Ok(Self { dec })
     }
 }
@@ -51,7 +61,13 @@ pub(crate) fn convert(p: cfa4_huffyuv::Picture) -> Result<VideoFrame> {
             // Huffyuv signals no matrix or range: the size-based default, studio swing
             let color = crate::stream_color::resolve(p.width, p.height, &[]);
             let data = PixelData::Yuv8 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma: Chroma::C422, alpha: None };
-            Ok(VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO })
+            Ok(VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() })
+        }
+        cfa4_huffyuv::Format::Yuv420 => {
+            let (y, u, v) = (next()?, next()?, next()?);
+            let color = crate::stream_color::resolve(p.width, p.height, &[]);
+            let data = PixelData::Yuv8 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma: Chroma::C420, alpha: None };
+            Ok(VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() })
         }
         cfa4_huffyuv::Format::Rgb | cfa4_huffyuv::Format::Rgba => {
             let (r, g, b) = (next()?, next()?, next()?);
@@ -84,7 +100,7 @@ impl VideoDecoder for HuffyuvDecoder {
 }
 
 pub fn huffyuv_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
-    if e.format != HFYU {
+    if e.format != HFYU && e.format != HYMT {
         return None;
     }
     let (w, h) = e.video.as_ref().map_or((0, 0), |v| (u32::from(v.width), u32::from(v.height)));
@@ -92,7 +108,7 @@ pub fn huffyuv_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>>
         CodecConfig::Unknown { raw, .. } => raw.as_slice(),
         _ => &[],
     };
-    Some(HuffyuvDecoder::new(w, h, bih).map(|d| Box::new(d) as Box<dyn VideoDecoder>))
+    Some(HuffyuvDecoder::new(w, h, bih, e.format == HYMT).map(|d| Box::new(d) as Box<dyn VideoDecoder>))
 }
 
 #[cfg(test)]
@@ -100,10 +116,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn header_without_tables_is_unsupported() {
+    fn header_without_tables_uses_the_classic_tables() {
+        // Huffyuv 1.x: no extradata, the built-in tables
         let bih = bitmap_info_header(16, &[]);
-        assert!(matches!(HuffyuvDecoder::new(64, 32, &bih), Err(CodecError::Unsupported(_))));
-        assert!(HuffyuvDecoder::new(64, 32, &[]).is_err());
+        assert!(HuffyuvDecoder::new(64, 32, &bih, false).is_ok());
+        // a bit depth Huffyuv does not have
+        let bih = bitmap_info_header(8, &[]);
+        assert!(matches!(HuffyuvDecoder::new(64, 32, &bih, false), Err(CodecError::Unsupported(_))));
+        assert!(HuffyuvDecoder::new(64, 32, &[], true).is_err());
     }
 
     #[test]

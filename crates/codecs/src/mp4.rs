@@ -60,6 +60,8 @@ pub struct Mp4Source {
     snap: bool,
     /// The playable audio tracks in file order: `info.audio_streams[k]` describes `audios[k]`.
     audios: Vec<Mp4Audio>,
+    /// LCEVC in the video track's T.35 SEI that is decoded on top of the base.
+    lcevc: Option<(cfa4_lcevc::BaseCodec, cfa4_lcevc::Framing)>,
 }
 
 pub fn sniff(b: &[u8]) -> bool {
@@ -87,6 +89,16 @@ fn audio_starts(file: &Mp4File, bytes: &crate::Src, ti: usize, rate: u32) -> Vec
             i64::try_from(at).unwrap_or(i64::MAX)
         })
         .collect();
+    // QDM2 packets all decode to the same length, and files exist whose sample table counts the
+    // packets (FATE's `subpacket12.mov`: one `stts` run of one sample): place them end to end
+    if let Some(CodecConfig::Unknown { fourcc, raw }) = t.entries.first().map(|e| &e.codec)
+        && fourcc.0 == *b"QDM2"
+        && let Ok(d) = cfa4_qdm2::Decoder::new(raw)
+        && d.sample_rate == rate
+    {
+        let n = d.samples_per_packet() as i64;
+        return (0..t.samples.len() as i64).map(|k| k.saturating_mul(n)).collect();
+    }
     let first = || file.read_sample(bytes, ti, 0).unwrap_or_default();
     let frame = match t.entries.first().map(|e| &e.codec) {
         Some(CodecConfig::Aac(a)) => fixed_packet_samples(FixedFrames::Aac(&a.asc), &[], rate),
@@ -269,6 +281,7 @@ impl Mp4Source {
         let rotation = vtrack.and_then(|i| file.tracks[i].display_rotation()).unwrap_or(0);
         // the clean aperture ('clap') cut from every frame, before the rotation
         let mut aperture = None;
+        let mut lcevc = None;
         let video = vtrack.map(|i| {
             let t = &file.tracks[i];
             let entry = &t.entries[0];
@@ -280,7 +293,21 @@ impl Mp4Source {
                 Some(Ok(n)) if n.crop.2 > 0 && n.crop.3 > 0 => (n.crop.2, n.crop.3),
                 _ => (w, h),
             };
-            aperture = vp.clean_aperture.and_then(|c| clean_aperture(c, (w, h)));
+            // LCEVC as T.35 SEI in the first samples: decoded at its own size (a separate 'lvc1'
+            // track is not decoded)
+            let carriage = crate::lcevc::base_of(&entry.codec).filter(|_| !lcevc_track).and_then(|(base, framing)| {
+                let heads =
+                    t.samples.iter().take(crate::lcevc::SCAN_SAMPLES).filter_map(|s| cfa4_media::reader::read_range(&*bytes.0, s.offset, s.size as usize).ok());
+                crate::lcevc::scan(heads, base, framing)
+            });
+            let mut size = (w, h);
+            let mut lcevc_label = String::new();
+            if let Some(c) = carriage {
+                lcevc = crate::lcevc::apply(name, c, &mut lcevc_label, &mut size);
+            }
+            let (w, h) = size;
+            // the clean aperture is in base picture coordinates: not used over an enhancement
+            aperture = vp.clean_aperture.filter(|_| lcevc.is_none()).and_then(|c| clean_aperture(c, (w, h)));
             let (w, h) = aperture.map_or((w, h), |r| (r.w as u32, r.h as u32));
             // frame rate from the median sample duration
             let mut durs: Vec<u32> = t.samples.iter().take(240).map(|s| s.duration).collect();
@@ -325,16 +352,11 @@ impl Mp4Source {
                     info.has_alpha = h.alpha;
                 }
             }
-            // LCEVC: a separate enhancement track, or T.35 SEI in the base track's first samples
+            // LCEVC: a separate enhancement track, or T.35 SEI in the base track (scanned above)
             if lcevc_track {
                 crate::lcevc::mark(name, &mut info.codec, "separate 'lvc1' track");
-            } else if let Some((base, framing)) = crate::lcevc::base_of(&entry.codec) {
-                let heads =
-                    t.samples.iter().take(crate::lcevc::SCAN_SAMPLES).filter_map(|s| cfa4_media::reader::read_range(&*bytes.0, s.offset, s.size as usize).ok());
-                if heads.into_iter().any(|d| cfa4_lcevc::sample_has_lcevc(&d, base, framing)) {
-                    crate::lcevc::mark(name, &mut info.codec, "T.35 SEI");
-                }
             }
+            info.codec.push_str(&lcevc_label);
             if matches!(entry.codec, CodecConfig::Dv { .. }) {
                 // format, sampling, aspect and colour are in the first frame's header and VAUX packs
                 let s0 = &t.samples[0];
@@ -425,7 +447,7 @@ impl Mp4Source {
             let t = &file.tracks[i];
             crate::gop::snap_coarse_units(t.samples.iter().map(|s| s.pts.saturating_add(t.edit_offset)), 1, i64::from(t.timescale), v.frame_rate)
         });
-        Ok(Self { info, bytes, file, vtrack, video: GopCache::new(explicit_color).with_rotation(rotation).with_crop(aperture), snap, audios })
+        Ok(Self { info, bytes, file, vtrack, video: GopCache::new(explicit_color).with_rotation(rotation).with_crop(aperture), snap, audios, lcevc })
     }
 
     fn read(&self, track: usize, i: usize) -> crate::Result<Vec<u8>> {
@@ -456,9 +478,10 @@ impl Mp4Source {
             CodecConfig::Pcm(p) => (decode_pcm(&data, p), false),
             c => {
                 if st.decoder.is_none() {
-                    st.decoder = Some(match qt_adpcm(c) {
-                        Some(codec) => PacketDecoder::adpcm(codec, ainfo.channels as usize)?,
-                        None => PacketDecoder::for_isobmff(c, ainfo.sample_rate)?,
+                    st.decoder = Some(match (qt_adpcm(c), qt_mace(c)) {
+                        (Some(codec), _) => PacketDecoder::adpcm(codec, ainfo.channels as usize)?,
+                        (None, Some(v)) => PacketDecoder::mace(v, ainfo.channels as usize)?,
+                        (None, None) => PacketDecoder::for_isobmff(c, ainfo.sample_rate)?,
                     });
                 }
                 // Non-sequential access: reset and prime with the preceding packets (codec pre-roll:
@@ -529,7 +552,7 @@ impl VideoSamples for Mp4Video<'_> {
         self.src.read(self.track, i)
     }
     fn make_decoder(&self) -> crate::Result<Box<dyn VideoDecoder>> {
-        make_video_decoder(&self.src.file.tracks[self.track].entries[0])
+        Ok(crate::lcevc::LcevcDecoder::wrap(make_video_decoder(&self.src.file.tracks[self.track].entries[0])?, self.src.lcevc))
     }
 }
 
@@ -651,6 +674,10 @@ fn audio_stream_info(t: &cfa4_isobmff::Track, bytes: &crate::Src) -> Option<Audi
         CodecConfig::Pcm(p) => (p.sample_rate as u32, p.channels, Some(p.bits as u32)),
         CodecConfig::Opus(o) => (crate::audio::OPUS_RATE, (o.output_channels as u32).max(1), None),
         // 3GPP TS 26.244 writes 2 channels into AMR sample entries; the codec is mono
+        CodecConfig::Unknown { fourcc, raw } if fourcc.0 == *b"QDM2" => match cfa4_qdm2::Decoder::new(raw) {
+            Ok(d) => (d.sample_rate, d.channels as u32, None),
+            Err(_) => (ap.sample_rate as u32, ap.channels, None),
+        },
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"samr" => (cfa4_amr::nb::SAMPLE_RATE, 1, None),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"sawb" => (cfa4_amr::wb::SAMPLE_RATE, 1, None),
         _ => (if ap.sample_rate > 0.0 { ap.sample_rate as u32 } else { t.timescale }, ap.channels.max(1), None),
@@ -678,9 +705,20 @@ fn qt_adpcm(c: &CodecConfig) -> Option<cfa4_adpcm::Codec> {
     }
 }
 
+/// QuickTime Apple MACE 3:1 / 6:1 (`MAC3`, `MAC6`) sample descriptions.
+fn qt_mace(c: &CodecConfig) -> Option<cfa4_mace::Version> {
+    match c {
+        CodecConfig::Unknown { fourcc, .. } => cfa4_mace::Version::from_fourcc(&fourcc.0),
+        _ => None,
+    }
+}
+
 fn codec_label(c: &CodecConfig) -> String {
     if let Some(a) = qt_adpcm(c) {
         return a.name().into();
+    }
+    if let Some(v) = qt_mace(c) {
+        return v.name().into();
     }
     match c {
         CodecConfig::Avc(a) => format!(
@@ -703,7 +741,10 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"v210" => "Uncompressed YUV 4:2:2 10-bit".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => "Auro-CX (unsupported)".into(),
         CodecConfig::Av2 { .. } => "AV2 (unsupported)".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"cvid" => "Cinepak".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"drac" => "VC-2 / Dirac".into(),
+        CodecConfig::Unknown { fourcc, .. } if crate::svq3::is_svq3(&fourcc.0) => "Sorenson Video 3".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"QDM2" => "QDesign Music 2".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"samr" => "AMR-NB".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"sawb" => "AMR-WB".into(),
         CodecConfig::Av1(c) => format!("AV1 ({} Profile)", ["Main", "High", "Professional"].get(c.seq_profile as usize).unwrap_or(&"Main")),

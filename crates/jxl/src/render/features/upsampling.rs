@@ -9,7 +9,7 @@ use crate::render::Region;
 use crate::render::util::PaddedGrid;
 
 pub fn upsample(
-    grid: SharedSubgrid<f32>,
+    grid: SharedSubgrid<'_, f32>,
     out_region: &mut Region,
     image_header: &crate::image::ImageHeader,
     factor: u32,
@@ -36,7 +36,7 @@ pub fn upsample(
 }
 
 fn upsample_inner<const K: usize, const NW: usize>(
-    grid: SharedSubgrid<f32>,
+    grid: SharedSubgrid<'_, f32>,
     weights: &[f32; NW],
     tracker: Option<&AllocTracker>,
 ) -> crate::render::Result<AlignedGrid<f32>> {

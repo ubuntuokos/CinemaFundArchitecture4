@@ -343,6 +343,7 @@ fn hash_source(h: &mut Fnv128, project: &Project, id: ItemId, kind: TrackKind, d
             hash_source(h, project, *parent, kind, depth + 1);
         }
         ItemKind::AdjustmentLayer { .. } => h.json(&("adjustment", &pi.kind)),
+        ItemKind::Volume(v) => h.json(&("volume", v)),
         ItemKind::Graphic { .. } => h.json(&("graphic", &pi.kind)),
         ItemKind::Sequence(s) => {
             h.json(&("sequence", &s.settings));
@@ -411,18 +412,22 @@ pub fn effect_cost_ms(id: &str) -> f64 {
         | "bokeh_blur"
         | "compound_blur"
         | "focus_blur"
+        | "rack_focus"
         | "channel_blur"
         | "turbulent_displace"
         | "warp_stabilizer"
         | "auto_reframe"
         | "echo"
         | "slit_scan"
+        | "temporal_denoise"
+        | "datamosh_bloom"
         | "echo_glow"
         | "glint"
         | "wonder_glow"
         | "edge_glow"
         | "volumetric_rays"
         | "brush_strokes"
+        | "pixel_sort"
         | "roughen_edges"
         | "lighting_effects"
         | "vr_blur"
@@ -459,7 +464,7 @@ fn decode_cost_ms(project: &Project, id: ItemId, depth: u32) -> f64 {
             base * px
         }
         ItemKind::Subclip { parent, .. } => decode_cost_ms(project, *parent, depth + 1),
-        ItemKind::AdjustmentLayer { .. } => 0.0,
+        ItemKind::AdjustmentLayer { .. } | ItemKind::Volume(_) => 0.0,
         // vector layers are drawn on the CPU (cached while static)
         ItemKind::Graphic { .. } => 1.5,
         ItemKind::Sequence(s) => {
@@ -499,7 +504,7 @@ fn layer_cost(project: &Project, it: &TrackItem, px: f64, force_cpu: bool) -> f6
     decode + path + item_fx_cost(it, px)
 }
 
-fn estimate_cost(project: &Project, seq: &Sequence, layers: &[Layer]) -> f64 {
+fn estimate_cost(project: &Project, seq: &Sequence, layers: &[Layer<'_>]) -> f64 {
     let px = (seq.settings.width as f64 * seq.settings.height as f64) / HD_PIXELS;
     let mut total = 0.0;
     for l in layers {

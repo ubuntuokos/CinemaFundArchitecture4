@@ -245,6 +245,7 @@ impl Y4mSource {
             color: v.color,
             par: v.par,
             pts: Tick::from_rational(idx as i64, self.rate.den, self.rate.num),
+            layout: Default::default(),
         })
     }
 }

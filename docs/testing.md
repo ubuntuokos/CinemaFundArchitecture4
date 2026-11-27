@@ -6,6 +6,7 @@ cargo test -p cfa4-h264                    # one crate
 cargo test --release -p cfa4-hevc          # codec tests are much faster in release
 cargo xtask ci                                  # gates fmt, clippy, layers, assets (not tests, not wasm)
 cargo xtask fixtures                            # pre-generate the ffmpeg fixture matrix
+cargo xtask parity --ci                         # measured parity vs the committed references and thresholds (needs a built cfa4-cli and .venv); `--check-ratchet --base REF`, `--check-checklist`
 CFA4_REQUIRE_ORACLES=1 cargo test --workspace   # CI: missing ffmpeg fails instead of skipping
 ```
 
@@ -35,6 +36,7 @@ CFA4_REQUIRE_ORACLES=1 cargo test --workspace   # CI: missing ffmpeg fails inste
 | Remix | `crates/audio-dsp/src/remix.rs`, `crates/render/src/remix.rs`, `crates/engine/src/remix_tests.rs`, `crates/ui-egui/tests/remix_ui.rs` | generated rhythmic music (Rust-synthesised drums, bass, chord sections at 90–128 BPM, 22.05/44.1/48 kHz): tempo within 0.3 BPM, every beat within 10 ms (measured ≤ 8.9 ms); remix targets from 0.4× to 2.2× the source within one beat (measured ≤ 12 ms at default sliders), every cut on a detected beat, intro and outro kept, pieces ≥ 4 beats, deterministic; silence, tone and noise refused; rendering independent of request cuts, source-exact outside the 20 ms equal-power crossfades, no clicks; the engine's mix equals the source pieces (< 1e-5); undo, redo and revert exact; overlaps refused; Remix Properties dialog and Remix tool drag driven by automation id |
 | Oracle | `crates/*/tests/*oracle*.rs`, `conformance.rs` | compare with ffmpeg/ffprobe (§2) |
 | Robustness / fuzz | `*/tests/robustness.rs`, `*/tests/fuzz.rs` | seeded mutation and truncation of real and synthetic files; nothing may panic |
+| Coverage-guided fuzzing (CFA4-SECURITY-001 B2) | `fuzz/` (own workspace: `fuzz/src/lib.rs` harnesses, `fuzz/fuzz_targets/`), `.github/workflows/cfa4-fuzz.yml` (every 4th night, six shards) | libFuzzer on every L0 parser and the project, interchange, caption and credits readers (`cargo +nightly fuzz run <target>`, `fuzz/run.sh`); seeds from `fuzz/seeds.sh` (the pinned FFmpeg oracle, never committed); `cargo test --lib` in `fuzz/` is the stable smoke run; `cargo xtask fuzz-targets` checks every L0 parser has a target; a finding becomes a regression test in the crate ([fuzz/README.md](../fuzz/README.md)) |
 | Program monitor while dragging | `crates/ui-egui/tests/perf_ui.rs` | headless: a parameter changed on every UI pass (a value dragged in Effect Controls or Properties) and a backward scrub leave the Program monitor's picture at most one step behind (it shows the frame asked for the pass before while the frame due renders; it used to freeze until the mouse rested); a frame still rendering is kept when the same frame is asked for at a newer revision, so frames slower than a refresh (CPU effects) are shown too; `perf.stats` reports the picture's frame and revision against the playhead and the project |
 | Performance | `*/tests/perf.rs` (`#[ignore]`) | §5 |
 
@@ -73,6 +75,11 @@ results. This oracle is separate from the product's supplementary FFmpeg backend
 - Fixture sources are synthetic: `testsrc2`, `mandelbrot`, SMPTE bars, noise and fades, sine tones.
   H.264 and HEVC fixtures need ffmpeg built with libx264 and libx265. The VP9 and
   AV1 fixtures (libvpx-vp9, libaom-av1; 360p, 1080p, 2160p, hidden alt-ref frames, two GOPs) need an ffmpeg with those encoders.
+- IMF packages (`crates/export/src/imf_tests.rs`) have two optional oracles that never run in CI:
+  `CFA4_IMF_SCHEMAS` (a folder of the SMPTE XML schemas, checked with `xmllint`) and
+  `CFA4_PHOTON_CP` (the Java class path of a local build of Netflix Photon, Apache-2.0, outside the
+  repository; its `IMPAnalyzer` must report no errors). Photon builds with Gradle (`gradle classes`;
+  pin its `latest.release` dependencies when Maven Central rate-limits the metadata lookups).
 
 The NVENC tests (`crates/platform/tests/nvenc.rs` and `nvenc_export.rs`; H.264, H.265 and Main 10
 HDR) skip, printing `SKIPPED`, without an NVIDIA GPU
@@ -99,9 +106,18 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
   SHA-256 of the AVM v1.0.0 output (after film grain synthesis). Only hashes, never media.
 - `python3 scripts/dev/av2-oracle.py build [--ref av2-normative]` builds `avmenc`/`avmdec` at the
   pinned commit into `target/av2-oracle/avm-<ref>/bin` with an `AVM_COMMIT` stamp (nothing is
-  installed system-wide). `python3 scripts/dev/av2-oracle.py corpus` makes the sources with ffmpeg,
-  encodes the vectors into `target/fixtures/av2/vectors` and removes any bitstream whose SHA-256
-  differs from the manifest. `manifest --from <AV2-00 evidence>` refreshes the hashes.
+  installed system-wide). `python3 scripts/dev/av2-oracle.py corpus` makes the sources with the
+  pinned FFmpeg (`packaging/ffmpeg-version.env`; it refuses any other ffmpeg on `PATH`), encodes the vectors into
+  `target/fixtures/av2/vectors` and removes any bitstream whose SHA-256 differs from the manifest. `manifest --from <AV2-00 evidence>` refreshes the hashes. A new
+  vector goes into the manifest with empty hashes; `corpus --allow-drift` encodes it, then
+  `hash NAME...` fills its reference from `avmdec` v1.0.0 and refuses it unless the
+  `av2-normative` build agrees.
+- The corpus (13 vectors): 4:2:0 8/10 bit, intra only, film grain, 2×2 tiles, odd size, a key
+  frame every 4 frames (`420-8bit-kf4`: seeks across keys and a non-key start), RAS frames,
+  fixed 1/2 resize, 4:2:2 8/10 bit, 4:4:4 and 4:0:0. Multistream and several operating points
+  are not in it: `avmenc` v1.0.0 makes neither from its command line (`--operating-points-count`
+  leaves the stream unchanged), and `cfa4-av2` rejects such streams as unsupported (synthetic
+  tests).
 - `cfa4_testkit::av2` finds the oracle (`CFA4_AVMDEC`, else `CFA4_AVM_PREFIX` or the default
   prefix; the stamp must name the pinned commit, and `PATH` is never searched), checks corpus
   bitstreams against the manifest, hashes Y4M output and compares it frame by frame and plane by
@@ -109,9 +125,33 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
 - `cargo test -p cfa4-testkit --test av2_oracle` checks the harness itself. Without the oracle or
   the corpus the tests print `SKIPPED`; `CFA4_REQUIRE_AV2_ORACLE=1` makes that a failure.
   `CFA4_REQUIRE_ORACLES` does not cover AV2, since ordinary CI has no AVM build.
+- The early decoder (ADR 0010): `python3 scripts/dev/av2-decoder.py build` builds dav2d at the
+  commit pinned in `packaging/av2-decode/dav2d.json` and the `cfa4-av2-decode` helper into
+  `target/av2-decoder/bin` (`DAV2D_COMMIT` stamp). `cargo test -p cfa4-codecs --features
+  av2-external --test av2_external` decodes the corpus through the helper and the Rust adapter
+  and compares with the manifest: the `Main_420_10_IP0` vectors must be bit-exact, the others are
+  reported (dav2d's 4:4:4 and 4:2:2 8-bit inter mismatches are known). A `Main_420_10_IP0` vector
+  the pinned dav2d cannot decode is listed with its reason in `KNOWN_DAV2D_GAPS` (today
+  `420-8bit-ras`); it is printed as a G1 blocker, and the test fails once it passes so that the
+  list is kept honest. It also seeks across key frames and starts decoding on a non-key unit. The same test checks that a crashing,
+  hanging or garbage-writing helper is an error, and feeds mutated units to the real helper.
+  `CFA4_AV2_DECODER` overrides the helper path.
+- Fuzzing the native helper (G1): `python3 scripts/dev/av2-decoder.py build --sanitize` builds
+  dav2d and the helper with ASan and UBSan into `target/av2-decoder-asan` (never shipped), and
+  `python3 scripts/dev/av2-decoder.py fuzz [--rounds N] [--seed N] [--all]` drives it with
+  mutated corpus units (bit flips, special bytes, truncation, splices, garbage, duplicated
+  tails) interleaved with `RSET`/`FLSH`. A sanitizer report, an exit other than 0 or a reply
+  that takes more than 20 s fails the run; the request sequence and stderr of each failure are
+  kept in `target/av2-fuzz/failures`. By default only the `Main_420_10_IP0` vectors are used:
+  the unmutated `422-10bit` vector already makes ASan report a heap read overflow in dav2d
+  `18641bb` loop restoration (`lr_apply_tmpl.c:213`), outside the committed scope; `--all`
+  includes it. `replay <file>.requests` sends a kept failure to a helper again (`--helper` picks
+  the release build). The AV2 oracle workflow runs 3000 rounds with a fixed seed, as a
+  report-only step while the pinned dav2d has known failures (AV2-00 audit, 13. pont); G1 needs
+  it at 0.
 - CI: `.github/workflows/cfa4-av2-oracle.yml` (Ubuntu 26.04) runs only on `workflow_dispatch` or
-  on a `cfa4-full-validation` label event of a PR that touches the harness. It is not a required
-  check.
+  on a `cfa4-full-validation` label event of a PR that touches the harness or the decoder. It is
+  not a required check.
 
 ### Pass criteria per codec
 
@@ -119,6 +159,7 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
 |---|---|---|
 | `h264` | decode every fixture single-threaded and frame-threaded; compare with `ffmpeg -f rawvideo -pix_fmt yuv420p` | **bit-exact**, every frame |
 | `hevc` | same, `yuv420p` / `yuv420p10le` | **bit-exact** (8- and 10-bit) |
+| OpenEXR (`media/tests/exr_oracle.rs`, `export` raster tests) | ffmpeg-written files (none / RLE / ZIP); `oiiotool` (OpenImageIO, the OpenEXR library; skipped when not installed) writes PXR24 and PIZ files and reads our PIZ files | **bit-exact** floats |
 | `h264enc` | `ffmpeg -v warning -err_detect +crccheck+bitstream+buffer+explode` decodes our stream | no output at all (a `corrupt decoded frame` warning fails; a negative control checks dropped and truncated slices are reported), exact frame count, **bit-identical to the encoder's reconstruction**; B-frame order checked with ffprobe; rate-control targets |
 | `prores` decode | ffmpeg `prores_ks` / `prores_aw` fixtures, compared at native depth | within **±1 LSB** (different integer IDCT); alpha bit-exact |
 | `prores` encode | ffmpeg decodes with `-xerror` | no errors; agrees with our decoder within ±1 |
@@ -141,6 +182,32 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
 | `export` settings and presets (M6.5) | `export/src/settings_tests.rs`, engine `export_tests.rs`: every built-in preset exports a slice of the demo sequence; ffprobe reads codec, profile, size, rate, audio format and data rate; our decoders read pixels back | codec / profile / container / size / `r_frame_rate` / sample format exact; H.264 bitrate ≤ VBR max × 1.1 and ≥ ½ target over 3 s; ProRes ≤ 1.5 × nominal; DNxHR within 25 % of nominal; loudness normalization within **0.5 LU** of the target (WAV and AAC), true peak ≤ ceiling + 0.1 dB; image sequences numbered `<name>000…`; limiter, overlays, metadata (`title`/`copyright` tags), MOV multiplexer, two-pass/CBR progress |
 
 Each codec README has the full fixture matrix and the measured results.
+
+### AAF: the AAF SDK as a test oracle
+
+`crates/interchange/src/aaf/` writes the structured-storage AAF files; the reference implementation
+(github.com/dneg/aaf, the AMWA AAF SDK) opens them as an oracle. The SDK is only a test tool: it is
+compiled in a copy outside the repository, and no SDK code or header is used by CFA4 (owner decision
+2026-11-22). Its sample files are the source of `aaf/meta_model.txt` as plain data (class and type
+AUIDs, names, local ids), not of any code.
+
+```
+git clone https://github.com/dneg/aaf ~/dneg/aaf
+AAF_SDK_SRC=~/dneg/aaf AAF_ORACLE_DIR=~/aaf-oracle scripts/dev/aaf-oracle.sh
+```
+
+The script builds the SDK once (a few minutes; needs a C++ toolchain and `uuid-dev`; the 2010 sources
+need `-fpermissive -std=gnu++98 -fno-lifetime-dse -fno-strict-aliasing`, which the script sets in the
+copy), writes our export in both sector sizes (the ignored `export_for_the_sdk_oracle` test) and runs
+the SDK's `ComAAFInfo` on each. It fails when the SDK cannot open a file, crashes, or finds no mobs.
+Run it when `aaf/` changes; it is not part of CI (the build is slow). What the SDK needs that the
+standard does not spell out, learned this way: the AAF label in the compound file header (bytes 8..24);
+a meta-dictionary with the built-in class and type definitions; and storage names it looks up itself
+(a collection name longer than 21 characters is shortened to its first 8 and last 7 characters, a
+single object keeps its full name). Without these the SDK rejects the file or crashes while
+resolving a property's type. The in-tree tests (`aaf/tests.rs`: the header label, the
+definitions, every written class and property defined in the meta-dictionary) check the same rules
+without the SDK.
 
 ## 3. Rendering: CPU reference and GPU parity
 

@@ -19,7 +19,7 @@ fn blob(x: f32, y: f32, cx: f32, cy: f32, r: f32) -> f32 {
 }
 
 /// The midpoint mix of A and B (unwarped).
-fn base(t: &Tx, x: f32, y: f32, k: f32) -> [f32; 4] {
+fn base(t: &Tx<'_>, x: f32, y: f32, k: f32) -> [f32; 4] {
     if k <= 0.0 {
         t.pa(x, y)
     } else if k >= 1.0 {
@@ -29,7 +29,7 @@ fn base(t: &Tx, x: f32, y: f32, k: f32) -> [f32; 4] {
     }
 }
 
-pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
+pub(super) fn apply(id: &str, t: &Tx<'_>) -> Option<Image> {
     let p = t.p;
     let (w, h) = (t.wf, t.hf);
     let k = mid_mix(p);

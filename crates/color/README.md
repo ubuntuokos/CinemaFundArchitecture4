@@ -6,7 +6,7 @@ gamut mapping, and LUT files.
 
 | Module | Contents |
 |---|---|
-| `lib.rs` | `Matrix`/`Transfer`/`Primaries`/`Range`/`ColorInfo` (stream metadata), Y'CbCr↔R'G'B', sRGB, PQ (ST 2084), HLG (ARIB STD-B67), HSL, hex colours |
+| `lib.rs` | `Matrix`/`Transfer`/`Primaries`/`Range`/`ColorInfo` (stream metadata), Y'CbCr↔R'G'B', sRGB, PQ (ST 2084), HLG (ARIB STD-B67), digital cinema X'Y'Z' (ST 428-1), HSL, hex colours |
 | `log` | camera log curves (encode/decode), their signal domains |
 | `spaces` | gamuts and 3×3 matrices (SMPTE RP 177), `ColorSpace` (Interpret Footage choices), `WorkingSpace`, `ColorPipeline` |
 | `transform` | `InputTransform` (source → working), `OutputTransform` (working → monitor / export), BT.2390 tone mapping, gamut compression |
@@ -72,6 +72,15 @@ the result against the published BT.709 RGB→XYZ and BT.2087 BT.709→BT.2020 m
 * **HLG** (ARIB STD-B67 / BT.2100): inverse OETF to scene light, then the BT.2100 OOTF
   `Fd = Lw·Ys^(γ−1)·E` with Lw = 1000 cd/m², γ = 1.2 and Ys from BT.2020 luma, then ÷ 203. A 75 %
   HLG signal lands at reference white (BT.2408). HLG export applies the inverse OOTF and the OETF.
+
+## Digital cinema X'Y'Z' (SMPTE ST 428-1)
+
+`Primaries::Xyz` (ISO/IEC 23091-2 `colour_primaries` 10) marks frames whose three components are
+CIE 1931 X, Y and Z; `Gamut::Xyz` has the identity as its matrix to XYZ, so `gamut_matrix` converts
+it to any D65 gamut with the inverse of that gamut's normalised primary matrix (no chromatic
+adaptation: DCP picture mastered for a D65 white keeps it). `Transfer::St428` (`transfer_characteristics`
+17) is the ST 428-1 encoding `X' = (X·48/52.37)^(1/2.6)`: code 1.0 is 52.37 cd/m² and linear 1.0 is the
+DCI reference white of 48 cd/m². Planar 12-bit X'Y'Z' travels as `cfa4_frame::PixelData::Rgb16`.
 
 ## Tone mapping (HDR/log → SDR)
 

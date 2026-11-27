@@ -9,7 +9,7 @@ pub(crate) fn perceptual_luma(c: [f32; 4]) -> f32 {
     luma(c).clamp(0.0, 1.0).powf(1.0 / 2.2)
 }
 
-pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
+pub(super) fn apply(id: &str, t: &Tx<'_>) -> Option<Image> {
     let p = t.p;
     Some(match id {
         "blur_dissolve" => {

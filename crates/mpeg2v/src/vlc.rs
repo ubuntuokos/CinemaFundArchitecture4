@@ -90,7 +90,7 @@ impl Vlc {
 
     /// Decode one code; `None` for an invalid code.
     #[inline(always)]
-    pub fn decode(&self, b: &mut Bits) -> Option<i16> {
+    pub fn decode(&self, b: &mut Bits<'_>) -> Option<i16> {
         let w = b.peek32();
         let e = self.table[(w >> (32 - self.root)) as usize];
         if e.sub == 0 {

@@ -68,8 +68,10 @@ struct Decoder {
     col: usize,
     /// Last control pair (for redundancy filtering).
     last_ctrl: Option<(u8, u8)>,
-    /// Channel of the current data (true = channel 1).
+    /// The current data belongs to the decoded channel.
     ch1: bool,
+    /// Decode data channel 2 (CC2, or CC4 on field 2) instead of channel 1.
+    want_ch2: bool,
     /// Cue being shown: (start frame, text).
     open: Option<(i64, String)>,
     cues: Vec<(i64, i64, String)>,
@@ -89,6 +91,7 @@ impl Decoder {
             col: 0,
             last_ctrl: None,
             ch1: true,
+            want_ch2: false,
             open: None,
             cues: Vec::new(),
         }
@@ -129,7 +132,7 @@ impl Decoder {
                 return;
             }
             self.last_ctrl = Some((b1, b2));
-            self.ch1 = b1 & 0x08 == 0;
+            self.ch1 = (b1 & 0x08 != 0) == self.want_ch2;
             if !self.ch1 {
                 return;
             }
@@ -250,7 +253,15 @@ impl Decoder {
 /// ascending) into cues at `rate`. A caption still showing after the last pair stays up for one
 /// second more.
 pub fn decode_pairs(pairs: impl IntoIterator<Item = (i64, u8, u8)>, rate: FrameRate) -> Vec<Cue> {
+    decode_channel(pairs, rate, false)
+}
+
+/// [`decode_pairs`] for data channel 2 (`channel2`: CC2 on field 1, CC4 on field 2) or 1 (CC1,
+/// CC3). Field 2 pairs carry CC3 / CC4 with the same codes (misc codes 15h / 1Dh).
+pub fn decode_channel(pairs: impl IntoIterator<Item = (i64, u8, u8)>, rate: FrameRate, channel2: bool) -> Vec<Cue> {
     let mut dec = Decoder::new();
+    dec.want_ch2 = channel2;
+    dec.ch1 = !channel2;
     let mut last_frame = 0;
     for (f, b1, b2) in pairs {
         dec.pair(f, b1, b2);

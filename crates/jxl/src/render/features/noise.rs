@@ -210,7 +210,7 @@ impl NoiseGroup {
 
 fn convolve_fill(
     mut out: crate::grid::MutableSubgrid<'_, f32>,
-    adjacent_groups: [Option<SharedSubgrid<f32>>; 9],
+    adjacent_groups: [Option<SharedSubgrid<'_, f32>>; 9],
     tracker: Option<&AllocTracker>,
 ) -> Result<()> {
     let Some(this) = adjacent_groups[4] else {
@@ -290,7 +290,7 @@ fn convolve_fill(
     Ok(())
 }
 
-fn fill_once(out: &mut [f32], fill_y: usize, adjacent_groups: [Option<SharedSubgrid<f32>>; 9]) {
+fn fill_once(out: &mut [f32], fill_y: usize, adjacent_groups: [Option<SharedSubgrid<'_, f32>>; 9]) {
     let Some(this) = adjacent_groups[4] else {
         return;
     };

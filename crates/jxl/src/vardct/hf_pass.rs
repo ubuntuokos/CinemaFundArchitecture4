@@ -33,7 +33,7 @@ pub struct HfPass {
 impl Bundle<HfPassParams<'_>> for HfPass {
     type Error = crate::vardct::Error;
 
-    fn parse(bitstream: &mut Bitstream, params: HfPassParams<'_>) -> crate::vardct::Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, params: HfPassParams<'_>) -> crate::vardct::Result<Self> {
         let HfPassParams { hf_block_ctx, num_hf_presets } = params;
         let mut used_orders = bitstream.read_u32(0x5F, 0x13, 0x00, U(13))?;
         let mut decoder = (used_orders != 0).then(|| Decoder::parse(bitstream, 8)).transpose()?;

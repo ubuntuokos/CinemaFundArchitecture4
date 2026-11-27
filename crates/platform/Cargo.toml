@@ -11,6 +11,10 @@ rust-version.workspace = true
 # opt in with `#[allow(unsafe_code)]`, and every `unsafe` block carries a `// SAFETY:` comment.
 [lints.rust]
 unsafe_code = "deny"
+# Keep in step with [workspace.lints.rust] (CFA4-LINTS-001).
+deprecated = "deny"
+future_incompatible = { level = "deny", priority = -1 }
+rust_2018_idioms = { level = "deny", priority = -1 }
 
 [lints.clippy]
 dbg_macro = "warn"

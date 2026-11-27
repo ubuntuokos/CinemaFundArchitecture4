@@ -308,13 +308,207 @@ fn mxf_anc_closed_captions_import_as_a_caption_track() {
     };
     assert_eq!(r["documents"][0]["format"], "MXF ANC captions", "{r}");
     assert_eq!(r["documents"][0]["captions"], 2, "{r}");
+    // #1068: CEA-608 CC1 and CEA-708 service 1 each become a track
     let q = s.active_sequence().unwrap();
-    let tr = &q.caption_tracks[0];
-    assert_eq!(tr.name, "xdcam_cc (CC)");
-    assert_eq!(tr.captions.len(), expected.cues.len());
-    for (c, e) in tr.captions.iter().zip(&expected.cues) {
-        assert_eq!(c.text, e.text);
-        assert_eq!(c.start, q.settings.frame_rate.snap_nearest(e.start));
+    let mut names: Vec<&str> = q.caption_tracks.iter().map(|t| t.name.as_str()).collect();
+    names.sort_unstable();
+    assert_eq!(names, ["xdcam_cc (CC1)", "xdcam_cc (SERVICE1)"]);
+    for tr in &q.caption_tracks {
+        assert_eq!(tr.captions.len(), expected.cues.len());
+        for (c, e) in tr.captions.iter().zip(&expected.cues) {
+            assert_eq!(c.text, e.text);
+            assert!((c.start.0 - q.settings.frame_rate.snap_nearest(e.start).0).abs() <= q.settings.frame_rate.tick_of(1).0, "{}", tr.name);
+        }
     }
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// An MXF file without caption distribution packets: CC1 in digitised line 21 VI lines (10-bit,
+/// luma and colour difference), CC3 in ST 334-1 CEA-608 packets on field 2. Each channel
+/// becomes its own caption track with the right texts and times.
+#[test]
+fn mxf_line21_and_cea608_packets_import_per_channel() {
+    use cfa4_captions::cea608::{line21_samples, with_parity};
+    use cfa4_mxf::testing::{anc_element, build_anc, build_vi, vi_element};
+    let cue = |a: i64, b: i64, t: &str| cfa4_captions::Cue {
+        start: Tick(a * TICKS_PER_SECOND),
+        end: Tick(b * TICKS_PER_SECOND),
+        text: t.into(),
+        ..Default::default()
+    };
+    let cc1 = cfa4_captions::Document { cues: vec![cue(1, 3, "From line 21"), cue(4, 6, "Second one")], ..Default::default() };
+    let cc3 = cfa4_captions::Document { cues: vec![cue(2, 4, "Field two")], ..Default::default() };
+    let rate = cfa4_time::FrameRate::new(30000, 1001);
+    let expect = |d: &cfa4_captions::Document| {
+        let s = cfa4_captions::scc::schedule(d);
+        cfa4_captions::scc::decode_pairs(s.into_iter().map(|(f, (a, b))| (f, a, b)), rate)
+    };
+    let s1 = cfa4_captions::scc::schedule(&cc1);
+    // field 2 carries CC3 with the misc control codes 15h instead of 14h
+    let s3: std::collections::BTreeMap<i64, (u8, u8)> =
+        cfa4_captions::scc::schedule(&cc3).into_iter().map(|(f, (a, b))| (f, (if a == 0x14 { 0x15 } else { a }, b))).collect();
+    let frames = s1.keys().chain(s3.keys()).max().map_or(0, |&f| f as usize + 2);
+    let dir = std::env::temp_dir().join(format!("fc-l21-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    // line 21 as 4:2:2 Cb Y Cr Y samples (coding 9), chroma at 512
+    let vi: Vec<Vec<u8>> = (0..frames as i64)
+        .map(|f| {
+            let (a, b) = s1.get(&f).copied().unwrap_or((0, 0));
+            let luma = line21_samples(with_parity(a), with_parity(b), 720, 20.0);
+            let both: Vec<u16> = luma.iter().flat_map(|&y| [512, y]).collect();
+            vi_element(&[(21, 2, 9, both), (284, 3, 7, vec![64; 720])])
+        })
+        .collect();
+    let anc: Vec<Vec<u8>> = (0..frames as i64)
+        .map(|f| match s3.get(&f) {
+            Some(&(a, b)) => anc_element(&[vec![0x61, 0x02, 3, 0x09, with_parity(a), with_parity(b)]], false),
+            None => anc_element(&[], false),
+        })
+        .collect();
+    let mut s = demo();
+    for (name, bytes, want) in [
+        ("vbi_cc.mxf", build_vi((30000, 1001), &vi), vec![("vbi_cc (CC1)", expect(&cc1))]),
+        ("anc608.mxf", build_anc((30000, 1001), &anc), vec![("anc608 (CC3)", expect(&cc3))]),
+    ] {
+        let mxf = dir.join(name);
+        std::fs::write(&mxf, bytes).unwrap();
+        let r = match s.execute("file.import", json!({"paths": [mxf.to_string_lossy()]})) {
+            Ok(r) => r,
+            Err(e) => panic!("{e}"),
+        };
+        assert_eq!(r["documents"][0]["format"], "MXF line 21 captions", "{r}");
+        let q = s.active_sequence().unwrap();
+        for (track, cues) in want {
+            assert!(!cues.is_empty());
+            let tr = q.caption_tracks.iter().find(|t| t.name == track).unwrap_or_else(|| panic!("no {track}: {r}"));
+            assert_eq!(tr.format, cfa4_project::CaptionFormat::Cea608);
+            assert_eq!(tr.captions.len(), cues.len(), "{track}");
+            for (c, e) in tr.captions.iter().zip(&cues) {
+                assert_eq!(c.text, e.text);
+                assert_eq!(c.start, q.settings.frame_rate.snap_nearest(e.start));
+            }
+        }
+    }
+    // #1068: CDPs with CC1 next to ST 334-1 packets with CC3: both channels come in, CC3 from
+    // the 334-1 packets
+    let both: Vec<Vec<u8>> = (0..frames as i64)
+        .map(|f| {
+            let (a, b) = s1.get(&f).copied().unwrap_or((0x80, 0x80));
+            let cc = [0xfc, with_parity(a), with_parity(b)];
+            let mut cdp = vec![0x96, 0x69, 16, 0x4f, 0x43, 0, f as u8, 0x72, 0xe1];
+            cdp.extend_from_slice(&cc);
+            cdp.extend_from_slice(&[0x74, 0, f as u8, 0]);
+            let mut packets = vec![[vec![0x61, 0x01, cdp.len() as u8], cdp].concat()];
+            if let Some(&(a, b)) = s3.get(&f) {
+                packets.push(vec![0x61, 0x02, 3, 0x09, with_parity(a), with_parity(b)]);
+            }
+            anc_element(&packets, false)
+        })
+        .collect();
+    let mxf = dir.join("mixed.mxf");
+    std::fs::write(&mxf, build_anc((30000, 1001), &both)).unwrap();
+    let r = s.execute("file.import", json!({"paths": [mxf.to_string_lossy()]})).unwrap();
+    let formats: Vec<&str> = r["documents"].as_array().unwrap().iter().filter_map(|d| d["format"].as_str()).collect();
+    assert_eq!(formats, ["MXF ANC captions", "MXF line 21 captions"], "{r}");
+    let q = s.active_sequence().unwrap();
+    for (track, cues) in [("mixed (CC1)", expect(&cc1)), ("mixed (CC3)", expect(&cc3))] {
+        let tr = q.caption_tracks.iter().find(|t| t.name == track).unwrap_or_else(|| panic!("no {track}: {r}"));
+        let got: Vec<&str> = tr.captions.iter().map(|c| c.text.as_str()).collect();
+        assert_eq!(got, cues.iter().map(|c| c.text.as_str()).collect::<Vec<_>>(), "{track}");
+    }
+    assert!(!q.caption_tracks.iter().any(|t| t.name.starts_with("mixed (SERVICE")));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// #936: PNG image subtitles in a DCP timed text track file (and beside a subtitle XML) import as
+/// still clips on new video tracks above the others: at their times, positioned by their
+/// alignment, with their fades as Opacity keyframes; overlapping ones get a track each, a missing
+/// resource is a warning, and the whole import is one undo step.
+#[test]
+fn dcp_image_subtitles_import_as_positioned_still_clips() {
+    use cfa4_project::ParamValue;
+    const IMAGE_REEL: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+<SubtitleReel xmlns="http://www.smpte-ra.org/schemas/428-7/2010/DCST">
+  <Language>hu</Language>
+  <EditRate>24 1</EditRate>
+  <TimeCodeRate>24</TimeCodeRate>
+  <StartTime>00:00:00:00</StartTime>
+  <SubtitleList>
+    <Subtitle SpotNumber="1" TimeIn="00:00:01:00" TimeOut="00:00:03:00">
+      <Image Valign="bottom" Vposition="10">urn:uuid:20202020-2020-2020-2020-202020202020</Image>
+    </Subtitle>
+    <Subtitle SpotNumber="2" TimeIn="00:00:02:00" TimeOut="00:00:04:00" FadeUpTime="00:00:00:00" FadeDownTime="00:00:00:00">
+      <Image Valign="top" Vposition="5" Halign="left" Hposition="10">urn:uuid:20202020-2020-2020-2020-202020202020</Image>
+    </Subtitle>
+    <Subtitle SpotNumber="3" TimeIn="00:00:05:00" TimeOut="00:00:06:00">
+      <Image>urn:uuid:99999999-9999-9999-9999-999999999999</Image>
+    </Subtitle>
+  </SubtitleList>
+</SubtitleReel>
+"#;
+    let mut png = Vec::new();
+    image::RgbaImage::from_pixel(200, 50, image::Rgba([255, 255, 255, 200])).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
+    let dir = std::env::temp_dir().join(format!("fc-dcst-png-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let mxf = dir.join("sub_img.mxf");
+    std::fs::write(&mxf, cfa4_mxf::testing::build_timed_text(IMAGE_REEL.as_bytes(), &[("image/png", &png)])).unwrap();
+    let mut s = demo();
+    let tracks_before = s.active_sequence().unwrap().video_tracks.len();
+    let captions_before = s.active_sequence().unwrap().caption_tracks.len();
+    let r = s.execute("file.import", json!({"paths": [mxf.to_string_lossy()]})).unwrap();
+    let doc = &r["documents"][0];
+    assert_eq!(doc["images"], 2, "{r}");
+    assert_eq!(doc["imageTracks"], 2, "overlapping subtitles take a track each: {r}");
+    assert!(doc["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("99999999")), "{r}");
+    let extracted = dir.join("sub_img_20202020-2020-2020-2020-202020202020.png");
+    assert_eq!(std::fs::read(&extracted).unwrap(), png, "the PNG is written beside the MXF");
+    let q = s.active_sequence().unwrap();
+    assert_eq!(q.caption_tracks.len(), captions_before, "no text, no caption track");
+    assert_eq!(q.video_tracks.len(), tracks_before + 2);
+    let (w, h) = (f64::from(q.settings.width), f64::from(q.settings.height));
+    let first = &q.video_tracks[tracks_before];
+    assert_eq!(first.name, "sub_img (hu)");
+    let clip = &first.items[0];
+    assert_eq!(clip.start, q.settings.frame_rate.snap_nearest(Tick(TICKS_PER_SECOND)));
+    assert_eq!(clip.duration, q.settings.frame_rate.snap_nearest(Tick(2 * TICKS_PER_SECOND)));
+    let motion = clip.effects.iter().find(|e| e.effect == "motion").unwrap();
+    let ParamValue::Vec2(pos) = motion.param("position").unwrap().value else { panic!() };
+    // centred, bottom edge 10 % above the bottom
+    assert_eq!((pos.x, pos.y), (w / 2.0, h - h * 0.1 - 25.0));
+    let ParamValue::Vec2(anchor) = motion.param("anchor").unwrap().value else { panic!() };
+    assert_eq!((anchor.x, anchor.y), (100.0, 25.0));
+    // the default two-unit fades
+    let fades = &clip.effects.iter().find(|e| e.effect == "opacity").unwrap().param("opacity").unwrap().keyframes;
+    let k: Vec<f64> = fades.iter().map(|k| if let ParamValue::Float(v) = k.value { v } else { -1.0 }).collect();
+    assert_eq!(k, vec![0.0, 100.0, 100.0, 0.0]);
+    assert_eq!(fades[1].time, q.settings.frame_rate.snap_nearest(Tick::from_rational(2, 1, 24)));
+    let second = &q.video_tracks[tracks_before + 1].items[0];
+    let ParamValue::Vec2(pos) = second.effects.iter().find(|e| e.effect == "motion").unwrap().param("position").unwrap().value else { panic!() };
+    assert_eq!((pos.x, pos.y), (w * 0.1 + 100.0, h * 0.05 + 25.0));
+    assert!(second.effects.iter().find(|e| e.effect == "opacity").unwrap().param("opacity").unwrap().keyframes.is_empty(), "no fades");
+    // one undo step takes it all back
+    s.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(s.active_sequence().unwrap().video_tracks.len(), tracks_before);
+    // importing again uses the PNG already written
+    s.execute("file.import", json!({"paths": [mxf.to_string_lossy()]})).unwrap();
+    assert!(!dir.join("sub_img_20202020-2020-2020-2020-202020202020 (2).png").exists());
+    // a subtitle XML finds its PNGs by UUID beside it
+    std::fs::write(dir.join("reel.xml"), IMAGE_REEL).unwrap();
+    std::fs::write(dir.join("20202020-2020-2020-2020-202020202020.png"), &png).unwrap();
+    let r = s.execute("file.import", json!({"paths": [dir.join("reel.xml").to_string_lossy()]})).unwrap();
+    assert_eq!(r["documents"][0]["images"], 2, "{r}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fade_keyframes_share_a_short_clip() {
+    use super::fade_keyframes;
+    let t = |n: i64| Tick(n);
+    assert_eq!(fade_keyframes(t(100), t(0), t(0)), vec![]);
+    assert_eq!(fade_keyframes(t(100), t(10), t(0)), vec![(t(0), 0.0), (t(10), 100.0)]);
+    assert_eq!(fade_keyframes(t(100), t(0), t(10)), vec![(t(0), 100.0), (t(90), 100.0), (t(100), 0.0)]);
+    // 60 + 60 in 100: 50 each, no plateau
+    assert_eq!(fade_keyframes(t(100), t(60), t(60)), vec![(t(0), 0.0), (t(50), 100.0), (t(100), 0.0)]);
+    assert_eq!(fade_keyframes(t(100), t(i64::MAX), t(-5)), vec![(t(0), 0.0), (t(100), 100.0)]);
 }

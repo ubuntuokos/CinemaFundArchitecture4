@@ -738,7 +738,7 @@ impl<W: Write + Seek> Mp4Writer<W> {
 
     /// Append one sample to track `track` (decode order). For PCM tracks `data` may hold any whole
     /// number of audio frames.
-    pub fn write_sample(&mut self, track: usize, s: WriteSample) -> Result<()> {
+    pub fn write_sample(&mut self, track: usize, s: WriteSample<'_>) -> Result<()> {
         let tr = self.tracks.get(track).ok_or(Error::NoSuchTrack(track))?;
         if tr.tmcd_source.is_some() || tr.chapter_source.is_some() {
             return Err(Error::Mux("timecode and chapter track samples are written automatically".into()));
@@ -746,7 +746,7 @@ impl<W: Write + Seek> Mp4Writer<W> {
         self.push_sample(track, s)
     }
 
-    fn push_sample(&mut self, track: usize, s: WriteSample) -> Result<()> {
+    fn push_sample(&mut self, track: usize, s: WriteSample<'_>) -> Result<()> {
         let tr = self.tracks.get(track).ok_or(Error::NoSuchTrack(track))?;
         let (count, dur) = match tr.pcm_frame_bytes {
             Some(fb) => {
@@ -1038,7 +1038,7 @@ impl<W: Write> FragmentedWriter<W> {
     }
 
     /// Buffer a sample for the next fragment.
-    pub fn write_sample(&mut self, track: usize, s: WriteSample) -> Result<()> {
+    pub fn write_sample(&mut self, track: usize, s: WriteSample<'_>) -> Result<()> {
         let p = self.pending.get_mut(track).ok_or(Error::NoSuchTrack(track))?;
         if s.data.len() > u32::MAX as usize {
             return Err(Error::Mux("sample larger than 4 GiB".into()));

@@ -39,9 +39,9 @@ mod cuda {
             // Resolve all symbols before retaining; keep the library alive until after release.
             unsafe {
                 let library = libloading::Library::new("libcuda.so.1").map_err(|e| format!("no NVIDIA CUDA driver: {e}"))?;
-                let init: libloading::Symbol<Init> = library.get(b"cuInit\0").map_err(|e| e.to_string())?;
-                let get: libloading::Symbol<GetDevice> = library.get(b"cuDeviceGet\0").map_err(|e| e.to_string())?;
-                let retain: libloading::Symbol<Retain> = library.get(b"cuDevicePrimaryCtxRetain\0").map_err(|e| e.to_string())?;
+                let init: libloading::Symbol<'_, Init> = library.get(b"cuInit\0").map_err(|e| e.to_string())?;
+                let get: libloading::Symbol<'_, GetDevice> = library.get(b"cuDeviceGet\0").map_err(|e| e.to_string())?;
+                let retain: libloading::Symbol<'_, Retain> = library.get(b"cuDevicePrimaryCtxRetain\0").map_err(|e| e.to_string())?;
                 let release: Release = *library.get(b"cuDevicePrimaryCtxRelease_v2\0").map_err(|e| e.to_string())?;
                 let st = init(0);
                 if st != 0 {

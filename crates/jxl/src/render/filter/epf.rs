@@ -100,8 +100,8 @@ pub(super) struct EpfRow<'buf, 'epf> {
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn run_epf_rows(
-    input: &mut [MutableSubgrid<f32>; 3],
-    output: &mut [MutableSubgrid<f32>; 3],
+    input: &mut [MutableSubgrid<'_, f32>; 3],
+    output: &mut [MutableSubgrid<'_, f32>; 3],
     color_padded_region: Region,
     frame_header: &FrameHeader,
     sigma_grid_map: &[Option<&AlignedGrid<f32>>],

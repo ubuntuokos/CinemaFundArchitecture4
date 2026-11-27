@@ -69,13 +69,26 @@ def file_path(url: str) -> str:
 
 
 def expect_media(otio: Any, clip: Any) -> dict[str, Any]:
-    """The project item a clip must point at, from its active media reference."""
+    """The project item a clip must point at, from its active media reference, and the keys of the
+    other references CFA4 keeps to write back (OTIO-2.4)."""
+    media = _expect_active_media(otio, clip)
+    others = sorted(set(clip.media_references()) - {clip.active_media_reference_key})
+    media["other_references"] = others
+    return media
+
+
+def _expect_active_media(otio: Any, clip: Any) -> dict[str, Any]:
     ref = clip.media_reference
     if isinstance(ref, otio.schema.ExternalReference) and ref.target_url.strip():
         return {"ref": "file", "path": file_path(ref.target_url), "offline": False}
     if isinstance(ref, otio.schema.ImageSequenceReference) and ref.target_url_base.strip():
-        # how CFA4 keeps an image sequence is OTIO-2.3; here only that it is a file and online
-        return {"ref": "file", "path": None, "offline": False}
+        # CFA4 keeps an image sequence as image-sequence media at its first frame (OTIO-2.3)
+        return {
+            "ref": "file",
+            "path": file_path(ref.target_url_for_image_number(0)),
+            "image_sequence": True,
+            "offline": False,
+        }
     if isinstance(ref, otio.schema.GeneratorReference):
         return {
             "ref": "generator",
@@ -102,11 +115,12 @@ def _first_rate(otio: Any, composition: Any) -> float | None:
     """The rate CFA4 falls back to without a global start time: the first ``source_range`` found."""
     for child in composition:
         if getattr(child, "source_range", None) is not None:
-            return child.source_range.duration.rate
+            rate: float = child.source_range.duration.rate
+            return rate
         if isinstance(child, otio.schema.Track | otio.schema.Stack):
-            rate = _first_rate(otio, child)
-            if rate is not None:
-                return rate
+            inner = _first_rate(otio, child)
+            if inner is not None:
+                return inner
     return None
 
 
@@ -121,7 +135,7 @@ def expect_timeline(otio: Any, timeline: Any) -> dict[str, Any]:
         markers += [ticks_of(m.marked_range.start_time) for m in track.markers]
         children = list(track)
         cut = 0  # ticks: where the previous slot ends
-        for index, child in enumerate(children):
+        for _index, child in enumerate(children):
             if isinstance(child, otio.schema.Transition):
                 transitions += 1
                 inn, out = ticks_of(child.in_offset), ticks_of(child.out_offset)
@@ -428,7 +442,7 @@ def serialise(otio: Any, obj: Any, versions: dict[str, int] | None) -> str:
     """OTIO JSON at the given schema versions (``Marker: 1`` is converted here, the rest by OTIO)."""
     versions = dict(versions or {})
     legacy_markers = versions.pop("Marker", None) == 1
-    text = otio.adapters.otio_json.write_to_string(obj, target_schema_versions=versions or None)
+    text: str = otio.adapters.otio_json.write_to_string(obj, target_schema_versions=versions or None)
     if legacy_markers:
         text = json.dumps(_marker_v1(json.loads(text)), indent=4)
     return text

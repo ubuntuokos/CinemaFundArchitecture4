@@ -109,7 +109,7 @@ impl Histogram {
         Self { toplevel_bits: 0, toplevel_mask: 0, toplevel_entries: vec![entry], second_level_entries: Vec::new() }
     }
 
-    pub fn parse(bitstream: &mut Bitstream, alphabet_size: u32) -> CodingResult<Self> {
+    pub fn parse(bitstream: &mut Bitstream<'_>, alphabet_size: u32) -> CodingResult<Self> {
         if alphabet_size == 1 {
             return Ok(Self::with_single_symbol(0));
         }
@@ -122,7 +122,7 @@ impl Histogram {
         if hskip == 1 { Self::parse_simple(bitstream, alphabet_size) } else { Self::parse_complex(bitstream, alphabet_size, hskip) }
     }
 
-    fn parse_simple(bitstream: &mut Bitstream, alphabet_size: u32) -> CodingResult<Self> {
+    fn parse_simple(bitstream: &mut Bitstream<'_>, alphabet_size: u32) -> CodingResult<Self> {
         let alphabet_bits = alphabet_size.next_power_of_two().trailing_zeros() as usize;
         let nsym = bitstream.read_bits(2)? + 1;
         let it = match nsym {
@@ -173,7 +173,7 @@ impl Histogram {
         Self::with_code_lengths(code_lengths)
     }
 
-    fn parse_complex(bitstream: &mut Bitstream, alphabet_size: u32, hskip: u32) -> CodingResult<Self> {
+    fn parse_complex(bitstream: &mut Bitstream<'_>, alphabet_size: u32, hskip: u32) -> CodingResult<Self> {
         const CODE_LENGTH_ORDER: [usize; 18] = [1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15];
         let mut code_length_code_lengths = [0u8; 18];
         let mut bitacc = 0usize;
@@ -296,7 +296,7 @@ impl Histogram {
 
 impl Histogram {
     #[inline(always)]
-    pub fn read_symbol(&self, bitstream: &mut Bitstream) -> CodingResult<u32> {
+    pub fn read_symbol(&self, bitstream: &mut Bitstream<'_>) -> CodingResult<u32> {
         let Self { toplevel_bits, toplevel_mask, ref toplevel_entries, ref second_level_entries } = *self;
         let peeked = bitstream.peek_bits_const::<MAX_PREFIX_BITS>();
         let toplevel_offset = peeked & toplevel_mask;

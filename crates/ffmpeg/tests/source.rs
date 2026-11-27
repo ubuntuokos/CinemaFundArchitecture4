@@ -1,6 +1,6 @@
 //! The FFmpeg media source and the engine fallback (ADR 0005 step 1), against the FFmpeg this
 //! test binary links (`--features ffmpeg`). Fixtures are made by the ffmpeg CLI oracle
-//! (`cfa4_testkit::oracle`, the pinned 9.0.2 in CI) into Cargo's temporary directory, and every
+//! (`cfa4_testkit::oracle`, the pinned version of packaging/ffmpeg-version.env in CI) into Cargo's temporary directory, and every
 //! decoded frame is compared byte for byte with the oracle's own decoding of the same frame. A
 //! machine without the oracle, or whose oracle lacks an encoder a fixture needs, skips with a
 //! message (`CFA4_REQUIRE_ORACLES=1` turns skips into failures).
@@ -95,7 +95,7 @@ fn oracle_frame(path: &Path, n: i64, pix_fmt: &str) -> Vec<u8> {
 fn bytes_of(data: &PixelData) -> Vec<u8> {
     match data {
         PixelData::Yuv8 { planes, .. } => planes.iter().flat_map(|p| p.iter().copied()).collect(),
-        PixelData::Yuv16 { planes, .. } => planes.iter().flat_map(|p| p.iter().flat_map(|s| s.to_le_bytes())).collect(),
+        PixelData::Yuv16 { planes, .. } | PixelData::Rgb16 { planes, .. } => planes.iter().flat_map(|p| p.iter().flat_map(|s| s.to_le_bytes())).collect(),
         PixelData::Rgba8(d) => d.to_vec(),
         PixelData::RgbaF32(_) => Vec::new(),
     }

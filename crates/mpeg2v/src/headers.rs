@@ -60,7 +60,7 @@ pub const SCAN: [[u8; 64]; 2] = [
 ];
 
 /// A quantiser matrix as transmitted (zigzag order) → raster order.
-fn read_matrix(b: &mut Bits) -> [u8; 64] {
+fn read_matrix(b: &mut Bits<'_>) -> [u8; 64] {
     let mut m = [0u8; 64];
     for i in 0..64 {
         m[SCAN[0][i] as usize] = b.read(8) as u8;

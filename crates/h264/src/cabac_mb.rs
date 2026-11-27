@@ -147,13 +147,13 @@ impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
     }
 
     /// mb_field_decoding_flag (ctxIdx 70..=72: the left and above pairs are field pairs).
-    fn decode_field_flag(&mut self, c: &mut Cabac) -> bool {
+    fn decode_field_flag(&mut self, c: &mut Cabac<'_>) -> bool {
         let pairs = self.pair_nb;
         let cond = |n: Option<usize>| n.and_then(|m| self.pic.mbs.get(m)).is_some_and(|m| m.field) as usize;
         c.decode_decision(70 + cond(pairs[0]) + cond(pairs[1])) == 1
     }
 
-    fn decode_skip_flag(&mut self, c: &mut Cabac) -> bool {
+    fn decode_skip_flag(&mut self, c: &mut Cabac<'_>) -> bool {
         let cond = |n: Option<usize>| n.map(|m| !self.pic.mbs[m].kind_is_skip()).unwrap_or(false) as usize;
         let inc = cond(self.nb[0]) + cond(self.nb[1]);
         let base = if self.sh.slice_type.is_b() { 24 } else { 11 };
@@ -162,7 +162,7 @@ impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
 
     /// Intra mb_type suffix / I-slice mb_type (Table 9-36). `base` is 3 (I slice) or 17/32 (prefix
     /// offsets in P/B slices). Returns the I-slice mb_type value 0..=25.
-    fn decode_mb_type_i(&mut self, c: &mut Cabac, base: usize) -> u32 {
+    fn decode_mb_type_i(&mut self, c: &mut Cabac<'_>, base: usize) -> u32 {
         let islice = base == 3;
         let b0 = if islice {
             let cond = |n: Option<usize>| n.map(|m| !matches!(self.pic.mbs[m].kind, MbKind::I4x4 | MbKind::I8x8)).unwrap_or(false) as usize;
@@ -189,7 +189,7 @@ impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
         1 + (p0 * 2 + p1) + 4 * chroma + 12 * luma
     }
 
-    fn decode_mb_type(&mut self, c: &mut Cabac) -> Result<MbTypeInfo> {
+    fn decode_mb_type(&mut self, c: &mut Cabac<'_>) -> Result<MbTypeInfo> {
         let info = match self.sh.slice_type {
             SliceType::I | SliceType::Si => intra_mb_type(self.decode_mb_type_i(c, 3)),
             SliceType::P | SliceType::Sp => {
@@ -233,7 +233,7 @@ impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
         }
     }
 
-    fn decode_sub_mb_type(&mut self, c: &mut Cabac) -> Result<SubMbInfo> {
+    fn decode_sub_mb_type(&mut self, c: &mut Cabac<'_>) -> Result<SubMbInfo> {
         let r = if self.sh.slice_type.is_b() {
             if c.decode_decision(36) == 0 {
                 b_sub_mb_type(0)
@@ -266,7 +266,7 @@ impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
     }
 
     /// ref_idx_lX for the partition whose top-left 4x4 block is (x, y) (9.3.3.1.1.6).
-    fn decode_ref_idx(&mut self, c: &mut Cabac, list: usize, x: usize, y: usize) -> u32 {
+    fn decode_ref_idx(&mut self, c: &mut Cabac<'_>, list: usize, x: usize, y: usize) -> u32 {
         let cond = |xx: i32, yy: i32| -> usize {
             let Some((m, xw, yw)) = self.nb_loc(blk_loc(xx), blk_loc(yy), 16, 16) else { return 0 };
             let st = &self.pic.mbs[m];
@@ -296,7 +296,7 @@ impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
     }
 
     /// One mvd component for the (sub-)partition with top-left 4x4 block (x, y) (9.3.3.1.1.7, UEG3).
-    fn decode_mvd(&mut self, c: &mut Cabac, list: usize, comp: usize, x: usize, y: usize) -> i32 {
+    fn decode_mvd(&mut self, c: &mut Cabac<'_>, list: usize, comp: usize, x: usize, y: usize) -> i32 {
         let absn = |xx: i32, yy: i32| -> u32 {
             let Some((m, xw, yw)) = self.nb_loc(blk_loc(xx), blk_loc(yy), 16, 16) else { return 0 };
             let st = &self.pic.mbs[m];
@@ -362,7 +362,7 @@ impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
         }
     }
 
-    fn decode_cbp(&mut self, c: &mut Cabac) -> u8 {
+    fn decode_cbp(&mut self, c: &mut Cabac<'_>) -> u8 {
         let mut luma = 0u8;
         for b8 in 0..4usize {
             let (bx, by) = ((b8 & 1) * 2, (b8 >> 1) * 2);
@@ -410,7 +410,7 @@ impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
         ((st.cbp >> (b8n & 3)) & 1 == 0) as usize
     }
 
-    fn decode_qp_delta(&mut self, c: &mut Cabac) -> Result<i32> {
+    fn decode_qp_delta(&mut self, c: &mut Cabac<'_>) -> Result<i32> {
         let inc = self.prev_qp_delta_nz as usize;
         if c.decode_decision(60 + inc) == 0 {
             return Ok(0);
@@ -478,7 +478,7 @@ impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
     /// in list order (indices 0..max_num). `cbf_inc` is the coded_block_flag ctxIdxInc (ignored for
     /// 8x8 blocks outside 4:4:4, which have no coded_block_flag). Returns the number of non-zero
     /// coefficients.
-    fn residual_block_cabac(&mut self, c: &mut Cabac, coeff: &mut [i32], cat: usize, max_num: usize, cbf_inc: usize) -> u8 {
+    fn residual_block_cabac(&mut self, c: &mut Cabac<'_>, coeff: &mut [i32], cat: usize, max_num: usize, cbf_inc: usize) -> u8 {
         let field = self.field_mb;
         let Some(&(cbf_base, sig_base, last_base, abs_base)) = (if field { &CAT_CTX_FIELD } else { &CAT_CTX }).get(cat) else { return 0 };
         let max_num = max_num.min(coeff.len());
@@ -552,7 +552,7 @@ impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
         n as u8
     }
 
-    fn residual_cabac(&mut self, c: &mut Cabac, cbp: u8) -> Result<()> {
+    fn residual_cabac(&mut self, c: &mut Cabac<'_>, cbp: u8) -> Result<()> {
         let intra = self.mb().kind.is_intra();
         self.residual_luma_cabac(c, cbp, 0);
         match self.chroma.0 {
@@ -597,7 +597,7 @@ impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
     }
 
     /// residual_luma() (7.3.5.3.1) of component `p` (Y, or Cb / Cr in 4:4:4) with CABAC.
-    fn residual_luma_cabac(&mut self, c: &mut Cabac, cbp: u8, p: usize) {
+    fn residual_luma_cabac(&mut self, c: &mut Cabac<'_>, cbp: u8, p: usize) {
         let kind = self.mb().kind;
         let intra = kind.is_intra();
         let t8 = self.mb().transform_8x8;
@@ -657,7 +657,7 @@ impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
     }
 
     /// Parse and reconstruct one macroblock_layer() with CABAC.
-    fn decode_mb_cabac(&mut self, c: &mut Cabac) -> Result<()> {
+    fn decode_mb_cabac(&mut self, c: &mut Cabac<'_>) -> Result<()> {
         let mut info = self.decode_mb_type(c)?;
         self.cur = MbCur { info, ..Default::default() };
         if info.kind == MbKind::IPcm {
@@ -802,13 +802,13 @@ impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
         Ok(())
     }
 
-    fn decode_t8x8_flag(&mut self, c: &mut Cabac) -> bool {
+    fn decode_t8x8_flag(&mut self, c: &mut Cabac<'_>) -> bool {
         let cond = |n: Option<usize>| n.map(|m| self.pic.mbs[m].transform_8x8).unwrap_or(false) as usize;
         let inc = cond(self.nb[0]) + cond(self.nb[1]);
         c.decode_decision(399 + inc) == 1
     }
 
-    fn decode_chroma_mode(&mut self, c: &mut Cabac) -> u8 {
+    fn decode_chroma_mode(&mut self, c: &mut Cabac<'_>) -> u8 {
         let cond = |n: Option<usize>| {
             n.map(|m| {
                 let st = &self.pic.mbs[m];

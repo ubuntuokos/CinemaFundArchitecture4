@@ -21,8 +21,10 @@ pub enum Scaling {
     StretchToFill,
 }
 
-/// Field order of the encoded video. Only MPEG-2 export codes interlaced frames; the other
-/// encoders write progressive ones.
+/// Field order of the encoded video. Only MPEG-2 and ProRes export code interlaced frames
+/// ([`ExportSettings::codes_interlaced`]; in MXF MPEG-2, XDCAM HD422, D-10 or ProRes); the other encoders
+/// write progressive ones. The frames are rendered progressively and coded as interlaced (no
+/// field-rate rendering yet).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum FieldOrder {
@@ -145,14 +147,24 @@ pub enum MxfVideoCodec {
     Mpeg2,
     /// Type D-10 / IMX (ST 386): intra-only MPEG-2 4:2:2P@ML at 30, 40 or 50 Mbit/s (the
     /// bitrate setting), 720 × 576 at 25 fps or 720 × 486 / 480 at 29.97 fps, with up to eight
-    /// 16- or 24-bit 48 kHz audio channels in one AES3 element. OP1a only.
+    /// 16- or 24-bit 48 kHz audio channels in one AES3 element. OP1a only. An interlaced field
+    /// order codes interlaced pictures (upper field first); progressive codes PsF pictures.
     #[serde(rename = "d10", alias = "D10")]
     D10,
     /// XDCAM HD422 (SMPTE RDD 9): MPEG-2 4:2:2P@HL long GOP at 1920 × 1080 or 1280 × 720 in
     /// RDD 9's OP1a layout (system items, one AES3 element per channel, body partitions every
-    /// five seconds), up to eight 16- or 24-bit 48 kHz channels. Progressive pictures only.
+    /// five seconds), up to eight 16- or 24-bit 48 kHz channels. 1080i at 25 or 29.97 fps with an
+    /// interlaced field order (separate fields, RDD 9 Annex), otherwise progressive.
     #[serde(rename = "xdcamHd422", alias = "XdcamHd422")]
     XdcamHd422,
+    /// Uncompressed 10-bit Y'CbCr 4:2:2 in the `v210` layout (ST 384, ST 377-1 G.2.25 label
+    /// `01.02.02.01`): three components per 32-bit word, lines padded to 128 bytes. Rec. 709
+    /// narrow-range levels; HDR sources are tone mapped to SDR.
+    #[serde(rename = "v210", alias = "V210")]
+    V210,
+    /// Uncompressed 8-bit Y'CbCr 4:2:2, Cb Y Cr Y (`UYVY` / `2vuy`, label `01.02.01.01`).
+    #[serde(rename = "uyvy", alias = "Uyvy", alias = "UYVY")]
+    Uyvy,
 }
 
 impl MxfVideoCodec {
@@ -165,6 +177,16 @@ impl MxfVideoCodec {
             MxfVideoCodec::Mpeg2 => "MPEG-2",
             MxfVideoCodec::D10 => "D-10 (IMX)",
             MxfVideoCodec::XdcamHd422 => "XDCAM HD422 (RDD 9)",
+            MxfVideoCodec::V210 => "Uncompressed 10-bit 4:2:2 (v210)",
+            MxfVideoCodec::Uyvy => "Uncompressed 8-bit 4:2:2 (UYVY)",
+        }
+    }
+    /// The uncompressed picture layout of this codec, if it is one.
+    pub fn uncompressed_layout(self) -> Option<cfa4_mxf::UncompressedLayout> {
+        match self {
+            MxfVideoCodec::V210 => Some(cfa4_mxf::UncompressedLayout::V210),
+            MxfVideoCodec::Uyvy => Some(cfa4_mxf::UncompressedLayout::Uyvy8),
+            _ => None,
         }
     }
     /// The export format whose encoder this codec uses.
@@ -174,6 +196,8 @@ impl MxfVideoCodec {
             MxfVideoCodec::ProRes => Format::ProRes,
             MxfVideoCodec::H264 => Format::H264,
             MxfVideoCodec::Mpeg2 | MxfVideoCodec::D10 | MxfVideoCodec::XdcamHd422 => Format::Mpeg2,
+            // no compression: the MXF muxer's own packer (`uncompressed_factory`)
+            MxfVideoCodec::V210 | MxfVideoCodec::Uyvy => Format::MxfOp1a,
         }
     }
 }
@@ -191,16 +215,20 @@ pub enum ExrCompression {
     Zips,
     /// zlib (deflate) per block of 16 scan lines (ZIP_COMPRESSION).
     Zip,
+    /// Wavelet and Huffman coding per block of 32 scan lines (PIZ_COMPRESSION); the usual choice
+    /// for grainy film scans and renders.
+    Piz,
 }
 
 impl ExrCompression {
-    pub const ALL: [ExrCompression; 4] = [ExrCompression::None, ExrCompression::Rle, ExrCompression::Zips, ExrCompression::Zip];
+    pub const ALL: [ExrCompression; 5] = [ExrCompression::None, ExrCompression::Rle, ExrCompression::Zips, ExrCompression::Zip, ExrCompression::Piz];
     pub fn label(self) -> &'static str {
         match self {
             ExrCompression::None => "None",
             ExrCompression::Rle => "RLE",
             ExrCompression::Zips => "ZIP (1 scan line)",
             ExrCompression::Zip => "ZIP (16 scan lines)",
+            ExrCompression::Piz => "PIZ",
         }
     }
     /// The value of the OpenEXR `compression` attribute.
@@ -210,11 +238,16 @@ impl ExrCompression {
             ExrCompression::Rle => 1,
             ExrCompression::Zips => 2,
             ExrCompression::Zip => 3,
+            ExrCompression::Piz => 4,
         }
     }
     /// Scan lines per chunk.
     pub(crate) fn lines(self) -> usize {
-        if self == ExrCompression::Zip { 16 } else { 1 }
+        match self {
+            ExrCompression::Zip => 16,
+            ExrCompression::Piz => 32,
+            _ => 1,
+        }
     }
 }
 
@@ -548,12 +581,27 @@ impl ExportSettings {
         }
     }
 
+    /// Whether the export codes interlaced video ([`ExportSettings::field_order`]): MPEG-2 files
+    /// and ProRes ([`Format::codes_interlaced`]), the interlaced DNxHD IDs; in MXF MPEG-2 (also XDCAM HD422 and D-10), whose
+    /// separate-field layout the writer has, and ProRes field pictures.
+    pub fn codes_interlaced(&self) -> bool {
+        let format = if self.format.is_mxf() { matches!(self.video_format(), Format::Mpeg2 | Format::ProRes) } else { self.format.codes_interlaced() };
+        format || self.dnx_interlaced()
+    }
+
+    /// An interlaced DNxHD compression ID (`hd1241`, `hd1242`, `hd1243`) is selected: each frame
+    /// is coded as two field coding units, top field first.
+    pub fn dnx_interlaced(&self) -> bool {
+        self.has_video() && self.video_format() == Format::DnxHr && crate::dnx_profile(&self.dnx_profile).interlaced()
+    }
+
     /// Whether the output can carry an alpha channel ([`ExportSettings::alpha`]): PNG, TIFF,
     /// Targa and OpenEXR sequences, GIF (binary transparency), ProRes 4444 / 4444 XQ and GoPro
     /// CineForm RGBA QuickTime movies.
     pub fn supports_alpha(&self) -> bool {
         match self.format {
             Format::PngSequence | Format::TiffSequence | Format::TgaSequence | Format::ExrSequence | Format::Gif => true,
+            Format::DpxSequence => self.dpx_bit_depth >= 12,
             Format::ProRes => crate::prores_profile(&self.prores_profile).chroma() == cfa4_prores::ChromaFormat::Yuv444,
             Format::Cineform => crate::cineform_profile(&self.cineform_profile) == cfa4_cineform::EncodedFormat::Rgba4444,
             _ => false,
@@ -574,6 +622,9 @@ impl ExportSettings {
     pub fn resolve(&self, seq_w: u32, seq_h: u32, seq_rate: FrameRate, seq_sr: u32) -> Resolved {
         if self.format == Format::Dcp && !crate::dcp_out::is_normalized(self) {
             return crate::dcp_out::normalize(self, seq_rate).resolve(seq_w, seq_h, seq_rate, seq_sr);
+        }
+        if self.format == Format::Imf && !crate::imf_out::is_normalized(self) {
+            return crate::imf_out::normalize(self, seq_rate).resolve(seq_w, seq_h, seq_rate, seq_sr);
         }
         let (mut w, mut h) = match self.frame_size {
             Some((w, h)) => (w.max(2), h.max(2)),
@@ -615,7 +666,7 @@ impl ExportSettings {
             // DVD LPCM in MPEG-2 program streams: 16 or 24 bits
             AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Mpeg2 => matches!(f, SampleFormat::Int16 | SampleFormat::Int24),
             // a DCP is always 24-bit (the export sets it)
-            AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Dcp => !f.is_float(),
+            AudioCodec::Pcm | AudioCodec::Auto if matches!(self.format, Format::Dcp | Format::Imf) => !f.is_float(),
             AudioCodec::Pcm | AudioCodec::Auto => !(f.is_float() && self.format.is_mxf()),
         }
     }
@@ -638,7 +689,7 @@ impl ExportSettings {
             (Format::Mpeg2, AudioCodec::Mp2) => AudioCodec::Mp2,
             (Format::Mpeg2, _) if crate::Mpeg2Container::of(self).is_transport() => AudioCodec::Aac,
             (Format::Mpeg2, _) => AudioCodec::Pcm,
-            (Format::Dcp, _) => AudioCodec::Pcm,
+            (Format::Dcp | Format::Imf, _) => AudioCodec::Pcm,
             // MP4 and QuickTime both carry FLAC (`fLaC` + `dfLa`)
             (_, AudioCodec::Flac) => AudioCodec::Flac,
             (f, _) if f.is_mp4_with(self.multiplexer) => AudioCodec::Aac,
@@ -677,6 +728,9 @@ impl ExportSettings {
         if self.format == Format::Dcp && !crate::dcp_out::is_normalized(self) {
             return crate::dcp_out::normalize(self, seq_rate).estimate_bytes(seq_w, seq_h, seq_rate, seq_sr, duration);
         }
+        if self.format == Format::Imf && !crate::imf_out::is_normalized(self) {
+            return crate::imf_out::normalize(self, seq_rate).estimate_bytes(seq_w, seq_h, seq_rate, seq_sr, duration);
+        }
         let r = self.resolve(seq_w, seq_h, seq_rate, seq_sr);
         let secs = duration.seconds().max(0.0);
         let fps = r.rate.num as f64 / r.rate.den as f64;
@@ -685,6 +739,10 @@ impl ExportSettings {
             Format::Aac => 0.0,
             Format::H264 | Format::Hevc | Format::Av1 | Format::WebM | Format::Hls | Format::Mpeg2 => r.target_kbps as f64 * 1000.0,
             Format::ProRes => crate::prores_profile(&self.prores_profile).nominal_mbps_1080p30() * 1e6 * px / (1920.0 * 1080.0) * fps / 29.97,
+            Format::DnxHr if crate::dnx_profile(&self.dnx_profile).hd_raster().is_some() => {
+                // DNxHD: a fixed frame size per ID
+                f64::from(crate::dnx_profile(&self.dnx_profile).frame_size(0, 0)) * 8.0 * fps
+            }
             Format::DnxHr => {
                 // nominal 1080p29.97 data rates of the DNxHR profiles (Mb/s)
                 let mbps = match self.dnx_profile.to_ascii_lowercase().as_str() {
@@ -728,17 +786,35 @@ impl ExportSettings {
             Format::BmpSequence => px * 3.0 * 8.0 * fps,
             Format::TiffSequence => px * if self.keeps_alpha() { 4.0 } else { 3.0 } * 8.0 * fps,
             Format::TgaSequence => px * if self.keeps_alpha() { 4.0 } else { 3.0 } * 8.0 * fps,
-            // 10-bit RGB in one 32-bit word per pixel
-            Format::DpxSequence => px * 4.0 * 8.0 * fps,
+            // 10-bit RGB in one 32-bit word per pixel; 12 and 16 bits take 16-bit words
+            Format::DpxSequence => {
+                px * if self.dpx_bit_depth == 10 {
+                    4.0
+                } else if self.keeps_alpha() {
+                    8.0
+                } else {
+                    6.0
+                } * 8.0
+                    * fps
+            }
             // two bytes per half-float channel; lossless compression roughly halves it
             Format::ExrSequence => {
                 let k = if self.exr_compression == ExrCompression::None { 1.0 } else { 0.5 };
                 px * if self.keeps_alpha() { 8.0 } else { 6.0 } * 8.0 * fps * k
             }
             Format::Gif => px * 0.6 * 8.0 * fps,
+            // uncompressed MXF pictures: their exact size
+            Format::MxfOp1a | Format::MxfOpAtom if let Some(l) = self.mxf_video_codec.uncompressed_layout() => {
+                l.picture_bytes(r.width, r.height) as f64 * 8.0 * fps
+            }
             Format::Wav | Format::Aiff | Format::Flac | Format::Opus | Format::MxfOp1a | Format::MxfOpAtom => 0.0,
             // most frames of real pictures reach the DCI cap of 250 Mbit/s
             Format::Dcp => 200e6,
+            // lossless 10-bit R'G'B' JPEG 2000 is about half the raw rate; lossy the profile's cap
+            Format::Imf if self.imf_lossless => px * 30.0 * fps * 0.5,
+            Format::Imf => {
+                crate::imf_profile(r.width, r.height, r.rate, false).map_or(200e6, |p| cfa4_j2k::ImfProfile::sublevel_bitrate(p.sublevel) as f64 * 0.8)
+            }
         };
         let audio_bps = if self.has_audio() || self.format.is_audio_only() {
             let pcm = r.sample_rate as f64 * r.channels as f64 * f64::from(self.audio.sample_format().bits());
@@ -784,6 +860,9 @@ impl ExportSettings {
     pub fn summary(&self, seq_w: u32, seq_h: u32, seq_rate: FrameRate, seq_sr: u32, duration: Tick) -> Summary {
         if self.format == Format::Dcp && !crate::dcp_out::is_normalized(self) {
             return crate::dcp_out::normalize(self, seq_rate).summary(seq_w, seq_h, seq_rate, seq_sr, duration);
+        }
+        if self.format == Format::Imf && !crate::imf_out::is_normalized(self) {
+            return crate::imf_out::normalize(self, seq_rate).summary(seq_w, seq_h, seq_rate, seq_sr, duration);
         }
         let r = self.resolve(seq_w, seq_h, seq_rate, seq_sr);
         let mbps = |k: u32| format!("{:.2} Mbps", k as f64 / 1000.0);
@@ -858,7 +937,7 @@ impl ExportSettings {
                         Profile::P4444Xq => ", ProRes 4444 XQ",
                     }
                 }
-                Format::DnxHr => v += &format!(", DNxHR {}", if self.dnx_profile.is_empty() { "HQ".into() } else { self.dnx_profile.to_ascii_uppercase() }),
+                Format::DnxHr => v += &format!(", {}", crate::dnx_profile(&self.dnx_profile).name()),
                 Format::Apv => v += &format!(", {}", crate::apv_profile(&self.apv_profile).name()),
                 Format::Cineform => {
                     let mut f = crate::cineform_profile(&self.cineform_profile);
@@ -868,10 +947,13 @@ impl ExportSettings {
                     v += &format!(", {}", crate::cineform_label(f, crate::cineform_quality(&self.cineform_quality)))
                 }
                 Format::Mjpeg | Format::JpegSequence => v += &format!(", quality {}", self.quality),
-                Format::DpxSequence => v += ", 10-bit RGB",
+                Format::DpxSequence => v += &format!(", {}-bit RGB{}", self.dpx_bit_depth, if self.keeps_alpha() { "A" } else { "" }),
                 Format::Dcp => {
                     let res = if crate::DcpResolution::of(self) == crate::DcpResolution::FourK { "4K" } else { "2K" };
                     v += &format!(", JPEG 2000 DCI {res}, 12-bit X'Y'Z'");
+                }
+                Format::Imf => {
+                    v += if self.imf_lossless { ", JPEG 2000 IMF reversible, 10-bit R'G'B' 4:4:4" } else { ", JPEG 2000 IMF lossy, 10-bit R'G'B' 4:4:4" }
                 }
                 Format::ExrSequence => {
                     v += ", 16-bit half float, linear";
@@ -925,6 +1007,7 @@ impl ExportSettings {
                 crate::DcpAspect::Scope => "SMPTE, Scope 2.39:1",
                 crate::DcpAspect::Full => "SMPTE, Full 1.90:1",
             },
+            Format::Imf => "SMPTE ST 2067-21",
             f if f.is_image_sequence() => "Image sequence",
             _ => "",
         };

@@ -25,6 +25,7 @@ Exit status: 0 every fixture passes, 1 at least one fails, 2 the oracle could no
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import sys
 from fractions import Fraction
@@ -47,13 +48,14 @@ class OracleError(RuntimeError):
 def load_otio() -> Any:
     """Import the official library, or explain how to install it."""
     try:
-        import opentimelineio  # optional development dependency, imported only when needed
+        # optional development dependency, imported only when needed (and not known to the type checker
+        # where it is not installed)
+        return importlib.import_module("opentimelineio")
     except ImportError as exc:
         raise OracleError(
             "the opentimelineio package is not installed; install the development extra: "
             "pip install -e '.[otio]'"
         ) from exc
-    return opentimelineio
 
 
 def load_manifest(directory: Path) -> dict[str, Any]:
@@ -127,7 +129,7 @@ def compare(expected: dict[str, Any], observed: dict[str, Any], ticks_per_second
     obs_tracks = observed.get("tracks") or []
     if len(exp_tracks) != len(obs_tracks):
         problems.append(f"track count {len(obs_tracks)} != {len(exp_tracks)}")
-    for ti, (et, ot) in enumerate(zip(exp_tracks, obs_tracks)):
+    for ti, (et, ot) in enumerate(zip(exp_tracks, obs_tracks, strict=False)):
         where = f"track {ti} ({et.get('kind')} {et.get('name')!r})"
         if et.get("kind") != ot.get("kind"):
             problems.append(f"{where}: kind {ot.get('kind')!r}")
@@ -136,7 +138,7 @@ def compare(expected: dict[str, Any], observed: dict[str, Any], ticks_per_second
         e_items, o_items = et.get("items") or [], ot.get("items") or []
         if len(e_items) != len(o_items):
             problems.append(f"{where}: {len(o_items)} items, expected {len(e_items)}")
-        for ii, (ei, oi) in enumerate(zip(e_items, o_items)):
+        for ii, (ei, oi) in enumerate(zip(e_items, o_items, strict=False)):
             at = f"{where} item {ii} ({ei.get('name')!r})"
             if ei.get("name") != oi.get("name"):
                 problems.append(f"{at}: name {oi.get('name')!r}")

@@ -231,7 +231,7 @@ fn frame_hash(f: &VideoFrame) -> u64 {
             planes.iter().for_each(|p| p.hash(&mut h));
             alpha.hash(&mut h);
         }
-        PixelData::Yuv16 { planes, alpha, .. } => {
+        PixelData::Yuv16 { planes, alpha, .. } | PixelData::Rgb16 { planes, alpha, .. } => {
             planes.iter().for_each(|p| p.hash(&mut h));
             alpha.hash(&mut h);
         }

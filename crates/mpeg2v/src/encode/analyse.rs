@@ -294,7 +294,7 @@ impl Motion {
 }
 
 /// The best frame and field (interlaced) predictions of macroblock (`mbx`, `mby`) from `r`.
-fn motions(ctx: &Ctx, r: &Frame, mbx: usize, mby: usize, preds: &[[i32; 2]], frame_src: &Src, field_src: &[Src; 2]) -> (Motion, Option<Motion>) {
+fn motions(ctx: &Ctx<'_>, r: &Frame, mbx: usize, mby: usize, preds: &[[i32; 2]], frame_src: &Src, field_src: &[Src; 2]) -> (Motion, Option<Motion>) {
     let g = Geo::frame(mbx, mby, ctx.cmbh);
     let (mv, sad, cost) = search(ctx.lambda, frame_src, r, &g, preds);
     let frame = Motion { field: false, mv: [mv, [0, 0]], sel: [0, 0], sad, cost };
@@ -387,7 +387,7 @@ fn source_mb(cur: &Frame, mbx: usize, mby: usize, cmbh: usize, y: &mut [u8; 256]
 }
 
 /// Analyse macroblock row `mby`.
-pub(super) fn analyse_row(ctx: &Ctx, mby: usize) -> Vec<Plan> {
+pub(super) fn analyse_row(ctx: &Ctx<'_>, mby: usize) -> Vec<Plan> {
     let mut out: Vec<Plan> = Vec::with_capacity(ctx.mb_width);
     let mut sy = [0u8; 256];
     let mut sc = [[0u8; 128]; 2];

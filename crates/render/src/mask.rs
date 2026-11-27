@@ -167,6 +167,127 @@ pub fn effect_coverage(masks: &[Mask], t: Tick, px_scale: f32, w: usize, h: usiz
     coverage(&prepare(masks, t, px_scale), w, h)
 }
 
+/// A tracked object's mask for one frame, ready to rasterize (OM-A3).
+///
+/// `src` is the binary mask (0 = outside, anything else = inside) of `src_w`×`src_h` pixels, as
+/// `cfa4_project::object::MaskRle::decode` gives it. `feather`, `expansion` (working pixels,
+/// negative shrinks), `opacity` (0..1) and `inverted` mean what they do for a drawn mask.
+#[derive(Clone, Copy, Debug)]
+pub struct ObjectRaster<'a> {
+    pub src: &'a [u8],
+    pub src_w: usize,
+    pub src_h: usize,
+    pub feather: f32,
+    pub expansion: f32,
+    pub opacity: f32,
+    pub inverted: bool,
+}
+
+/// Squared Euclidean distance from every cell to the nearest cell where `seed` is true
+/// (Felzenszwalb–Huttenlocher; exact). Cells with no seed anywhere get [`EDT_FAR`].
+const EDT_FAR: f32 = 1.0e12;
+
+fn edt_1d(f: &[f32], d: &mut [f32], v: &mut [usize], z: &mut [f32]) {
+    let n = f.len();
+    if n == 0 || v.len() < n || z.len() < n + 1 || d.len() < n {
+        return;
+    }
+    let mut k = 0usize;
+    v[0] = 0;
+    z[0] = f32::NEG_INFINITY;
+    z[1] = f32::INFINITY;
+    for q in 1..n {
+        let s = loop {
+            let r = v[k];
+            let s = ((f[q] + (q * q) as f32) - (f[r] + (r * r) as f32)) / (2.0 * (q as f32 - r as f32));
+            if k > 0 && s <= z[k] {
+                k -= 1;
+            } else {
+                break s;
+            }
+        };
+        k += 1;
+        v[k] = q;
+        z[k] = s;
+        z[k + 1] = f32::INFINITY;
+    }
+    k = 0;
+    for (q, out) in d.iter_mut().enumerate().take(n) {
+        while z[k + 1] < q as f32 {
+            k += 1;
+        }
+        let r = v[k];
+        let dq = q as f32 - r as f32;
+        *out = dq * dq + f[r];
+    }
+}
+
+fn edt(seed: &[bool], w: usize, h: usize) -> Vec<f32> {
+    let mut g: Vec<f32> = seed.iter().map(|&s| if s { 0.0 } else { EDT_FAR }).collect();
+    let n = w.max(h);
+    let (mut v, mut z) = (vec![0usize; n], vec![0.0f32; n + 1]);
+    let mut col = vec![0.0f32; h];
+    let mut out = vec![0.0f32; h];
+    for x in 0..w {
+        for y in 0..h {
+            col[y] = g[y * w + x];
+        }
+        edt_1d(&col, &mut out, &mut v, &mut z);
+        for y in 0..h {
+            g[y * w + x] = out[y];
+        }
+    }
+    let mut row_out = vec![0.0f32; w];
+    for y in 0..h {
+        let row = &g[y * w..(y + 1) * w];
+        edt_1d(row, &mut row_out, &mut v, &mut z);
+        g[y * w..(y + 1) * w].copy_from_slice(&row_out);
+    }
+    g
+}
+
+/// Coverage of an object mask over a `w`×`h` working image, or `None` when the inputs do not
+/// describe one (empty size, `src` of the wrong length, sizes whose product overflows or is
+/// unreasonably large).
+///
+/// The mask is resized to `w`×`h` (nearest cell centre; the result is a binary mask), then its
+/// signed distance `sd` to the boundary (positive inside, in working pixels, half a pixel at the
+/// edge cells) goes through the same falloff as a drawn mask, `falloff(sd + expansion, feather)`,
+/// so expansion, feather and inversion behave identically for both kinds of mask.
+pub fn object_coverage(o: &ObjectRaster<'_>, w: usize, h: usize) -> Option<Vec<f32>> {
+    const MAX_PIXELS: usize = 1 << 27;
+    let src_len = o.src_w.checked_mul(o.src_h)?;
+    let dst_len = w.checked_mul(h)?;
+    if src_len == 0 || dst_len == 0 || src_len != o.src.len() || src_len > MAX_PIXELS || dst_len > MAX_PIXELS {
+        return None;
+    }
+    let (feather, expansion) = (if o.feather.is_finite() { o.feather.max(0.0) } else { 0.0 }, if o.expansion.is_finite() { o.expansion } else { 0.0 });
+    let opacity = if o.opacity.is_finite() { o.opacity.clamp(0.0, 1.0) } else { 1.0 };
+    let inside: Vec<bool> = (0..dst_len)
+        .map(|i| {
+            let (x, y) = (i % w, i / w);
+            let sx = (((x as f64 + 0.5) * o.src_w as f64 / w as f64) as usize).min(o.src_w - 1);
+            let sy = (((y as f64 + 0.5) * o.src_h as f64 / h as f64) as usize).min(o.src_h - 1);
+            o.src.get(sy * o.src_w + sx).is_some_and(|&b| b != 0)
+        })
+        .collect();
+    let outside: Vec<bool> = inside.iter().map(|&b| !b).collect();
+    let d_to_outside = edt(&outside, w, h);
+    let d_to_inside = edt(&inside, w, h);
+    let value = |c: f32| opacity * if o.inverted { 1.0 - c } else { c };
+    let band = expansion.abs() + feather.max(1.0) * 0.5 + 1.0;
+    Some(
+        inside
+            .iter()
+            .zip(d_to_outside.iter().zip(&d_to_inside))
+            .map(|(&ins, (&dout, &din))| {
+                let sd = if ins { dout.sqrt() - 0.5 } else { -(din.sqrt() - 0.5) };
+                value(falloff(sd.clamp(-band - 1.0, band + 1.0) + expansion, feather))
+            })
+            .collect(),
+    )
+}
+
 /// `img = lerp(original, img, cov)` on premultiplied pixels.
 pub fn mix(img: &mut Image, original: &Image, cov: &[f32]) {
     img.px.par_chunks_mut(4).zip(original.px.par_chunks(4)).zip(cov.par_iter()).for_each(|((p, o), &c)| {
@@ -186,7 +307,7 @@ pub fn scale_by(img: &mut Image, cov: &[f32]) {
 }
 
 /// Apply an effect limited to its masks (Premiere: a masked effect only applies inside the mask).
-pub fn apply_effect(img: &mut Image, e: &EffectInstance, cx: &crate::effects::FxCtx) {
+pub fn apply_effect(img: &mut Image, e: &EffectInstance, cx: &crate::effects::FxCtx<'_>) {
     if !e.enabled || e.masks.is_empty() {
         crate::effects::apply(img, e, cx);
         return;
@@ -320,6 +441,159 @@ mod tests {
                 let r = coverage_at(&flat, x as f32 + 0.5, y as f32 + 0.5).unwrap();
                 assert!((r - c[y * w + x]).abs() < 1e-5, "({x},{y}) {r} vs {}", c[y * w + x]);
             }
+        }
+    }
+
+    // ---- OM-A3: object masks ----
+
+    fn rect_src(w: usize, h: usize, x0: usize, y0: usize, x1: usize, y1: usize) -> Vec<u8> {
+        (0..w * h).map(|i| u8::from((x0..x1).contains(&(i % w)) && (y0..y1).contains(&(i / w))) * 255).collect()
+    }
+
+    fn raster<'a>(src: &'a [u8], sw: usize, sh: usize) -> ObjectRaster<'a> {
+        ObjectRaster { src, src_w: sw, src_h: sh, feather: 0.0, expansion: 0.0, opacity: 1.0, inverted: false }
+    }
+
+    #[test]
+    fn object_mask_same_size_hard_edge_is_binary() {
+        let src = rect_src(12, 10, 3, 2, 8, 7);
+        let c = object_coverage(&raster(&src, 12, 10), 12, 10).unwrap();
+        for (i, v) in c.iter().enumerate() {
+            let inside = (3..8).contains(&(i % 12)) && (2..7).contains(&(i / 12));
+            assert_eq!(*v, if inside { 1.0 } else { 0.0 }, "pixel {i}");
+        }
+    }
+
+    #[test]
+    fn object_mask_expansion_grows_and_shrinks_by_whole_pixels() {
+        let src = rect_src(20, 20, 8, 8, 12, 12);
+        let mut o = raster(&src, 20, 20);
+        o.expansion = 2.0;
+        let c = object_coverage(&o, 20, 20).unwrap();
+        // 4x4 box grown by 2 on each side: columns/rows 6..14
+        for y in 0..20 {
+            for x in 0..20 {
+                let inside = (6..14).contains(&x) && (6..14).contains(&y);
+                // the corners round off (a distance falloff), so test the straight edges only
+                if (6..14).contains(&x) && (8..12).contains(&y) || (8..12).contains(&x) && (6..14).contains(&y) {
+                    assert_eq!(c[y * 20 + x], 1.0, "({x},{y})");
+                } else if !inside {
+                    assert!(c[y * 20 + x] < 1.0);
+                }
+            }
+        }
+        assert_eq!(c[10 * 20 + 5], 0.0);
+        o.expansion = -1.0;
+        let c = object_coverage(&o, 20, 20).unwrap();
+        assert_eq!(c[10 * 20 + 8], 0.0, "the edge cell is eroded");
+        assert_eq!(c[10 * 20 + 9], 1.0);
+    }
+
+    #[test]
+    fn object_mask_resizes_to_the_working_image() {
+        // left half of an 8x8 mask → left half of a 4x4 image, and of a 16x16 one
+        let src = rect_src(8, 8, 0, 0, 4, 8);
+        for n in [4usize, 16] {
+            let c = object_coverage(&raster(&src, 8, 8), n, n).unwrap();
+            for y in 0..n {
+                for x in 0..n {
+                    assert_eq!(c[y * n + x], if x < n / 2 { 1.0 } else { 0.0 }, "{n}: ({x},{y})");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn object_mask_opacity_and_inversion() {
+        let src = rect_src(6, 6, 2, 2, 4, 4);
+        let mut o = raster(&src, 6, 6);
+        o.opacity = 0.5;
+        let c = object_coverage(&o, 6, 6).unwrap();
+        assert_eq!((c[2 * 6 + 2], c[0]), (0.5, 0.0));
+        o.inverted = true;
+        let c = object_coverage(&o, 6, 6).unwrap();
+        assert_eq!((c[2 * 6 + 2], c[0]), (0.0, 0.5));
+    }
+
+    #[test]
+    fn object_mask_feather_is_a_monotone_distance_falloff_matching_a_drawn_rect() {
+        // the same box as a drawn rectangle: raster and path coverage agree within a fraction of a level
+        let (w, h) = (40usize, 30usize);
+        let src = rect_src(w, h, 10, 8, 30, 22);
+        let mut o = raster(&src, w, h);
+        o.feather = 6.0;
+        let c = object_coverage(&o, w, h).unwrap();
+        let flat = FlatMask {
+            pts: vec![[10.0, 8.0], [30.0, 8.0], [30.0, 22.0], [10.0, 22.0]],
+            feather: 6.0,
+            expansion: 0.0,
+            opacity: 1.0,
+            inverted: false,
+            mode: MaskMode::Add,
+        };
+        let mut worst = 0.0f32;
+        for y in 0..h {
+            for x in 0..w {
+                let want = coverage_at(std::slice::from_ref(&flat), x as f32 + 0.5, y as f32 + 0.5).unwrap();
+                worst = worst.max((c[y * w + x] - want).abs());
+            }
+        }
+        assert!(worst < 0.12, "worst difference {worst}");
+        // monotone away from the edge along a row through the middle
+        let row = &c[15 * w..16 * w];
+        assert!(row[..20].windows(2).all(|p| p[0] <= p[1]));
+    }
+
+    #[test]
+    fn object_mask_degenerate_inputs_are_refused_or_safe() {
+        let src = rect_src(4, 4, 1, 1, 3, 3);
+        let o = raster(&src, 4, 4);
+        assert!(object_coverage(&o, 0, 4).is_none());
+        assert!(object_coverage(&o, 4, 0).is_none());
+        assert!(object_coverage(&o, usize::MAX, 2).is_none(), "size overflow");
+        assert!(object_coverage(&o, 1 << 20, 1 << 20).is_none(), "too large");
+        assert!(object_coverage(&raster(&src, 4, 3), 4, 4).is_none(), "length mismatch");
+        assert!(object_coverage(&raster(&[], 0, 0), 4, 4).is_none());
+        // all outside, all inside, hostile numbers
+        let none = vec![0u8; 16];
+        let all = vec![255u8; 16];
+        for (src, want) in [(&none, 0.0), (&all, 1.0)] {
+            let mut o = raster(src, 4, 4);
+            o.feather = 5.0;
+            let c = object_coverage(&o, 4, 4).unwrap();
+            assert!(c.iter().all(|v| (*v - want).abs() < 1e-6), "{want}: {c:?}");
+        }
+        let mut o = raster(&src, 4, 4);
+        (o.feather, o.expansion, o.opacity) = (f32::NAN, f32::INFINITY, f32::NAN);
+        let c = object_coverage(&o, 4, 4).unwrap();
+        assert!(c.iter().all(|v| v.is_finite() && (0.0..=1.0).contains(v)));
+    }
+
+    #[test]
+    fn object_mask_random_masks_never_panic_and_stay_in_range() {
+        let mut seed = 0x9e37_79b9_7f4a_7c15_u64;
+        let mut next = move || {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            seed
+        };
+        for _ in 0..200 {
+            let (sw, sh) = ((next() % 9 + 1) as usize, (next() % 9 + 1) as usize);
+            let (w, h) = ((next() % 12 + 1) as usize, (next() % 12 + 1) as usize);
+            let src: Vec<u8> = (0..sw * sh).map(|_| (next() % 3 == 0) as u8 * 255).collect();
+            let o = ObjectRaster {
+                src: &src,
+                src_w: sw,
+                src_h: sh,
+                feather: (next() % 20) as f32 - 3.0,
+                expansion: (next() % 21) as f32 - 10.0,
+                opacity: (next() % 120) as f32 / 100.0,
+                inverted: next() % 2 == 0,
+            };
+            let c = object_coverage(&o, w, h).unwrap();
+            assert_eq!(c.len(), w * h);
+            assert!(c.iter().all(|v| v.is_finite() && (0.0..=1.0).contains(v)));
         }
     }
 }

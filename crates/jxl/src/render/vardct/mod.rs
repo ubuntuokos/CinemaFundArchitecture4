@@ -279,7 +279,7 @@ pub(crate) fn render_vardct<S: Sample>(
     Ok(fb)
 }
 
-pub fn copy_lf_dequant<S: Sample>(grid: &mut MutableSubgrid<f32>, quantizer: &Quantizer, m_lf: f32, channel_data: &AlignedGrid<S>, extra_precision: u8) {
+pub fn copy_lf_dequant<S: Sample>(grid: &mut MutableSubgrid<'_, f32>, quantizer: &Quantizer, m_lf: f32, channel_data: &AlignedGrid<S>, extra_precision: u8) {
     debug_assert!(extra_precision < 4);
     assert!(grid.width() >= channel_data.width());
     assert!(grid.height() >= channel_data.height());
@@ -416,8 +416,8 @@ pub fn chroma_from_luma_lf(coeff_xyb: [&mut AlignedGrid<f32>; 3], lf_chan_corr: 
 
 pub fn chroma_from_luma_hf_grouped(
     coeff_xyb: &mut [MutableSubgrid<'_, f32>; 3],
-    x_from_y: &SharedSubgrid<i32>,
-    b_from_y: &SharedSubgrid<i32>,
+    x_from_y: &SharedSubgrid<'_, i32>,
+    b_from_y: &SharedSubgrid<'_, i32>,
     lf_chan_corr: &LfChannelCorrelation,
 ) {
     let [coeff_x, coeff_y, coeff_b] = coeff_xyb;
@@ -528,7 +528,7 @@ struct VarblockInfo {
 }
 
 #[inline(always)]
-fn for_each_varblocks(block_info: &SharedSubgrid<BlockInfo>, shift: ChannelShift, mut f: impl FnMut(VarblockInfo)) {
+fn for_each_varblocks(block_info: &SharedSubgrid<'_, BlockInfo>, shift: ChannelShift, mut f: impl FnMut(VarblockInfo)) {
     let w8 = block_info.width();
     let h8 = block_info.height();
     let vshift = shift.vshift();

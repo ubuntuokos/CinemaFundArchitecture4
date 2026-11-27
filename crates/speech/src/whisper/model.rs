@@ -39,7 +39,7 @@ struct Attention {
 }
 
 impl Attention {
-    fn new(d: usize, heads: usize, vb: VarBuilder) -> Result<Self> {
+    fn new(d: usize, heads: usize, vb: VarBuilder<'_>) -> Result<Self> {
         Ok(Self {
             q: candle_nn::linear(d, d, vb.pp("q_proj"))?,
             k: candle_nn::linear_no_bias(d, d, vb.pp("k_proj"))?,
@@ -110,7 +110,7 @@ struct Block {
 }
 
 impl Block {
-    fn new(d: usize, heads: usize, cross: bool, vb: VarBuilder) -> Result<Self> {
+    fn new(d: usize, heads: usize, cross: bool, vb: VarBuilder<'_>) -> Result<Self> {
         let cross = if cross {
             Some((Attention::new(d, heads, vb.pp("encoder_attn"))?, candle_nn::layer_norm(d, 1e-5, vb.pp("encoder_attn_layer_norm"))?))
         } else {
@@ -156,7 +156,7 @@ pub struct Encoder {
 }
 
 impl Encoder {
-    fn new(cfg: &Config, vb: VarBuilder) -> Result<Self> {
+    fn new(cfg: &Config, vb: VarBuilder<'_>) -> Result<Self> {
         let d = cfg.d_model;
         let c1 = Conv1dConfig { padding: 1, stride: 1, ..Default::default() };
         let c2 = Conv1dConfig { padding: 1, stride: 2, ..Default::default() };
@@ -195,7 +195,7 @@ pub struct Decoder {
 }
 
 impl Decoder {
-    fn new(cfg: &Config, vb: VarBuilder) -> Result<Self> {
+    fn new(cfg: &Config, vb: VarBuilder<'_>) -> Result<Self> {
         let d = cfg.d_model;
         let tok = candle_nn::embedding(cfg.vocab_size, d, vb.pp("embed_tokens"))?;
         Ok(Self {

@@ -461,7 +461,7 @@ fn source_tc_warning(p: &Parsed) -> bool {
     p.events.iter().flat_map(|e| &e.lines).any(|l| l.reel != "BL" && l.tcs[0].h > 0)
 }
 
-fn import_event(ctx: &mut Ctx, ev: &Event, report: &mut Report) {
+fn import_event(ctx: &mut Ctx<'_>, ev: &Event, report: &mut Report) {
     let df = ev.df;
     let m2_for = |reel: &str| ev.m2.iter().find(|(r, _)| r == reel).map(|(_, f)| *f);
     match ev.lines.as_slice() {
@@ -548,7 +548,7 @@ fn import_event(ctx: &mut Ctx, ev: &Event, report: &mut Report) {
     }
 }
 
-fn lay_cut(ctx: &mut Ctx, ev: &Event, l: &Line, video_base: usize, df: bool, m2: &Option<f64>) {
+fn lay_cut(ctx: &mut Ctx<'_>, ev: &Event, l: &Line, video_base: usize, df: bool, m2: &Option<f64>) {
     if l.reel.eq_ignore_ascii_case("BL") {
         if video_base > 0 || !l.chans.contains(&Ch::V) {
             return;
@@ -985,7 +985,7 @@ pub(crate) fn export(p: &Project, seq_id: ItemId, opts: &ExportOptions, report: 
 }
 
 /// Source frame for a line position (BL lines are plain frame counts from 0).
-fn src_tc(x: &Exp, l: &OutLine, t: Tick) -> i64 {
+fn src_tc(x: &Exp<'_>, l: &OutLine, t: Tick) -> i64 {
     match l.item {
         Some(i) if l.reel != "BL" => x.src_frames(i, t),
         _ => frames_round(x.rate, t),

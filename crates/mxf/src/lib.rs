@@ -24,12 +24,21 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 mod anc;
+pub mod as02;
+pub mod as02_version;
+pub mod as03;
+pub mod as07;
+pub mod as10;
+pub mod as11;
+pub mod as11_shim;
+pub mod crypt;
 mod essence;
 mod file;
 mod index;
 mod klv;
 mod meta;
 mod peek;
+pub mod regxml;
 mod source;
 mod timed_text;
 pub mod uncompressed;
@@ -39,9 +48,13 @@ pub mod write;
 #[doc(hidden)]
 pub mod testing;
 
-pub use anc::{AncData, AncPacket, MAX_ANC_ELEMENT_BYTES, MAX_ANC_FRAMES, has_anc, parse_anc_element, read_anc};
+pub use anc::{
+    AncData, AncPacket, Cea608Pair, MAX_ANC_ELEMENT_BYTES, MAX_ANC_FRAMES, ViLine, anc_element, has_anc, parse_anc_element, parse_vi_element, read_anc,
+};
 pub use essence::{Codec, PictureInfo, SoundFormat, SoundInfo, aes3_element_samples, decode_pcm};
-pub use file::{Chunk, EssenceTrack, MxfFile, OperationalPattern, Partition, PartitionKind, Sample, Timecode, TrackKind, Wrapping, open};
+pub use file::{
+    Chunk, EssenceTrack, MxfFile, OperationalPattern, Partition, PartitionKind, PresentationOrder, Sample, Timecode, TrackKind, Wrapping, open, open_with_order,
+};
 pub use index::{IndexEntry, IndexSegment};
 pub use klv::{Rational, Ul};
 pub use peek::{HeaderPeek, peek};
@@ -50,8 +63,9 @@ pub use timed_text::{AncillaryResource, MAX_RESOURCE_BYTES, Region, TimedText, i
 pub use uncompressed::UncompressedLayout;
 pub use write::{
     CodedKind, ColorSpace, FrameInfo, IabDesc, J2kSubDescriptor, McaLabel, McaTitles, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc,
-    SoundDesc, StartTimecode, Timestamp, Umid, WriterConfig, encode_pcm, write_opatom_pcm,
+    SoundDesc, StartTimecode, TimedTextConfig, TimedTextResource, Timestamp, Umid, WriterConfig, encode_pcm, write_opatom_pcm, write_timed_text,
 };
+pub use write::{ComponentSpec, VersionClipSpec, VersionConfig, VersionTrackKind, VersionTrackSpec, write_version};
 
 use std::fmt;
 use std::io;
@@ -67,6 +81,8 @@ pub enum Error {
     Invalid(String),
     /// Valid but unsupported (e.g. essence stored in another file).
     Unsupported(String),
+    /// Encrypted essence (ST 429-6) whose content key (this Key ID) is not loaded: a KDM is needed.
+    Encrypted(String),
 }
 
 impl fmt::Display for Error {
@@ -76,6 +92,7 @@ impl fmt::Display for Error {
             Error::NotMxf(s) => write!(f, "not an MXF file: {s}"),
             Error::Invalid(s) => write!(f, "invalid MXF: {s}"),
             Error::Unsupported(s) => write!(f, "unsupported MXF: {s}"),
+            Error::Encrypted(id) => write!(f, "encrypted MXF: load the KDM with content key {id}"),
         }
     }
 }

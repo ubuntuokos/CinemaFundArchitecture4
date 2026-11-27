@@ -65,7 +65,7 @@ pub struct Matrixing {
 }
 
 impl Matrixing {
-    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let current_substream_index = state.substream_index;
         let this_substream_info = state.substream_info;
         let audio_sampling_frequency_1 = state.audio_sampling_frequency_1;

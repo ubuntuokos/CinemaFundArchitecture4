@@ -206,7 +206,7 @@ impl<'a> TileDecoder<'a> {
         true
     }
 
-    fn decode_partition(&mut self, bd: &mut BoolDecoder, r: usize, c: usize, bsize: u8) {
+    fn decode_partition(&mut self, bd: &mut BoolDecoder<'_>, r: usize, c: usize, bsize: u8) {
         if r >= self.mi_rows || c >= self.mi_cols {
             return;
         }
@@ -265,7 +265,7 @@ impl<'a> TileDecoder<'a> {
         }
     }
 
-    fn decode_block(&mut self, bd: &mut BoolDecoder, r: usize, c: usize, size: u8) {
+    fn decode_block(&mut self, bd: &mut BoolDecoder<'_>, r: usize, c: usize, size: u8) {
         let mut b = Blk { r, c, size, avail_u: r > 0, avail_l: c > self.strip.mi_col_start, ..Default::default() };
         // Chroma block size must be valid (7.4.3); treat violations as a damaged stream.
         if size >= BLOCK_8X8 && SS_SIZE_LOOKUP[size as usize][self.ss_x][self.ss_y] == BLOCK_INVALID {
@@ -311,7 +311,7 @@ impl<'a> TileDecoder<'a> {
 
     // ---------------------------------------------------------------- mode info (6.4.5 - 6.4.20)
 
-    fn intra_frame_mode_info(&mut self, bd: &mut BoolDecoder, b: &mut Blk) {
+    fn intra_frame_mode_info(&mut self, bd: &mut BoolDecoder<'_>, b: &mut Blk) {
         // intra_segment_id
         b.seg_id = if self.s.seg.enabled && self.s.seg.update_map { bd.read_tree(&SEGMENT_TREE, &self.s.seg.tree_probs) } else { 0 };
         self.read_skip(bd, b);
@@ -354,7 +354,7 @@ impl<'a> TileDecoder<'a> {
         b.uv_mode = bd.read_tree(&INTRA_MODE_TREE, &KF_UV_MODE_PROBS[o..o + 9]);
     }
 
-    fn read_skip(&mut self, bd: &mut BoolDecoder, b: &mut Blk) {
+    fn read_skip(&mut self, bd: &mut BoolDecoder<'_>, b: &mut Blk) {
         if self.s.seg.feature_active(b.seg_id, SEG_LVL_SKIP) {
             b.skip = true;
         } else {
@@ -372,7 +372,7 @@ impl<'a> TileDecoder<'a> {
         }
     }
 
-    fn read_tx_size(&mut self, bd: &mut BoolDecoder, b: &mut Blk, allow_select: bool) {
+    fn read_tx_size(&mut self, bd: &mut BoolDecoder<'_>, b: &mut Blk, allow_select: bool) {
         let max_tx = MAX_TXSIZE[b.size as usize];
         if allow_select && self.h.tx_mode == TX_MODE_SELECT && b.size >= BLOCK_8X8 {
             let mut above = max_tx;
@@ -410,7 +410,7 @@ impl<'a> TileDecoder<'a> {
         }
     }
 
-    fn inter_frame_mode_info(&mut self, bd: &mut BoolDecoder, b: &mut Blk) {
+    fn inter_frame_mode_info(&mut self, bd: &mut BoolDecoder<'_>, b: &mut Blk) {
         b.left_ref = if b.avail_l { self.mi_at(b.r, b.c - 1).ref_frame } else { [INTRA_FRAME, NONE] };
         b.above_ref = if b.avail_u { self.mi_at(b.r - 1, b.c).ref_frame } else { [INTRA_FRAME, NONE] };
         b.left_intra = b.left_ref[0] <= INTRA_FRAME;
@@ -447,7 +447,7 @@ impl<'a> TileDecoder<'a> {
         seg
     }
 
-    fn inter_segment_id(&mut self, bd: &mut BoolDecoder, b: &mut Blk) {
+    fn inter_segment_id(&mut self, bd: &mut BoolDecoder<'_>, b: &mut Blk) {
         let seg = self.s.seg;
         if !seg.enabled {
             b.seg_id = 0;
@@ -471,7 +471,7 @@ impl<'a> TileDecoder<'a> {
         }
     }
 
-    fn read_is_inter(&mut self, bd: &mut BoolDecoder, b: &mut Blk) {
+    fn read_is_inter(&mut self, bd: &mut BoolDecoder<'_>, b: &mut Blk) {
         if self.s.seg.feature_active(b.seg_id, SEG_LVL_REF_FRAME) {
             b.is_inter = self.s.seg.feature_data[b.seg_id as usize][SEG_LVL_REF_FRAME] != INTRA_FRAME as i16;
         } else {
@@ -489,7 +489,7 @@ impl<'a> TileDecoder<'a> {
         }
     }
 
-    fn intra_block_mode_info(&mut self, bd: &mut BoolDecoder, b: &mut Blk) {
+    fn intra_block_mode_info(&mut self, bd: &mut BoolDecoder<'_>, b: &mut Blk) {
         b.ref_frame = [INTRA_FRAME, NONE];
         if b.size >= BLOCK_8X8 {
             let ctx = SIZE_GROUP[b.size as usize] as usize;
@@ -528,7 +528,7 @@ impl<'a> TileDecoder<'a> {
         }
     }
 
-    fn inter_block_mode_info(&mut self, bd: &mut BoolDecoder, b: &mut Blk) {
+    fn inter_block_mode_info(&mut self, bd: &mut BoolDecoder<'_>, b: &mut Blk) {
         self.read_ref_frames(bd, b);
         let is_compound = b.ref_frame[1] > INTRA_FRAME;
         if is_compound {
@@ -610,7 +610,7 @@ impl<'a> TileDecoder<'a> {
         }
     }
 
-    fn read_ref_frames(&mut self, bd: &mut BoolDecoder, b: &mut Blk) {
+    fn read_ref_frames(&mut self, bd: &mut BoolDecoder<'_>, b: &mut Blk) {
         let seg = self.s.seg;
         if seg.feature_active(b.seg_id, SEG_LVL_REF_FRAME) {
             b.ref_frame = [(seg.feature_data[b.seg_id as usize][SEG_LVL_REF_FRAME] as i8).clamp(LAST_FRAME, ALTREF_FRAME), NONE];
@@ -838,7 +838,7 @@ impl<'a> TileDecoder<'a> {
     }
 
     /// assign_mv (6.4.18): returns Mv[0..2].
-    fn assign_mv(&mut self, bd: &mut BoolDecoder, b: &Blk, is_compound: bool) -> [Mv; 2] {
+    fn assign_mv(&mut self, bd: &mut BoolDecoder<'_>, b: &Blk, is_compound: bool) -> [Mv; 2] {
         let mut mv = [Mv::ZERO; 2];
         for i in 0..1 + is_compound as usize {
             mv[i] = match b.y_mode {
@@ -851,7 +851,7 @@ impl<'a> TileDecoder<'a> {
         mv
     }
 
-    fn read_mv(&mut self, bd: &mut BoolDecoder, r: usize) -> Mv {
+    fn read_mv(&mut self, bd: &mut BoolDecoder<'_>, r: usize) -> Mv {
         let use_hp = self.h.allow_high_precision_mv && use_mv_hp(self.best_mv[r]);
         let joint = bd.read_tree(&MV_JOINT_TREE, &self.fc.mv_joint);
         if self.s.counting {
@@ -867,7 +867,7 @@ impl<'a> TileDecoder<'a> {
         Mv::new(self.best_mv[r].row as i32 + diff[0], self.best_mv[r].col as i32 + diff[1])
     }
 
-    fn read_mv_component(&mut self, bd: &mut BoolDecoder, comp: usize, use_hp: bool) -> i32 {
+    fn read_mv_component(&mut self, bd: &mut BoolDecoder<'_>, comp: usize, use_hp: bool) -> i32 {
         let fc = self.fc;
         let counting = self.s.counting;
         let counts = &mut self.strip.counts;

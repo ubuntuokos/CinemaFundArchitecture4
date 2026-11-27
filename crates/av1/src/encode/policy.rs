@@ -279,7 +279,7 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
         v
     }
 
-    fn answer(&mut self, enc: &mut TileEnc, e: Elem) -> u32 {
+    fn answer(&mut self, enc: &mut TileEnc<'_>, e: Elem) -> u32 {
         let p = enc.plan;
         match e {
             Elem::Other | Elem::CflSign | Elem::CflAlphaU | Elem::CflAlphaV => 0,
@@ -347,7 +347,7 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
 
     /// Residual of the transform block at (x, y) of `plane` against the prediction in the current
     /// frame (zero outside the picture), into `enc.diff` (stride w).
-    pub(crate) fn residual_of(&self, enc: &mut TileEnc, plane: usize, x: usize, y: usize, w: usize, h: usize) {
+    pub(crate) fn residual_of(&self, enc: &mut TileEnc<'_>, plane: usize, x: usize, y: usize, w: usize, h: usize) {
         let src = &enc.src.planes[plane];
         let cur = &self.t.cur.planes[plane];
         let vw = enc.src.width[plane];
@@ -391,7 +391,7 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
     /// Rate-distortion cost (squared error plus `lambda_sse` per bit) of coding the residual in
     /// `enc.diff` (one transform block of `tx_sz`, row stride its width) with DCT_DCT,
     /// with an estimated coefficient rate.
-    pub(crate) fn rd_residual(&self, enc: &mut TileEnc, tx_sz: usize, round: f32) -> u64 {
+    pub(crate) fn rd_residual(&self, enc: &mut TileEnc<'_>, tx_sz: usize, round: f32) -> u64 {
         let Some(f) = fwd(tx_sz, DCT_DCT) else { return u64::MAX };
         let n = f.tw * f.th;
         enc.fco.resize(n, 0.0);
@@ -416,7 +416,7 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
     }
 
     /// Quantize the residual of a transform block into `enc.coef`; returns eob.
-    pub(crate) fn quantize_tx(&mut self, enc: &mut TileEnc, plane: usize, x: usize, y: usize, tx_sz: usize, tx_type: usize) -> usize {
+    pub(crate) fn quantize_tx(&mut self, enc: &mut TileEnc<'_>, plane: usize, x: usize, y: usize, tx_sz: usize, tx_type: usize) -> usize {
         let Some(f) = fwd(tx_sz, tx_type) else { return 0 };
         self.residual_of(enc, plane, x, y, f.w, f.h);
         let n = f.tw * f.th;
@@ -538,7 +538,7 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
         self.enc = Some(enc);
     }
 
-    fn plan_block(&mut self, enc: &mut TileEnc) -> Plan {
+    fn plan_block(&mut self, enc: &mut TileEnc<'_>) -> Plan {
         let lambda = enc.fe.lambda_sse;
         let lam = |bits: u32| -> u64 { (lambda * bits as f64 / 256.0) as u64 };
         let key = self.fs.fh.frame_is_intra;
@@ -589,13 +589,13 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
     }
 
     /// SATD of the source against the current frame over the block's luma (visible part).
-    fn satd_luma(&self, enc: &mut TileEnc, x: usize, y: usize, w: usize, h: usize) -> u64 {
+    fn satd_luma(&self, enc: &mut TileEnc<'_>, x: usize, y: usize, w: usize, h: usize) -> u64 {
         self.residual_of(enc, 0, x, y, w, h);
         satd(&enc.diff, w, w, h)
     }
 
     /// The best intra modes for the block, with their cost.
-    fn plan_intra(&mut self, enc: &mut TileEnc) -> (u64, Plan) {
+    fn plan_intra(&mut self, enc: &mut TileEnc<'_>) -> (u64, Plan) {
         let lambda = enc.fe.lambda;
         let lam = |bits: u32| -> u64 { (lambda * bits as f64 / 256.0) as u64 };
         let key = self.fs.fh.frame_is_intra;
@@ -716,7 +716,7 @@ impl<S: SymbolIo> TileDecoder<'_, '_, S> {
     }
 
     /// Whether the planned block quantizes to nothing (then it is coded as skip).
-    fn can_skip(&mut self, enc: &mut TileEnc, plan: &Plan) -> bool {
+    fn can_skip(&mut self, enc: &mut TileEnc<'_>, plan: &Plan) -> bool {
         let ms = self.b.mi_size;
         let tx = MAX_TX_SIZE_RECT[ms] as usize;
         self.b.tx_size = tx;
@@ -807,7 +807,7 @@ fn coef_bits(l: f32) -> f64 {
     256.0 * base
 }
 
-fn level(enc: &TileEnc, pos: usize) -> u32 {
+fn level(enc: &TileEnc<'_>, pos: usize) -> u32 {
     enc.coef.get(pos).map_or(0, |v| v.unsigned_abs())
 }
 

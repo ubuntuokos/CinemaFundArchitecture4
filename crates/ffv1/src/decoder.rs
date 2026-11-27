@@ -122,7 +122,7 @@ fn sign_extend(v: i32, bits: u32) -> i32 {
 
 /// Figure 26 / 27: a signed Golomb Rice code.
 #[inline]
-fn get_sr_golomb(br: &mut BitReader, k: u32, bits: u32) -> i32 {
+fn get_sr_golomb(br: &mut BitReader<'_>, k: u32, bits: u32) -> i32 {
     let mut v: u32 = 0;
     let mut found = false;
     for prefix in 0..12u32 {
@@ -139,7 +139,7 @@ fn get_sr_golomb(br: &mut BitReader, k: u32, bits: u32) -> i32 {
 }
 
 /// Section 3.8.2.4: `get_vlc_symbol`.
-fn get_vlc_symbol(br: &mut BitReader, s: &mut VlcState, bits: u32) -> i32 {
+fn get_vlc_symbol(br: &mut BitReader<'_>, s: &mut VlcState, bits: u32) -> i32 {
     let mut i = i64::from(s.count);
     let mut k = 0u32;
     while i < i64::from(s.error_sum) && k < 31 {
@@ -170,7 +170,7 @@ fn get_vlc_symbol(br: &mut BitReader, s: &mut VlcState, bits: u32) -> i32 {
 }
 
 /// One `Line( p, y )`: decodes `lines.cur` from the rows above.
-fn decode_line(coder: &mut Coder, lines: &mut Lines, g: &mut GroupState, run: &mut RunState, c: &LineCtx) -> Result<()> {
+fn decode_line(coder: &mut Coder<'_>, lines: &mut Lines, g: &mut GroupState, run: &mut RunState, c: &LineCtx<'_>) -> Result<()> {
     let w = lines.w;
     let mask = ((1i64 << c.bits) - 1) as i32;
     let [q0, q1, q2, q3, q4] = c.tables;
@@ -363,10 +363,10 @@ impl Decoder {
     }
 
     /// Section 4.6 and the slice's content (version 3).
-    fn decode_slice(&mut self, p: &Parameters, mut rc: RangeDecoder, bytes: &[u8], key: bool, pic: &mut Picture) -> Result<()> {
+    fn decode_slice(&mut self, p: &Parameters, mut rc: RangeDecoder<'_>, bytes: &[u8], key: bool, pic: &mut Picture) -> Result<()> {
         let tables = &p.states;
         let mut st = [128u8; CONTEXT_SIZE];
-        let mut ur = |rc: &mut RangeDecoder| -> Result<usize> {
+        let mut ur = |rc: &mut RangeDecoder<'_>| -> Result<usize> {
             usize::try_from(rc.get_symbol(tables, &mut st, false)).map_err(|_| Error::Invalid("negative slice header field".into()))
         };
         let sx = ur(&mut rc)?;
@@ -399,7 +399,7 @@ impl Decoder {
     fn decode_slice_content(
         &mut self,
         p: &Parameters,
-        mut rc: RangeDecoder,
+        mut rc: RangeDecoder<'_>,
         bytes: &[u8],
         index: usize,
         rect: SliceRect,
@@ -450,7 +450,7 @@ impl Decoder {
     }
 
     /// YCbCr: plane by plane, line by line (section 4.7).
-    fn decode_ycbcr(&self, p: &Parameters, coder: &mut Coder, state: &mut SliceState, r: SliceRect, pic: &mut Picture) -> Result<()> {
+    fn decode_ycbcr(&self, p: &Parameters, coder: &mut Coder<'_>, state: &mut SliceState, r: SliceRect, pic: &mut Picture) -> Result<()> {
         let (cw, ch) = self.chroma_size(p);
         let fw = self.width as usize;
         let (hs, vs) = (p.log2_h_chroma_subsample, p.log2_v_chroma_subsample);
@@ -491,7 +491,7 @@ impl Decoder {
 
     /// RGB through the JPEG 2000 RCT: line by line, the planes of each line in turn (sections
     /// 3.7.2 and 4.7).
-    fn decode_rct(&self, p: &Parameters, coder: &mut Coder, state: &mut SliceState, r: SliceRect, pic: &mut Picture) -> Result<()> {
+    fn decode_rct(&self, p: &Parameters, coder: &mut Coder<'_>, state: &mut SliceState, r: SliceRect, pic: &mut Picture) -> Result<()> {
         let bits = p.bits_per_raw_sample;
         let count = p.primary_color_count();
         let mut lines: Vec<Lines> = (0..count).map(|_| Lines::new(r.w)).collect();

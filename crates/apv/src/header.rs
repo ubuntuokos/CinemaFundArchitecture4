@@ -172,7 +172,7 @@ pub fn parse_au_pbus(data: &[u8]) -> Result<Vec<PbuSlice<'_>>> {
 }
 
 /// Read `byte_alignment()` and verify all alignment bits are zero (RFC 9924 §5.3.17).
-pub fn read_byte_alignment(r: &mut BitReader) -> Result<()> {
+pub fn read_byte_alignment(r: &mut BitReader<'_>) -> Result<()> {
     while !r.is_byte_aligned() {
         let bit = r.read_bit().map_err(|_| Error::Truncated)?;
         if bit {

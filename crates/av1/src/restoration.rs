@@ -131,7 +131,7 @@ pub(crate) fn loop_restoration(fs: &FrameState, cur: &FrameBuf, cdef: &FrameBuf,
 }
 
 #[allow(clippy::too_many_arguments)]
-fn wiener(fs: &FrameState, ctx: &LrCtx, out: &mut RowBand, plane: usize, ui: usize, x: i32, y: i32, w: i32, h: i32, bd: u32) {
+fn wiener(fs: &FrameState, ctx: &LrCtx<'_>, out: &mut RowBand<'_>, plane: usize, ui: usize, x: i32, y: i32, w: i32, h: i32, bd: u32) {
     let round0: u32 = if bd == 12 { 5 } else { 3 };
     let round1: u32 = if bd == 12 { 9 } else { 11 };
     let coef = &fs.lr.lr_wiener[plane][ui];
@@ -175,7 +175,7 @@ fn wiener(fs: &FrameState, ctx: &LrCtx, out: &mut RowBand, plane: usize, ui: usi
 }
 
 #[allow(clippy::too_many_arguments)]
-fn self_guided(fs: &FrameState, ctx: &LrCtx, out: &mut RowBand, plane: usize, ui: usize, x: i32, y: i32, w: i32, h: i32, bd: u32) {
+fn self_guided(fs: &FrameState, ctx: &LrCtx<'_>, out: &mut RowBand<'_>, plane: usize, ui: usize, x: i32, y: i32, w: i32, h: i32, bd: u32) {
     let set = fs.lr.lr_sgr_set[plane][ui] as usize;
     let mut flt0 = [[0i32; 4]; 4];
     let mut flt1 = [[0i32; 4]; 4];
@@ -207,7 +207,7 @@ fn round2_64(x: i64, n: u32) -> i64 {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn box_filter(ctx: &LrCtx, x: i32, y: i32, w: i32, h: i32, set: usize, pass: usize, bd: u32, f: &mut [[i32; 4]; 4]) {
+fn box_filter(ctx: &LrCtx<'_>, x: i32, y: i32, w: i32, h: i32, set: usize, pass: usize, bd: u32, f: &mut [[i32; 4]; 4]) {
     let r = SGR_PARAMS[set][pass * 2] as i32;
     if r == 0 {
         return;

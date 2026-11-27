@@ -1,0 +1,6 @@
+{
+  "name": "error-nested-float",
+  "input": "{\"a\":[{\"b\":0.1}]}",
+  "event": true,
+  "error": "AUDIT_FLOAT_FORBIDDEN"
+}

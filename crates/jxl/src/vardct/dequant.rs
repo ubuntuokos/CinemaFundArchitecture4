@@ -372,13 +372,13 @@ impl<'a, 'pool, 'tracker> DequantMatrixSetParams<'a, 'pool, 'tracker> {
 impl Bundle<DequantMatrixSetParams<'_, '_, '_>> for DequantMatrixParams {
     type Error = crate::vardct::Error;
 
-    fn parse(bitstream: &mut Bitstream, params: DequantMatrixSetParams) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, params: DequantMatrixSetParams<'_, '_, '_>) -> Result<Self> {
         use DequantMatrixParamsEncoding::*;
 
         let span = crate::tracing::span!(crate::tracing::Level::TRACE, "DequantMatrixParams::parse", dct_select = format_args!("{:?}", params.dct_select),);
         let _guard = span.enter();
 
-        fn read_fixed<const N: usize>(bitstream: &mut Bitstream) -> Result<[[f32; N]; 3]> {
+        fn read_fixed<const N: usize>(bitstream: &mut Bitstream<'_>) -> Result<[[f32; N]; 3]> {
             let mut out = [[0.0f32; N]; 3];
             for val in out.iter_mut().flatten() {
                 *val = bitstream.read_f16_as_f32()?;
@@ -386,7 +386,7 @@ impl Bundle<DequantMatrixSetParams<'_, '_, '_>> for DequantMatrixParams {
             Ok(out)
         }
 
-        fn read_dct_params(bitstream: &mut Bitstream) -> Result<[Vec<f32>; 3]> {
+        fn read_dct_params(bitstream: &mut Bitstream<'_>) -> Result<[Vec<f32>; 3]> {
             let num_params = bitstream.read_bits(4)? as usize + 1;
             let mut params = [vec![0.0f32; num_params], vec![0.0f32; num_params], vec![0.0f32; num_params]];
             for val in params.iter_mut().flatten() {
@@ -465,7 +465,7 @@ pub struct DequantMatrixSet {
 impl Bundle<DequantMatrixSetParams<'_, '_, '_>> for DequantMatrixSet {
     type Error = crate::vardct::Error;
 
-    fn parse(bitstream: &mut Bitstream, params: DequantMatrixSetParams) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, params: DequantMatrixSetParams<'_, '_, '_>) -> Result<Self> {
         use TransformType::*;
         const DCT_SELECT_LIST: [TransformType; 17] =
             [Dct8, Hornuss, Dct2, Dct4, Dct16, Dct32, Dct8x16, Dct8x32, Dct16x32, Dct4x8, Afv0, Dct64, Dct32x64, Dct128, Dct64x128, Dct256, Dct128x256];

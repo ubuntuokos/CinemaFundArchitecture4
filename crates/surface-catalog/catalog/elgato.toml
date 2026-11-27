@@ -1,0 +1,361 @@
+# Elgato Stream Deck. Plan §2: goal FULL (Neo, Modules: BEST_EFFORT), adapter `elgato` (a child
+# process on rust-elgato-streamdeck, MPL-2.0; it links hidapi, so it never runs inside `serve`).
+# USB ids: elgato-streamdeck 0.14.0 `src/info.rs` (CONFIRMED from the adapter source, M0 audit §5).
+# Phase: M2 by default, but the first M2 model is the AJAZZ AKP153E (owner, 2026-11-13); Elgato
+# models follow when a device or a tester is available (plan §1.3).
+format = "cfa4-surface-catalog"
+version = 1
+family = "elgato"
+
+[[model]]
+id = "elgato.stream-deck-original"
+vendor = "Elgato"
+name = "Stream Deck (Original)"
+kind = "lcd_keypad"
+goal = "FULL"
+adapter = "elgato"
+phase = "M2"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x0060, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 15
+rows = 3
+columns = 5
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-original-v2"
+vendor = "Elgato"
+name = "Stream Deck (Original V2)"
+kind = "lcd_keypad"
+goal = "FULL"
+adapter = "elgato"
+phase = "M2"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x006d, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 15
+rows = 3
+columns = 5
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-mk2"
+vendor = "Elgato"
+name = "Stream Deck MK.2"
+kind = "lcd_keypad"
+goal = "FULL"
+adapter = "elgato"
+phase = "M2"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x0080, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 15
+rows = 3
+columns = 5
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-mk2-scissor"
+vendor = "Elgato"
+name = "Stream Deck MK.2 (scissor keys)"
+kind = "lcd_keypad"
+goal = "FULL"
+adapter = "elgato"
+phase = "M2"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x00a5, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 15
+rows = 3
+columns = 5
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-mini"
+vendor = "Elgato"
+name = "Stream Deck Mini"
+kind = "lcd_keypad"
+goal = "FULL"
+adapter = "elgato"
+phase = "M2"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x0063, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 6
+rows = 2
+columns = 3
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-mini-mk2"
+vendor = "Elgato"
+name = "Stream Deck Mini MK2"
+kind = "lcd_keypad"
+goal = "FULL"
+adapter = "elgato"
+phase = "M2"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x0090, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 6
+rows = 2
+columns = 3
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-mini-discord"
+vendor = "Elgato"
+name = "Stream Deck Mini (Discord)"
+kind = "lcd_keypad"
+goal = "FULL"
+adapter = "elgato"
+phase = "M2"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x00b3, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 6
+rows = 2
+columns = 3
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-xl"
+vendor = "Elgato"
+name = "Stream Deck XL"
+kind = "lcd_keypad"
+goal = "FULL"
+adapter = "elgato"
+phase = "M2"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x006c, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 32
+rows = 4
+columns = 8
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-xl-v2"
+vendor = "Elgato"
+name = "Stream Deck XL V2"
+kind = "lcd_keypad"
+goal = "FULL"
+adapter = "elgato"
+phase = "M2"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x008f, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 32
+rows = 4
+columns = 8
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-pedal"
+vendor = "Elgato"
+name = "Stream Deck Pedal"
+kind = "pedal"
+goal = "FULL"
+adapter = "elgato"
+phase = "M2"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x0086, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "pedals"
+type = "pedal"
+count = 3
+features = { press = "UNTESTED", release = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-plus"
+vendor = "Elgato"
+name = "Stream Deck +"
+kind = "lcd_keypad"
+goal = "FULL"
+adapter = "elgato"
+phase = "M2"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x0084, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 8
+rows = 2
+columns = 4
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model.controls]]
+id = "dials"
+type = "encoder"
+count = 4
+features = { turn = "UNTESTED", press = "UNTESTED", release = "UNTESTED", led = "NOT_APPLICABLE" }
+
+[[model.controls]]
+id = "strip"
+type = "touch_strip"
+features = { tap = "UNTESTED", drag = "UNTESTED", image = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-plus-xl"
+vendor = "Elgato"
+name = "Stream Deck + XL"
+kind = "lcd_keypad"
+goal = "FULL"
+adapter = "elgato"
+phase = "M6"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x00c6, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model]]
+id = "elgato.stream-deck-neo"
+vendor = "Elgato"
+name = "Stream Deck Neo"
+kind = "lcd_keypad"
+goal = "BEST_EFFORT"
+adapter = "elgato"
+phase = "M6"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x009a, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 8
+rows = 2
+columns = 4
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-mini-mk2-module"
+vendor = "Elgato"
+name = "Stream Deck Mini MK2 Module"
+kind = "lcd_keypad"
+goal = "BEST_EFFORT"
+adapter = "elgato"
+phase = "M6"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x00b8, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 6
+rows = 2
+columns = 3
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-mk2-module"
+vendor = "Elgato"
+name = "Stream Deck MK.2 Module"
+kind = "lcd_keypad"
+goal = "BEST_EFFORT"
+adapter = "elgato"
+phase = "M6"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x00b9, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 15
+rows = 3
+columns = 5
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-mk2-module-scissor"
+vendor = "Elgato"
+name = "Stream Deck MK.2 Module (scissor keys)"
+kind = "lcd_keypad"
+goal = "BEST_EFFORT"
+adapter = "elgato"
+phase = "M6"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x00e4, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 15
+rows = 3
+columns = 5
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-xl-v2-module"
+vendor = "Elgato"
+name = "Stream Deck XL V2 Module"
+kind = "lcd_keypad"
+goal = "BEST_EFFORT"
+adapter = "elgato"
+phase = "M6"
+connection = ["usb"]
+source = "rust-elgato-streamdeck (MPL-2.0)"
+usb = [{ vid = 0x0fd9, pid = 0x00ba, identification = "CONFIRMED", evidence = "elgato-streamdeck 0.14.0 src/info.rs" }]
+
+[[model.controls]]
+id = "keys"
+type = "lcd_key"
+count = 32
+rows = 4
+columns = 8
+features = { press = "UNTESTED", release = "UNTESTED", image = "UNTESTED", brightness = "UNTESTED" }
+
+[[model]]
+id = "elgato.stream-deck-studio"
+vendor = "Elgato"
+name = "Stream Deck Studio"
+kind = "lcd_keypad"
+goal = "BEST_EFFORT"
+adapter = "elgato"
+phase = "M6"
+connection = ["usb", "network"]
+source = "StreamController (GPL-3.0), reference; rewritten in Rust"
+notes = ["Not in elgato-streamdeck 0.14.0: USB ids UNCONFIRMED (M0 audit §5)."]

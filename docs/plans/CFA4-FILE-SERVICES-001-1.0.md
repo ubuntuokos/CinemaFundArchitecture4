@@ -79,6 +79,17 @@ minta az archív gyökérhez és a mentéshez átvehető (mint a CFA4-AUDIT-001-
 
   Összeomláskor a `staging` maradék a következő induláskor kiderül és takarítható. A katalógus soha nem mutat
   félkész fájlra.
+- **Helyben írt fájl véglegesítése** (CFA4-DECKLINK-READY-001 V9.1, R4; István jóváhagyta 2026-11-21): egy külső író
+  (felvevő, exportáló) közvetlenül a `staging`-be írhat, így nincs második másolás. Ugyanaz a lánc, csak a forrás más:
+  - `stage_begin(root, rel_path) -> StagedFile { handle: StageId (UUIDv7), path }`: kizárólagosan létrehozott fájl
+    (`O_EXCL`, 0600) a gyökér `staging` könyvtárában; az útvonal a gyökéren belül marad (`..` és szimbolikus
+    kitörés elutasítva);
+  - `stage_commit(handle, digest: Option<Blake3Digest>) -> FileObject`: `fsync`, atomikus átnevezés, katalógusadat.
+    **Névütközéskor számozott nevet kap** (`név (2).ext`), felülírás soha; a visszaadott `FileObject` a végleges nevet
+    tartalmazza. Ha az író írás közben számolta a BLAKE3-at, a rekord `digestSource: "writer"`, és a `files.verify`
+    a háttérben lefuttatja a teljes ellenőrzést (eltérés: `FILES_HASH_MISMATCH`); digest nélkül a commit számolja;
+  - `stage_abort(handle)` és induláskori takarítás: az árva `staging` fájlok listázása, törlés csak jóváhagyással.
+  A katalógus itt sem mutat félkész fájlra: a rekord csak a sikeres átnevezés után jön létre.
 - **Lezárás (`seal`):** a publikált fájl csak olvashatóra vált, a kivonat rögzül. Lezárt fájl módosítása
   vagy felülírása nem lehetséges, csak új `FileObject`.
 - **Törlés:** két lépcsőben, a Kitsu-minta szerint:
@@ -135,6 +146,7 @@ nem tudnának vele dolgozni. A felület jelzi, hogy egy gyökér titkosított k�
 - **Parancsok:**
   - a felület, a CLI, az MCP és az ügynökök számára: `files.import`, `files.seal`, `files.verify`,
     `files.resolve`, `files.delete`, `files.purge`, `files.roots.*`;
+  - helyben írt fájlhoz: `files.stage.begin`, `files.stage.commit`, `files.stage.abort` (6. fejezet);
   - minden módosító parancs auditált (CFA4-AUDIT-001).
 - **Kivonat:** BLAKE3 új Rust-függőségként (G3) a meglévő SHA-256 helyett, mert a
   referenciagépen többszörösen gyorsabb. A katalógus az algoritmust is tárolja, így később váltható.
@@ -144,7 +156,7 @@ nem tudnának vele dolgozni. A felület jelzi, hogy egy gyökér titkosított k�
 | Fázis | Tartalom | Kell ehhez |
 |---|---|---|
 | FS-0 | Ez a terv jóváhagyva, ADR a `main`-be (#45 döntésével) | – |
-| FS-1 | Gyökerek, katalógus, ellenőrzött írás, lezárás, `resolve`; tesztek: összeomlás írás közben, teli lemez, út-kiszökés | BacklotHub 5. lépcső csatolmány (#43), 8. lépcső |
+| FS-1 | Gyökerek, katalógus, ellenőrzött írás, lezárás, `resolve`; tesztek: összeomlás írás közben, teli lemez, út-kiszökés; a `files.stage.*` parancsok a vezérlőcsatornán és MCP-n; megölt író (a katalógus nem mutat félkész fájlt), teli lemez commitkor (`FILES_DISK_FULL`, pánik nélkül), `..` útvonal, két párhuzamos `begin` azonos névre, hamis digest (`FILES_HASH_MISMATCH` a háttérellenőrzésből) | BacklotHub 5. lépcső csatolmány (#43), 8. lépcső |
 | FS-2 | `verify`, újrakapcsolás, kétlépcsős törlés, hivatkozás nélküli fájlok | 8. lépcső G5 |
 | FS-3 | Mentés és visszaállítás (#14), 1 TB-os mérés a CFA4-MIN gépen | 14. és 26. lépcső |
 | FS-4 | M2: gépenkénti gyökérfeloldás, hálózati megosztás | M2 |

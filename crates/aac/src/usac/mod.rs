@@ -254,7 +254,7 @@ impl UsacDecoder {
     }
 
     /// SCE or LFE.
-    fn decode_single(&mut self, br: &mut BitReader, ch: usize, nf: bool, indep: bool, lfe: bool) -> Result<Vec<f32>> {
+    fn decode_single(&mut self, br: &mut BitReader<'_>, ch: usize, nf: bool, indep: bool, lfe: bool) -> Result<Vec<f32>> {
         let core_mode = if lfe { false } else { br.read_flag()? };
         if core_mode {
             return Err(Error::Unsupported("USAC LPD core"));
@@ -290,7 +290,7 @@ impl UsacDecoder {
         out
     }
 
-    fn decode_pair(&mut self, br: &mut BitReader, ei: usize, ch: usize, nf: bool, indep: bool) -> Result<[Vec<f32>; 2]> {
+    fn decode_pair(&mut self, br: &mut BitReader<'_>, ei: usize, ch: usize, nf: bool, indep: bool) -> Result<[Vec<f32>; 2]> {
         let core0 = br.read_flag()?;
         let core1 = br.read_flag()?;
         if core0 || core1 {
@@ -396,7 +396,7 @@ impl UsacDecoder {
 
 /// `UsacExtElement()`: returns the payload when present (fragmentation is not reassembled; a
 /// fragmented payload is returned as its fragments).
-fn read_ext_payload(br: &mut BitReader, default_length: u32, frag: bool) -> Result<Option<Vec<u8>>> {
+fn read_ext_payload(br: &mut BitReader<'_>, default_length: u32, frag: bool) -> Result<Option<Vec<u8>>> {
     if !br.read_flag()? {
         return Ok(None);
     }

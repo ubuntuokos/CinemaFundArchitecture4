@@ -43,7 +43,7 @@ impl VlcTable {
     }
 
     #[inline]
-    pub fn decode(&self, r: &mut BitReader) -> Result<u8> {
+    pub fn decode(&self, r: &mut BitReader<'_>) -> Result<u8> {
         let bits = r.peek(32);
         let lz = bits.leading_zeros().min(16);
         let s = if lz >= 16 { 0 } else { ((bits << lz) << 1) >> 27 };
@@ -92,7 +92,7 @@ pub(crate) fn init_tables() {
 /// Parse residual_block_cavlc(). Coefficients are written to `coeff[start_idx..=end_idx]` in scan order
 /// (entries outside the coded range are left untouched; the caller zeroes them).
 /// `nc` is the nC value (-1 for 4:2:0 chroma DC, -2 for 4:2:2 chroma DC). Returns TotalCoeff.
-pub(crate) fn residual_block(r: &mut BitReader, coeff: &mut [i32], start_idx: usize, end_idx: usize, max_num_coeff: usize, nc: i32) -> Result<u8> {
+pub(crate) fn residual_block(r: &mut BitReader<'_>, coeff: &mut [i32], start_idx: usize, end_idx: usize, max_num_coeff: usize, nc: i32) -> Result<u8> {
     let t = tables();
     let col = match nc {
         -1 => 4,

@@ -264,7 +264,7 @@ impl Transcriber for Whisper {
         self.id.clone()
     }
 
-    fn transcribe(&self, audio: &[f32], opts: &Options, progress: ProgressFn) -> Result<Transcript, SpeechError> {
+    fn transcribe(&self, audio: &[f32], opts: &Options, progress: ProgressFn<'_>) -> Result<Transcript, SpeechError> {
         let mut m = self.model.lock().unwrap_or_else(|e| e.into_inner());
         let n_mels = m.cfg.num_mel_bins;
         let content_frames = audio.len() / SAMPLES_PER_FRAME;

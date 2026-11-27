@@ -152,7 +152,7 @@ impl Decoder {
 }
 
 /// Rebuilds a regular (code 3 VBR) packet from a parsed self-delimited one.
-fn reframe(p: &Packet) -> Vec<u8> {
+fn reframe(p: &Packet<'_>) -> Vec<u8> {
     let mut v = vec![(p.toc.config << 3) | if p.toc.stereo { 4 } else { 0 } | 3];
     v.push(0x80 | p.frames.len() as u8);
     for f in &p.frames[..p.frames.len() - 1] {

@@ -127,7 +127,7 @@ impl ProgramAssignment {
         self.num_bed_objects + self.num_isf_objects
     }
 
-    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut prog = Self::default();
 
         // b_dyn_object_only_program
@@ -343,7 +343,7 @@ impl OAElementType {
 }
 
 impl OAElementMD {
-    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut md = OAElementMD { oa_element_id_idx: reader.get_n::<u8>(4)?, ..Default::default() };
 
         let oa_element_size_bits = reader.get_variable_bits_max(4, 4)? as u64;
@@ -426,7 +426,7 @@ impl Default for ObjectElement {
 }
 
 impl ObjectElement {
-    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut element = Self {
             md_update_info: MDUpdateInfo::read(reader)?,
             b_reserved_data_not_present: reader.get()?,
@@ -462,7 +462,7 @@ pub struct MDUpdateInfo {
 }
 
 impl MDUpdateInfo {
-    pub fn read(reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         // sample_offset_code
         let sample_offset = match reader.get_n::<u8>(2)? {
             0 => 0,
@@ -503,7 +503,7 @@ pub struct BlockUpdateInfo {
 impl BlockUpdateInfo {
     pub const RAMP_DURATION_LIST: [u16; 16] = [32, 64, 128, 256, 320, 480, 1000, 1001, 1024, 1600, 1601, 1602, 1920, 2000, 2002, 2048];
 
-    pub fn read(reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut info = Self { block_offset_factor_bits: reader.get_n(6)?, ramp_duration_code: reader.get_n(2)?, ..Default::default() };
 
         info.ramp_duration = match info.ramp_duration_code {
@@ -538,7 +538,7 @@ pub struct ObjectInfoBlock {
 }
 
 impl ObjectInfoBlock {
-    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader, object_index: usize, block_index: usize) -> Result<Self> {
+    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader<'_>, object_index: usize, block_index: usize) -> Result<Self> {
         let mut info = Self { b_object_not_active: reader.get()?, ..Default::default() };
 
         let object_basic_info_status_idx = if info.b_object_not_active {
@@ -614,7 +614,7 @@ impl ObjectBasicInfo {
     fn read(
         prev: &Self,
         state: &mut OAMDParserState,
-        reader: &mut BsIoSliceReader,
+        reader: &mut BsIoSliceReader<'_>,
         object_index: usize,
         block_index: usize,
         object_basic_info_status_idx: u8,
@@ -688,7 +688,7 @@ impl Default for ObjectRenderInfo {
 }
 
 impl ObjectRenderInfo {
-    fn read(prev: &Self, reader: &mut BsIoSliceReader, object_render_info_status_idx: u8, block_index: usize) -> Result<Self> {
+    fn read(prev: &Self, reader: &mut BsIoSliceReader<'_>, object_render_info_status_idx: u8, block_index: usize) -> Result<Self> {
         let mut render = prev.clone();
         let object_render_info_bits = if object_render_info_status_idx == 1 { 15 } else { reader.get_n::<u8>(4)? };
 
@@ -815,7 +815,7 @@ pub struct HeadphoneElement {
 }
 
 impl HeadphoneElement {
-    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut element = Self { hp_mode: reader.get_n(3)?, num_obj_info_blocks: reader.get_n::<u8>(3)? as usize + 1, ..Default::default() };
 
         let (objects, blocks) = (state.object_count, element.num_obj_info_blocks);
@@ -839,7 +839,7 @@ impl HeadphoneElement {
 
     /// Mode 3 codes every object, except that a run of consecutive ISF objects is coded
     /// once and repeated: the objects of one ISF group share a rendering intent.
-    fn read_per_object(state: &mut OAMDParserState, reader: &mut BsIoSliceReader, blocks: usize) -> Result<Vec<Vec<HeadphoneBlock>>> {
+    fn read_per_object(state: &mut OAMDParserState, reader: &mut BsIoSliceReader<'_>, blocks: usize) -> Result<Vec<Vec<HeadphoneBlock>>> {
         let prog = &state.program_assignment;
         let isf = prog.num_bed_objects..prog.num_bed_objects + prog.num_isf_objects;
 
@@ -880,7 +880,7 @@ impl ObjectDescriptionElement {
     /// The 2-bit code of sub-mode 1 is not the indication itself.
     const DIALOG_MAP: [u8; 4] = [2, 1, 3, 0];
 
-    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut element = Self { num_obj_info_blocks: reader.get_n::<u8>(3)? as usize + 1, b_present: reader.get()?, ..Default::default() };
 
         if !element.b_present {
@@ -929,8 +929,8 @@ impl ObjectDescriptionElement {
     fn per_object(
         objects: usize,
         blocks: usize,
-        mut one: impl FnMut(&mut BsIoSliceReader) -> Result<u8>,
-        reader: &mut BsIoSliceReader,
+        mut one: impl FnMut(&mut BsIoSliceReader<'_>) -> Result<u8>,
+        reader: &mut BsIoSliceReader<'_>,
     ) -> Result<Vec<Vec<u8>>> {
         (0..objects).map(|_| (0..blocks).map(|_| one(reader)).collect()).collect()
     }
@@ -967,7 +967,7 @@ impl Default for Trim {
 }
 
 impl TrimElement {
-    fn read(state: &OAMDParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read(state: &OAMDParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut element = Self { warp_mode: reader.get_n(2)?, reserved: reader.get_n(2)?, global_trim_mode: reader.get_n(2)?, ..Default::default() };
 
         if element.global_trim_mode == 2 {
@@ -1034,7 +1034,7 @@ pub struct ExtendedObjectElement {
 }
 
 impl ExtendedObjectElement {
-    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read(state: &mut OAMDParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut element = Self { b_obj_div_block: reader.get()?, ..Default::default() };
 
         let object_count = state.object_count;

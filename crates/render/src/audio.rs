@@ -333,7 +333,7 @@ type SourceAudio<'a> = &'a dyn Fn(i64, usize) -> Option<AudioBuffer>;
 
 /// The clip's audio after speed/reverse and clip effects (before clip gain, Volume and Panner) for
 /// timeline samples `[a0, a0 + n)`, `w` channels.
-fn effected(item: &TrackItem, src: SourceAudio, a0: i64, n: usize, sr: u32, w: usize) -> Vec<Vec<f32>> {
+fn effected(item: &TrackItem, src: SourceAudio<'_>, a0: i64, n: usize, sr: u32, w: usize) -> Vec<Vec<f32>> {
     let read = |x0: i64, len: usize| raw_channels(item, src, x0, len, sr, w);
     if crate::audio_fx::has_effects(item) { crate::audio_fx::process(item, a0, n, sr, &read) } else { read(a0, n) }
 }
@@ -380,7 +380,7 @@ pub fn clip_is_mono(item: &TrackItem, sources: &dyn SourceProvider) -> Option<bo
 /// (2: stereo, mono sources on both sides, 5.1 sources folded down; 6: 5.1; 8 / 10: 7.1 / 7.1.2),
 /// with silence outside
 /// the clip.
-fn raw_channels(item: &TrackItem, src: SourceAudio, x0: i64, len: usize, sr: u32, w: usize) -> Vec<Vec<f32>> {
+fn raw_channels(item: &TrackItem, src: SourceAudio<'_>, x0: i64, len: usize, sr: u32, w: usize) -> Vec<Vec<f32>> {
     let mut out = vec![vec![0.0f32; len]; w];
     let item_s0 = item.start.to_units_floor(sr as i64);
     let item_s1 = item.end().to_units_floor(sr as i64);

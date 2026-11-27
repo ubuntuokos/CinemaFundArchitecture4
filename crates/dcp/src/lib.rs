@@ -11,18 +11,34 @@
 //! elements are kept by name, never dropped silently, so a validator can tell "not supported" from
 //! "absent".
 //!
-//! Only reading. No signature check (the presence of `Signer` / `ds:Signature` is recorded), no
-//! hashing of the assets, no file discovery: those belong to `cfa4-dcp-validate` (DCP-03 / DCP-05).
+//! Only reading. No signature check (the presence of `Signer` / `ds:Signature` is recorded) and no
+//! file discovery: those belong to `cfa4-dcp-validate` (DCP-03 / DCP-05). [`sha1`] is the streaming
+//! digest of the packing list `Hash`; the validator runs it over the files.
 //!
-//! Layer L0: depends on `roxmltree`, `serde`, `thiserror` and `chrono` (date checks) only. No `unsafe`, no panics on
+//! The [`kdm`] module decrypts the content keys of a Key Delivery Message (ST 430-1) with the
+//! recipient's RSA private key (RustCrypto `rsa`, `sha1`; `base64`).
+//!
+//! Layer L0: depends on `roxmltree`, `serde`, `thiserror`, `chrono` (date checks) and the KDM's crypto crates only. No `unsafe`, no panics on
 //! malformed input, DTDs are refused and the node count is capped.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 mod assetmap;
+mod c14n;
 mod cpl;
+pub mod isdcf;
+pub mod kdb;
+pub mod kdm;
 mod pkl;
+pub mod sha1;
+pub mod subtitle;
+pub mod x509;
 mod xml;
+pub mod xmldsig;
+
+#[cfg(any(test, feature = "test-util"))]
+#[doc(hidden)]
+pub mod testing;
 
 pub use assetmap::{AssetMap, AssetMapAsset, Chunk, VolumeIndex};
 pub use cpl::{AssetKind, Composition, ContentVersion, Marker, Rating, Reel, ReelAsset, ScreenAspectRatio};

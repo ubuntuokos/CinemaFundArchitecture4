@@ -21,6 +21,29 @@ mod ycbcr_tiff;
 /// Default still duration (Premiere's preference default is 5 seconds).
 pub const DEFAULT_STILL_DURATION: Tick = Tick(5 * TICKS_PER_SECOND);
 
+/// The frame rate and time code a still file carries for the sequence it belongs to (CinemaDNG
+/// FrameRate / TimeCodes tags, OpenEXR `framesPerSecond` / `timeCode` attributes).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Timing {
+    /// Frames per second as (numerator, denominator).
+    pub frame_rate: Option<(i64, i64)>,
+    /// The time code of this frame.
+    pub timecode: Option<cfa4_dng::Timecode>,
+}
+
+impl Timing {
+    /// The frame rate (the file's when present, else `default`) and the time code in frames at
+    /// that rate; the drop-frame flag counts only at a rate that has drop-frame time code.
+    pub fn resolve(&self, default: FrameRate) -> (FrameRate, Option<i64>) {
+        let rate = self.frame_rate.filter(|&(n, d)| n > 0 && d > 0).map(|(n, d)| FrameRate::new(n, d).sane()).unwrap_or(default);
+        let tc = self.timecode.map(|t| {
+            let drop = t.drop_frame && rate.supports_drop_frame();
+            cfa4_time::fields_to_frames(i64::from(t.hours), i64::from(t.minutes), i64::from(t.seconds), i64::from(t.frames), rate, drop)
+        });
+        (rate, tc)
+    }
+}
+
 /// Whether `b` (the contents of the file `name`) is a still image we decode.
 pub fn sniff(name: &str, b: &[u8]) -> bool {
     if heic::sniff(b) {
@@ -127,8 +150,16 @@ impl StillSource {
         if jxl::sniff(bytes) {
             return jxl::still(name, bytes);
         }
+        if crate::dpx::sniff(bytes) {
+            return crate::dpx::still(name, bytes);
+        }
         let r = decode_raster(name, bytes)?;
         Ok(Self::from_rgba(name, r.width, r.height, r.rgba, r.has_alpha, bytes.len() as u64))
+    }
+
+    /// A still showing `frame`, described by `info`.
+    pub(crate) fn from_frame(info: MediaInfo, frame: VideoFrame) -> Self {
+        Self { info, frame: Arc::new(frame) }
     }
 
     pub fn from_rgba(name: &str, w: u32, h: u32, rgba: Vec<u8>, has_alpha: bool, file_size: u64) -> Self {

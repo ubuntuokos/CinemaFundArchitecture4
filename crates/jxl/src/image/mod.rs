@@ -30,7 +30,7 @@ pub struct ImageHeader {
 impl<Ctx> Bundle<Ctx> for ImageHeader {
     type Error = crate::bitstream::Error;
 
-    fn parse(bitstream: &mut Bitstream, _: Ctx) -> BitstreamResult<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, _: Ctx) -> BitstreamResult<Self> {
         let signature = bitstream.read_bits(16)?;
         if signature != 0xaff {
             return Err(crate::bitstream::Error::ValidationFailed("JPEG XL signature mismatch"));
@@ -198,7 +198,7 @@ pub struct Extensions {
 impl<Ctx> Bundle<Ctx> for Extensions {
     type Error = crate::bitstream::Error;
 
-    fn parse(bitstream: &mut Bitstream, _: Ctx) -> crate::bitstream::BitstreamResult<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, _: Ctx) -> crate::bitstream::BitstreamResult<Self> {
         let extension_bits = bitstream.read_u64()?;
         let mut bits = extension_bits;
         let mut extension_data_bitlen = Vec::with_capacity(extension_bits.count_ones() as usize);
@@ -271,7 +271,7 @@ pub struct ExtraChannelInfo {
 impl<Ctx> Bundle<Ctx> for ExtraChannelInfo {
     type Error = crate::bitstream::Error;
 
-    fn parse(bitstream: &mut Bitstream, _: Ctx) -> BitstreamResult<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, _: Ctx) -> BitstreamResult<Self> {
         let default_alpha_channel = bitstream.read_bool()?;
         if default_alpha_channel {
             return Ok(Self::default());
@@ -444,7 +444,7 @@ impl BitDepth {
 impl<Ctx> Bundle<Ctx> for BitDepth {
     type Error = crate::bitstream::Error;
 
-    fn parse(bitstream: &mut Bitstream, _ctx: Ctx) -> BitstreamResult<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, _ctx: Ctx) -> BitstreamResult<Self> {
         if bitstream.read_bool()? {
             // float_sample
             let bits_per_sample = bitstream.read_u32(32, 16, 24, 1 + U(6))?;

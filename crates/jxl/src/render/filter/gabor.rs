@@ -101,6 +101,6 @@ pub(super) fn run_gabor_rows<'buf>(
 }
 
 #[allow(unused)]
-pub(crate) fn run_gabor_row_generic(row: GaborRow) {
+pub(crate) fn run_gabor_row_generic(row: GaborRow<'_>) {
     super::impls::generic::gabor::run_gabor_row_generic(row)
 }

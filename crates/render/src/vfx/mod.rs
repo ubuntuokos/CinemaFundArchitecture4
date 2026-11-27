@@ -11,14 +11,20 @@
 //! Stabilizer (frames for analysis, sequence geometry) — read it through [`FxEnv`]; without an
 //! environment (isolated tests, adjustment layers) they leave the image unchanged.
 
+mod auto;
 mod blur;
 mod color;
+mod denoise;
 pub(crate) use color::cdl;
 pub(crate) mod distort;
-mod glitch;
+pub(crate) mod glitch;
 mod immersive;
 mod lights;
+pub mod mosh;
+mod perspective;
+mod pixelate;
 mod stylize;
+mod subspace_warp;
 mod temporal;
 mod text;
 
@@ -34,7 +40,7 @@ use crate::effects::FxCtx;
 use crate::image::Image;
 use crate::{RenderOptions, SourceProvider};
 
-pub use temporal::{StabilizerPath, clear_stabilizer_cache, stabilizer_path};
+pub use temporal::{StabilizerPath, clear_stabilizer_cache, set_analysis_cache_dir, stabilizer_path};
 
 /// What an effect may know about the clip beyond its own pixels.
 pub trait FxEnv: Sync {
@@ -61,6 +67,12 @@ pub trait FxEnv: Sync {
     fn source_size(&self) -> (u32, u32);
     /// Identity of the clip and its source range (cache key for analyses).
     fn clip_key(&self) -> u64;
+    /// A key that stays the same across runs for the same media content, source range and
+    /// interpretation (not the run-local clip id), or `None` when there is no such identity
+    /// (generators, media linked by an older build): such analyses are not kept on disk.
+    fn media_key(&self) -> Option<u64> {
+        None
+    }
 }
 
 /// The environment of a track item being rendered by [`crate::item_layer`].
@@ -87,7 +99,7 @@ fn resize(img: Image, w: usize, h: usize) -> Image {
 
 /// Effects that read other frames (skipped when rendering another frame for one of them).
 pub fn is_temporal(id: &str) -> bool {
-    matches!(id, "posterize_time" | "echo" | "slit_scan" | "warp_stabilizer" | "auto_reframe")
+    matches!(id, "posterize_time" | "echo" | "slit_scan" | "warp_stabilizer" | "auto_reframe" | "temporal_denoise" | "datamosh_bloom")
 }
 
 impl FxEnv for ItemEnv<'_> {
@@ -175,6 +187,36 @@ impl FxEnv for ItemEnv<'_> {
         }
         h
     }
+    fn media_key(&self) -> Option<u64> {
+        let mix = |h: u64, v: u64| (h ^ v).wrapping_mul(0x0100_0000_01b3);
+        // follow subclips to their media, adding each subclip's range
+        let mut id = self.item.item;
+        let mut h = 0xcbf2_9ce4_8422_2325u64;
+        for _ in 0..8 {
+            match &self.project.item(id)?.kind {
+                cfa4_project::ItemKind::Media(m) => {
+                    let ident = m.identity?;
+                    for v in [ident.size, ident.fingerprint, m.proxy.is_some() as u64] {
+                        h = mix(h, v);
+                    }
+                    // frame-rate and other overrides change which frames the analysis sees
+                    for b in format!("{:?}", m.interpret).bytes() {
+                        h = mix(h, b as u64);
+                    }
+                    for v in [self.item.source_in.0 as u64, self.item.duration.0 as u64, self.item.speed.to_bits(), self.item.reverse as u64] {
+                        h = mix(h, v);
+                    }
+                    return Some(h);
+                }
+                cfa4_project::ItemKind::Subclip { parent, range, .. } => {
+                    h = mix(mix(h, range.start.0 as u64), range.duration.0 as u64);
+                    id = *parent;
+                }
+                _ => return None,
+            }
+        }
+        None
+    }
 }
 
 // ------------------------------------------------------------------ parameters
@@ -182,7 +224,7 @@ impl FxEnv for ItemEnv<'_> {
 pub(crate) fn def_value(e: &EffectInstance, id: &str) -> Option<ParamValue> {
     e.def().and_then(|d| d.param(id)).map(|p| p.default.clone())
 }
-pub(crate) fn fv(e: &EffectInstance, id: &str, cx: &FxCtx) -> f32 {
+pub(crate) fn fv(e: &EffectInstance, id: &str, cx: &FxCtx<'_>) -> f32 {
     e.f64_at(id, cx.t) as f32
 }
 pub(crate) fn bv(e: &EffectInstance, id: &str) -> bool {
@@ -194,7 +236,7 @@ pub(crate) fn chv(e: &EffectInstance, id: &str) -> u32 {
         _ => 0,
     }
 }
-pub(crate) fn cv(e: &EffectInstance, id: &str, cx: &FxCtx) -> [f32; 4] {
+pub(crate) fn cv(e: &EffectInstance, id: &str, cx: &FxCtx<'_>) -> [f32; 4] {
     e.param(id).and_then(|p| p.value_at(cx.t).as_color()).or_else(|| def_value(e, id).and_then(|v| v.as_color())).unwrap_or([1.0; 4])
 }
 pub(crate) fn tv(e: &EffectInstance, id: &str) -> String {
@@ -205,13 +247,13 @@ pub(crate) fn tv(e: &EffectInstance, id: &str) -> String {
 }
 /// A point parameter in working pixels. Auto (NaN) components use the effect's auto position
 /// (`cfa4_project::effect::auto_point`) or the layer centre.
-pub(crate) fn pv(e: &EffectInstance, id: &str, cx: &FxCtx, img: &Image) -> Vec2 {
+pub(crate) fn pv(e: &EffectInstance, id: &str, cx: &FxCtx<'_>, img: &Image) -> Vec2 {
     let v = e.param(id).map(|p| p.vec2_at(cx.t)).or_else(|| def_value(e, id).and_then(|v| v.as_vec2())).unwrap_or(Vec2::new(f64::NAN, f64::NAN));
     let (fx, fy) = cfa4_project::effect::auto_point(&e.effect, id).unwrap_or((0.5, 0.5));
     Vec2::new(if v.x.is_nan() { img.w as f64 * fx } else { v.x * cx.px_scale as f64 }, if v.y.is_nan() { img.h as f64 * fy } else { v.y * cx.px_scale as f64 })
 }
 /// A point offset parameter (no auto position) in working pixels.
-pub(crate) fn offv(e: &EffectInstance, id: &str, cx: &FxCtx) -> Vec2 {
+pub(crate) fn offv(e: &EffectInstance, id: &str, cx: &FxCtx<'_>) -> Vec2 {
     let v = e.param(id).map(|p| p.vec2_at(cx.t)).or_else(|| def_value(e, id).and_then(|v| v.as_vec2())).unwrap_or_default();
     let k = cx.px_scale as f64;
     Vec2::new(if v.x.is_nan() { 0.0 } else { v.x * k }, if v.y.is_nan() { 0.0 } else { v.y * k })
@@ -440,7 +482,7 @@ pub(crate) fn ease(kind: u32, t: f64) -> f64 {
 
 /// Progress through the clip (0 at its first frame, 1 at its last) when an environment is
 /// available, else 0.
-pub(crate) fn clip_progress(cx: &FxCtx) -> f64 {
+pub(crate) fn clip_progress(cx: &FxCtx<'_>) -> f64 {
     match cx.env {
         Some(env) => {
             let d = env.clip_seconds();
@@ -453,7 +495,7 @@ pub(crate) fn clip_progress(cx: &FxCtx) -> f64 {
 // ------------------------------------------------------------------ dispatch
 
 /// Apply `e` if it is one of the effects implemented here; returns `false` for anything else.
-pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
+pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) -> bool {
     let alias = |img: &mut Image, base: &str| {
         let mut a = e.clone();
         a.effect = base.to_string();
@@ -472,6 +514,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         "channel_blur" => blur::channel_blur(img, e, cx),
         "compound_blur" => blur::compound(img, e, cx),
         "focus_blur" => blur::focus(img, e, cx),
+        "rack_focus" => blur::rack_focus(img, e, cx),
         "reduce_interlace_flicker" => blur::interlace_flicker(img, e, cx),
         "gaussian_blur_legacy" => alias(img, "gaussian_blur"),
         "directional_blur_legacy" => alias(img, "directional_blur"),
@@ -493,6 +536,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         "auto_align" => distort::auto_align(img, e, cx),
         "rounded_crop" => distort::rounded_crop(img, e, cx),
         "mosaic" | "mosaic_legacy" => distort::mosaic(img, e, cx),
+        "pixelate" => pixelate::pixelate(img, e, cx),
         "twirl_legacy" => alias(img, "twirl"),
         // Lights & Glows
         "echo_glow" => lights::echo_glow(img, e, cx),
@@ -521,17 +565,17 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         "ellipse" => stylize::ellipse(img, e, cx),
         "paint_bucket" => stylize::paint_bucket(img, e, cx),
         "write_on" => stylize::write_on(img, e, cx),
+        "pixel_sort" => stylize::pixel_sort(img, e, cx),
         // Glitch (CFA4's own folder)
-        "bit_crush" => glitch::bit_crush(img, e, cx),
-        "block_glitch" => glitch::block_glitch(img, e, cx),
-        "databend" => glitch::databend(img, e, cx),
-        "vhs" => glitch::vhs(img, e, cx),
-        "scan_line_jitter" => glitch::scan_line_jitter(img, e, cx),
-        "tile_jitter" => glitch::tile_jitter(img, e, cx),
+        "datamosh_bloom" => mosh::datamosh_bloom(img, e, cx),
         // Time / analysis
+        "auto_color" => auto::auto_correct(img, e, cx, auto::Mode::Color),
+        "auto_contrast" => auto::auto_correct(img, e, cx, auto::Mode::Contrast),
+        "auto_levels" => auto::auto_correct(img, e, cx, auto::Mode::Levels),
         "posterize_time" => temporal::posterize_time(img, e, cx),
         "echo" => temporal::echo(img, e, cx),
         "slit_scan" => temporal::slit_scan(img, e, cx),
+        "temporal_denoise" => denoise::temporal_denoise(img, e, cx),
         "warp_stabilizer" => temporal::warp_stabilizer(img, e, cx),
         "auto_reframe" => temporal::auto_reframe(img, e, cx),
         // Text

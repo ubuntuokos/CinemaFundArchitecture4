@@ -45,7 +45,7 @@ struct ModularData<S: Sample> {
 impl<S: Sample> Bundle<ModularParams<'_, '_>> for Modular<S> {
     type Error = crate::modular::Error;
 
-    fn parse(bitstream: &mut Bitstream, params: ModularParams) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, params: ModularParams<'_, '_>) -> Result<Self> {
         let inner = if params.channels.is_empty() { None } else { Some(ModularData::<S>::parse(bitstream, params)?) };
         Ok(Self { inner })
     }
@@ -97,7 +97,7 @@ impl<S: Sample> Modular<S> {
 impl<S: Sample> Bundle<ModularParams<'_, '_>> for ModularData<S> {
     type Error = crate::modular::Error;
 
-    fn parse(bitstream: &mut Bitstream, params: ModularParams) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, params: ModularParams<'_, '_>) -> Result<Self> {
         let channels = ModularChannels::from_params(&params);
         let (header, ma_ctx) = read_and_validate_local_modular_header(bitstream, &channels, params.ma_config, params.tracker)?;
         Ok(Self { image: image::ModularImageDestination::new(header, ma_ctx, params.group_dim, params.bit_depth, channels, params.tracker)? })
@@ -121,7 +121,7 @@ pub struct ModularChannels {
 }
 
 impl ModularChannels {
-    fn from_params(params: &ModularParams) -> Self {
+    fn from_params(params: &ModularParams<'_, '_>) -> Self {
         let info = params.channels.iter().map(|ch| ModularChannelInfo::new(ch.width, ch.height, ch.shift)).collect();
         Self { info, nb_meta_channels: 0 }
     }
@@ -158,7 +158,7 @@ impl ModularChannelInfo {
 }
 
 fn read_and_validate_local_modular_header(
-    bitstream: &mut Bitstream,
+    bitstream: &mut Bitstream<'_>,
     channels: &ModularChannels,
     global_ma_config: Option<&MaConfig>,
     tracker: Option<&AllocTracker>,

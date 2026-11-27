@@ -11,6 +11,7 @@
 //! - [`diarize`]: speaker labelling by clustering per-chunk MFCC statistics (classical, no model).
 //! - [`mel`]: the log-mel front end shared by Whisper and diarization.
 //! - [`vad`]: energy-based tightening of word bounds (keeps pauses out of words).
+//! - [`prefilter`]: hands only the voiced stretches to a recogniser and puts the words back in media time.
 //!
 //! See `docs/transcripts.md` for the user-facing behaviour and accuracy numbers.
 
@@ -19,6 +20,7 @@
 pub mod diarize;
 pub mod mel;
 pub mod models;
+pub mod prefilter;
 pub mod vad;
 #[cfg(feature = "whisper")]
 pub mod whisper;
@@ -91,7 +93,7 @@ pub trait Transcriber: Send + Sync {
     /// Stable id of the model (`"whisper-base"`), stored in the transcript's `source`.
     fn id(&self) -> String;
     /// Transcribe mono 16 kHz `audio`. Word times are relative to the first sample.
-    fn transcribe(&self, audio: &[f32], opts: &Options, progress: ProgressFn) -> Result<Transcript, SpeechError>;
+    fn transcribe(&self, audio: &[f32], opts: &Options, progress: ProgressFn<'_>) -> Result<Transcript, SpeechError>;
 }
 
 /// A transcriber that returns a fixed transcript (tests, demos and agents that bring their own
@@ -105,7 +107,7 @@ impl Transcriber for FixedTranscriber {
     fn id(&self) -> String {
         self.id.clone()
     }
-    fn transcribe(&self, audio: &[f32], _: &Options, progress: ProgressFn) -> Result<Transcript, SpeechError> {
+    fn transcribe(&self, audio: &[f32], _: &Options, progress: ProgressFn<'_>) -> Result<Transcript, SpeechError> {
         if !progress(0.5, "Transcribing") {
             return Err(SpeechError::Cancelled);
         }

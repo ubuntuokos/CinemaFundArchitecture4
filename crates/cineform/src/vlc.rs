@@ -54,7 +54,7 @@ impl Codebook {
         Codebook { lut, long }
     }
 
-    fn read(&self, br: &mut BitReader) -> Result<Sym> {
+    fn read(&self, br: &mut BitReader<'_>) -> Result<Sym> {
         let (len, sym) = self.lut.get(br.peek(LUT_BITS) as usize).copied().unwrap_or((0, Sym::End));
         if len > 0 {
             br.skip(usize::from(len)).map_err(|_| Error::Truncated)?;
@@ -124,7 +124,7 @@ pub(crate) fn decode_band(
     set: u8,
     quant: i32,
     difference: bool,
-    peaks: Option<Peaks>,
+    peaks: Option<Peaks<'_>>,
 ) -> Result<usize> {
     let book_index = match set {
         0 => 0,

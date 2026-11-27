@@ -64,12 +64,12 @@ impl Parameters {
     }
 }
 
-fn ur(rc: &mut RangeDecoder, t: &StateTables, st: &mut [u8; CONTEXT_SIZE]) -> Result<u32> {
+fn ur(rc: &mut RangeDecoder<'_>, t: &StateTables, st: &mut [u8; CONTEXT_SIZE]) -> Result<u32> {
     u32::try_from(rc.get_symbol(t, st, false)).map_err(|_| Error::Invalid("negative unsigned symbol".into()))
 }
 
 /// Section 4.1: `QuantizationTableSet( i )`.
-fn read_quant_table_set(rc: &mut RangeDecoder, t: &StateTables) -> Result<QuantTableSet> {
+fn read_quant_table_set(rc: &mut RangeDecoder<'_>, t: &StateTables) -> Result<QuantTableSet> {
     let mut tables = [[0i32; 256]; MAX_CONTEXT_INPUTS];
     let mut scale: i64 = 1;
     for table in tables.iter_mut() {
@@ -99,7 +99,7 @@ fn read_quant_table_set(rc: &mut RangeDecoder, t: &StateTables) -> Result<QuantT
 }
 
 /// Section 4.2: `Parameters( )`, read with the default state table.
-pub(crate) fn read_parameters(rc: &mut RangeDecoder) -> Result<Parameters> {
+pub(crate) fn read_parameters(rc: &mut RangeDecoder<'_>) -> Result<Parameters> {
     let t = StateTables::default_tables();
     // "Parameters" has its own initial states, all 128 (one set for every field)
     let mut st = [128u8; CONTEXT_SIZE];

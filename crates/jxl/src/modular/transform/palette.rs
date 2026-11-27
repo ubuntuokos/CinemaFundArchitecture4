@@ -29,7 +29,7 @@ const DELTA_PALETTE: [[i16; 3]; 72] = [
 ];
 
 impl Palette {
-    pub(crate) fn inverse_inner<S: Sample>(&self, palette: SharedSubgrid<S>, mut targets: Vec<MutableSubgrid<S>>, bit_depth: u32) {
+    pub(crate) fn inverse_inner<S: Sample>(&self, palette: SharedSubgrid<'_, S>, mut targets: Vec<MutableSubgrid<'_, S>>, bit_depth: u32) {
         let nb_deltas = self.nb_deltas as i32;
         let nb_colors = self.nb_colours as i32;
 
@@ -135,7 +135,7 @@ impl Palette {
 }
 
 #[inline(never)]
-fn inverse_simple<S: Sample>(palette: SharedSubgrid<S>, targets: Vec<MutableSubgrid<S>>) {
+fn inverse_simple<S: Sample>(palette: SharedSubgrid<'_, S>, targets: Vec<MutableSubgrid<'_, S>>) {
     let channels = targets.len();
     if channels != palette.height() {
         return;

@@ -6,7 +6,7 @@ use crate::nal::SliceType;
 use crate::syntax::{MbCode, NbCtx};
 use crate::tables::{BLK4_XY, LAST8X8, SIG8X8_FRAME};
 
-pub fn write_skip_flag<S: BinSink>(s: &mut S, nb: &NbCtx, skip: bool) {
+pub fn write_skip_flag<S: BinSink>(s: &mut S, nb: &NbCtx<'_>, skip: bool) {
     let cond = |m: Option<&MbInfo>| m.is_some_and(|m| !m.kind.is_skip()) as usize;
     let base = if nb.slice_type == SliceType::B { 24 } else { 11 };
     s.decision(base + cond(nb.left) + cond(nb.top), skip as u32);
@@ -30,7 +30,7 @@ fn eg_bypass<S: BinSink>(s: &mut S, mut v: u32, mut k: u32) {
 }
 
 /// I16x16 / I_NxN mb_type bins. `off` = ctxIdxOffset of the (suffix) table; `i_slice` selects I-slice contexts.
-fn write_intra_type<S: BinSink>(s: &mut S, nb: &NbCtx, c: &MbCode) {
+fn write_intra_type<S: BinSink>(s: &mut S, nb: &NbCtx<'_>, c: &MbCode) {
     let i_slice = nb.slice_type == SliceType::I;
     let (off, b0ctx) = match nb.slice_type {
         SliceType::I => {
@@ -78,7 +78,7 @@ fn write_intra_type<S: BinSink>(s: &mut S, nb: &NbCtx, c: &MbCode) {
     }
 }
 
-fn write_b_bins<S: BinSink>(s: &mut S, nb: &NbCtx, bins: &[u32]) {
+fn write_b_bins<S: BinSink>(s: &mut S, nb: &NbCtx<'_>, bins: &[u32]) {
     for (i, &b) in bins.iter().enumerate() {
         let ctx = match i {
             0 => {
@@ -149,14 +149,14 @@ fn write_mvd<S: BinSink>(s: &mut S, comp: usize, v: i32, sum: u32) {
 }
 
 /// Sum of |mvd| of neighbours A and B for the 4x4 block at raster `r` (current MB info already holds earlier partitions).
-fn mvd_sum(nb: &NbCtx, r: usize, list: usize, comp: usize) -> u32 {
+fn mvd_sum(nb: &NbCtx<'_>, r: usize, list: usize, comp: usize) -> u32 {
     let (x, y) = (r & 3, r >> 2);
     let a = if x > 0 { nb.cur.mvd[list][r - 1][comp] } else { nb.left.map_or(0, |m| m.mvd[list][y * 4 + 3][comp]) };
     let b = if y > 0 { nb.cur.mvd[list][r - 4][comp] } else { nb.top.map_or(0, |m| m.mvd[list][12 + x][comp]) };
     a as u32 + b as u32
 }
 
-fn write_cbp<S: BinSink>(s: &mut S, nb: &NbCtx, cbp: u8) {
+fn write_cbp<S: BinSink>(s: &mut S, nb: &NbCtx<'_>, cbp: u8) {
     let luma_bit = |m: &MbInfo, b8: usize| (m.cbp >> b8) & 1;
     for b8 in 0..4usize {
         // (A, B) neighbour 8x8 blocks: (Some(mb), idx) where None = current MB
@@ -263,23 +263,23 @@ pub fn write_residual<S: BinSink>(s: &mut S, cat: Cat, coeffs: &[i16], cbf_inc: 
     }
 }
 
-fn cbf_luma(nb: &NbCtx, raster: usize) -> u32 {
+fn cbf_luma(nb: &NbCtx<'_>, raster: usize) -> u32 {
     let f = |v: Option<u8>| v.map_or(nb.unavail_cbf(), |n| (n != 0) as u32);
     f(nb.luma_nnz(raster, true)) + 2 * f(nb.luma_nnz(raster, false))
 }
 
-fn cbf_chroma_ac(nb: &NbCtx, c: usize, b: usize) -> u32 {
+fn cbf_chroma_ac(nb: &NbCtx<'_>, c: usize, b: usize) -> u32 {
     let f = |v: Option<u8>| v.map_or(nb.unavail_cbf(), |n| (n != 0) as u32);
     f(nb.chroma_nnz(c, b, true)) + 2 * f(nb.chroma_nnz(c, b, false))
 }
 
-fn cbf_dc(nb: &NbCtx, bit: u8) -> u32 {
+fn cbf_dc(nb: &NbCtx<'_>, bit: u8) -> u32 {
     let f = |m: Option<&MbInfo>| m.map_or(nb.unavail_cbf(), |m| ((m.dc_cbf >> bit) & 1) as u32);
     f(nb.left) + 2 * f(nb.top)
 }
 
 /// Write the whole macroblock layer (after mb_skip_flag = 0 in P/B slices).
-pub fn write_mb<S: BinSink>(s: &mut S, nb: &NbCtx, c: &MbCode) {
+pub fn write_mb<S: BinSink>(s: &mut S, nb: &NbCtx<'_>, c: &MbCode) {
     let cur = nb.cur;
     // ---- mb_type
     match c.kind {

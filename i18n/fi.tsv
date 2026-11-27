@@ -55,6 +55,7 @@
 	Apply Video Transition	Käytä videosiirtymää
 	Assembly	Kokoonpano
 	Attach Proxies…	Liitä välityskopiot…
+	Find Camera Proxies	Etsi kameran välityskopiot
 	Audio	Ääni
 	Audio Channels…	Äänikanavat…
 	Audio Clip Mixer	Äänileikemikseri
@@ -1898,6 +1899,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP -kansio: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP -kansio: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF -kansio: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF -kansio: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM
+	Episode	Jakso
+	Event highlights	Tapahtuman kohokohdat
+	Event	Tapahtuma
+	Lossless (reversible JPEG 2000)	Häviötön (käännettävä JPEG 2000)
+	Package language	Paketin kieli
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B-kuvat
@@ -1934,6 +1945,7 @@
 	Counter	Laskuri
 	Typewriter	Kirjoituskone
 	Word by Word	Sana sanalta
+	Scramble	Sekoitus
 	Animator	Animaattori
 	Animator Duration	Animaattorin kesto
 	Animator Delay	Animaattorin viive
@@ -2062,6 +2074,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10-bittinen HDR:lle)
 	10-bit RGB	10-bittinen RGB
 	12-bit X'Y'Z'	12-bittinen X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-bittinen R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF häviöllinen
+	JPEG 2000 IMF reversible	JPEG 2000 IMF käännettävä
 	16-bit half float	16-bittinen puolitarkkuus
 	linear	lineaarinen
 	uncompressed	pakkaamaton
@@ -3010,6 +3025,10 @@
 	Sharpen Amount	Terävöinnin määrä
 	Shift Center To	Siirrä keskipiste kohteeseen
 	Show Focus Area	Näytä tarkennusalue
+	Rack Focus	Tarkennuksen siirto
+	Focus Point A	Tarkennuspiste A
+	Focus Point B	Tarkennuspiste B
+	Rack	Siirto
 	Show Only Noise	Näytä vain kohina
 	Shrink	Kutista
 	Shutter Angle	Suljinkulma
@@ -3717,7 +3736,7 @@
 	Six-Point Pin	Kuuden pisteen kiinnitys
 	Upper Center	Ylhäällä keskellä
 	Lower Center	Alhaalla keskellä
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Käytä FFmpegiä tiedostoille, joita CFA4-moottori ei voi avata (FFmpeg 9.0.2 tai uudempi, GPL-3-käännös)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Käytä FFmpegiä tiedostoille, joita CFA4-moottori ei voi avata (FFmpeg 9.1 tai uudempi, GPL-3-käännös)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Käytä järjestelmän GStreameria tiedostoille, joita moottori tai FFmpeg ei voi avata
 	Analyze Source for Smart Cut	Analysoi lähde Smart Cutia varten
 	Plan Smart Cut	Suunnittele Smart Cut
@@ -4165,6 +4184,11 @@ export.summary	Low	matala
 	Burn Size	Palon koko
 	Ember Width	Hiillosreunan leveys
 	Ember Color	Hiillosreunan väri
+	Tear Away	Repäisy
+	Tear Roughness	Repeämän rosoisuus
+	Paper Edge Width	Paperireunan leveys
+	Stamp Cut	Postimerkkileikkaus
+	Perforations	Rei'itys
 	Check Text Legibility	Tarkista tekstin luettavuus
 	Clear Legibility Markers	Poista luettavuusmerkit
 	Text legibility: no problems found	Tekstin luettavuus: ongelmia ei löytynyt
@@ -4204,6 +4228,9 @@ export.summary	Low	matala
 	Dither	Rasterointi
 	Pattern	Kuvio
 	Cell Size	Solukoko
+	Pixelate	Pikselöinti
+	Cell Shape	Solun muoto
+	LED	LED
 	Cyan Angle	Syaanin kulma
 	Magenta Angle	Magentan kulma
 	Yellow Angle	Keltaisen kulma
@@ -4369,6 +4396,10 @@ export.summary	Low	matala
 	{n} more	{n} lisää
 	Block	Lohko
 	parallel	rinnakkain
+	page {page}: a spine's vertical position works on card pages only; it is ignored	sivu {page}: akselin pystysijainti toimii vain korttisivuilla; se ohitetaan
+	on a card: centered on {y} px	kortilla: keskitetty kohtaan {y} px
+	on a card: starts at {y} px	kortilla: alkaa kohdasta {y} px
+	on a card: ends at {y} px	kortilla: päättyy kohtaan {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Sivulla (OBS ottaa sen selainlähteestä)
@@ -4441,7 +4472,12 @@ export.summary	Low	matala
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	sivu {page}: kesto saavutetaan rullausnopeutta muuttamalla (välien pitäisi kasvaa yli 20-kertaisiksi)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	sivu {page}: siirtymä vaatii sivujen koskettavan toisiaan (sivuväli 0); se jätetään pois
 	page {page}: there is no transition “{name}”; the pages cut	sivu {page}: siirtymää ”{name}” ei ole; sivut leikataan
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	akselin sijaintia ”{value}” ei tueta (pikselisiirtymää tuetaan, valinnaisesti ”parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	akselin sijaintia ”{value}” ei tueta (pikselisiirtymää tuetaan, valinnaisesti ”parallel” / ”Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	sivu {page}: koukku ulottuu kauemmas taaksepäin kuin akseleita on; se koukkuu ensimmäiseen akseliin tai aloittaa omansa
+	hooked {n} spines back: its {from} meets this spine's {to}	koukutettu {n} akselia taaksepäin: sen {from} kohtaa tämän akselin kohdan {to}
+	top	yläreuna
+	middle	keskikohta
+	bottom	alareuna
 	vertical gap “{value}” is not a number	pystyväli ”{value}” ei ole luku
 	picture “{file}” was not found or cannot be read; it is left out	kuvaa ”{file}” ei löytynyt tai sitä ei voi lukea; se jätetään pois
 	video “{file}” was not found or cannot be read; it is left out	videota ”{file}” ei löytynyt tai sitä ei voi lukea; se jätetään pois
@@ -4504,3 +4540,435 @@ export.summary	Low	matala
 	accept	hyväksyttävä
 	the engine did not start the check	moottori ei käynnistänyt tarkistusta
 	the engine sent no report	moottori ei lähettänyt raporttia
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a pakkaamaton 10-bittinen 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, pakkaamaton 10-bittinen Y'CbCr 4:2:2 v210-asettelussa (SMPTE ST 384), 24-bittinen 48 kHz PCM, alkuaikakoodi
+	Write the captions as ANC data (CEA-608/708)	Kirjoita tekstitys ANC-datana (CEA-608/708)
+	Load KDM…	Lataa KDM…
+	Forget DCP Keys	Unohda DCP-avaimet
+	Load KDM	Lataa KDM
+	KDM file	KDM-tiedosto
+	Private key (PEM)	Yksityinen avain (PEM)
+	{title}: {count} keys loaded	{title}: {count} avainta ladattu
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Avaimet ovat vain muistissa, kunnes valitaan Unohda DCP-avaimet tai istunto päättyy.
+	DCP keys forgotten	DCP-avaimet unohdettu
+	Choose the KDM file and the private key.	Valitse KDM-tiedosto ja yksityinen avain.
+	Load even if the certificate chain is not verified	Lataa myös vahvistamattomalla varmenneketjulla
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paketti: {loaded}/{total} KDM:ää ladattu, {other} muille vastaanottajille
+	Not loaded: {path}: {problem}	Ei ladattu: {path}: {problem}
+	Signature verified: {chain}	Allekirjoitus vahvistettu: {chain}
+	Signature not verified: {problem}	Allekirjoitusta ei vahvistettu: {problem}
+	KDM required	KDM tarvitaan
+	Encrypted: load the KDM with content key {keys}	Salattu: lataa KDM, jossa on sisältöavain {keys}
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Aikakoodin synkronointi
+	TimecodeSync	Aikakoodin synkronointi
+	Chase	Seuranta
+	Follow external timecode during playback	Seuraa ulkoista aikakoodia toiston aikana
+	Lock after	Lukitse kun kulunut
+	Keep playing without signal for	Jatka toistoa ilman signaalia
+	External frame rate	Ulkoinen kuvataajuus
+	Offset (added to the external timecode)	Siirtymä (lisätään ulkoiseen aikakoodiin)
+	LTC	LTC
+	LTC input device	LTC-tulolaite
+	LTC input channel	LTC-tulokanava
+	Send LTC during playback	Lähetä LTC toiston aikana
+	LTC output device	LTC-lähtölaite
+	LTC output channel	LTC-lähtökanava
+	LTC level	LTC-taso
+	dBFS	dBFS
+	MIDI Timecode	MIDI-aikakoodi
+	MTC input port (empty = CFA4 port)	MTC-tuloportti (tyhjä = CFA4:n portti)
+	Send MIDI Timecode during playback	Lähetä MIDI-aikakoodi toiston aikana
+	MTC output port (empty = CFA4 port)	MTC-lähtöportti (tyhjä = CFA4:n portti)
+	Send timecode ahead of the picture by	Lähetä aikakoodi kuvaa edellä
+	LTC (audio input)	LTC (äänitulo)
+	MIDI Timecode (MIDI input)	MIDI-aikakoodi (MIDI-tulo)
+	Same as the sequence	Sama kuin sekvenssissä
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Aikakoodin synkronoinnin tila
+	Chase External Timecode	Seuraa ulkoista aikakoodia
+	Send LTC	Lähetä LTC
+	Send MIDI Timecode	Lähetä MIDI-aikakoodi
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Suoran studion esikatselu
+	Live studio: stopped	Suora studio: pysäytetty
+	Live studio: {state}	Suora studio: {state}
+	Live studio: {error}	Suora studio: {error}
+	restarted after {count} crashes (last: {exit})	käynnistetty uudelleen {count} kaatumisen jälkeen (viimeisin: {exit})
+	software backend: {reason}	ohjelmistotaustaosa: {reason}
+	Start studio	Käynnistä studio
+	Stop studio	Pysäytä studio
+	Add Studio Scene	Lisää studiokohtaus
+	Live	Suora
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Alkutekstit
+	Chapter Title	Luvun otsikko
+	Lower Third	Nimiplanssi
+	page {page}: graphics template “{template}” was not found; “{used}” is used	sivu {page}: grafiikkamallia “{template}” ei löytynyt; käytetään mallia “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	sivu {page}: grafiikkamallissa “{template}” ei ole kenttää lohkon kaikelle tekstille; loput jätetään pois
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	sivu {page}: mallin kenttää “{control}” → “{part}” ei käytetä (tekstiohjainta ei ole, tai se ei ole otsake, runko tai loppu)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	sivu {page}: kuvat jätetään pois otsikko-, alkuteksti-, luku- ja nimiplanssisivuilta
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automaattinen väri
+	Auto Contrast	Automaattinen kontrasti
+	Auto Levels	Automaattiset tasot
+	Temporal Smoothing (seconds)	Ajallinen tasoitus (sekuntia)
+	Scene Detect	Kohtausten tunnistus
+	Black Clip	Mustan leikkaus
+	White Clip	Valkoisen leikkaus
+	Snap Neutral Midtones	Neutraalit keskisävyt
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% ylhäällä vasemmalla
+	Picture-in-picture: 35 % scale in the upper left	Kuva kuvassa: 35 %:n skaalaus ylhäällä vasemmalla
+	PiP 35% Lower Left	PiP 35% alhaalla vasemmalla
+	Picture-in-picture: 35 % scale in the lower left	Kuva kuvassa: 35 %:n skaalaus alhaalla vasemmalla
+	PiP 35% Lower Right	PiP 35% alhaalla oikealla
+	Picture-in-picture: 35 % scale in the lower right	Kuva kuvassa: 35 %:n skaalaus alhaalla oikealla
+	Split Screen Left	Jaettu näyttö vasen
+	Split screen: the middle half of the picture fills the left half of the frame	Jaettu näyttö: kuvan keskimmäinen puolikas täyttää ruudun vasemman puolen
+	Split Screen Right	Jaettu näyttö oikea
+	Split screen: the middle half of the picture fills the right half of the frame	Jaettu näyttö: kuvan keskimmäinen puolikas täyttää ruudun oikean puolen
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Juovien voimakkuus
+	Line Count	Juovien määrä
+	Mask	Maski
+	Mask Strength	Maskin voimakkuus
+	Corner Darkening	Kulmien tummennus
+	Aperture Grille	Aukkoritilä
+	Shadow Mask	Varjomaski
+	Slot Mask	Rakomaski
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Öljymaalaus
+	Detail	Yksityiskohdat
+	Texture	Tekstuuri
+	Facet	Fasetit
+	Daubs	Täplät
+	Dry Brush	Kuiva sivellin
+	Fresco	Fresko
+	Knife	Palettiveitsi
+	Sponge	Sieni
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pikselien lajittelu
+	Sort By	Lajitteluperuste
+	Lower Threshold	Alaraja
+	Upper Threshold	Yläraja
+	Ascending	Nouseva
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Ajallinen kohinanpoisto
+	Frames Each Side	Kuvia kummallakin puolella
+	Motion Threshold	Liikkeen kynnys
+	Show Motion	Näytä liike
+	No signal	Ei signaalia
+	Locating	Paikannetaan
+	Locked	Lukittu
+	Freewheel	Vapaakäynti
+	Scrubbing	Selataan
+	Sending	Lähetetään
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Tekstitykset ensimmäiseltä tekstitysraidalta
+	The package language	Paketin kieli
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (sisäänrakennettu) tai OpenType- / TrueType-tiedosto
+	Subtitle language	Tekstityskieli
+	Subtitle font	Tekstitysfontti
+	Fonts	Fontit
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11-osat
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Yhdistetty
+	Device	Laite
+	Devices	Laitteet
+	MIDI	MIDI
+	Not connected	Ei yhdistetty
+	OSC	OSC
+	Use	Käytä
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-valvonta
+	Press Start Monitor, then move a control.	Paina Käynnistä valvonta ja liikuta sitten säädintä.
+	Start Monitor	Käynnistä valvonta
+	Stop Monitor	Pysäytä valvonta
+	… {count} messages not shown (too many at once)	… {count} viestiä jäi näyttämättä (liian monta kerralla)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Ohjauspinta pyysi komentoa {command}, jota ei ole.
+	Assignments	Määritykset
+	Cancel Learn	Peruuta opettelu
+	Control	Säädin
+	Learn	Opettele
+	Remove this assignment	Poista tämä määritys
+	{control} runs {command}.	{control} suorittaa komennon {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Painike {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panorointi (kiertonuppi)
+	{strip} Volume (fader)	{strip} äänenvoimakkuus (liukusäädin)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Ohjainpinnat
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Kytkennät käynnistyvät painalluksesta (fader tai nuppi lasketaan painetuksi puolenvälin jälkeen); mikseriraitaan kytketty fader tai nuppi liikuttaa äänenvoimakkuutta tai panorointia. ShuttlePRO:n sukkulakehä toistaa profiilin nopeuksilla ja jog-pyörä siirtyy ruutu kerrallaan. Päättymättömät enkooderit ja palaute ohjaimeen (valot, moottorifaderit) tulevat myöhemmässä versiossa.
+	First message (ms)	Ensimmäinen viesti (ms)
+	Silence (ms)	Hiljaisuus (ms)
+	Waiting for the control to settle…	Odotetaan, että säädin asettuu…
+	Type: {hint}. Confirm this assignment.	Tyyppi: {hint}. Vahvista tämä kytkentä.
+	That control is already assigned. Confirm replaces it.	Tämä säädin on jo kytketty. Vahvistus korvaa sen.
+	Learn timed out.	Oppiminen aikakatkaistiin.
+	Confirm	Vahvista
+	Reject	Hylkää
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Näyttää jokaisen MIDI-viestin ohjaimilta sen saapuessa, jotta nähdään lähettääkö ohjain ja mitä. MIDI-kello, Active Sensing ja MIDI-aikakoodi jätetään pois.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Valitse komento (tai mikseriraita faderille tai nupille), paina Opi, sitten painiketta, tai siirrä säädin puolenvälin yli. Vahvistus säilyttää kytkennän. OK tallentaa kytkennät.
+	All devices	Kaikki laitteet
+	Builtin: {name}	Sisäänrakennettu: {name}
+	Capturing	Taltioidaan
+	Confirmed	Vahvistettu
+	Conflict	Ristiriita
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Muokkaa profiilia liittämällä MIDI-ohjain tai ShuttlePRO.
+	Control Surfaces…	Ohjauspinnat…
+	Filter messages	Suodata viestit
+	Idle	Jouten
+	Kernel dropped: {count}	Ydin hylkäsi: {count}
+	Learn Assignments…	Opi kytkennät…
+	Load profile	Lataa profiili
+	MIDI Monitor…	MIDI-valvonta…
+	Mute shuttle sound	Vaimenna shuttle-ääni
+	No conflicts.	Ei ristiriitoja.
+	No profile warnings.	Ei profiilivaroituksia.
+	No project profile is stored.	Projektiprofiilia ei ole tallennettu.
+	OK writes the preferences and the profile file together.	OK kirjoittaa asetukset ja profiilitiedoston yhdessä.
+	Online	Linjalla
+	Pending	Odottaa
+	Pickup (14-bit)	Poiminta (14 bittiä)
+	Pickup (7-bit)	Poiminta (7 bittiä)
+	Profile warnings	Profiilivaroitukset
+	Rejected	Hylätty
+	Show Active Sensing	Näytä Active Sensing
+	Show MIDI Clock	Näytä MIDI-kello
+	Show MIDI Time Code	Näytä MIDI-aikakoodi
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profiilitiedosto on vioittunut. Asetukset ja sisäänrakennettu profiili jäävät käyttöön.
+	Timed out	Aika loppui
+	Type: {hint}	Tyyppi: {hint}
+	User profile file	Käyttäjän profiilitiedosto
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} vastaanotettu, {dispatched} välitetty, {coalesced} yhdistetty, {stalls} odotukset, {errors} virheet
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID jog/shuttle
+	Disabled	Poistettu käytöstä
+	Looking for devices…	Etsitään laitteita…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	MIDI-ohjainta tai jog/shuttle-laitetta ei löytynyt. Liitä sellainen ja paina Päivitä.
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Käytä ohjainpintoja (MIDI-ohjaimet, jog/shuttle-laitteet)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Säätimien liittäminen komentoihin, MIDI Learn ja MIDI-monitori tulevat myöhemmässä versiossa; tässä tehdyt valinnat muistetaan siihen asti.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive-tyylinen ShuttlePRO
+	Generic MIDI	Yleinen MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Lue LTC-äänestä
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Etsi leikkeen äänestä SMPTE LTC ja käytä aikakoodia, jonka se antaa ensimmäiselle kuvalle
+	Read Timecode from LTC Audio	Lue aikakoodi LTC-äänestä
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Äänet
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: säädä toistonopeutta hyppäämisen sijaan
+	User bits	Käyttäjäbitit
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmentointi
+	Marker Type	Merkin tyyppi
+	Chapter	Luku
+	Segmentation (AS-11 programme part)	Segmentointi (AS-11-ohjelmaosa)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3-muunnin
+	AT9/AT3 Converter…	AT9/AT3-muunnin…
+	Files to convert:	Muunnettavat tiedostot:
+	Add Files	Lisää tiedostoja
+	Add Files…	Lisää tiedostoja…
+	Convert to:	Muunna muotoon:
+	Bit rate:	Bittinopeus:
+	Sample format:	Näytemuoto:
+	Output folder:	Tulostekansio:
+	Output Folder	Tulostekansio
+	Next to each source file	Kunkin lähdetiedoston viereen
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- ja ATRAC3plus-tiedostot muunnetaan WAV-muotoon; AT9-, ATRAC3plus- ja MP3-koodaus ei ole vielä käytettävissä.
+	Convert	Muunna
+	Add the files to convert first.	Lisää ensin muunnettavat tiedostot.
+	Done: {n} file(s) converted.	Valmis: {n} tiedosto(a) muunnettu.
+	Converting {name}…	Muunnetaan {name}…
+	Stopping…	Pysäytetään…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, joint stereo)
+	16-bit	16-bittinen
+	24-bit	24-bittinen
+	32-bit float	32-bittinen liukuluku
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Jäännös
+	Motion Boost	Liikkeen vahvistus
+	Recovery	Palautuminen
+	Encode Resolution	Koodaustarkkuus
+	Half	Puolikas
+	Quarter	Neljännes
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-kukinta
+	Start Time (seconds)	Aloitusaika (sekuntia)
+	Repeats	Toistot
+	Clean Blocks	Puhtaat lohkot
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Käytä äskettäin käytettyä tehostetta valittuihin klippeihin
+	Disable all effects	Poista kaikki tehosteet käytöstä
+	Enable all effects	Ota kaikki tehosteet käyttöön
+	No recent effects	Ei viimeaikaisia tehosteita
+	Recent effects	Viimeaikaiset tehosteet
+	Switch every effect of the selected clips off	Poistaa valittujen klippien kaikki tehosteet käytöstä
+	Switch every effect of the selected clips on	Ottaa valittujen klippien kaikki tehosteet käyttöön
+	Merged	Yhdistetty
+	Per Channel	Kanavittain
+	Channel Zoom	Kanavien zoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Valkotasapainon valitsin (napsauta neutraalia pistettä ohjelmamonitorissa; Esc peruu)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Tehtävienhallinta
+	Background jobs	Taustatyöt
+	Exports	Viennit
+	Shared task queue	Jaettu tehtäväjono
+	Task	Tehtävä
+	State	Tila
+	Details	Tiedot
+	Time left	Aikaa jäljellä
+	Scheduled	Ajastettu
+	Queued	Jonossa
+	Waiting for resources	Odottaa resursseja
+	Blocked	Estetty
+	Running	Käynnissä
+	Paused	Keskeytetty
+	Cancelling	Peruutetaan
+	Interactive	Interaktiivinen
+	Speculative	Spekulatiivinen
+	Final render	Lopullinen renderöinti
+	Show finished	Näytä valmistuneet
+	Nothing is running.	Mitään ei ole käynnissä.
+	Not reported by this engine yet.	Tämä moottori ei vielä raportoi tätä.
+	Not available: {why}	Ei saatavilla: {why}
+	{name} waits: {why}	{name} odottaa: {why}
+	{running} running · {waiting} waiting	{running} käynnissä · {waiting} odottaa
+	{n} active	{n} aktiivista
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Tarvitsee päätöksesi
+	Run now	Suorita nyt
+	Next slot	Seuraava aikaväli
+	Missed its start	Alku jäi väliin
+	Missed its start at {time}	Alku klo {time} jäi väliin
+	Starts at {time}	Alkaa klo {time}
+	Subtitle kind	Tekstityksen laji
+	Subtitles	Tekstitykset
+	Captions for the hearing impaired	Tekstitykset kuulovammaisille
+	Forced narrative	Pakotettu selostus (forced narrative)
+	Silence	Hiljaisuus
+	Detect Silence	Tunnista hiljaisuus
+	Remove Silence	Poista hiljaisuus
+	Clear Silence Markers	Tyhjennä hiljaisuusmerkit
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Valitse DCP-kansio.
+	DCP Validation	DCP-validointi
+	DCP folder	DCP-kansio
+	DCP folder (the one holding ASSETMAP)	DCP-kansio (se, jossa ASSETMAP on)
+	Evidence	Todiste
+	How to fix	Korjausohje
+	Interrupted	Keskeytetty
+	Not applicable	Ei sovellettavissa
+	Report	Raportti
+	Report saved: {path}	Raportti tallennettu: {path}
+	Required	Pakollinen
+	Rule	Sääntö
+	Rules	Säännöt
+	Save JSON…	Tallenna JSON…
+	Save Markdown…	Tallenna Markdown…
+	Save report	Tallenna raportti
+	Skipped	Ohitettu
+	Standard: {standard}	Standardi: {standard}
+	Validate	Validoi
+	Validate DCP…	Validoi DCP…
+	the engine sent no profiles	moottori ei lähettänyt profiileja
+	{n} files checked	{n} tiedostoa tarkistettu
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Kirjoita AS-02-paketti (polku on kansio)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktiiviset vokselit:
+	Bounds:	Rajat:
+	Voxel attributes	Voksliattribuutit
+	Voxel size:	Vokselin koko:
+	points	pistettä
+
+# WP3 DPX bit depth
+	Bit Depth	Bittisyvyys
+
+# AS-02 versions
+	AS-02 Versions	AS-02-versiot
+	Tick the sequences to write as further versions in the AS-02 bundle	Valitse sekvenssit, jotka kirjoitetaan AS-02-pakettiin lisäversioina
+	Delete Short Clips	Poista lyhyet leikkeet
+	A stored combination does not run a command yet.	Tallennettu yhdistelmä ei vielä suorita komentoa.
+	Action hint	Toimintovihje
+	Add combination	Lisää yhdistelmä
+	Add mapping	Lisää määritys
+	Button Learn	Opettele painike
+	Button Test	Painikekoe
+	Button name	Painikkeen nimi
+	Cancel feedback	Peruutuksen palaute
+	Combination editor	Yhdistelmäeditori
+	Context	Konteksti
+	Delete profile	Poista profiili
+	Detected buttons	Havaitut painikkeet
+	Draw the gesture with a button held.	Piirrä ele painike painettuna.
+	Error feedback	Virheen palaute
+	Evdev device	Evdev-laite
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev lukee vain valitun laitteen, ja vasta kun myöhempi vaihe kytkee sen. Tämä versio pysyy Qt-polulla.
+	Execution feedback	Suorituksen palaute
+	Follow the system	Seuraa järjestelmää
+	Gesture	Ele
+	Gesture Learn	Opettele ele
+	Gesture editor	Ele-editori
+	Gesture profiles	Eleprofiilit
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Eleet pysyvät pois päältä, kunnes kytket ne. Kytkeminen ei estä paneelin valikkoa.
+	HUD	HUD
+	Hand	Käsi
+	High contrast	Suuri kontrasti
+	Hold time	Pitoaika
+	Input access	Syötteen käyttö
+	Left-handed	Vasenkätinen
+	Mapping	Määritys
+	Maximum length	Suurin pituus
+	Maximum time	Suurin aika
+	Minimum length	Pienin pituus
+	Mirror ergonomic gestures	Peilaa ergonomiset eleet
+	Mouse Gestures	Hiirieleet
+	Mouse Gestures…	Hiirieleet…
+	No buttons yet. Press one in Button Learn or Button Test.	Ei vielä painikkeita. Paina yhtä opetellessa tai kokeessa.
+	Press	Painallus
+	Qt pointer (this application)	Qt-osoitin (tämä sovellus)
+	Recognition preview	Tunnistuksen esikatselu
+	Reduced animation	Vähennetty animaatio
+	Right-handed	Oikeakätinen
+	Roles	Roolit
+	Save gesture	Tallenna ele
+	Save profile	Tallenna profiili
+	Show the gesture HUD	Näytä ele-HUD
+	Slop	Välys
+	Spatial gesture	Tilallinen ele
+	Thresholds	Kynnykset
+	Trail	Jälki
+	Use gestures in the window	Käytä eleitä ikkunassa

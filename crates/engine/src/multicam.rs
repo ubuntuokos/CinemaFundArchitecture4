@@ -297,7 +297,7 @@ fn offset_p(p: &Value, rate: FrameRate) -> Tick {
 }
 
 /// Run `f` on sequence `seq_id` of `p` with an edit context (ids, media durations), then check it.
-fn seq_edit<R>(p: &mut Project, seq_id: ItemId, media: &Arc<MediaPool>, f: impl FnOnce(&mut Sequence, &mut EditCtx) -> Result<R>) -> Result<R> {
+fn seq_edit<R>(p: &mut Project, seq_id: ItemId, media: &Arc<MediaPool>, f: impl FnOnce(&mut Sequence, &mut EditCtx<'_>) -> Result<R>) -> Result<R> {
     let snapshot = Arc::new(p.clone());
     let snap = snapshot.clone();
     let media = media.clone();

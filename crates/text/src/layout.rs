@@ -386,7 +386,7 @@ struct ParaLine {
 }
 
 /// Lay out one paragraph (no newlines) whose text starts at byte `base` of the whole string.
-fn paragraph(text: &str, base: usize, sty: &Styles, para: &ParagraphStyle) -> Vec<ParaLine> {
+fn paragraph(text: &str, base: usize, sty: &Styles<'_>, para: &ParagraphStyle) -> Vec<ParaLine> {
     let style = sty.list[0];
     let primary = sty.prim[0];
     let pm = fonts::face(primary.face).metrics(style.size);
@@ -757,7 +757,7 @@ pub fn layout_rich_uncached(text: &str, style: &TextStyle, runs: &[StyleRun], pa
 
 /// Vertical layout: each grapheme is its own line (so carets, hit testing and selection work
 /// unchanged), stacked top to bottom and centred on its column; columns run right to left.
-fn layout_vertical(text: &str, sty: &Styles, para: &ParagraphStyle, col_w: f32, mut lay: Layout) -> Layout {
+fn layout_vertical(text: &str, sty: &Styles<'_>, para: &ParagraphStyle, col_w: f32, mut lay: Layout) -> Layout {
     let style = sty.list[0];
     let pm = fonts::face(sty.prim[0].face).metrics(style.size);
     let row = (pm.ascent + pm.descent).max(style.size * 0.5) + style.tracking * style.size / 1000.0;

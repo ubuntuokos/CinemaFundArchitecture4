@@ -173,7 +173,7 @@ macro_rules! make_parse {
             type Error = $crate::make_parse!(@select_error_ty; $($err)?);
 
             #[allow(unused)]
-            fn parse(bitstream: &mut $crate::bitstream::Bitstream, ctx: Ctx) -> ::std::result::Result<Self, Self::Error> where Self: Sized {
+            fn parse(bitstream: &mut $crate::bitstream::Bitstream<'_>, ctx: Ctx) -> ::std::result::Result<Self, Self::Error> where Self: Sized {
                 use $crate::common::{Bundle, BundleDefault};
                 $(
                     let $field = $crate::make_parse!(
@@ -210,7 +210,7 @@ macro_rules! make_parse {
             type Error = $crate::make_parse!(@select_error_ty; $($err)?);
 
             #[allow(unused)]
-            fn parse(bitstream: &mut $crate::bitstream::Bitstream, $ctx_id: $ctx) -> ::std::result::Result<Self, Self::Error> where Self: Sized {
+            fn parse(bitstream: &mut $crate::bitstream::Bitstream<'_>, $ctx_id: $ctx) -> ::std::result::Result<Self, Self::Error> where Self: Sized {
                 use $crate::common::{Bundle, BundleDefault};
                 $(
                     let $field = $crate::make_parse!(
@@ -291,7 +291,7 @@ where
 {
     type Error = T::Error;
 
-    fn parse(bitstream: &mut Bitstream, ctx: Ctx) -> Result<Self, Self::Error> {
+    fn parse(bitstream: &mut Bitstream<'_>, ctx: Ctx) -> Result<Self, Self::Error> {
         T::parse(bitstream, ctx).map(Some)
     }
 }
@@ -303,7 +303,7 @@ pub struct Name(String);
 impl<Ctx> Bundle<Ctx> for Name {
     type Error = crate::bitstream::Error;
 
-    fn parse(bitstream: &mut Bitstream, _: Ctx) -> Result<Self, Self::Error> {
+    fn parse(bitstream: &mut Bitstream<'_>, _: Ctx) -> Result<Self, Self::Error> {
         let len = read_bits!(bitstream, U32(0, u(4), 16 + u(5), 48 + u(10)))? as usize;
         let mut data = vec![0u8; len];
         for b in &mut data {

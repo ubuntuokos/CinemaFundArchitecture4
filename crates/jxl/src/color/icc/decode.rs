@@ -11,7 +11,7 @@ use crate::bitstream::Bitstream;
 use crate::color::{Error, Result};
 
 /// Reads the encoded ICC profile stream from the given bitstream.
-pub fn read_icc(bitstream: &mut Bitstream) -> Result<Vec<u8>> {
+pub fn read_icc(bitstream: &mut Bitstream<'_>) -> Result<Vec<u8>> {
     let enc_size = bitstream.read_u64()?;
     crate::tracing::trace!(enc_size);
 

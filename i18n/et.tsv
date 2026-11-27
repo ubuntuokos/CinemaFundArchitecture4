@@ -54,6 +54,7 @@
 	Apply Video Transition	Rakenda videoüleminek
 	Assembly	Koostamine
 	Attach Proxies…	Lisa asendusfailid…
+	Find Camera Proxies	Otsi kaamera asendusfaile
 	Audio	Heli
 	Audio Channels…	Helikanalid…
 	Audio Clip Mixer	Heliklipi mikser
@@ -2026,6 +2027,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP kaust: JPEG 2000 3996×2160 (1,85:1), 5.1 24-bitine 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP kaust: JPEG 2000 4096×1716 (2,39:1), 5.1 24-bitine 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF kaust: JPEG 2000 1920×1080, 5.1 24-bitine 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF kaust: JPEG 2000 3840×2160, 5.1 24-bitine 48 kHz PCM
+	Episode	Episood
+	Event highlights	Sündmuse kokkuvõte
+	Event	Sündmus
+	Lossless (reversible JPEG 2000)	Kadudeta (pööratav JPEG 2000)
+	Package language	Paketi keel
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B-pildid
@@ -2062,6 +2073,7 @@
 	Counter	Loendur
 	Typewriter	Kirjutusmasin
 	Word by Word	Sõnahaaval
+	Scramble	Segamine
 	Animator	Animaator
 	Animator Duration	Animaatori kestus
 	Animator Delay	Animaatori viivitus
@@ -2198,6 +2210,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR jaoks 10-bitine)
 	10-bit RGB	10-bitine RGB
 	12-bit X'Y'Z'	12-bitine X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-bitine R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF kadudega
+	JPEG 2000 IMF reversible	JPEG 2000 IMF pööratav
 	16-bit half float	16-bitine poolujukoma
 	linear	lineaarne
 	uncompressed	tihendamata
@@ -3193,6 +3208,10 @@
 	Sharpen Amount	Teravduse hulk
 	Shift Center To	Nihuta keskpunkt asukohta
 	Show Focus Area	Näita fookusala
+	Rack Focus	Teravuse ülekanne
+	Focus Point A	Fookuspunkt A
+	Focus Point B	Fookuspunkt B
+	Rack	Ülekanne
 	Show Only Noise	Näita ainult müra
 	Shrink	Kahanda
 	Shutter Angle	Katiku nurk
@@ -3915,7 +3934,7 @@
 	Six-Point Pin	Kuuepunktiline kinnitus
 	Upper Center	Keskel ülal
 	Lower Center	Keskel all
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Kasuta FFmpegi failide jaoks, mida CFA4 mootor avada ei suuda (FFmpeg 9.0.2 või uuem, GPL-3 versioon)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Kasuta FFmpegi failide jaoks, mida CFA4 mootor avada ei suuda (FFmpeg 9.1 või uuem, GPL-3 versioon)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Kasuta süsteemi GStreamerit failide jaoks, mida ei mootor ega FFmpeg avada ei suuda
 	Analyze Source for Smart Cut	Analüüsi allikat nutika lõikamise jaoks
 	Plan Smart Cut	Planeeri nutikas lõikamine
@@ -4165,6 +4184,11 @@ export.summary	Low	madal
 	Burn Size	Põletuse suurus
 	Ember Width	Hõõguva serva laius
 	Ember Color	Hõõguva serva värv
+	Tear Away	Rebimine
+	Tear Roughness	Rebenemisserva karedus
+	Paper Edge Width	Paberiserva laius
+	Stamp Cut	Margilõige
+	Perforations	Perforatsioon
 	Check Text Legibility	Kontrolli teksti loetavust
 	Clear Legibility Markers	Eemalda loetavuse markerid
 	Text legibility: no problems found	Teksti loetavus: probleeme ei leitud
@@ -4204,6 +4228,9 @@ export.summary	Low	madal
 	Dither	Ditherdus
 	Pattern	Muster
 	Cell Size	Lahtri suurus
+	Pixelate	Pikseldamine
+	Cell Shape	Lahtri kuju
+	LED	LED
 	Cyan Angle	Tsüaani nurk
 	Magenta Angle	Magenta nurk
 	Yellow Angle	Kollase nurk
@@ -4369,6 +4396,10 @@ export.summary	Low	madal
 	{n} more	Veel {n}
 	Block	Plokk
 	parallel	paralleelne
+	page {page}: a spine's vertical position works on card pages only; it is ignored	leht {page}: telje püstasend kehtib ainult kaardilehtedel; seda eiratakse
+	on a card: centered on {y} px	kaardil: keskel kohal {y} px
+	on a card: starts at {y} px	kaardil: algab kohalt {y} px
+	on a card: ends at {y} px	kaardil: lõpeb kohal {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Lehel (OBS võtab selle brauseriallikast)
@@ -4441,7 +4472,12 @@ export.summary	Low	madal
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	leht {page}: kestus saavutatakse kerimiskiirust muutes (vahed peaksid kasvama üle 20 korra)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	leht {page}: üleminek nõuab, et lehed puutuksid (lehevahe 0); see jäetakse välja
 	page {page}: there is no transition “{name}”; the pages cut	leht {page}: üleminekut „{name}“ pole; lehed vahetuvad lõikega
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	telje asukohta „{value}“ ei toetata (toetatakse pikslinihet, soovi korral koos „parallel“)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	telje asukohta „{value}“ ei toetata (toetatakse pikslinihet, soovi korral koos „parallel“ / „Hook N Bottom-Top dx dy“)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	lehekülg {page}: konks ulatub kaugemale tagasi, kui telgi on; see haakub esimese teljega või alustab oma
+	hooked {n} spines back: its {from} meets this spine's {to}	haagitud {n} telge tagasi: selle {from} kohtub selle telje {to}ga
+	top	ülaserv
+	middle	keskkoht
+	bottom	alaserv
 	vertical gap “{value}” is not a number	vertikaalne vahe „{value}“ ei ole arv
 	picture “{file}” was not found or cannot be read; it is left out	pilti „{file}“ ei leitud või ei saa lugeda; see jäetakse välja
 	video “{file}” was not found or cannot be read; it is left out	videot „{file}“ ei leitud või ei saa lugeda; see jäetakse välja
@@ -4504,3 +4540,435 @@ export.summary	Low	madal
 	accept	lubatud
 	the engine did not start the check	mootor ei käivitanud kontrolli
 	the engine sent no report	mootor ei saatnud aruannet
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tihendamata 10-bitine 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, tihendamata 10-bitine Y'CbCr 4:2:2 v210 paigutuses (SMPTE ST 384), 24-bitine 48 kHz PCM, algusajakood
+	Write the captions as ANC data (CEA-608/708)	Kirjuta subtiitrid ANC-andmetena (CEA-608/708)
+	Load KDM…	Laadi KDM…
+	Forget DCP Keys	Unusta DCP võtmed
+	Load KDM	Laadi KDM
+	KDM file	KDM-fail
+	Private key (PEM)	Privaatvõti (PEM)
+	{title}: {count} keys loaded	{title}: laaditud {count} võtit
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Võtmed on ainult mälus, kuni valikuni Unusta DCP võtmed või seansi lõpuni.
+	DCP keys forgotten	DCP võtmed unustatud
+	Choose the KDM file and the private key.	Vali KDM-fail ja privaatvõti.
+	Load even if the certificate chain is not verified	Laadi ka kontrollimata sertifikaadiahelaga
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Kogum: laaditud {loaded} KDM-i {total}-st, {other} teistele saajatele
+	Not loaded: {path}: {problem}	Laadimata: {path}: {problem}
+	Signature verified: {chain}	Allkiri kontrollitud: {chain}
+	Signature not verified: {problem}	Allkiri kontrollimata: {problem}
+	KDM required	KDM on vajalik
+	Encrypted: load the KDM with content key {keys}	Krüptitud: laadi KDM sisuvõtmega {keys}
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Ajakoodi sünkroonimine
+	TimecodeSync	Ajakoodi sünkroonimine
+	Chase	Järgimine
+	Follow external timecode during playback	Järgi taasesitusel välist ajakoodi
+	Lock after	Lukusta pärast
+	Keep playing without signal for	Jätka ilma signaalita
+	External frame rate	Väline kaadrisagedus
+	Offset (added to the external timecode)	Nihe (liidetakse välisele ajakoodile)
+	LTC	LTC
+	LTC input device	LTC sisendseade
+	LTC input channel	LTC sisendkanal
+	Send LTC during playback	Saada taasesitusel LTC-d
+	LTC output device	LTC väljundseade
+	LTC output channel	LTC väljundkanal
+	LTC level	LTC tase
+	dBFS	dBFS
+	MIDI Timecode	MIDI-ajakood
+	MTC input port (empty = CFA4 port)	MTC sisendport (tühi = CFA4 port)
+	Send MIDI Timecode during playback	Saada taasesitusel MIDI-ajakoodi
+	MTC output port (empty = CFA4 port)	MTC väljundport (tühi = CFA4 port)
+	Send timecode ahead of the picture by	Saada ajakood pildist varem
+	LTC (audio input)	LTC (helisisend)
+	MIDI Timecode (MIDI input)	MIDI-ajakood (MIDI-sisend)
+	Same as the sequence	Sama mis jadal
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Ajakoodi sünkroonimise olek
+	Chase External Timecode	Järgi välist ajakoodi
+	Send LTC	Saada LTC
+	Send MIDI Timecode	Saada MIDI-ajakood
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Otsestuudio eelvaade
+	Live studio: stopped	Otsestuudio: peatatud
+	Live studio: {state}	Otsestuudio: {state}
+	Live studio: {error}	Otsestuudio: {error}
+	restarted after {count} crashes (last: {exit})	taaskäivitatud pärast {count} krahhi (viimane: {exit})
+	software backend: {reason}	tarkvaraline taustasüsteem: {reason}
+	Start studio	Käivita stuudio
+	Stop studio	Peata stuudio
+	Add Studio Scene	Lisa stuudiostseen
+	Live	Otse
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Algustiitrid
+	Chapter Title	Peatüki pealkiri
+	Lower Third	Nimeriba
+	page {page}: graphics template “{template}” was not found; “{used}” is used	lehekülg {page}: graafikamalli “{template}” ei leitud; kasutatakse malli “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	lehekülg {page}: graafikamallis “{template}” pole välja kogu ploki tekstile; ülejäänu jäetakse välja
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	lehekülg {page}: malli välja “{control}” → “{part}” ei kasutata (sellist tekstijuhtelementi pole või see pole päis, sisu ega jalus)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	lehekülg {page}: pildid jäetakse välja pealkirja-, algustiitri-, peatüki- ja nimeribalehtedel
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automaatne värv
+	Auto Contrast	Automaatne kontrast
+	Auto Levels	Automaatsed tasemed
+	Temporal Smoothing (seconds)	Ajaline silumine (sekundit)
+	Scene Detect	Stseenide tuvastus
+	Black Clip	Musta kärpimine
+	White Clip	Valge kärpimine
+	Snap Neutral Midtones	Neutraalsed keskmised toonid
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% üleval vasakul
+	Picture-in-picture: 35 % scale in the upper left	Pilt pildis: 35 % skaala üleval vasakul
+	PiP 35% Lower Left	PiP 35% all vasakul
+	Picture-in-picture: 35 % scale in the lower left	Pilt pildis: 35 % skaala all vasakul
+	PiP 35% Lower Right	PiP 35% all paremal
+	Picture-in-picture: 35 % scale in the lower right	Pilt pildis: 35 % skaala all paremal
+	Split Screen Left	Jagatud ekraan vasakul
+	Split screen: the middle half of the picture fills the left half of the frame	Jagatud ekraan: pildi keskmine pool täidab kaadri vasaku poole
+	Split Screen Right	Jagatud ekraan paremal
+	Split screen: the middle half of the picture fills the right half of the frame	Jagatud ekraan: pildi keskmine pool täidab kaadri parema poole
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Skaneerimisjoonte tugevus
+	Line Count	Joonte arv
+	Mask	Mask
+	Mask Strength	Maski tugevus
+	Corner Darkening	Nurkade tumendus
+	Aperture Grille	Avarest
+	Shadow Mask	Varjumask
+	Slot Mask	Piludega mask
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Õlimaal
+	Detail	Detailsus
+	Texture	Tekstuur
+	Facet	Tahud
+	Daubs	Täpid
+	Dry Brush	Kuiv pintsel
+	Fresco	Fresko
+	Knife	Pahtlinuga
+	Sponge	Käsn
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Pikslite sortimine
+	Sort By	Sordi
+	Lower Threshold	Alumine lävi
+	Upper Threshold	Ülemine lävi
+	Ascending	Kasvav
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Ajaline mürasummutus
+	Frames Each Side	Kaadreid kummalgi pool
+	Motion Threshold	Liikumise lävi
+	Show Motion	Näita liikumist
+	No signal	Signaal puudub
+	Locating	Positsioneerimine
+	Locked	Sünkroonis
+	Freewheel	Vabajooks
+	Scrubbing	Kerimine
+	Sending	Saatmine
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Subtiitrid esimeselt pealdiserajalt
+	The package language	Paketi keel
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (sisseehitatud) või OpenType / TrueType fail
+	Subtitle language	Subtiitrite keel
+	Subtitle font	Subtiitrite font
+	Fonts	Fondid
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	AS-11 osad
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Ühendatud
+	Device	Seade
+	Devices	Seadmed
+	Disabled	Keelatud
+	HID jog/shuttle	HID jog/shuttle
+	MIDI	MIDI
+	Not connected	Pole ühendatud
+	OSC	OSC
+	Use	Kasuta
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	MIDI-monitor
+	Press Start Monitor, then move a control.	Vajutage „Käivita monitor“ ja liigutage seejärel juhtelementi.
+	Start Monitor	Käivita monitor
+	Stop Monitor	Peata monitor
+	… {count} messages not shown (too many at once)	… {count} sõnumit pole näidatud (liiga palju korraga)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Juhtpind küsis käsku {command}, mida pole olemas.
+	Assignments	Määrangud
+	Cancel Learn	Tühista õppimine
+	Control	Juhtelement
+	Learn	Õpi
+	Remove this assignment	Eemalda see määrang
+	{control} runs {command}.	{control} käivitab {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Nupp {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} panoraam (nupp)
+	{strip} Volume (fader)	{strip} helitugevus (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Määrangud käivituvad nupuvajutusel (fader või nupp loetakse vajutatuks pärast poolt); mikseri rajale määratud fader või nupp liigutab helitugevust või panoraami. ShuttlePRO süstikurõngas mängib profiili kiirustel ja jog-ratas astub kaaderhaaval. Lõputud koodrid ja vastus kontrollerile (tuled, mootorfaderid) tulevad hilisemas versioonis.
+	First message (ms)	Esimene sõnum (ms)
+	Silence (ms)	Vaikus (ms)
+	Waiting for the control to settle…	Oodatakse, kuni juhik rahuneb…
+	Type: {hint}. Confirm this assignment.	Tüüp: {hint}. Kinnita see määrang.
+	That control is already assigned. Confirm replaces it.	See juhik on juba määratud. Kinnitus asendab selle.
+	Learn timed out.	Õppimise aeg sai otsa.
+	Confirm	Kinnita
+	Reject	Keeldu
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Näitab iga MIDI-sõnumit kontrolleritelt selle saabudes, et näha, kas kontroller saadab ja mida. MIDI-kell, Active Sensing ja MIDI ajakood jäetakse välja.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Vali käsk (või mikseri rada faderile või nupule), vajuta Õpi, siis nuppu või liiguta juhik üle poole. Kinnitus jätab määrangu alles. OK salvestab määrangud.
+	All devices	Kõik seadmed
+	Builtin: {name}	Sisseehitatud: {name}
+	Capturing	Hõive
+	Confirmed	Kinnitatud
+	Conflict	Konflikt
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Profiili muutmiseks ühenda MIDI-kontroller või ShuttlePRO.
+	Control Surfaces…	Juhtimispinnad…
+	Filter messages	Filtreeri sõnumid
+	Idle	Jõude
+	Kernel dropped: {count}	Kernel jättis kõrvale: {count}
+	Learn Assignments…	Õpi määranguid…
+	Load profile	Laadi profiil
+	MIDI Monitor…	MIDI-monitor…
+	Mute shuttle sound	Vaigista shuttle-heli
+	No conflicts.	Konflikte pole.
+	No profile warnings.	Profiili hoiatusi pole.
+	No project profile is stored.	Projekti profiili ei ole salvestatud.
+	OK writes the preferences and the profile file together.	OK kirjutab eelistused ja profiilifaili koos.
+	Online	Võrgus
+	Pending	Ootel
+	Pickup (14-bit)	Haaramine (14 bitti)
+	Pickup (7-bit)	Haaramine (7 bitti)
+	Profile warnings	Profiili hoiatused
+	Rejected	Tagasi lükatud
+	Show Active Sensing	Näita Active Sensingut
+	Show MIDI Clock	Näita MIDI-kella
+	Show MIDI Time Code	Näita MIDI ajakoodi
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Profiilifail on kahjustatud. Eelistused ja sisseehitatud profiil jäävad kasutusse.
+	Timed out	Aeg sai otsa
+	Type: {hint}	Tüüp: {hint}
+	User profile file	Kasutaja profiilifail
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} vastu võetud, {dispatched} edastatud, {coalesced} ühendatud, {stalls} ootamised, {errors} vead
+
+# Control Surfaces settings page (CS-1, #1187)
+	Looking for devices…	Seadmete otsimine…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Ühtegi MIDI-kontrollerit ega jog/shuttle-seadet ei leitud. Ühendage üks ja vajutage Värskenda.
+	Control Surfaces	Juhtpaneelid
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Kasuta juhtpaneele (MIDI-kontrollerid, jog/shuttle-seadmed)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Juhtelementide sidumine käskudega, MIDI Learn ja MIDI-monitor tulevad hilisemas versioonis; siinsed valikud jäetakse seni meelde.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	Kdenlive'i stiilis ShuttlePRO
+	Generic MIDI	Üldine MIDI
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Loe LTC-helist
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Otsi klipi helist SMPTE LTC-d ja kasuta ajakoodi, mille see annab esimesele kaadrile
+	Read Timecode from LTC Audio	Loe ajakood LTC-helist
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Hääled
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: hüppamise asemel kohanda taasesituse kiirust
+	User bits	Kasutajabitid
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Segmenteerimine
+	Marker Type	Markeri tüüp
+	Chapter	Peatükk
+	Segmentation (AS-11 programme part)	Segmenteerimine (AS-11 saateosa)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	AT9/AT3 teisendaja
+	AT9/AT3 Converter…	AT9/AT3 teisendaja…
+	Files to convert:	Teisendatavad failid:
+	Add Files	Lisa failid
+	Add Files…	Lisa failid…
+	Convert to:	Teisenda vormingusse:
+	Bit rate:	Bitikiirus:
+	Sample format:	Diskreetimisvorming:
+	Output folder:	Väljundkaust:
+	Output Folder	Väljundkaust
+	Next to each source file	Iga lähtefaili kõrvale
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	AT9- ja ATRAC3plus-failid teisendatakse WAV-iks; AT9-, ATRAC3plus- ja MP3-kodeerimine pole veel saadaval.
+	Convert	Teisenda
+	Add the files to convert first.	Lisa esmalt teisendatavad failid.
+	Done: {n} file(s) converted.	Valmis: {n} faili teisendatud.
+	Converting {name}…	Teisendan faili {name}…
+	Stopping…	Peatan…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, liitstereo)
+	16-bit	16-bitine
+	24-bit	24-bitine
+	32-bit float	32-bitine ujukoma
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Jääk
+	Motion Boost	Liikumise võimendus
+	Recovery	Taastumine
+	Encode Resolution	Kodeerimise eraldusvõime
+	Half	Pool
+	Quarter	Veerand
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamoshi õitsemine
+	Start Time (seconds)	Algusaeg (sekundites)
+	Repeats	Kordused
+	Clean Blocks	Puhtad plokid
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Rakenda hiljuti kasutatud efekt valitud klippidele
+	Disable all effects	Lülita kõik efektid välja
+	Enable all effects	Lülita kõik efektid sisse
+	No recent effects	Hiljutisi efekte pole
+	Recent effects	Hiljutised efektid
+	Switch every effect of the selected clips off	Lülitab valitud klippide kõik efektid välja
+	Switch every effect of the selected clips on	Lülitab valitud klippide kõik efektid sisse
+	Merged	Ühendatud
+	Per Channel	Kanalite kaupa
+	Channel Zoom	Kanalite suum
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Valge tasakaalu valija (klõpsake programmimonitoris neutraalsel punktil; Esc tühistab)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Tegumihaldur
+	Background jobs	Taustatööd
+	Exports	Eksportimised
+	Shared task queue	Jagatud tööde järjekord
+	Task	Ülesanne
+	State	Olek
+	Details	Üksikasjad
+	Time left	Järelejäänud aeg
+	Scheduled	Ajastatud
+	Queued	Järjekorras
+	Waiting for resources	Ootab ressursse
+	Blocked	Blokeeritud
+	Running	Töötab
+	Paused	Peatatud
+	Cancelling	Tühistamine
+	Interactive	Interaktiivne
+	Speculative	Spekulatiivne
+	Final render	Lõplik renderdus
+	Show finished	Näita lõpetatud
+	Nothing is running.	Midagi ei tööta.
+	Not reported by this engine yet.	See mootor ei ole seda veel teatanud.
+	Not available: {why}	Pole saadaval: {why}
+	{name} waits: {why}	{name} ootab: {why}
+	{running} running · {waiting} waiting	{running} töötab · {waiting} ootab
+	{n} active	{n} aktiivset
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Vajab teie otsust
+	Run now	Käivita kohe
+	Next slot	Järgmine ajavahemik
+	Missed its start	Algus jäi vahele
+	Missed its start at {time}	Algus kell {time} jäi vahele
+	Starts at {time}	Algab kell {time}
+	Subtitle kind	Subtiitrite liik
+	Subtitles	Subtiitrid
+	Captions for the hearing impaired	Subtiitrid kuulmispuudega inimestele
+	Forced narrative	Sunnitud jutustus (forced narrative)
+	Silence	Vaikus
+	Detect Silence	Tuvasta vaikus
+	Remove Silence	Eemalda vaikus
+	Clear Silence Markers	Tühjenda vaikuse märgid
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Vali DCP kaust.
+	DCP Validation	DCP valideerimine
+	DCP folder	DCP kaust
+	DCP folder (the one holding ASSETMAP)	DCP kaust (see, milles on ASSETMAP)
+	Evidence	Tõend
+	How to fix	Kuidas parandada
+	Interrupted	Katkestatud
+	Not applicable	Ei kohaldu
+	Report	Aruanne
+	Report saved: {path}	Aruanne salvestatud: {path}
+	Required	Kohustuslik
+	Rule	Reegel
+	Rules	Reeglid
+	Save JSON…	Salvesta JSON…
+	Save Markdown…	Salvesta Markdown…
+	Save report	Salvesta aruanne
+	Skipped	Vahele jäetud
+	Standard: {standard}	Standard: {standard}
+	Validate	Valideeri
+	Validate DCP…	Valideeri DCP…
+	the engine sent no profiles	mootor ei saatnud ühtegi profiili
+	{n} files checked	{n} faili kontrollitud
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Kirjuta AS-02 pakett (tee on kaust)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktiivsed vokslid:
+	Bounds:	Piirid:
+	Voxel attributes	Voksli atribuudid
+	Voxel size:	Voksli suurus:
+	points	punkti
+
+# WP3 DPX bit depth
+	Bit Depth	Bitisügavus
+
+# AS-02 versions
+	AS-02 Versions	AS-02 versioonid
+	Tick the sequences to write as further versions in the AS-02 bundle	Märkige järjestused, mis kirjutatakse AS-02 paketti lisaversioonidena
+	Delete Short Clips	Kustuta lühikesed klipid
+	A stored combination does not run a command yet.	Salvestatud kombinatsioon ei käivita veel käsku.
+	Action hint	Tegevuse vihje
+	Add combination	Lisa kombinatsioon
+	Add mapping	Lisa vastendus
+	Button Learn	Nupu õppimine
+	Button Test	Nupu proov
+	Button name	Nupu nimi
+	Cancel feedback	Tühistuse teade
+	Combination editor	Kombinatsiooniredaktor
+	Context	Kontekst
+	Delete profile	Kustuta profiil
+	Detected buttons	Tuvastatud nupud
+	Draw the gesture with a button held.	Joonistage žest nuppu all hoides.
+	Error feedback	Vea teade
+	Evdev device	Evdev-seade
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev loeb ainult valitud seadet ja alles siis, kui hilisem etapp selle sisse lülitab. See versioon jääb Qt teele.
+	Execution feedback	Täitmise teade
+	Follow the system	Järgi süsteemi
+	Gesture	Žest
+	Gesture Learn	Žesti õppimine
+	Gesture editor	Žestiredaktor
+	Gesture profiles	Žestiprofiilid
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Žestid jäävad välja, kuni need sisse lülitate. Sisselülitamine ei blokeeri paneeli menüüd.
+	HUD	HUD
+	Hand	Käsi
+	High contrast	Suur kontrast
+	Hold time	Hoidmisaeg
+	Input access	Sisendi juurdepääs
+	Left-handed	Vasakukäeline
+	Mapping	Vastendus
+	Maximum length	Suurim pikkus
+	Maximum time	Suurim aeg
+	Minimum length	Väikseim pikkus
+	Mirror ergonomic gestures	Peegelda ergonoomilised žestid
+	Mouse Gestures	Hiirežestid
+	Mouse Gestures…	Hiirežestid…
+	No buttons yet. Press one in Button Learn or Button Test.	Nuppe veel pole. Vajutage üht õppimisel või proovil.
+	Press	Vajutus
+	Qt pointer (this application)	Qt kursor (see rakendus)
+	Recognition preview	Tuvastuse eelvaade
+	Reduced animation	Vähendatud animatsioon
+	Right-handed	Paremakäeline
+	Roles	Rollid
+	Save gesture	Salvesta žest
+	Save profile	Salvesta profiil
+	Show the gesture HUD	Näita žesti HUD-i
+	Slop	Lõtk
+	Spatial gesture	Ruumiline žest
+	Thresholds	Läved
+	Trail	Jälg
+	Use gestures in the window	Kasuta žeste aknas

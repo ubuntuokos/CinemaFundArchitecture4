@@ -51,6 +51,7 @@
 	Apply Video Transition	Áp dụng chuyển cảnh video
 	Assembly	Lắp ghép
 	Attach Proxies…	Gắn proxy…
+	Find Camera Proxies	Tìm proxy máy ảnh
 	Audio	Âm thanh
 	Audio Channels…	Kênh âm thanh…
 	Audio Clip Mixer	Bộ trộn clip âm thanh
@@ -1792,6 +1793,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Thư mục SMPTE DCP: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 24 bit 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Thư mục SMPTE DCP: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 24 bit 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Gói master liên thông)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Thư mục SMPTE IMF: JPEG 2000 1920×1080, PCM 5.1 24 bit 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Thư mục SMPTE IMF: JPEG 2000 3840×2160, PCM 5.1 24 bit 48 kHz
+	Episode	Tập
+	Event highlights	Điểm nổi bật sự kiện
+	Event	Sự kiện
+	Lossless (reversible JPEG 2000)	Không mất dữ liệu (JPEG 2000 khả nghịch)
+	Package language	Ngôn ngữ gói
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	Ảnh B
@@ -1827,6 +1838,7 @@
 	Text Animator	Hoạt ảnh văn bản
 	Counter	Bộ đếm
 	Word by Word	Từng từ một
+	Scramble	Xáo trộn
 	Animator	Hoạt ảnh
 	Animator Duration	Thời lượng hoạt ảnh
 	Animator Delay	Độ trễ hoạt ảnh
@@ -1946,6 +1958,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bit cho HDR)
 	10-bit RGB	RGB 10 bit
 	12-bit X'Y'Z'	X'Y'Z' 12 bit
+	10-bit R'G'B' 4:4:4	R'G'B' 4:4:4 10 bit
+	JPEG 2000 IMF lossy	JPEG 2000 IMF có mất dữ liệu
+	JPEG 2000 IMF reversible	JPEG 2000 IMF khả nghịch
 	16-bit half float	số thực nửa 16 bit
 	linear	tuyến tính
 	uncompressed	không nén
@@ -2837,6 +2852,10 @@
 	Sharpen Amount	Mức làm nét
 	Shift Center To	Dời tâm đến
 	Show Focus Area	Hiện vùng lấy nét
+	Rack Focus	Chuyển tiêu điểm
+	Focus Point A	Điểm lấy nét A
+	Focus Point B	Điểm lấy nét B
+	Rack	Chuyển
 	Show Only Noise	Chỉ hiện nhiễu
 	Shrink	Thu nhỏ
 	Shutter Angle	Góc màn trập
@@ -3529,7 +3548,7 @@
 	Six-Point Pin	Ghim sáu điểm
 	Upper Center	Giữa trên
 	Lower Center	Giữa dưới
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Dùng FFmpeg cho các tệp engine CFA4 không mở được (FFmpeg 9.0.2 trở lên, bản dựng GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Dùng FFmpeg cho các tệp engine CFA4 không mở được (FFmpeg 9.1 trở lên, bản dựng GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Dùng GStreamer của hệ thống cho các tệp mà cả engine lẫn FFmpeg đều không mở được
 	Analyze Source for Smart Cut	Phân tích nguồn để cắt thông minh
 	Plan Smart Cut	Lập kế hoạch cắt thông minh
@@ -4163,6 +4182,11 @@ export.summary	Low	thấp
 	Burn Size	Kích thước vùng cháy
 	Ember Width	Độ rộng viền than hồng
 	Ember Color	Màu viền than hồng
+	Tear Away	Xé rời
+	Tear Roughness	Độ nhám vết xé
+	Paper Edge Width	Độ rộng mép giấy
+	Stamp Cut	Cắt hình tem
+	Perforations	Lỗ răng cưa
 	Check Text Legibility	Kiểm tra độ dễ đọc của chữ
 	Clear Legibility Markers	Xóa điểm đánh dấu độ dễ đọc
 	Text legibility: no problems found	Độ dễ đọc của chữ: không có vấn đề
@@ -4202,6 +4226,9 @@ export.summary	Low	thấp
 	Dither	Dither
 	Pattern	Mẫu
 	Cell Size	Kích thước ô
+	Pixelate	Tạo điểm ảnh
+	Cell Shape	Hình dạng ô
+	LED	LED
 	Cyan Angle	Góc lục lam
 	Magenta Angle	Góc đỏ tươi
 	Yellow Angle	Góc vàng
@@ -4367,6 +4394,10 @@ export.summary	Low	thấp
 	{n} more	Thêm {n}
 	Block	Khối
 	parallel	song song
+	page {page}: a spine's vertical position works on card pages only; it is ignored	trang {page}: vị trí dọc của trục chỉ áp dụng trên trang thẻ; bị bỏ qua
+	on a card: centered on {y} px	trên thẻ: căn giữa tại {y} px
+	on a card: starts at {y} px	trên thẻ: bắt đầu tại {y} px
+	on a card: ends at {y} px	trên thẻ: kết thúc tại {y} px
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
 	In the page (OBS takes it from the Browser Source)	Trong trang (OBS lấy từ nguồn trình duyệt)
@@ -4439,7 +4470,12 @@ export.summary	Low	thấp
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	trang {page}: đạt thời lượng bằng cách đổi tốc độ cuộn (khoảng cách sẽ phải tăng hơn 20 lần)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	trang {page}: chuyển cảnh cần các trang liền nhau (khoảng cách 0); bị bỏ qua
 	page {page}: there is no transition “{name}”; the pages cut	trang {page}: không có chuyển cảnh “{name}”; các trang cắt thẳng
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	vị trí trục “{value}” không được hỗ trợ (hỗ trợ độ lệch theo điểm ảnh, tùy chọn kèm “parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	vị trí trục “{value}” không được hỗ trợ (hỗ trợ độ lệch theo điểm ảnh, tùy chọn kèm “parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	trang {page}: móc trỏ lùi xa hơn số trục hiện có; nó móc vào trục đầu tiên hoặc bắt đầu trục riêng
+	hooked {n} spines back: its {from} meets this spine's {to}	móc vào trục cách {n} trục về trước: {from} của trục đó gặp {to} của trục này
+	top	đỉnh
+	middle	giữa
+	bottom	đáy
 	vertical gap “{value}” is not a number	khoảng cách dọc “{value}” không phải là số
 	picture “{file}” was not found or cannot be read; it is left out	không tìm thấy hoặc không đọc được hình “{file}”; bị bỏ qua
 	video “{file}” was not found or cannot be read; it is left out	không tìm thấy hoặc không đọc được video “{file}”; bị bỏ qua
@@ -4502,3 +4538,435 @@ export.summary	Low	thấp
 	accept	chấp nhận
 	the engine did not start the check	engine không bắt đầu kiểm tra
 	the engine sent no report	engine không gửi báo cáo
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a không nén 10-bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 10-bit không nén theo bố cục v210 (SMPTE ST 384), PCM 24-bit 48 kHz, mã thời gian bắt đầu
+	Write the captions as ANC data (CEA-608/708)	Ghi phụ đề dưới dạng dữ liệu ANC (CEA-608/708)
+	Load KDM…	Tải KDM…
+	Forget DCP Keys	Quên khóa DCP
+	Load KDM	Tải KDM
+	KDM file	Tệp KDM
+	Private key (PEM)	Khóa riêng (PEM)
+	{title}: {count} keys loaded	{title}: đã tải {count} khóa
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Các khóa chỉ nằm trong bộ nhớ, cho đến khi chọn Quên khóa DCP hoặc kết thúc phiên.
+	DCP keys forgotten	Đã quên khóa DCP
+	Choose the KDM file and the private key.	Chọn tệp KDM và khóa riêng.
+	Load even if the certificate chain is not verified	Tải cả khi chuỗi chứng chỉ chưa được xác minh
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Gói: đã tải {loaded}/{total} KDM, {other} cho người nhận khác
+	Not loaded: {path}: {problem}	Chưa tải: {path}: {problem}
+	Signature verified: {chain}	Đã xác minh chữ ký: {chain}
+	Signature not verified: {problem}	Chưa xác minh chữ ký: {problem}
+	KDM required	Cần KDM
+	Encrypted: load the KDM with content key {keys}	Đã mã hóa: hãy tải KDM có khóa nội dung {keys}
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Đồng bộ timecode
+	TimecodeSync	Đồng bộ timecode
+	Chase	Bám theo
+	Follow external timecode during playback	Bám theo timecode bên ngoài khi phát
+	Lock after	Khóa sau
+	Keep playing without signal for	Tiếp tục phát khi mất tín hiệu trong
+	External frame rate	Tốc độ khung hình bên ngoài
+	Offset (added to the external timecode)	Độ lệch (cộng vào timecode bên ngoài)
+	LTC	LTC
+	LTC input device	Thiết bị đầu vào LTC
+	LTC input channel	Kênh đầu vào LTC
+	Send LTC during playback	Gửi LTC khi phát
+	LTC output device	Thiết bị đầu ra LTC
+	LTC output channel	Kênh đầu ra LTC
+	LTC level	Mức LTC
+	dBFS	dBFS
+	MIDI Timecode	Timecode MIDI
+	MTC input port (empty = CFA4 port)	Cổng vào MTC (trống = cổng CFA4)
+	Send MIDI Timecode during playback	Gửi timecode MIDI khi phát
+	MTC output port (empty = CFA4 port)	Cổng ra MTC (trống = cổng CFA4)
+	Send timecode ahead of the picture by	Gửi timecode trước hình ảnh
+	LTC (audio input)	LTC (đầu vào âm thanh)
+	MIDI Timecode (MIDI input)	Timecode MIDI (đầu vào MIDI)
+	Same as the sequence	Giống sequence
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Trạng thái đồng bộ timecode
+	Chase External Timecode	Bám theo timecode bên ngoài
+	Send LTC	Gửi LTC
+	Send MIDI Timecode	Gửi timecode MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Xem trước phòng thu trực tiếp
+	Live studio: stopped	Phòng thu trực tiếp: đã dừng
+	Live studio: {state}	Phòng thu trực tiếp: {state}
+	Live studio: {error}	Phòng thu trực tiếp: {error}
+	restarted after {count} crashes (last: {exit})	đã khởi động lại sau {count} lần gặp sự cố (lần cuối: {exit})
+	software backend: {reason}	phần phụ trợ phần mềm: {reason}
+	Start studio	Khởi động phòng thu
+	Stop studio	Dừng phòng thu
+	Add Studio Scene	Thêm cảnh studio
+	Live	Trực tiếp
+# Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
+	Opening Credits	Phần mở đầu
+	Chapter Title	Tiêu đề chương
+	Lower Third	Dải chữ dưới
+	page {page}: graphics template “{template}” was not found; “{used}” is used	trang {page}: không tìm thấy mẫu đồ họa “{template}”; dùng “{used}”
+	page {page}: graphics template “{template}” has no field for all of the block's text; the rest is left out	trang {page}: mẫu đồ họa “{template}” không có trường cho toàn bộ văn bản của khối; phần còn lại bị bỏ
+	page {page}: template field “{control}” → “{part}” is not used (no such text control, or not head, body or tail)	trang {page}: trường mẫu “{control}” → “{part}” không được dùng (không có điều khiển văn bản đó, hoặc không phải đầu, thân hay đuôi)
+	page {page}: pictures are left out on title, opening, chapter and lower-third pages	trang {page}: hình ảnh bị bỏ trên các trang tiêu đề, phần mở đầu, chương và dải chữ dưới
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Màu tự động
+	Auto Contrast	Tương phản tự động
+	Auto Levels	Mức tự động
+	Temporal Smoothing (seconds)	Làm mượt theo thời gian (giây)
+	Scene Detect	Phát hiện cảnh
+	Black Clip	Cắt đen
+	White Clip	Cắt trắng
+	Snap Neutral Midtones	Trung hòa tông trung bình
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% trên trái
+	Picture-in-picture: 35 % scale in the upper left	Hình trong hình: tỷ lệ 35 % ở góc trên trái
+	PiP 35% Lower Left	PiP 35% dưới trái
+	Picture-in-picture: 35 % scale in the lower left	Hình trong hình: tỷ lệ 35 % ở góc dưới trái
+	PiP 35% Lower Right	PiP 35% dưới phải
+	Picture-in-picture: 35 % scale in the lower right	Hình trong hình: tỷ lệ 35 % ở góc dưới phải
+	Split Screen Left	Chia màn hình trái
+	Split screen: the middle half of the picture fills the left half of the frame	Chia màn hình: nửa giữa của hình lấp đầy nửa trái khung hình
+	Split Screen Right	Chia màn hình phải
+	Split screen: the middle half of the picture fills the right half of the frame	Chia màn hình: nửa giữa của hình lấp đầy nửa phải khung hình
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Cường độ dòng quét
+	Line Count	Số dòng
+	Mask	Mặt nạ
+	Mask Strength	Cường độ mặt nạ
+	Corner Darkening	Làm tối góc
+	Aperture Grille	Lưới khe
+	Shadow Mask	Mặt nạ bóng
+	Slot Mask	Mặt nạ khe
+# Creative Looks: Oil Paint (P4)
+	Oil Paint	Tranh sơn dầu
+	Detail	Chi tiết
+	Texture	Kết cấu
+	Facet	Mặt cắt
+	Daubs	Vệt chấm
+	Dry Brush	Cọ khô
+	Fresco	Bích họa
+	Knife	Dao vẽ
+	Sponge	Bọt biển
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	Sắp xếp điểm ảnh
+	Sort By	Sắp xếp theo
+	Lower Threshold	Ngưỡng dưới
+	Upper Threshold	Ngưỡng trên
+	Ascending	Tăng dần
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Khử nhiễu theo thời gian
+	Frames Each Side	Số khung mỗi bên
+	Motion Threshold	Ngưỡng chuyển động
+	Show Motion	Hiện chuyển động
+	No signal	Không có tín hiệu
+	Locating	Đang định vị
+	Locked	Đã khóa
+	Freewheel	Chạy tự do
+	Scrubbing	Đang tua
+	Sending	Đang gửi
+
+# DCP subtitle export (#938)
+	Subtitles from the first caption track	Phụ đề từ rãnh phụ đề đầu tiên
+	The package language	Ngôn ngữ của gói
+	Inter Regular (built in), or an OpenType / TrueType file	Inter Regular (dựng sẵn) hoặc tệp OpenType / TrueType
+	Subtitle language	Ngôn ngữ phụ đề
+	Subtitle font	Phông chữ phụ đề
+	Fonts	Phông chữ
+
+# AS-11 metadata in MXF OP1a (#96)
+	AS-11 Core	AS-11 Core
+	AS-11 Parts	Phần AS-11
+	AS-11 UK DPP	AS-11 UK DPP
+# Control surfaces (qt-control-surfaces-page, CFA4-CONTROL-SURFACE-001)
+	Connected	Đã kết nối
+	Device	Thiết bị
+	Devices	Thiết bị
+	Disabled	Đã tắt
+	MIDI	MIDI
+	Not connected	Chưa kết nối
+	OSC	OSC
+	Use	Dùng
+	{device} ({port})	{device} ({port})
+	{name}: {error}	{name}: {error}
+# Control surfaces (midi-monitor, CFA4-CONTROL-SURFACE-001)
+	MIDI Monitor	Giám sát MIDI
+	Press Start Monitor, then move a control.	Nhấn Bắt đầu giám sát, rồi di chuyển một nút điều khiển.
+	Start Monitor	Bắt đầu giám sát
+	Stop Monitor	Dừng giám sát
+	… {count} messages not shown (too many at once)	… {count} tin nhắn không hiển thị (quá nhiều cùng lúc)
+# Control surfaces (midi-learn, CFA4-CONTROL-SURFACE-001)
+	A control surface asked for {command}, which does not exist.	Một bề mặt điều khiển đã yêu cầu {command}, lệnh này không tồn tại.
+	Assignments	Gán lệnh
+	Cancel Learn	Hủy học
+	Control	Nút điều khiển
+	Learn	Học
+	Remove this assignment	Xóa phép gán này
+	{control} runs {command}.	{control} chạy {command}.
+# Control surfaces (shuttlepro, CFA4-CONTROL-SURFACE-001)
+	Button {n}	Nút {n}
+# Control surfaces (continuous-values, CFA4-CONTROL-SURFACE-001)
+	{strip} Pan (knob)	{strip} cân bằng trái/phải (núm xoay)
+	{strip} Volume (fader)	{strip} âm lượng (fader)
+# Control surfaces (F1 Learn and profile, CFA4-CONTROL-SURFACE-001)
+	Control Surfaces	Bề mặt điều khiển
+	Assignments run when a button is pressed (a fader or knob counts as pressed past half way); a fader or knob assigned to a mixer strip moves its volume or pan. A ShuttlePRO's shuttle ring plays at its profile's speeds and its jog wheel steps frame by frame. Endless encoders and feedback to the controller (lights, motor faders) come in a later version.	Gán chạy khi nhấn nút (fader hoặc núm được tính là nhấn sau nửa đường); fader hoặc núm gán vào một dải mixer sẽ đẩy âm lượng hoặc pan. Vòng shuttle của ShuttlePRO phát theo tốc độ hồ sơ và bánh jog bước từng khung. Bộ mã hóa vô tận và phản hồi về bộ điều khiển (đèn, fader có động cơ) sẽ có ở bản sau.
+	First message (ms)	Thông điệp đầu (ms)
+	Silence (ms)	Im lặng (ms)
+	Waiting for the control to settle…	Đang chờ điều khiển dừng lại…
+	Type: {hint}. Confirm this assignment.	Kiểu: {hint}. Xác nhận gán này.
+	That control is already assigned. Confirm replaces it.	Điều khiển đó đã được gán. Xác nhận sẽ thay thế.
+	Learn timed out.	Học đã hết thời gian.
+	Confirm	Xác nhận
+	Reject	Từ chối
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock, Active Sensing and MIDI Time Code are left out.	Hiện mỗi thông điệp MIDI từ bộ điều khiển ngay khi tới, để xem bộ điều khiển có gửi và gửi gì. Đồng hồ MIDI, Active Sensing và mã thời gian MIDI bị bỏ qua.
+	Pick a command (or a mixer strip for a fader or knob), press Learn, then press the button or move the control past half way. Confirm keeps the assignment. OK saves the assignments.	Chọn một lệnh (hoặc một dải mixer cho fader hay núm), nhấn Học, rồi nhấn nút hoặc đẩy điều khiển quá nửa. Xác nhận giữ gán. OK lưu các gán.
+	All devices	Mọi thiết bị
+	Builtin: {name}	Tích hợp: {name}
+	Capturing	Đang ghi
+	Confirmed	Đã xác nhận
+	Conflict	Xung đột
+	Connect a MIDI controller or a ShuttlePRO to edit its profile.	Hãy nối bộ điều khiển MIDI hoặc ShuttlePRO để sửa hồ sơ của nó.
+	Control Surfaces…	Mặt điều khiển…
+	Filter messages	Lọc thông điệp
+	Idle	Chờ
+	Kernel dropped: {count}	Nhân bỏ: {count}
+	Learn Assignments…	Học gán phím…
+	Load profile	Tải hồ sơ
+	MIDI Monitor…	Màn hình MIDI…
+	Mute shuttle sound	Tắt tiếng shuttle
+	No conflicts.	Không có xung đột.
+	No profile warnings.	Không có cảnh báo hồ sơ.
+	No project profile is stored.	Không lưu hồ sơ dự án.
+	OK writes the preferences and the profile file together.	OK ghi tùy chọn và tệp hồ sơ cùng lúc.
+	Online	Trực tuyến
+	Pending	Đang chờ
+	Pickup (14-bit)	Bắt (14 bit)
+	Pickup (7-bit)	Bắt (7 bit)
+	Profile warnings	Cảnh báo hồ sơ
+	Rejected	Đã từ chối
+	Show Active Sensing	Hiện Active Sensing
+	Show MIDI Clock	Hiện đồng hồ MIDI
+	Show MIDI Time Code	Hiện mã thời gian MIDI
+	The profile file is damaged. Preferences and the built-in profile stay in use.	Tệp hồ sơ bị hỏng. Tùy chọn và hồ sơ tích hợp vẫn được dùng.
+	Timed out	Hết giờ
+	Type: {hint}	Kiểu: {hint}
+	User profile file	Tệp hồ sơ người dùng
+	{received} received, {dispatched} dispatched, {coalesced} coalesced, {stalls} stalls, {errors} errors	{received} đã nhận, {dispatched} đã gửi, {coalesced} đã gộp, {stalls} lần chờ, {errors} lỗi
+
+# Control Surfaces settings page (CS-1, #1187)
+	HID jog/shuttle	HID jog/shuttle
+	Looking for devices…	Đang tìm thiết bị…
+	No MIDI controller or jog/shuttle device was found. Connect one and press Refresh.	Không tìm thấy bộ điều khiển MIDI hay thiết bị jog/shuttle nào. Hãy kết nối một thiết bị rồi nhấn Làm mới.
+	Use control surfaces (MIDI controllers, jog/shuttle devices)	Dùng bề mặt điều khiển (bộ điều khiển MIDI, thiết bị jog/shuttle)
+	Mapping controls to commands, MIDI Learn and the MIDI Monitor come in a later version; the choices here are remembered until then.	Gán nút điều khiển cho lệnh, MIDI Learn và MIDI Monitor sẽ có trong phiên bản sau; cho đến lúc đó, các lựa chọn ở đây vẫn được ghi nhớ.
+	CFA4 ShuttlePRO	CFA4 ShuttlePRO
+	Kdenlive-style ShuttlePRO	ShuttlePRO kiểu Kdenlive
+	Generic MIDI	MIDI chung
+# LTC timecode read from clip audio (TC-7, #1285)
+	Read from LTC Audio	Đọc từ âm thanh LTC
+	Find SMPTE LTC on the clip's audio and use the timecode it gives the first frame	Tìm SMPTE LTC trong âm thanh của clip và dùng mã thời gian mà nó gán cho khung hình đầu tiên
+	Read Timecode from LTC Audio	Đọc mã thời gian từ âm thanh LTC
+# Credits: voices (the Voice column) in the block's properties (F10-C16)
+	Voices	Giọng lồng tiếng
+# Timecode sync varispeed and user bits (TC-8, #1308)
+	Varispeed: adjust the playback speed instead of seeking	Varispeed: điều chỉnh tốc độ phát thay vì nhảy
+	User bits	Bit người dùng
+# AS-11 programme parts and AS-10 metadata (G2, #1371, #1375)
+	{tc}  Segmentation	{tc}  Phân đoạn
+	Marker Type	Loại điểm đánh dấu
+	Chapter	Chương
+	Segmentation (AS-11 programme part)	Phân đoạn (phần chương trình AS-11)
+	AS-10	AS-10
+# AT9/AT3 converter (Tools ▸ Audio Tools, AT3-2)
+	AT9/AT3 Converter	Bộ chuyển đổi AT9/AT3
+	AT9/AT3 Converter…	Bộ chuyển đổi AT9/AT3…
+	Files to convert:	Tệp cần chuyển đổi:
+	Add Files	Thêm tệp
+	Add Files…	Thêm tệp…
+	Convert to:	Chuyển đổi sang:
+	Bit rate:	Tốc độ bit:
+	Sample format:	Định dạng mẫu:
+	Output folder:	Thư mục đầu ra:
+	Output Folder	Thư mục đầu ra
+	Next to each source file	Cạnh mỗi tệp nguồn
+	AT9 and ATRAC3plus files convert to WAV; encoding AT9, ATRAC3plus and MP3 is not available yet.	Tệp AT9 và ATRAC3plus được chuyển sang WAV; chưa hỗ trợ mã hóa AT9, ATRAC3plus và MP3.
+	Convert	Chuyển đổi
+	Add the files to convert first.	Hãy thêm tệp cần chuyển đổi trước.
+	Done: {n} file(s) converted.	Xong: đã chuyển đổi {n} tệp.
+	Converting {name}…	Đang chuyển đổi {name}…
+	Stopping…	Đang dừng…
+	AT3 (ATRAC3, PSP / PS3)	AT3 (ATRAC3, PSP / PS3)
+	WAV (PCM)	WAV (PCM)
+	132 kbit/s (LP2)	132 kbit/s (LP2)
+	105 kbit/s	105 kbit/s
+	66 kbit/s (LP4, joint stereo)	66 kbit/s (LP4, stereo kết hợp)
+	16-bit	16 bit
+	24-bit	24 bit
+	32-bit float	32 bit dấu phẩy động
+
+# Datamosh transition (Grunge & Distort, DM1, #1409)
+	Datamosh	Datamosh
+	Residual	Phần dư
+	Motion Boost	Tăng cường chuyển động
+	Recovery	Phục hồi
+	Encode Resolution	Độ phân giải mã hóa
+	Half	Một nửa
+	Quarter	Một phần tư
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh nở rộ
+	Start Time (seconds)	Thời gian bắt đầu (giây)
+	Repeats	Số lần lặp lại
+	Clean Blocks	Khối sạch
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Áp dụng hiệu ứng dùng gần đây cho các clip đã chọn
+	Disable all effects	Tắt tất cả hiệu ứng
+	Enable all effects	Bật tất cả hiệu ứng
+	No recent effects	Không có hiệu ứng gần đây
+	Recent effects	Hiệu ứng gần đây
+	Switch every effect of the selected clips off	Tắt mọi hiệu ứng của các clip đã chọn
+	Switch every effect of the selected clips on	Bật mọi hiệu ứng của các clip đã chọn
+	Merged	Gộp
+	Per Channel	Theo kênh
+	Channel Zoom	Thu phóng kênh
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Bộ chọn cân bằng trắng (nhấp vào điểm trung tính trên màn hình Chương trình; Esc để hủy)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Trình quản lý tác vụ
+	Background jobs	Công việc nền
+	Exports	Xuất
+	Shared task queue	Hàng đợi tác vụ dùng chung
+	Task	Tác vụ
+	State	Trạng thái
+	Details	Chi tiết
+	Time left	Thời gian còn lại
+	Scheduled	Đã lên lịch
+	Queued	Trong hàng đợi
+	Waiting for resources	Đang chờ tài nguyên
+	Blocked	Bị chặn
+	Running	Đang chạy
+	Paused	Đã tạm dừng
+	Cancelling	Đang hủy
+	Interactive	Tương tác
+	Speculative	Chạy dự phòng
+	Final render	Kết xuất cuối cùng
+	Show finished	Hiện các mục đã xong
+	Nothing is running.	Không có gì đang chạy.
+	Not reported by this engine yet.	Công cụ này chưa báo cáo.
+	Not available: {why}	Không khả dụng: {why}
+	{name} waits: {why}	{name} đang chờ: {why}
+	{running} running · {waiting} waiting	{running} đang chạy · {waiting} đang chờ
+	{n} active	{n} đang hoạt động
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Cần quyết định của bạn
+	Run now	Chạy ngay
+	Next slot	Khung giờ tiếp theo
+	Missed its start	Bỏ lỡ thời điểm bắt đầu
+	Missed its start at {time}	Bỏ lỡ thời điểm bắt đầu lúc {time}
+	Starts at {time}	Bắt đầu lúc {time}
+	Subtitle kind	Loại phụ đề
+	Subtitles	Phụ đề
+	Captions for the hearing impaired	Phụ đề cho người khiếm thính
+	Forced narrative	Thuyết minh bắt buộc (forced narrative)
+	Silence	Im lặng
+	Detect Silence	Phát hiện khoảng lặng
+	Remove Silence	Xóa khoảng lặng
+	Clear Silence Markers	Xóa dấu khoảng lặng
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Chọn thư mục DCP.
+	DCP Validation	Kiểm tra DCP
+	DCP folder	Thư mục DCP
+	DCP folder (the one holding ASSETMAP)	Thư mục DCP (thư mục chứa ASSETMAP)
+	Evidence	Bằng chứng
+	How to fix	Cách khắc phục
+	Interrupted	Bị gián đoạn
+	Not applicable	Không áp dụng
+	Report	Báo cáo
+	Report saved: {path}	Đã lưu báo cáo: {path}
+	Required	Bắt buộc
+	Rule	Quy tắc
+	Rules	Các quy tắc
+	Save JSON…	Lưu JSON…
+	Save Markdown…	Lưu Markdown…
+	Save report	Lưu báo cáo
+	Skipped	Đã bỏ qua
+	Standard: {standard}	Tiêu chuẩn: {standard}
+	Validate	Kiểm tra
+	Validate DCP…	Kiểm tra DCP…
+	the engine sent no profiles	công cụ không gửi hồ sơ nào
+	{n} files checked	Đã kiểm tra {n} tệp
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Ghi gói AS-02 (đường dẫn là một thư mục)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Voxel hoạt động:
+	Bounds:	Giới hạn:
+	Voxel attributes	Thuộc tính voxel
+	Voxel size:	Kích thước voxel:
+	points	điểm
+
+# WP3 DPX bit depth
+	Bit Depth	Độ sâu bit
+
+# AS-02 versions
+	AS-02 Versions	Phiên bản AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Chọn các chuỗi sẽ được ghi thành phiên bản bổ sung trong gói AS-02
+	Delete Short Clips	Xóa clip ngắn
+	A stored combination does not run a command yet.	Tổ hợp đã lưu chưa chạy lệnh.
+	Action hint	Gợi ý thao tác
+	Add combination	Thêm tổ hợp
+	Add mapping	Thêm ánh xạ
+	Button Learn	Học nút
+	Button Test	Thử nút
+	Button name	Tên nút
+	Cancel feedback	Báo hủy
+	Combination editor	Trình sửa tổ hợp
+	Context	Ngữ cảnh
+	Delete profile	Xóa hồ sơ
+	Detected buttons	Nút đã nhận
+	Draw the gesture with a button held.	Vẽ cử chỉ trong khi giữ một nút.
+	Error feedback	Báo lỗi
+	Evdev device	Thiết bị evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev chỉ đọc thiết bị đã chọn, và chỉ sau khi giai đoạn sau bật nó. Bản này vẫn đi theo đường Qt.
+	Execution feedback	Báo thực hiện
+	Follow the system	Theo hệ thống
+	Gesture	Cử chỉ
+	Gesture Learn	Học cử chỉ
+	Gesture editor	Trình sửa cử chỉ
+	Gesture profiles	Hồ sơ cử chỉ
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Cử chỉ vẫn tắt cho đến khi bạn bật. Bật chúng không chặn menu của bảng.
+	HUD	HUD
+	Hand	Tay
+	High contrast	Tương phản cao
+	Hold time	Thời gian giữ
+	Input access	Truy cập đầu vào
+	Left-handed	Thuận tay trái
+	Mapping	Ánh xạ
+	Maximum length	Độ dài tối đa
+	Maximum time	Thời gian tối đa
+	Minimum length	Độ dài tối thiểu
+	Mirror ergonomic gestures	Phản chiếu cử chỉ công thái học
+	Mouse Gestures	Cử chỉ chuột
+	Mouse Gestures…	Cử chỉ chuột…
+	No buttons yet. Press one in Button Learn or Button Test.	Chưa có nút. Nhấn một nút trong Học nút hoặc Thử nút.
+	Press	Nhấn
+	Qt pointer (this application)	Con trỏ Qt (ứng dụng này)
+	Recognition preview	Xem trước nhận dạng
+	Reduced animation	Giảm hoạt ảnh
+	Right-handed	Thuận tay phải
+	Roles	Vai trò
+	Save gesture	Lưu cử chỉ
+	Save profile	Lưu hồ sơ
+	Show the gesture HUD	Hiện HUD cử chỉ
+	Slop	Độ rơ
+	Spatial gesture	Cử chỉ không gian
+	Thresholds	Ngưỡng
+	Trail	Vệt
+	Use gestures in the window	Dùng cử chỉ trong cửa sổ

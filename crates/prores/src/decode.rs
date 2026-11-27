@@ -199,7 +199,7 @@ pub fn decode_frame_into(data: &[u8], opts: &DecodeOptions, out: &mut Frame) -> 
     };
 
     let band_h = if interlaced { 32 } else { 16 };
-    let mut bands: Vec<Band> = Vec::with_capacity(mb_height);
+    let mut bands: Vec<Band<'_>> = Vec::with_capacity(mb_height);
     {
         let mut yc = y.chunks_mut(band_h * width);
         let mut cbc = cb.chunks_mut(band_h * cwidth);
@@ -213,7 +213,7 @@ pub fn decode_frame_into(data: &[u8], opts: &DecodeOptions, out: &mut Frame) -> 
     }
 
     let step = if interlaced { 2 } else { 1 };
-    let run_band = |(row, band): (usize, &mut Band), scratch: &mut Scratch| -> Result<()> {
+    let run_band = |(row, band): (usize, &mut Band<'_>), scratch: &mut Scratch| -> Result<()> {
         for (pi, (pic, widths)) in pics.iter().enumerate() {
             let mut mb_x = 0;
             for (k, &w) in widths.iter().enumerate() {
@@ -273,7 +273,7 @@ fn qfactors(qmat: &[u8; 64], qs: u32) -> [f32; 64] {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn decode_slice(ctx: &Ctx, d: &[u8], mb_x: usize, mbs: usize, band: &mut Band, step: usize, parity: usize, s: &mut Scratch) -> std::result::Result<(), ()> {
+fn decode_slice(ctx: &Ctx, d: &[u8], mb_x: usize, mbs: usize, band: &mut Band<'_>, step: usize, parity: usize, s: &mut Scratch) -> std::result::Result<(), ()> {
     if d.len() < 6 {
         return Err(());
     }

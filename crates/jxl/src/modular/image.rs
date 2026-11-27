@@ -346,7 +346,7 @@ impl<'dest, S: Sample> TransformedModularSubimage<'dest, S> {
 
     pub fn recursive(
         self,
-        bitstream: &mut Bitstream,
+        bitstream: &mut Bitstream<'_>,
         global_ma_config: Option<&MaConfig>,
         tracker: Option<&AllocTracker>,
     ) -> Result<RecursiveModularImage<'dest, S>> {
@@ -378,7 +378,7 @@ impl<'dest, S: Sample> TransformedModularSubimage<'dest, S> {
 }
 
 impl<S: Sample> TransformedModularSubimage<'_, S> {
-    fn decode_inner(&mut self, bitstream: &mut Bitstream, stream_index: u32) -> Result<()> {
+    fn decode_inner(&mut self, bitstream: &mut Bitstream<'_>, stream_index: u32) -> Result<()> {
         let span = crate::tracing::span!(crate::tracing::Level::TRACE, "decode channels", stream_index);
         let _guard = span.enter();
 
@@ -465,7 +465,7 @@ impl<S: Sample> TransformedModularSubimage<'_, S> {
         Ok(())
     }
 
-    pub fn decode(&mut self, bitstream: &mut Bitstream, stream_index: u32, allow_partial: bool) -> Result<()> {
+    pub fn decode(&mut self, bitstream: &mut Bitstream<'_>, stream_index: u32, allow_partial: bool) -> Result<()> {
         match self.decode_inner(bitstream, stream_index) {
             Err(e) if e.unexpected_eof() && allow_partial => {
                 crate::tracing::debug!("Partially decoded Modular image");
@@ -528,7 +528,7 @@ impl<S: Sample> RleState<S> {
     }
 
     #[inline(always)]
-    fn decode(&mut self, bitstream: &mut Bitstream, decoder: &mut DecoderRleMode, cluster: u8) -> S {
+    fn decode(&mut self, bitstream: &mut Bitstream<'_>, decoder: &mut DecoderRleMode<'_>, cluster: u8) -> S {
         if self.repeat == 0 {
             let result = decoder.read_varint_clustered(bitstream, cluster);
             match result {
@@ -563,12 +563,12 @@ impl<S: Sample> RleState<S> {
 }
 
 fn decode_single_node<S: Sample>(
-    bitstream: &mut Bitstream,
+    bitstream: &mut Bitstream<'_>,
     decoder: &mut Decoder,
     dist_multiplier: u32,
-    predictor_state: &mut PredictorState<S>,
+    predictor_state: &mut PredictorState<'_, '_, S>,
     wp_header: &WpHeader,
-    grid: &mut MutableSubgrid<S>,
+    grid: &mut MutableSubgrid<'_, S>,
     node: &MaTreeLeafClustered,
 ) -> Result<()> {
     let &MaTreeLeafClustered { cluster, predictor, offset, multiplier } = node;
@@ -610,11 +610,11 @@ fn decode_single_node<S: Sample>(
 
 #[inline(never)]
 fn decode_fast_lossless<S: Sample>(
-    bitstream: &mut Bitstream,
-    decoder: &mut DecoderRleMode,
+    bitstream: &mut Bitstream<'_>,
+    decoder: &mut DecoderRleMode<'_>,
     rle_state: &mut RleState<S>,
     cluster: u8,
-    grid: &mut MutableSubgrid<S>,
+    grid: &mut MutableSubgrid<'_, S>,
 ) {
     let height = grid.height();
 
@@ -651,11 +651,11 @@ fn decode_fast_lossless<S: Sample>(
 
 #[inline(never)]
 fn decode_simple_grad<S: Sample>(
-    bitstream: &mut Bitstream,
+    bitstream: &mut Bitstream<'_>,
     decoder: &mut Decoder,
     cluster: u8,
     dist_multiplier: u32,
-    grid: &mut MutableSubgrid<S>,
+    grid: &mut MutableSubgrid<'_, S>,
 ) -> Result<()> {
     let width = grid.width();
     let height = grid.height();
@@ -696,11 +696,11 @@ fn decode_simple_grad<S: Sample>(
 
 #[inline(always)]
 fn decode_one<S: Sample, const EDGE: bool>(
-    bitstream: &mut Bitstream,
+    bitstream: &mut Bitstream<'_>,
     decoder: &mut Decoder,
     dist_multiplier: u32,
     leaf: &MaTreeLeafClustered,
-    properties: &Properties<S>,
+    properties: &Properties<'_, '_, '_, S>,
 ) -> Result<S> {
     let diff = S::unpack_signed_u32(decoder.read_varint_with_multiplier_clustered(bitstream, leaf.cluster, dist_multiplier)?);
     let diff = diff.wrapping_muladd_i32(leaf.multiplier as i32, leaf.offset);
@@ -711,12 +711,12 @@ fn decode_one<S: Sample, const EDGE: bool>(
 
 #[inline(never)]
 fn decode_single_node_slow<S: Sample>(
-    bitstream: &mut Bitstream,
+    bitstream: &mut Bitstream<'_>,
     decoder: &mut Decoder,
     dist_multiplier: u32,
     leaf: &MaTreeLeafClustered,
-    predictor: &mut PredictorState<S>,
-    grid: &mut MutableSubgrid<S>,
+    predictor: &mut PredictorState<'_, '_, S>,
+    grid: &mut MutableSubgrid<'_, S>,
 ) -> Result<()> {
     let height = grid.height();
     for y in 0..2usize.min(height) {
@@ -764,12 +764,12 @@ fn decode_single_node_slow<S: Sample>(
 }
 
 fn decode_simple_table<S: Sample>(
-    bitstream: &mut Bitstream,
+    bitstream: &mut Bitstream<'_>,
     decoder: &mut Decoder,
     dist_multiplier: u32,
-    predictor_state: &mut PredictorState<S>,
+    predictor_state: &mut PredictorState<'_, '_, S>,
     wp_header: &WpHeader,
-    grid: &mut MutableSubgrid<S>,
+    grid: &mut MutableSubgrid<'_, S>,
     table: &SimpleMaTable,
 ) -> Result<()> {
     let &SimpleMaTable { decision_prop, value_base, predictor, offset, multiplier, ref cluster_table } = table;
@@ -788,10 +788,10 @@ fn cluster_from_table(sample: i32, value_base: i32, cluster_table: &[u8]) -> u8 
 }
 
 fn decode_gradient_table<S: Sample>(
-    bitstream: &mut Bitstream,
+    bitstream: &mut Bitstream<'_>,
     decoder: &mut Decoder,
     dist_multiplier: u32,
-    grid: &mut MutableSubgrid<S>,
+    grid: &mut MutableSubgrid<'_, S>,
     value_base: i32,
     cluster_table: &[u8],
 ) -> Result<()> {
@@ -840,11 +840,11 @@ fn decode_gradient_table<S: Sample>(
 
 #[inline(always)]
 fn decode_table_one<S: Sample, const EDGE: bool>(
-    bitstream: &mut Bitstream,
+    bitstream: &mut Bitstream<'_>,
     decoder: &mut Decoder,
     dist_multiplier: u32,
     table: &SimpleMaTable,
-    properties: &Properties<S>,
+    properties: &Properties<'_, '_, '_, S>,
 ) -> Result<S> {
     let prop_value = properties.get(table.decision_prop as usize);
 
@@ -859,12 +859,12 @@ fn decode_table_one<S: Sample, const EDGE: bool>(
 
 #[inline(never)]
 fn decode_simple_table_slow<S: Sample>(
-    bitstream: &mut Bitstream,
+    bitstream: &mut Bitstream<'_>,
     decoder: &mut Decoder,
     dist_multiplier: u32,
-    predictor_state: &mut PredictorState<S>,
+    predictor_state: &mut PredictorState<'_, '_, S>,
     wp_header: &WpHeader,
-    grid: &mut MutableSubgrid<S>,
+    grid: &mut MutableSubgrid<'_, S>,
     table: &SimpleMaTable,
 ) -> Result<()> {
     crate::tracing::trace!("Slow lookup table");
@@ -920,12 +920,12 @@ fn decode_simple_table_slow<S: Sample>(
 
 #[inline(never)]
 fn decode_slow<S: Sample>(
-    bitstream: &mut Bitstream,
+    bitstream: &mut Bitstream<'_>,
     decoder: &mut Decoder,
     dist_multiplier: u32,
     ma_tree: &FlatMaTree,
-    predictor: &mut PredictorState<S>,
-    grid: &mut MutableSubgrid<S>,
+    predictor: &mut PredictorState<'_, '_, S>,
+    grid: &mut MutableSubgrid<'_, S>,
 ) -> Result<()> {
     let height = grid.height();
     for y in 0..2usize.min(height) {

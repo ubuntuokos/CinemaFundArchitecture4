@@ -54,7 +54,7 @@ pub enum BlockInfo {
 impl Bundle<HfMetadataParams<'_, '_, '_>> for HfMetadata {
     type Error = crate::vardct::Error;
 
-    fn parse(bitstream: &mut Bitstream, params: HfMetadataParams) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, params: HfMetadataParams<'_, '_, '_>) -> Result<Self> {
         let HfMetadataParams {
             num_lf_groups,
             lf_group_idx,

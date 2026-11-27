@@ -43,7 +43,7 @@ pub struct PackingListAsset {
 const ROOT: &[&str] = &["Id", "AnnotationText", "IconId", "IssueDate", "Issuer", "Creator", "GroupId", "AssetList", "Signer", "Signature"];
 const ASSET: &[&str] = &["Id", "AnnotationText", "Hash", "Size", "Type", "OriginalFileName"];
 
-pub(crate) fn read(doc: &Document, standard: Standard) -> PackingList {
+pub(crate) fn read(doc: &Document<'_>, standard: Standard) -> PackingList {
     let mut r = Reader::new(doc);
     let root = doc.root_element();
     let p = "PackingList";

@@ -23,7 +23,11 @@ pub struct HfCoeffParams<'a, 'b, S: Sample> {
 }
 
 /// Decode and write HF coefficients from the bitstream.
-pub fn write_hf_coeff<S: Sample>(bitstream: &mut Bitstream, params: HfCoeffParams<S>, hf_coeff_output: &mut [MutableSubgrid<f32>; 3]) -> Result<()> {
+pub fn write_hf_coeff<S: Sample>(
+    bitstream: &mut Bitstream<'_>,
+    params: HfCoeffParams<'_, '_, S>,
+    hf_coeff_output: &mut [MutableSubgrid<'_, f32>; 3],
+) -> Result<()> {
     const COEFF_FREQ_CONTEXT: [u32; 63] = [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 23, 23, 24, 24, 24, 24, 25,
         25, 25, 25, 26, 26, 26, 26, 27, 27, 27, 27, 28, 28, 28, 28, 29, 29, 29, 29, 30, 30, 30, 30,

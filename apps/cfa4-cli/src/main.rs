@@ -36,6 +36,7 @@ mod probe;
 mod qc;
 mod serve;
 mod serve_graphics;
+mod serve_live;
 mod serve_lumetri;
 mod serve_media_browser;
 mod serve_multicam;
@@ -43,9 +44,12 @@ mod serve_project;
 mod serve_scopes;
 mod serve_shm;
 mod serve_shuttle;
+mod serve_surface;
+mod serve_tcsync;
 mod serve_text;
 mod serve_tts;
 mod settings_cmd;
+mod studio_feeds;
 
 use args::{Args, parse_value};
 use cfa4_automation::BridgeClient;
@@ -125,6 +129,7 @@ SUBCOMMANDS
   settings reset [category]     a category (or everything) back to its defaults
   hardware                      GPU / NPU inventory, backend chain per workload, vendor coverage
   codecs                        what this machine decodes and encodes (software, hardware, GStreamer)
+  codecs --markdown             the codec capability catalog as the table in docs/codec-parity.md
   media-backends                engine + FFmpeg / GStreamer backends, status, restricted codecs
   mcp                           MCP server on stdio (headless, or --bridge to the live app)
   serve [--autosave]            headless engine server for the CFA4 Qt 6 GUI: JSON lines on
@@ -156,11 +161,11 @@ EXIT STATUS
 
 /// Writes one diagnostic line to `w`, dropping any write error. `eprintln!` panics (exit 101) when stderr's
 /// reader is gone, which would turn a usage error, a failure or a finished export into a crash.
-fn write_diag(w: &mut dyn std::io::Write, msg: std::fmt::Arguments) {
+fn write_diag(w: &mut dyn std::io::Write, msg: std::fmt::Arguments<'_>) {
     let _ = writeln!(w, "{msg}");
 }
 
-fn diag(msg: std::fmt::Arguments) {
+fn diag(msg: std::fmt::Arguments<'_>) {
     write_diag(&mut std::io::stderr(), msg);
 }
 
@@ -310,7 +315,7 @@ fn register_gpu_frame_renderer() {
 /// Make GStreamer the fallback media backend (ADR 0002) when this build has the `gstreamer`
 /// feature and the system has GStreamer; otherwise the built-in openers work alone, as before.
 /// Make FFmpeg the first fallback media backend (ADR 0005), before GStreamer, when this build has
-/// the `ffmpeg` feature and a GPL-3 FFmpeg 9.0.2 or later is linked; otherwise the built-in openers
+/// the `ffmpeg` feature and a GPL-3 FFmpeg of at least `cfa4_ffmpeg::MIN_VERSION` is linked; otherwise the built-in openers
 /// (and GStreamer) work as before. Its report is registered either way, for Settings ▸ Media
 /// Backends.
 fn register_ffmpeg() {
@@ -604,7 +609,7 @@ async fn cli() {
             diag(format_args!("rendered {}x{} in {:.1} ms → {out}", img.w, img.h, dt.as_secs_f64() * 1000.0));
         }
         "serve" => {
-            if let Some(opt) = a.unknown_opt(&["--project", "--demo", "--data-dir", "--autosave"]) {
+            if let Some(opt) = a.unknown_opt(&["--project", "--demo", "--data-dir", "--autosave", "--no-db"]) {
                 usage(format!("unknown serve option `{opt}`"));
             }
             let Backend::Local(mut s) = Backend::open(&a) else { usage("serve is headless; it cannot use --bridge") };
@@ -618,6 +623,13 @@ async fn cli() {
                     None => diag(format_args!("cfa4-cli serve: no data directory; auto-save is off")),
                 }
             }
+            if !a.flag("--no-db") {
+                // the task queue stays in memory; PostgreSQL only keeps a record of it (PG-001 §6)
+                match cfa4_store::StoreConfig::load().and_then(|c| cfa4_store::mirror::SessionMirror::start(c, std::time::Duration::from_secs(5))) {
+                    Ok(mirror) => s.tasks.set_journal(Box::new(mirror)),
+                    Err(e) => diag(format_args!("cfa4-cli serve: the task record in PostgreSQL is off ({e}); tasks run as before")),
+                }
+            }
             serve::run(*s);
         }
         "settings" => {
@@ -629,6 +641,7 @@ async fn cli() {
             }
         }
         "hardware" => print(&a, &settings_cmd::hardware()),
+        "codecs" if a.flag("--markdown") => print!("{}", codecs_cmd::markdown()),
         "codecs" => print(&a, &codecs_cmd::codecs()),
         "media-backends" => {
             let dir = a.opt("--data-dir").map(std::path::PathBuf::from).or_else(cfa4_engine::autosave::default_data_dir);

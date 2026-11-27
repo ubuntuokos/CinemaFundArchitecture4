@@ -1,0 +1,52 @@
+# Devices driven by CFA4-CONTROL-SURFACE-001 (ADR 0012): MIDI, Mackie Control / HUI, Contour jog/shuttle. Integration annex E9: listed here for the catalogue (AC-01); their status comes from that project.
+format = "cfa4-surface-catalog"
+version = 1
+family = "control-surface-001"
+
+[[model]]
+id = "contour.shuttlepro-v2"
+vendor = "Contour"
+name = "ShuttlePRO v2"
+kind = "jog_shuttle"
+goal = "FULL"
+adapter = "control-surface-001"
+phase = "M3"
+system_path = "kernel_hid_input"
+connection = ["usb"]
+source = "Kdenlive jogshuttle (GPL-3.0-only OR KDE-Accepted-GPL), ADR 0012"
+
+[[model]]
+id = "contour.shuttlexpress"
+vendor = "Contour"
+name = "ShuttleXpress"
+kind = "jog_shuttle"
+goal = "FULL"
+adapter = "control-surface-001"
+phase = "M3"
+system_path = "kernel_hid_input"
+connection = ["usb"]
+source = "ADR 0012"
+
+[[model]]
+id = "midi.generic"
+vendor = "Generic"
+name = "MIDI controllers (Note, CC, Program Change)"
+kind = "midi"
+goal = "FULL"
+adapter = "control-surface-001"
+phase = "M3"
+connection = ["usb", "midi"]
+source = "Standard MIDI over the ALSA sequencer"
+notes = ["Device types: owner list for CFA4-CONTROL-SURFACE-001."]
+
+[[model]]
+id = "mackie.control"
+vendor = "Mackie Control / HUI"
+name = "Behringer X-Touch, X-Touch Mini, iCON"
+kind = "mixing_surface"
+goal = "BEST_EFFORT"
+adapter = "control-surface-001"
+phase = "M3"
+connection = ["usb", "midi"]
+source = "Standard MIDI protocol"
+notes = ["Owner of the MCU layer: integration annex Q4."]

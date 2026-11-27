@@ -32,7 +32,10 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QMessageBox,
+    QPlainTextEdit,
     QProgressBar,
     QPushButton,
     QScrollArea,
@@ -78,6 +81,12 @@ DCP_KINDS = (
     ("policy", N_("Policy")),
     ("psa", N_("Public service announcement")),
 )
+# IMF content kinds (`IMF_CONTENT_KINDS` in crates/export, ST 2067-3 Table 3): id, label
+IMF_KINDS = tuple(k for k in DCP_KINDS if k[0] != "policy") + (
+    ("episode", N_("Episode")),
+    ("highlights", N_("Event highlights")),
+    ("event", N_("Event")),
+)
 # DCP immersive audio (`DcpImmersive` in crates/export): id, label
 DCP_IMMERSIVE = (
     ("off", N_("Off (5.1 only)")),
@@ -91,6 +100,12 @@ DCP_IAB_FALLBACK = (
     ("mix", N_("5.1: the timeline mix (not ST 429-19)")),
 )
 # DCP spoken language (RFC 5646, #309): common tags offered; any tag can be typed
+# IMF timed text virtual track kinds (`IMF_TIMED_TEXT_KINDS` in crates/export): id, label (#1234)
+IMF_TIMED_TEXT_KINDS = (
+    ("subtitles", N_("Subtitles")),
+    ("captions", N_("Captions for the hearing impaired")),
+    ("forcedNarrative", N_("Forced narrative")),
+)
 DCP_LANGUAGES = ("", "en-US", "en-GB", "hu-HU", "de-DE", "fr-FR", "es-ES", "it-IT", "ja-JP", "zh-CN")
 AUDIO_CODECS = (
     ("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")),
@@ -100,27 +115,44 @@ AUDIO_CODECS = (
 # per-format choices (egui's export_mode per-format rows): the engine's flat parameter (and
 # camelCase setting), the row label, the automation id and the choices (id, label)
 FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
-    ("mxfVideoCodec", N_("Video Codec"), "export.video.mxfCodec", (("dnxhr", "Avid DNxHR"), ("proRes", "Apple ProRes"), ("h264", "H.264"), ("mpeg2", "MPEG-2"), ("d10", "D-10 (IMX)"), ("xdcamHd422", "XDCAM HD422 (RDD 9)"))),
+    ("mxfVideoCodec", N_("Video Codec"), "export.video.mxfCodec", (("dnxhr", "Avid DNxHR"), ("proRes", "Apple ProRes"), ("h264", "H.264"), ("mpeg2", "MPEG-2"), ("d10", "D-10 (IMX)"), ("xdcamHd422", "XDCAM HD422 (RDD 9)"), ("v210", "Uncompressed 10-bit 4:2:2 (v210)"), ("uyvy", "Uncompressed 8-bit 4:2:2 (UYVY)"))),
     ("proresProfile", N_("Profile"), "export.video.proresProfile", (
         ("proxy", "Apple ProRes 422 Proxy"), ("lt", "Apple ProRes 422 LT"), ("standard", "Apple ProRes 422"),
         ("hq", "Apple ProRes 422 HQ"), ("4444", "Apple ProRes 4444"), ("4444xq", "Apple ProRes 4444 XQ"))),
-    ("dnxProfile", N_("Profile"), "export.video.dnxProfile", (("lb", "DNxHR LB"), ("sq", "DNxHR SQ"), ("hq", "DNxHR HQ"), ("hqx", "DNxHR HQX (10-bit)"))),
+    ("dnxProfile", N_("Profile"), "export.video.dnxProfile", (
+        ("lb", "DNxHR LB"), ("sq", "DNxHR SQ"), ("hq", "DNxHR HQ"), ("hqx", "DNxHR HQX (10-bit)"),
+        ("hd1235", "DNxHD 1080p 10-bit (CID 1235)"), ("hd1238", "DNxHD 1080p 8-bit (CID 1238)"),
+        ("hd1237", "DNxHD 1080p 8-bit (CID 1237)"), ("hd1253", "DNxHD 1080p 36 (CID 1253)"),
+        ("hd1241", "DNxHD 1080i 10-bit (CID 1241)"), ("hd1243", "DNxHD 1080i 8-bit (CID 1243)"),
+        ("hd1242", "DNxHD 1080i 8-bit (CID 1242)"),
+        ("hd1250", "DNxHD 720p 10-bit (CID 1250)"), ("hd1251", "DNxHD 720p 8-bit (CID 1251)"),
+        ("hd1252", "DNxHD 720p 8-bit (CID 1252)"))),
     ("apvProfile", N_("Profile"), "export.video.apvProfile", (("422-10", "APV 422-10"), ("422-12", "APV 422-12"), ("444-10", "APV 444-10"), ("444-12", "APV 444-12"))),
     ("cineformProfile", N_("Encoding"), "export.video.cineformProfile", (("422", "YUV 4:2:2 10-bit"), ("444", "RGB 4:4:4 12-bit"), ("4444", "RGBA 4:4:4:4 12-bit"))),
     ("cineformQuality", N_("Quality"), "export.video.cineformQuality", (
         ("filmscan3", N_("Film Scan 3")), ("filmscan2", N_("Film Scan 2")), ("filmscan1", N_("Film Scan 1")),
         ("high", N_("High")), ("medium", N_("Medium")), ("low", N_("Low")))),
     ("exrCompression", N_("Compression"), "export.video.exrCompression", (
-        ("none", N_("None")), ("rle", "RLE"), ("zips", N_("ZIP (1 scan line)")), ("zip", N_("ZIP (16 scan lines)")))),
+        ("none", N_("None")), ("rle", "RLE"), ("zips", N_("ZIP (1 scan line)")), ("zip", N_("ZIP (16 scan lines)")), ("piz", "PIZ"))),
+    ("dpxBitDepth", N_("Bit Depth"), "export.video.dpxBitDepth", (("10", "10-bit"), ("12", "12-bit"), ("16", "16-bit"))),
 )
 # what the engine encodes with when the setting is empty or unknown (`prores_profile()` & co.)
 FORMAT_DEFAULTS = {"mxfVideoCodec": "dnxhr", "proresProfile": "hq", "dnxProfile": "hq", "apvProfile": "422-10", "cineformProfile": "422",
-                   "cineformQuality": "filmscan1", "exrCompression": "none"}
+                   "cineformQuality": "filmscan1", "exrCompression": "none", "dpxBitDepth": "10"}
 MXF_FORMATS = {"mxf-op1a", "mxf-opatom"}
-MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264", "mpeg2": "mpeg2", "d10": "mpeg2", "xdcamHd422": "mpeg2"}
+# the bitrates of D-10 / IMX (ST 356), Mbit/s
+D10_MBPS = (30.0, 40.0, 50.0)
+
+
+def d10_mbps(v: float) -> float:
+    """The D-10 bitrate nearest to `v` Mbit/s."""
+    return min(D10_MBPS, key=lambda m: abs(m - v))
+
+
+MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264", "mpeg2": "mpeg2", "d10": "mpeg2", "xdcamHd422": "mpeg2", "v210": "mxf-op1a", "uyvy": "mxf-op1a"}
 # the encoder format each per-format row belongs to
 FORMAT_ROW_ENCODER = {"proresProfile": "prores", "dnxProfile": "dnxhr", "apvProfile": "apv", "cineformProfile": "cineform",
-                      "cineformQuality": "cineform", "exrCompression": "exr"}
+                      "cineformQuality": "cineform", "exrCompression": "exr", "dpxBitDepth": "dpx"}
 QUALITY_FORMATS = {"mjpeg", "jpg"}  # JPEG quality 1..100
 QUEUE_POLL_MS = 500
 # engine QueueStatus (crates/engine/src/export_tools.rs): ready, encoding, done, failed, cancelled
@@ -146,12 +178,15 @@ def encoder_format(fmt: str, mxf_codec: str) -> str:
     return "h264" if fmt == "hls" else fmt
 
 
-def supports_alpha(fmt: str, prores_profile: str, cineform_profile: str) -> bool:
+def supports_alpha(fmt: str, prores_profile: str, cineform_profile: str, dpx_bit_depth: str = "10") -> bool:
     """Whether the output can keep an alpha channel (the engine's ``ExportSettings::supports_alpha``).
 
-    GIF keeps binary transparency (alpha below 128 transparent, the rest opaque)."""
+    GIF keeps binary transparency (alpha below 128 transparent, the rest opaque); DPX carries
+    alpha from 12 bits on."""
     if fmt in ("png", "tiff", "tga", "exr", "gif"):
         return True
+    if fmt == "dpx":
+        return dpx_bit_depth in ("12", "16")
     if fmt == "prores":
         return prores_profile in ("4444", "4444xq")
     return fmt == "cineform" and cineform_profile == "4444"
@@ -317,6 +352,7 @@ class ExportDialog(QDialog):
         self._follow: Any = None  # a moved item's id: the selection follows it
         # settings the user changed since the preset was chosen: only these override the preset
         self.touched: set[str] = set()
+        self._d10_bitrate = False  # the bitrate field steps through the D-10 rates (#1017)
         self._want_preset: str | None = None
         self._shown_preset: str | None = None
         self.preset_manager: PresetManager | None = None
@@ -350,7 +386,11 @@ class ExportDialog(QDialog):
         self.dcp_kind.setObjectName("export.dcpContentKind")
         for key, label in DCP_KINDS:
             self.dcp_kind.addItem(tr(label), key)
-        # DCP only: spoken language (MCA labels, CPL title, DCNC name field)
+        # IMF only: reversible (lossless) JPEG 2000 instead of the lossy IMF profile
+        self.imf_lossless = QCheckBox(tr("Lossless (reversible JPEG 2000)"), self)
+        self.imf_lossless.setObjectName("export.imfLossless")
+        self.imf_lossless.setEnabled(False)
+        # DCP and IMF: spoken language (MCA labels, CPL title or locale, DCNC name field)
         self.dcp_language = QComboBox(self)
         self.dcp_language.setObjectName("export.dcpLanguage")
         self.dcp_language.setEditable(True)
@@ -384,8 +424,34 @@ class ExportDialog(QDialog):
         self._iab_probed = ""
         for w in (self.dcp_immersive, self.dcp_iab_source, self.dcp_iab_browse, self.dcp_iab_fallback):
             w.setEnabled(False)
+        # DCP only: the first caption track as subtitles, an ST 429-5 timed text track file (#938)
+        self.dcp_subtitles = QCheckBox(tr("Subtitles from the first caption track"), self)
+        self.dcp_subtitles.setObjectName("export.dcpSubtitles")
+        self.dcp_subtitle_language = QComboBox(self)
+        self.dcp_subtitle_language.setObjectName("export.dcpSubtitleLanguage")
+        self.dcp_subtitle_language.setEditable(True)
+        self.dcp_subtitle_language.addItems(DCP_LANGUAGES)
+        line = self.dcp_subtitle_language.lineEdit()
+        if line is not None:
+            line.setPlaceholderText(tr("The package language"))
+        self.dcp_subtitle_font = QLineEdit(self)
+        self.dcp_subtitle_font.setObjectName("export.dcpSubtitleFont")
+        self.dcp_subtitle_font.setPlaceholderText(tr("Inter Regular (built in), or an OpenType / TrueType file"))
+        self.dcp_subtitle_font_browse = QPushButton(tr("Browse…"), self)
+        self.dcp_subtitle_font_browse.setObjectName("export.dcpSubtitleFontBrowse")
+        self.dcp_subtitle_font_browse.clicked.connect(self._browse_subtitle_font)
+        subtitle_font_row = QHBoxLayout()
+        subtitle_font_row.addWidget(self.dcp_subtitle_font, 1)
+        subtitle_font_row.addWidget(self.dcp_subtitle_font_browse)
+        # IMF (#1234): the same switch and language; IMSC1 in a timed text track of this kind
+        self.imf_timed_text_kind = QComboBox(self)
+        self.imf_timed_text_kind.setObjectName("export.imfTimedTextKind")
+        for key, label in IMF_TIMED_TEXT_KINDS:
+            self.imf_timed_text_kind.addItem(tr(label), key)
+        for w in (self.dcp_subtitles, self.dcp_subtitle_language, self.dcp_subtitle_font, self.dcp_subtitle_font_browse, self.imf_timed_text_kind):
+            w.setEnabled(False)
         # egui's Media File rows: File Name, then Location with its folder picker
-        self.path = OutputPath(self, lambda: "" if self._dcp() else (self._extension() or None))
+        self.path = OutputPath(self, lambda: "" if self._package() else (self._extension() or None))
         browse = QPushButton("…", self)
         browse.setObjectName("export.location.browse")
         browse.setToolTip(tr("Choose folder"))
@@ -503,6 +569,35 @@ class ExportDialog(QDialog):
         # egui's "DASH Manifest" row: an HLS export also writes a DASH manifest over the same segments
         self.dash_manifest = QCheckBox(tr("Also write a DASH manifest (.mpd)"), self)
         self.dash_manifest.setObjectName("export.video.dashManifest")
+        # MXF OP1a: the caption track as closed captions in an ANC data track (ST 436-1, CEA-608/708)
+        self.mxf_anc = QCheckBox(tr("Write the captions as ANC data (CEA-608/708)"), self)
+        self.mxf_anc.setObjectName("export.video.mxfAncCaptions")
+        # MXF OP1a: an AMWA AS-02 bundle (version file, manifest, mono components under media/)
+        self.mxf_as02 = QCheckBox(tr("Write an AS-02 bundle (the path is a folder)"), self)
+        self.mxf_as02.setObjectName("export.video.mxfAs02")
+        # AS-02: more sequences of the project as further versions in the same bundle (by name)
+        self.project_sequences: list[tuple[int, str]] = []
+        self.as02_versions = QListWidget(self)
+        self.as02_versions.setObjectName("export.video.mxfAs02Versions")
+        self.as02_versions.setToolTip(tr("Tick the sequences to write as further versions in the AS-02 bundle"))
+        self.as02_versions.setMaximumHeight(110)
+        # MXF OP1a: AMWA AS-11 metadata in bmx's text forms (empty Core = no AS-11 metadata)
+        self.as11_text: dict[str, QPlainTextEdit] = {}
+        # the placeholders show bmx's text forms (item names and time codes, not translated)
+        for key, hint in (
+            ("mxfAs11Core", "SeriesTitle: …\nProgrammeTitle: …\nShimName: UK DPP HD\nShimVersion: 1.1"),
+            ("mxfAs11Segments", "1/2 10:00:00:00 00:12:30:00\n2/2 10:13:00:00 00:11:00:00"),
+            ("mxfAs11Ukdpp", "ProductionNumber: …\nSynopsis: …\nContactEmail: …"),
+            ("mxfAs10", "ShimName: NRK_HD_2012\nMainTitle: …"),
+            ("mxfAs12", "adid_prefix: ABCD\nadid_code: 1234000H\nad_title: …\nBrand: …\nProduct: …\nAdvertiser: …\nagency_office_location: …\nLength: 30\nMedium: Television\nsd_flag: N\nParent: …"),
+            ("mxfAs03", "IdentifierKind: ISAN\nIdentifier: …\nShimName: PBS NGIS HD Playout\nSignalStandard: 1920/1080/59.94i/16:9\nIntendedAFD: 1000 FullHD"),
+        ):
+            t = QPlainTextEdit(self)
+            t.setObjectName(f"export.video.{key}")
+            t.setPlaceholderText(hint)
+            t.setFixedHeight(72)
+            t.setTabChangesFocus(True)
+            self.as11_text[key] = t
         self.quality = QSpinBox(self)
         self.quality.setObjectName("export.video.quality")
         self.quality.setRange(1, 100)
@@ -549,7 +644,12 @@ class ExportDialog(QDialog):
         f.addRow(tr("DCP resolution"), self.dcp_resolution)
         f.addRow(tr("DCP container"), self.dcp_aspect)
         f.addRow(tr("Content kind"), self.dcp_kind)
-        f.addRow(tr("DCP language"), self.dcp_language)
+        f.addRow(tr("Package language"), self.dcp_language)
+        f.addRow("", self.dcp_subtitles)
+        f.addRow(tr("Subtitle language"), self.dcp_subtitle_language)
+        f.addRow(tr("Subtitle font"), subtitle_font_row)
+        f.addRow(tr("Subtitle kind"), self.imf_timed_text_kind)
+        f.addRow("", self.imf_lossless)
         f.addRow(tr("Range"), range_row)
         f.addRow("", self.range_warning)
         video = Section("video", tr("Video"), self)
@@ -570,6 +670,11 @@ class ExportDialog(QDialog):
         QFormLayout(mux.body).addRow(tr("Multiplexer"), self.multiplexer)
         fv.addRow(tr("Alpha"), self.alpha)
         fv.addRow(tr("DASH Manifest"), self.dash_manifest)
+        fv.addRow(tr("Closed Captions"), self.mxf_anc)
+        fv.addRow(tr("AS-02"), self.mxf_as02)
+        fv.addRow(tr("AS-02 Versions"), self.as02_versions)
+        for key, label in (("mxfAs11Core", N_("AS-11 Core")), ("mxfAs11Segments", N_("AS-11 Parts")), ("mxfAs11Ukdpp", N_("AS-11 UK DPP")), ("mxfAs10", N_("AS-10")), ("mxfAs03", N_("AS-03")), ("mxfAs12", N_("AS-12"))):
+            fv.addRow(tr(label), self.as11_text[key])
         fv.addRow(tr("Quality"), self.quality)
         self.video_form = fv
         fv.addRow(self.hardware)
@@ -593,6 +698,13 @@ class ExportDialog(QDialog):
         self.summary.setObjectName("export.summary")
         self.summary.setWordWrap(True)
         self.summary.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+
+        # egui's red `export.problem` line: settings the encoders cannot honour, said before Export
+        self.problem = QLabel(self)
+        self.problem.setObjectName("export.problem")
+        self.problem.setWordWrap(True)
+        self.problem.setStyleSheet("color: #d04040")
+        self.problem.setVisible(False)
 
         self.export_button = QPushButton(tr("Export"), self)
         self.export_button.setObjectName("export.button")
@@ -731,6 +843,7 @@ class ExportDialog(QDialog):
         sc.addWidget(scroll, 1)
         sc.addWidget(self.no_sequence, 1)
         sc.addWidget(self.summary)
+        sc.addWidget(self.problem)
         sc.addLayout(buttons)
         # egui's columns: the queue on the left (300 px there), the settings and preview beside it
         self.splitter = splitter = QSplitter(Qt.Orientation.Horizontal, self)
@@ -771,10 +884,19 @@ class ExportDialog(QDialog):
         self.dcp_iab_source.textChanged.connect(self._changed)
         self.dcp_iab_fallback.currentIndexChanged.connect(self._changed)
         self.dcp_language.currentTextChanged.connect(self._changed)
+        self.dcp_subtitles.toggled.connect(self._subtitles_changed)
+        self.dcp_subtitle_language.currentTextChanged.connect(self._changed)
+        self.dcp_subtitle_font.textChanged.connect(self._changed)
+        self.imf_timed_text_kind.currentIndexChanged.connect(self._changed)
+        self.imf_lossless.toggled.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
-        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest)):
+        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc), ("mxfAs02", self.mxf_as02)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
+        self.mxf_as02.toggled.connect(lambda _on: self._sync_format_rows())
+        self.as02_versions.itemChanged.connect(lambda _i: self._touch("mxfAs02Versions"))
+        for key, t in self.as11_text.items():
+            t.textChanged.connect(lambda k=key: self._touch(k))
         for key, c in self.format_choices.items():
             c.currentIndexChanged.connect(lambda _i, k=key: (self._touch(k), self._sync_format_rows()))
         self.quality.valueChanged.connect(lambda _v: self._touch("quality"))
@@ -792,8 +914,38 @@ class ExportDialog(QDialog):
         self._sync_size_shown()
 
     # ----- opening -----
+    def set_project_sequences(self, sequences: list[tuple[int, str]]) -> None:
+        """The project's sequences (id, name): the AS-02 version list offers the ones but the open one.
+        Ticks survive a refresh for the sequences still there."""
+        ticked = set(self.chosen_versions())
+        self.project_sequences = list(sequences)
+        self._fill_versions(ticked)
+
+    def _fill_versions(self, ticked: set[int]) -> None:
+        own = (self.sequence or {}).get("id")
+        self.as02_versions.blockSignals(True)
+        self.as02_versions.clear()
+        for sid, name in self.project_sequences:
+            if sid == own:
+                continue
+            it = QListWidgetItem(name or str(sid))
+            it.setFlags(it.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            it.setCheckState(Qt.CheckState.Checked if sid in ticked else Qt.CheckState.Unchecked)
+            it.setData(Qt.ItemDataRole.UserRole, sid)
+            self.as02_versions.addItem(it)
+        self.as02_versions.blockSignals(False)
+
+    def chosen_versions(self) -> list[int]:
+        out: list[int] = []
+        for i in range(self.as02_versions.count()):
+            it = self.as02_versions.item(i)
+            if it.checkState() == Qt.CheckState.Checked:
+                out.append(int(it.data(Qt.ItemDataRole.UserRole)))
+        return out
+
     def open_for(self, sequence: dict[str, Any] | None, project_path: str | None) -> None:
         self.sequence = sequence
+        self._fill_versions(set(self.chosen_versions()))
         self.project_path = project_path
         name = str((sequence or {}).get("name") or tr("No sequence"))
         self.sequence_label.setText(name)
@@ -882,6 +1034,9 @@ class ExportDialog(QDialog):
             item = self.format.model().item(self.format.count() - 1)  # type: ignore[attr-defined]
             if item is not None and not f.get("available", True):
                 item.setEnabled(False)
+                reason = f.get("reason")
+                if isinstance(reason, str) and reason:
+                    item.setToolTip(reason)
         self.format.blockSignals(False)
 
     def _on_presets(self, result: Any, _b: bytes | None) -> None:
@@ -944,6 +1099,10 @@ class ExportDialog(QDialog):
         self.dcp_iab_source.setText(str(preset.get("dcpIabSource") or ""))
         self.dcp_iab_fallback.setCurrentIndex(max(0, self.dcp_iab_fallback.findData(preset.get("dcpIabFallback") or "none")))
         self.dcp_language.setCurrentText(str(preset.get("dcpLanguage") or ""))
+        self.dcp_subtitles.setChecked(bool(preset.get("dcpSubtitles")))
+        self.dcp_subtitle_language.setCurrentText(str(preset.get("dcpSubtitleLanguage") or ""))
+        self.imf_timed_text_kind.setCurrentIndex(max(0, self.imf_timed_text_kind.findData(preset.get("imfTimedTextKind") or "subtitles")))
+        self.imf_lossless.setChecked(bool(preset.get("imfLossless")))
         self.touched.clear()
         self.agent_settings = {}
         self._loading = False
@@ -966,9 +1125,16 @@ class ExportDialog(QDialog):
         self.sections["multiplexer"].setVisible(self._muxed())
         self.effects.set_kinds(video, bool(fmt.get("audio", True)) or not video)
         dcp = self._dcp()
-        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind, self.dcp_immersive, self.dcp_language):
+        imf = self.format.currentData() == "imf"
+        self._fill_kinds(IMF_KINDS if imf else DCP_KINDS)
+        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_immersive):
             w.setEnabled(dcp)
+        for w in (self.dcp_kind, self.dcp_language):
+            w.setEnabled(dcp or imf)
+        self.imf_lossless.setEnabled(imf)
         self.dcp_isdcf.setEnabled(dcp and bool(self._dcp_name))
+        self.dcp_subtitles.setEnabled(dcp or imf)
+        self._subtitles_changed()
         self._immersive_changed()
         if dcp:
             # fixed by the DCI specifications: container size, J2K data rate, 5.1 24-bit PCM
@@ -978,7 +1144,24 @@ class ExportDialog(QDialog):
             self.match_size.setEnabled(True)
             self.width_spin.setEnabled(True)
             self.height_spin.setEnabled(True)
+        if imf:
+            # the IMF profile sets the J2K data rate; the sound is 24-bit 48 kHz PCM
+            for w in (self.bitrate_mode, self.bitrate_box, self.audio_codec, self.audio_bitrate):
+                w.setEnabled(False)
         self._container_changed()
+
+    def _fill_kinds(self, kinds: tuple[tuple[str, str], ...]) -> None:
+        """The content kind choices of a DCP or an IMF package, keeping the chosen kind when the
+        other list has it."""
+        if [self.dcp_kind.itemData(i) for i in range(self.dcp_kind.count())] == [k for k, _ in kinds]:
+            return
+        current = self.dcp_kind.currentData()
+        blocked = self.dcp_kind.blockSignals(True)
+        self.dcp_kind.clear()
+        for key, label in kinds:
+            self.dcp_kind.addItem(tr(label), key)
+        self.dcp_kind.setCurrentIndex(max(0, self.dcp_kind.findData(current)))
+        self.dcp_kind.blockSignals(blocked)
 
     def _choice(self, key: str) -> str:
         return str(self.format_choices[key].currentData() or "")
@@ -989,9 +1172,14 @@ class ExportDialog(QDialog):
         enc = encoder_format(fmt, self._choice("mxfVideoCodec"))
         rows = {key: enc == FORMAT_ROW_ENCODER.get(key) for key in self.format_choices}
         rows["mxfVideoCodec"] = fmt in MXF_FORMATS
-        rows["alpha"] = supports_alpha(fmt, self._choice("proresProfile"), self._choice("cineformProfile"))
+        rows["alpha"] = supports_alpha(fmt, self._choice("proresProfile"), self._choice("cineformProfile"), self._choice("dpxBitDepth"))
         rows["quality"] = enc in QUALITY_FORMATS
         rows["dashManifest"] = fmt == "hls"
+        rows["mxfAncCaptions"] = fmt == "mxf-op1a" and self._choice("mxfVideoCodec") != "d10"
+        rows["mxfAs02"] = fmt == "mxf-op1a" and self._choice("mxfVideoCodec") not in ("d10", "xdcamHd422")
+        rows["mxfAs02Versions"] = rows["mxfAs02"] and self.mxf_as02.isChecked() and self.as02_versions.count() > 0
+        for key in self.as11_text:
+            rows[key] = fmt == "mxf-op1a"
         return rows
 
     def _sync_mpeg2_rows(self) -> None:
@@ -1001,15 +1189,45 @@ class ExportDialog(QDialog):
         mxf_codec = self._choice("mxfVideoCodec")
         video = encoder_format(fmt, mxf_codec) == "mpeg2" and not (fmt in MXF_FORMATS and mxf_codec == "d10")
         self.container.setEnabled(fmt == "mpeg2")
-        self.rows.allow_interlaced(fmt == "mpeg2")  # only MPEG-2 export codes interlaced video (egui's Field Order)
+        # MPEG-2 and ProRes code interlaced video (egui's Field Order); in MXF MPEG-2, XDCAM HD422
+        # (1080i), D-10 (#949) or ProRes
+        mxf_interlaced = fmt in MXF_FORMATS and (encoder_format(fmt, mxf_codec) == "mpeg2" or mxf_codec == "proRes")
+        self.rows.allow_interlaced(fmt in ("mpeg2", "prores") or mxf_interlaced)
         for w in (self.gop, self.b_frames, self.quantizer):
             w.setEnabled(video)
         self.chroma.setEnabled(video and not (fmt in MXF_FORMATS and mxf_codec == "xdcamHd422"))
         self.video_form.setRowVisible(self.gop, video)  # H.264 / H.265 / AV1 have egui's own row
+        self._sync_d10_bitrate(fmt in MXF_FORMATS and mxf_codec == "d10")
+
+    def _sync_d10_bitrate(self, d10: bool) -> None:
+        """D-10 / IMX runs at 30, 40 or 50 Mbit/s only (#1017): the target bitrate field steps
+        through them (50 by default); `params` always sends one of them."""
+        if d10 == self._d10_bitrate:
+            return
+        self._d10_bitrate = d10
+        self.bitrate.blockSignals(True)
+        if d10:
+            v = self.bitrate.value()
+            self.bitrate.setRange(30.0, 50.0)
+            self.bitrate.setSingleStep(10.0)
+            self.bitrate.setValue(d10_mbps(v) if "bitrate" in self.touched else 50.0)
+        else:
+            self.bitrate.setRange(0.1, 800.0)
+            self.bitrate.setSingleStep(0.1)
+        self.bitrate.blockSignals(False)
 
     def _sync_format_rows(self) -> None:
         self._sync_mpeg2_rows()
-        widgets: dict[str, QWidget] = {**self.format_choices, "alpha": self.alpha, "quality": self.quality, "dashManifest": self.dash_manifest}
+        widgets: dict[str, QWidget] = {
+            **self.format_choices,
+            "alpha": self.alpha,
+            "quality": self.quality,
+            "dashManifest": self.dash_manifest,
+            "mxfAncCaptions": self.mxf_anc,
+            "mxfAs02": self.mxf_as02,
+            "mxfAs02Versions": self.as02_versions,
+            **self.as11_text,
+        }
         for key, shown in self._format_rows().items():
             self.video_form.setRowVisible(widgets[key], shown)
 
@@ -1022,11 +1240,16 @@ class ExportDialog(QDialog):
                 c.blockSignals(True)
                 c.setCurrentIndex(i)
                 c.blockSignals(False)
-        for key, box in (("alpha", self.alpha), ("dashManifest", self.dash_manifest)):
+        for key, box in (("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc), ("mxfAs02", self.mxf_as02)):
             if key not in self.touched and isinstance(settings.get(key), bool):
                 box.blockSignals(True)
                 box.setChecked(settings[key])
                 box.blockSignals(False)
+        for key, t in self.as11_text.items():
+            if key not in self.touched and isinstance(settings.get(key), str) and settings[key] != t.toPlainText():
+                t.blockSignals(True)
+                t.setPlainText(settings[key])
+                t.blockSignals(False)
         self.rows.show_settings(settings, self.touched)
         self._show_bitrate(settings)
         if "bitrateMode" not in self.touched and isinstance(settings.get("bitrateMode"), str):
@@ -1067,6 +1290,10 @@ class ExportDialog(QDialog):
         if self._dcp():
             # the DCI specifications fix the J2K data rate and the sound (5.1 24-bit 48 kHz PCM)
             for key in ("crf", "maxBitrate", "sampleRate", "channels", "bits", "flacLevel"):
+                shown[key] = False
+        elif fmt == "imf":
+            # the IMF profile fixes the J2K data rate; the sound is 24-bit 48 kHz PCM (mono, stereo or 5.1)
+            for key in ("crf", "maxBitrate", "sampleRate", "bits", "flacLevel"):
                 shown[key] = False
         return shown
 
@@ -1114,6 +1341,22 @@ class ExportDialog(QDialog):
         else:
             self.dcp_iab_info.setText("")
         self._changed()
+
+    def _subtitles_changed(self) -> None:
+        """The subtitle rows follow the checkbox: the language for a DCP or an IMF package, the font
+        for a DCP (IMSC1 uses a generic font family), the timed text kind for IMF."""
+        on = self.dcp_subtitles.isEnabled() and self.dcp_subtitles.isChecked()
+        imf = self.format.currentData() == "imf"
+        self.dcp_subtitle_language.setEnabled(on)
+        for w in (self.dcp_subtitle_font, self.dcp_subtitle_font_browse):
+            w.setEnabled(on and not imf)
+        self.imf_timed_text_kind.setEnabled(on and imf)
+        self._changed()
+
+    def _browse_subtitle_font(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(self, tr("Subtitle font"), self.dcp_subtitle_font.text(), tr("Fonts") + " (*.ttf *.otf);;" + tr("All files") + " (*)")
+        if path:
+            self.dcp_subtitle_font.setText(path)
 
     def _browse_iab(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -1173,6 +1416,10 @@ class ExportDialog(QDialog):
     def _dcp(self) -> bool:
         """A DCP: the output is a folder."""
         return self.format.currentData() == "dcp"
+
+    def _package(self) -> bool:
+        """A DCP or an IMF package: the output is a folder."""
+        return self.format.currentData() in ("dcp", "imf")
 
     def _extension(self) -> str:
         """The output file's extension: the MPEG-2 container's, QuickTime's for H.264 / H.265 in
@@ -1247,6 +1494,8 @@ class ExportDialog(QDialog):
                 p["bitrateMode"] = self.bitrate_mode.currentData()
             if "bitrate" in self.touched:
                 p["bitrateKbps"] = round(self.bitrate.value() * 1000)
+        if self._d10_bitrate:
+            p["bitrateKbps"] = round(d10_mbps(self.bitrate.value()) * 1000)
         if "hardware" in self.touched:
             p["hardwareEncoding"] = "auto" if self.hardware.isChecked() else "off"
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
@@ -1279,6 +1528,15 @@ class ExportDialog(QDialog):
             p["alpha"] = self.alpha.isChecked()
         if rows["dashManifest"] and "dashManifest" in self.touched:
             p["dashManifest"] = self.dash_manifest.isChecked()
+        if rows["mxfAncCaptions"] and "mxfAncCaptions" in self.touched:
+            p["mxfAncCaptions"] = self.mxf_anc.isChecked()
+        if rows["mxfAs02"] and "mxfAs02" in self.touched:
+            p["mxfAs02"] = self.mxf_as02.isChecked()
+        if rows["mxfAs02Versions"] and "mxfAs02Versions" in self.touched:
+            p["mxfAs02Versions"] = self.chosen_versions()
+        for key, t in self.as11_text.items():
+            if rows[key] and key in self.touched:
+                p[key] = t.toPlainText()
         if rows["quality"] and "quality" in self.touched:
             p["quality"] = self.quality.value()
         if self.container.isEnabled():
@@ -1303,6 +1561,20 @@ class ExportDialog(QDialog):
             if mode != "off":
                 p["dcpIabFallback"] = self.dcp_iab_fallback.currentData()
             p["dcpLanguage"] = self.dcp_language.currentText().strip()
+            p["dcpSubtitles"] = self.dcp_subtitles.isChecked()
+            if self.dcp_subtitles.isChecked():
+                p["dcpSubtitleLanguage"] = self.dcp_subtitle_language.currentText().strip()
+                font = self.dcp_subtitle_font.text().strip()
+                if font:
+                    p["dcpSubtitleFont"] = os.path.expanduser(font)
+        if self.imf_lossless.isEnabled():
+            p["imfContentKind"] = self.dcp_kind.currentData()
+            p["imfLossless"] = self.imf_lossless.isChecked()
+            p["dcpLanguage"] = self.dcp_language.currentText().strip()
+            p["dcpSubtitles"] = self.dcp_subtitles.isChecked()
+            if self.dcp_subtitles.isChecked():
+                p["dcpSubtitleLanguage"] = self.dcp_subtitle_language.currentText().strip()
+                p["imfTimedTextKind"] = self.imf_timed_text_kind.currentData()
         if self.sequence is not None and self.sequence.get("id") is not None:
             p["sequence"] = self.sequence["id"]
         if self.qc_after.isChecked():
@@ -1369,8 +1641,11 @@ class ExportDialog(QDialog):
         self.summary.setText(" · ".join(parts))
         self.summary.setStyleSheet("")
         self.range_warning.setVisible(bool(r.get("warnings")))
-        self.export_button.setEnabled(True)
-        self.queue_button.setEnabled(True)
+        problem = str(r.get("problem") or "")
+        self.problem.setText(problem)
+        self.problem.setVisible(bool(problem))
+        self.export_button.setEnabled(not problem)
+        self.queue_button.setEnabled(not problem)
         self._dcp_name = str(r.get("dcpName") or "")
         self.dcp_isdcf.setEnabled(self._dcp() and bool(self._dcp_name))
 
@@ -1409,6 +1684,7 @@ class ExportDialog(QDialog):
         self.summary.setText(message)
         self.summary.setStyleSheet("color: #d04040")
         self.range_warning.setVisible(False)
+        self.problem.setVisible(False)
         self.export_button.setEnabled(False)
         self.queue_button.setEnabled(False)
 
@@ -1582,6 +1858,9 @@ class ExportDialog(QDialog):
             status = str(it.get("status") or "").lower()
             qc = it.get("qc") if isinstance(it.get("qc"), dict) else {}
             qc_status = str(qc.get("status") or "notChecked")
+            dcp = it.get("dcpValidation") if isinstance(it.get("dcpValidation"), dict) else {}
+            if dcp.get("profile"):  # a DCP package is validated (DCP-13), not media-checked: its result fills the column
+                qc, qc_status = dcp, str(dcp.get("status") or "notChecked")
             texts = [
                 str(it.get("sequenceName") or ""),
                 str(it.get("path") or ""),
@@ -1633,7 +1912,10 @@ class ExportDialog(QDialog):
                 self.table.selectRow(row)
         self._update_move_buttons()
         running = bool(data.get("running")) or any(
-            str(i.get("status") or "").lower() == "encoding" or (i.get("qc") or {}).get("status") == "running" for i in items
+            str(i.get("status") or "").lower() == "encoding"
+            or (i.get("qc") or {}).get("status") == "running"
+            or (i.get("dcpValidation") or {}).get("status") == "running"
+            for i in items
         )
         if not running and not self.isVisible():
             self._poll.stop()

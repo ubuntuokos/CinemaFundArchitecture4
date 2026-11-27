@@ -47,7 +47,7 @@ pub struct ExtraData {
 }
 
 impl ExtraData {
-    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         if reader.position()? & 0x7 != 0 {
             log_or_err!(state, log::Level::Warn, anyhow!(ExtraDataError::MisalignedExtraDataStart), reader);
         }

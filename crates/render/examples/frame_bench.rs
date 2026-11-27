@@ -53,6 +53,7 @@ fn camera() -> Arc<VideoFrame> {
         color: cfa4_color::ColorInfo::REC709,
         par: (1, 1),
         pts: Tick::ZERO,
+        layout: Default::default(),
     })
 }
 
@@ -80,6 +81,7 @@ fn banner(bar: usize) -> Arc<VideoFrame> {
         color: cfa4_color::ColorInfo::REC709,
         par: (1, 1),
         pts: Tick::ZERO,
+        layout: Default::default(),
     })
 }
 

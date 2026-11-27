@@ -93,7 +93,7 @@ impl Bits<'_> {
 }
 
 /// A stored (uncompressed) block.
-fn stored(bits: &mut Bits, out: &mut Vec<u8>, limit: usize) -> Result<(), Error> {
+fn stored(bits: &mut Bits<'_>, out: &mut Vec<u8>, limit: usize) -> Result<(), Error> {
     bits.consume(bits.cnt % 8)?;
     let len = bits.take(16)?;
     if len != !bits.take(16)? & 0xFFFF {
@@ -176,7 +176,7 @@ impl Huffman {
         Ok(Self { fast, count, symbols })
     }
 
-    fn decode(&self, bits: &mut Bits) -> Result<u16, Error> {
+    fn decode(&self, bits: &mut Bits<'_>) -> Result<u16, Error> {
         let peek = bits.peek(MAX_BITS as u32);
         let e = self.fast.get((peek & ((1 << FAST_BITS) - 1)) as usize).copied().unwrap_or(0);
         if e != 0 {
@@ -210,7 +210,7 @@ fn fixed_tables() -> Result<(Huffman, Huffman), Error> {
 /// Order in which code-length code lengths are sent.
 const CL_ORDER: [usize; 19] = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
 
-fn dynamic_tables(bits: &mut Bits) -> Result<(Huffman, Huffman), Error> {
+fn dynamic_tables(bits: &mut Bits<'_>) -> Result<(Huffman, Huffman), Error> {
     let nlit = bits.take(5)? as usize + 257;
     let ndist = bits.take(5)? as usize + 1;
     let ncl = bits.take(4)? as usize + 4;
@@ -254,7 +254,7 @@ const DIST_BASE: [u16; 30] =
 const DIST_EXTRA: [u8; 30] = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13];
 
 /// The literal / length and distance codes of one compressed block.
-fn codes(bits: &mut Bits, out: &mut Vec<u8>, limit: usize, lit: &Huffman, dist: &Huffman) -> Result<(), Error> {
+fn codes(bits: &mut Bits<'_>, out: &mut Vec<u8>, limit: usize, lit: &Huffman, dist: &Huffman) -> Result<(), Error> {
     loop {
         let sym = lit.decode(bits)?;
         if sym < 256 {

@@ -73,7 +73,7 @@ pub struct MaConfigParams<'a> {
 impl Bundle<MaConfigParams<'_>> for MaConfig {
     type Error = crate::modular::Error;
 
-    fn parse(bitstream: &mut Bitstream, params: MaConfigParams) -> crate::modular::Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, params: MaConfigParams<'_>) -> crate::modular::Result<Self> {
         struct FoldingTreeLeaf {
             ctx: u32,
             predictor: super::predictor::Predictor,
@@ -266,7 +266,7 @@ impl FlatMaTree {
         Self { nodes, need_self_correcting, max_prev_channel_depth }
     }
 
-    pub(crate) fn get_leaf<S: Sample>(&self, properties: &Properties<S>) -> &MaTreeLeafClustered {
+    pub(crate) fn get_leaf<S: Sample>(&self, properties: &Properties<'_, '_, '_, S>) -> &MaTreeLeafClustered {
         let mut current_node = &self.nodes[0];
         loop {
             match current_node {
@@ -311,9 +311,9 @@ impl FlatMaTree {
     /// Decode a sample with the given state.
     pub fn decode_sample<S: Sample>(
         &self,
-        bitstream: &mut Bitstream,
+        bitstream: &mut Bitstream<'_>,
         decoder: &mut Decoder,
-        properties: &Properties<S>,
+        properties: &Properties<'_, '_, '_, S>,
         dist_multiplier: u32,
     ) -> Result<(i32, super::predictor::Predictor)> {
         let leaf = self.get_leaf(properties);

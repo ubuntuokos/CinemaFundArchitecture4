@@ -291,15 +291,15 @@ pub(crate) enum CoreError {
 type R<T> = Result<T, CoreError>;
 
 #[inline]
-fn rb(gb: &mut BitReader, n: usize) -> R<u32> {
+fn rb(gb: &mut BitReader<'_>, n: usize) -> R<u32> {
     gb.read_bits(n).ok_or(CoreError::Bitstream)
 }
 #[inline]
-fn rb1(gb: &mut BitReader) -> R<bool> {
+fn rb1(gb: &mut BitReader<'_>) -> R<bool> {
     gb.read_bit().ok_or(CoreError::Bitstream)
 }
 #[inline]
-fn rsb(gb: &mut BitReader, n: usize) -> R<i32> {
+fn rsb(gb: &mut BitReader<'_>, n: usize) -> R<i32> {
     gb.read_signed_bits(n).ok_or(CoreError::Bitstream)
 }
 
@@ -438,7 +438,7 @@ impl CoreDecoder {
 
     /// Advance `gb` past the core frame header to the coding header. Mirrors the
     /// field order of ff_dca_parse_core_frame_header.
-    fn skip_frame_header(&mut self, gb: &mut BitReader) -> R<()> {
+    fn skip_frame_header(&mut self, gb: &mut BitReader<'_>) -> R<()> {
         rb(gb, 32)?; // sync
         rb1(gb)?; // normal_frame
         rb(gb, 5)?; // deficit
@@ -476,7 +476,7 @@ impl CoreDecoder {
         Ok(())
     }
 
-    fn parse_coding_header(&mut self, gb: &mut BitReader, data: &[u8], header: Header, xch_base: usize) -> R<()> {
+    fn parse_coding_header(&mut self, gb: &mut BitReader<'_>, data: &[u8], header: Header, xch_base: usize) -> R<()> {
         let header_pos = gb.position();
         let mut header_size = 0usize;
         match header {
@@ -658,7 +658,7 @@ impl CoreDecoder {
         Ok(())
     }
 
-    fn parse_scale(&self, gb: &mut BitReader, scale_index: &mut i32, sel: usize) -> R<i32> {
+    fn parse_scale(&self, gb: &mut BitReader<'_>, scale_index: &mut i32, sel: usize) -> R<i32> {
         let (table, size): (&[u32], usize) =
             if sel > 5 { (&SCALE_FACTOR_QUANT7, SCALE_FACTOR_QUANT7.len()) } else { (&SCALE_FACTOR_QUANT6, SCALE_FACTOR_QUANT6.len()) };
         if sel < 5 {
@@ -672,7 +672,7 @@ impl CoreDecoder {
         Ok(table[*scale_index as usize] as i32)
     }
 
-    fn parse_joint_scale(&self, gb: &mut BitReader, sel: usize) -> R<i32> {
+    fn parse_joint_scale(&self, gb: &mut BitReader<'_>, sel: usize) -> R<i32> {
         let mut scale_index = if sel < 5 { core_vlcs().scale_factor[sel].get(gb).ok_or(CoreError::Bitstream)? } else { rb(gb, sel + 1)? as i32 };
         scale_index += 64;
         if (scale_index as usize) >= JOINT_SCALE_FACTORS.len() {
@@ -681,7 +681,7 @@ impl CoreDecoder {
         Ok(JOINT_SCALE_FACTORS[scale_index as usize] as i32)
     }
 
-    fn parse_subframe_header(&mut self, gb: &mut BitReader, sf: usize, header: Header, xch_base: usize) -> R<()> {
+    fn parse_subframe_header(&mut self, gb: &mut BitReader<'_>, sf: usize, header: Header, xch_base: usize) -> R<()> {
         // The subsubframe layout is the primary set's; extension sets share it.
         if header == Header::Core {
             self.nsubsubframes[sf] = rb(gb, 2)? as usize + 1;
@@ -777,7 +777,7 @@ impl CoreDecoder {
 
     /// `extract_audio` — returns (huffman_used, samples[8]).
     #[inline(always)]
-    fn extract_audio(&self, gb: &mut BitReader, abits: i32, ch: usize) -> R<(bool, [i32; 8])> {
+    fn extract_audio(&self, gb: &mut BitReader<'_>, abits: i32, ch: usize) -> R<(bool, [i32; 8])> {
         let mut audio = [0i32; 8];
         if abits == 0 {
             return Ok((false, audio));
@@ -804,7 +804,7 @@ impl CoreDecoder {
     }
 
     #[inline(always)]
-    fn parse_block_codes(&self, gb: &mut BitReader, audio: &mut [i32; 8], abits: i32) -> R<()> {
+    fn parse_block_codes(&self, gb: &mut BitReader<'_>, audio: &mut [i32; 8], abits: i32) -> R<()> {
         let nbits = BLOCK_CODE_NBITS[abits as usize - 1] as usize;
         let code1 = rb(gb, nbits)?;
         let code2 = rb(gb, nbits)?;
@@ -815,7 +815,7 @@ impl CoreDecoder {
     }
 
     #[inline(always)]
-    fn parse_subframe_audio(&mut self, gb: &mut BitReader, sf: usize, header: Header, xch_base: usize, sub_pos: &mut usize, lfe_pos: &mut usize) -> R<()> {
+    fn parse_subframe_audio(&mut self, gb: &mut BitReader<'_>, sf: usize, header: Header, xch_base: usize, sub_pos: &mut usize, lfe_pos: &mut usize) -> R<()> {
         let nsamples = self.nsubsubframes[sf] * DCA_SUBBAND_SAMPLES;
         if *sub_pos + nsamples > self.npcmblocks {
             return Err(CoreError::Invalid("subband overflow"));
@@ -944,12 +944,12 @@ impl CoreDecoder {
     /// Parse one channel set — the primary set from the core's coding
     /// header, or an extension set whose channels start at `xch_base` — and
     /// decode its subband samples for the frame.
-    fn parse_frame_data(&mut self, gb: &mut BitReader, data: &[u8], header: Header, xch_base: usize) -> R<()> {
+    fn parse_frame_data(&mut self, gb: &mut BitReader<'_>, data: &[u8], header: Header, xch_base: usize) -> R<()> {
         self.parse_frame_data_body(gb, data, header, xch_base)
     }
 
     #[inline(always)]
-    fn parse_frame_data_body(&mut self, gb: &mut BitReader, data: &[u8], header: Header, xch_base: usize) -> R<()> {
+    fn parse_frame_data_body(&mut self, gb: &mut BitReader<'_>, data: &[u8], header: Header, xch_base: usize) -> R<()> {
         self.parse_coding_header(gb, data, header, xch_base)?;
         // transition_mode needs nsubframes slots; kept across frames.
         if self.transition_mode.len() != self.nsubframes {

@@ -43,7 +43,7 @@ pub struct SubstreamDirectory {
     pub drc_time_update: u8,
 }
 impl SubstreamDirectory {
-    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut sd = Self { extra_substream_word: reader.get()?, restart_nonexistent: reader.get()?, crc_present: reader.get()?, ..Default::default() };
 
         sd.reserved = reader.get()?;
@@ -123,7 +123,7 @@ pub struct SubstreamSegment {
 }
 
 impl SubstreamSegment {
-    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         // No start-alignment check: everything between the access unit start and the
         // first segment is a whole number of 16-bit words (the 32-bit header, a major
         // sync info that ends 16-bit aligned, 16- or 32-bit directory entries), and a

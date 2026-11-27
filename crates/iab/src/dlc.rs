@@ -41,7 +41,7 @@ fn direct_form(k_codes: &[u16]) -> Vec<i32> {
     a
 }
 
-fn read_regions(r: &mut BitReader, blocks: usize) -> Result<Vec<Region>> {
+fn read_regions(r: &mut BitReader<'_>, blocks: usize) -> Result<Vec<Region>> {
     let n = r.read_bits(2)?;
     let mut regions = Vec::new();
     let mut total = 0;
@@ -62,7 +62,7 @@ fn read_regions(r: &mut BitReader, blocks: usize) -> Result<Vec<Region>> {
 }
 
 /// The residuals of `blocks` sub-blocks of `size` samples (10.8.11-10.8.16).
-fn read_residuals(r: &mut BitReader, blocks: usize, size: usize) -> Result<Vec<i32>> {
+fn read_residuals(r: &mut BitReader<'_>, blocks: usize, size: usize) -> Result<Vec<i32>> {
     let mut out = Vec::with_capacity(blocks * size);
     for _ in 0..blocks {
         if r.read_bit()? {
@@ -90,7 +90,7 @@ fn read_residuals(r: &mut BitReader, blocks: usize, size: usize) -> Result<Vec<i
 }
 
 /// A magnitude and, when non-zero, its sign bit.
-fn signed(r: &mut BitReader, v: u64) -> Result<i32> {
+fn signed(r: &mut BitReader<'_>, v: u64) -> Result<i32> {
     let m = i32::try_from(v).map_err(|_| Error::Invalid("DLC residual overflows"))?;
     Ok(if m != 0 && r.read_bit()? { -m } else { m })
 }
@@ -151,7 +151,7 @@ pub(crate) fn upsample(base: &[i32], n96: usize) -> Vec<i32> {
 
 /// Decodes the AudioDataDLC fields after AudioDataID and DLCSize into left-justified 32-bit
 /// samples at the frame's rate.
-pub(crate) fn decode(r: &mut BitReader, ctx: &Ctx) -> Result<Vec<i32>> {
+pub(crate) fn decode(r: &mut BitReader<'_>, ctx: &Ctx) -> Result<Vec<i32>> {
     let (blocks, size48) = ctx.rate.dlc_blocks().ok_or(Error::Invalid("AudioDataDLC at a 1001 frame rate"))?;
     let rate96 = r.read_bits(2)? == 1;
     if rate96 != ctx.rate96 {

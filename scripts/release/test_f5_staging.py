@@ -1,10 +1,10 @@
 """F5 isolated runtime helpers: lightweight tests with no actual media binary."""
 import json
 import os
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -28,34 +28,47 @@ class F5StagingTests(unittest.TestCase):
             with self.assertRaisesRegex(AuditError, "lacks expected version"):
                 f5.cli_smoke(app, "0.11.0", os.environ)
 
+    def test_cfa4_must_be_the_qt_launcher_not_the_egui_editor(self):
+        """Q4.3 (owner 2026-11-12, 2026-11-14): no package carries or starts egui."""
+        with tempfile.TemporaryDirectory() as tmp:
+            bindir = Path(tmp)
+            (bindir / "cfa4-qt").write_text("#!/usr/bin/python3\nlauncher\n")
+            (bindir / "cfa4").write_text("#!/usr/bin/python3\nlauncher\n")
+            f5.assert_cfa4_is_the_qt_launcher(bindir, "the tarball")
+            (bindir / "cfa4").write_bytes(b"\x7fELF egui editor")
+            with self.assertRaisesRegex(AuditError, "not the Qt GUI launcher"):
+                f5.assert_cfa4_is_the_qt_launcher(bindir, "the tarball")
+            (bindir / "cfa4").unlink()
+            with self.assertRaisesRegex(AuditError, "not the Qt GUI launcher"):
+                f5.assert_cfa4_is_the_qt_launcher(bindir, "the .deb")
+
     def test_ldd_missing_dependency_fails_closed(self):
         with tempfile.TemporaryDirectory() as tmp:
             exe = Path(tmp) / "cfa4"
             exe.write_bytes(b"fake-ELF")
-            with patch.object(f5, "invoke", return_value="libbroken.so => not found\n"):
-                with self.assertRaisesRegex(AuditError, "missing ELF runtime dependencies"):
-                    f5.library_inventory(exe, env=os.environ)
+            with (
+                patch.object(f5, "invoke", return_value="libbroken.so => not found\n"),
+                self.assertRaisesRegex(AuditError, "missing ELF runtime dependencies"),
+            ):
+                f5.library_inventory(exe, env=os.environ)
 
     def test_flatpak_ref_rejects_wrong_architecture(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with patch.object(f5, "invoke", side_effect=[
-                "",
-                "",
-                "app/io.github.ubuntuokos.cfa4/aarch64/stable\n",
-            ]):
-                with self.assertRaisesRegex(AuditError, "unexpected app refs"):
-                    f5.stage_flatpak(Path(tmp) / "fixture.flatpak", Path(tmp), os.environ)
+        with tempfile.TemporaryDirectory() as tmp, patch.object(f5, "invoke", side_effect=[
+            "",
+            "",
+            "app/io.github.ubuntuokos.cfa4/aarch64/stable\n",
+        ]), self.assertRaisesRegex(AuditError, "unexpected app refs"):
+            f5.stage_flatpak(Path(tmp) / "fixture.flatpak", Path(tmp), os.environ)
 
     def test_flatpak_ref_accepts_exact_cfa4_amd64_id(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with patch.object(f5, "invoke", side_effect=[
-                "",
-                "",
-                "app/io.github.ubuntuokos.cfa4/x86_64/stable\n",
-            ]):
-                result = f5.stage_flatpak(Path(tmp) / "fixture.flatpak", Path(tmp), os.environ)
-                self.assertIn("/x86_64/", result["ref"])
-                self.assertIn("NOT_FLATPAK_INSTALL", result["scope"])
+        with tempfile.TemporaryDirectory() as tmp, patch.object(f5, "invoke", side_effect=[
+            "",
+            "",
+            "app/io.github.ubuntuokos.cfa4/x86_64/stable\n",
+        ]):
+            result = f5.stage_flatpak(Path(tmp) / "fixture.flatpak", Path(tmp), os.environ)
+            self.assertIn("/x86_64/", result["ref"])
+            self.assertIn("NOT_FLATPAK_INSTALL", result["scope"])
 
     def fake_cli(self, tmp: Path, results: list[dict], *, write: int | None = None) -> Path:
         """A stand-in `cfa4-cli run` that prints `results` and writes the cut file."""

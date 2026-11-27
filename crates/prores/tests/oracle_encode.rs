@@ -136,3 +136,35 @@ fn odd_geometry_encodes() {
         assert!(l.max <= 1 && c.max <= 1, "{profile:?} {w}x{h}: {l:?} {c:?}");
     }
 }
+
+/// Interlaced frames (TFF and BFF, two field pictures) decode in ffmpeg as in ours.
+#[test]
+fn interlaced_encodes() {
+    let Some(ff) = ffmpeg() else { return };
+    for (profile, w, h) in [(Profile::Hq, 720u32, 486u32), (Profile::P4444, 333, 201)] {
+        let chroma = profile.chroma();
+        let alpha = chroma == ChromaFormat::Yuv444;
+        let lav = if alpha {
+            format!("testsrc2=s={w}x{h}:r=25,format=yuva444p10le,geq=lum='lum(X,Y)':cb='cb(X,Y)':cr='cr(X,Y)':a='mod(3*X+Y,1024)'")
+        } else {
+            format!("testsrc2=s={w}x{h}:r=25")
+        };
+        let name = format!("src_il_{w}x{h}");
+        let src = source_frames(&ff, Box::leak(name.into_boxed_str()), &lav, 1, w, h, chroma, alpha);
+        for order in [cfa4_prores::Interlace::TopFieldFirst, cfa4_prores::Interlace::BottomFieldFirst] {
+            let mut f = src[0].clone();
+            f.interlace = order;
+            let coded = vec![Encoder::new(profile, w, h).encode(&f).unwrap()];
+            let mov = fixture_dir().join(format!("enc_il_{order:?}_{w}x{h}.mov"));
+            write_mov(&mov, &profile.fourcc(), w as u16, h as u16, if alpha { 32 } else { 24 }, &coded);
+            let (ffraw, err) = ffmpeg_decode(&ff, &mov, native_fmt(chroma, alpha));
+            assert!(err.trim().is_empty(), "{err}");
+            let ours: Frame = decode_frame(&coded[0]).unwrap();
+            let (l, c) = compare(&ours, &ffraw);
+            assert!(l.max <= 1 && c.max <= 1, "{profile:?} {order:?} {w}x{h}: {l:?} {c:?}");
+            let d10 = decode_frame_with(&coded[0], &DecodeOptions { bit_depth: Some(10), threads: true }).unwrap();
+            let py = psnr(&d10.y, &f.y, 1023.0);
+            assert!(py > 40.0, "{profile:?} {order:?}: Y {py:.2} dB");
+        }
+    }
+}

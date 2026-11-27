@@ -19,7 +19,7 @@ fn poly_radius(n: u32, theta: f32, rot: f32) -> f32 {
 
 /// Bokeh Blur: a lens-iris shaped gather blur with highlight boost (bright points bloom into
 /// iris-shaped discs). Large radii run on a reduced image (the result is smooth).
-pub fn bokeh(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn bokeh(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let r = fv(e, "amount", cx) * cx.px_scale;
     if r < 0.5 {
         return;
@@ -91,7 +91,7 @@ fn blur_channel(img: &mut Image, ch: usize, sx: f32, sy: f32, repeat: bool) {
 }
 
 /// Channel Blur: independent Gaussian blur per R, G, B and alpha.
-pub fn channel_blur(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn channel_blur(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let dims = chv(e, "dimensions");
     let repeat = bv(e, "repeat_edge");
     for (ch, id) in ["red", "green", "blue", "alpha"].iter().enumerate() {
@@ -133,7 +133,7 @@ fn variable_blur(img: &mut Image, max_sigma: f32, amount: impl Fn(usize, usize) 
 
 /// Compound Blur: blur amount per pixel from a blur layer's luminance (another track, or this
 /// layer's own luminance when the Blur Layer is None).
-pub fn compound(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn compound(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let max = fv(e, "max", cx) * cx.px_scale * 0.5;
     let invert = bv(e, "invert");
     let layer = chv(e, "layer") as usize;
@@ -162,7 +162,7 @@ pub fn compound(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Focus Blur: sharp inside a radial or linear focus area, blurring smoothly outside it.
-pub fn focus(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn focus(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let amount = fv(e, "amount", cx) * cx.px_scale * 0.5;
     let c = pv(e, "center", cx, img);
     let linear = chv(e, "shape") == 1;
@@ -188,8 +188,47 @@ pub fn focus(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     }
 }
 
+/// Rack Focus (CFA4's own): two focus areas, A and B; as Rack goes 0 → 100 % (eased) the sharp
+/// area moves from A to B. Each pixel's blur is the eased mix of its out-of-focus amount for A
+/// and for B, so halfway through both subjects are half soft, as when the focus ring is turned
+/// between two distances.
+pub fn rack_focus(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
+    let amount = fv(e, "amount", cx) * cx.px_scale * 0.5;
+    let amount = if amount.is_finite() { amount.clamp(0.0, 1000.0) } else { 0.0 };
+    let a = pv(e, "focus_a", cx, img);
+    let b = pv(e, "focus_b", cx, img);
+    let r = fv(e, "rack", cx) as f64 / 100.0;
+    let r = if r.is_finite() { r.clamp(0.0, 1.0) } else { 0.0 };
+    let k = r * r * (3.0 - 2.0 * r);
+    let linear = chv(e, "shape") == 1;
+    let (s, co) = (fv(e, "angle", cx) as f64).to_radians().sin_cos();
+    let finite = |v: f64, d: f64| if v.is_finite() { v } else { d };
+    let size = finite(fv(e, "size", cx) as f64 * cx.px_scale as f64 * 0.5, 0.0);
+    let feather = finite(fv(e, "feather", cx) as f64 * cx.px_scale as f64, 1.0).max(1.0);
+    let show = bv(e, "show");
+    let off = |x: usize, y: usize, c: Vec2| -> f64 {
+        let (dx, dy) = (x as f64 + 0.5 - c.x, y as f64 + 0.5 - c.y);
+        let d = if linear { (-dx * s + dy * co).abs() } else { dx.hypot(dy) };
+        let v = (d - size) / feather;
+        if v.is_finite() { v.clamp(0.0, 1.0) } else { 1.0 }
+    };
+    let dist = |x: usize, y: usize| -> f32 { (off(x, y, a) * (1.0 - k) + off(x, y, b) * k) as f32 };
+    variable_blur(img, amount, dist);
+    if show {
+        let w = img.w;
+        img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+            for x in 0..w {
+                let k = (1.0 - dist(x, y)) * 0.35;
+                if let Some(p) = row.get_mut(x * 4..x * 4 + 4) {
+                    over(p, [k, 0.0, 0.0, k]);
+                }
+            }
+        });
+    }
+}
+
 /// Reduce Interlace Flicker: a vertical-only softening across fields.
-pub fn interlace_flicker(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn interlace_flicker(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let s = fv(e, "softness", cx) * cx.px_scale.max(0.25);
     gaussian(img, 0.0, s, true);
 }

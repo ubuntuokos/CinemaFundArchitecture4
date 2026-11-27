@@ -1,8 +1,9 @@
 //! AV2 identification (AV2 plan X/4): recognise AV2 video and answer with a clear `unsupported`.
 //!
-//! CFA4 cannot decode AV2 yet (the early decoder of ADR 0010 and the native `cfa4-av2` come in
-//! later steps), but an AV2 file must not be mistaken for something else, fed to another decoder
-//! or reported as an unknown format. This module recognises
+//! CFA4 does not decode AV2 by default yet (the early decoder of ADR 0010 is behind the
+//! `av2-external` feature and `CFA4_AV2_DECODER`, see [`crate::av2_external`] when enabled; the
+//! native `cfa4-av2` comes later), but an AV2 file must not be mistaken for something else, fed
+//! to another decoder or reported as an unknown format. This module recognises
 //!
 //! - **Annex B** length-delimited bitstreams (AV2 v1.0.0 Annex B, the raw format `avmenc --obu`
 //!   writes): a `leb128` OBU size before every OBU, the first OBU a temporal delimiter
@@ -127,14 +128,32 @@ fn answer(name: &str, head: &[u8]) -> Option<Result<SharedSource, MediaError>> {
     Some(Err(MediaError::Unsupported(format!("{name}: {}", unsupported_message(framing)))))
 }
 
-/// Byte opener: AV2 Annex B / IVF files are answered with `Unsupported`.
+/// With the `av2-external` feature and `CFA4_AV2_DECODER` set, an Annex B file opens through the
+/// external decoder helper (ADR 0010, AV2-LAB); otherwise `None`.
+#[cfg(feature = "av2-external")]
+fn external(name: &str, head: &[u8], reader: &cfa4_media::SharedReader) -> Option<Result<SharedSource, MediaError>> {
+    if sniff(head)? != Framing::AnnexB {
+        return None;
+    }
+    let helper = crate::av2_external::configured_helper()?;
+    Some(crate::av2_external::Av2AnnexBSource::open(name, reader.clone(), helper).map(|s| std::sync::Arc::new(s) as SharedSource).map_err(Into::into))
+}
+
+#[cfg(not(feature = "av2-external"))]
+fn external(_name: &str, _head: &[u8], _reader: &cfa4_media::SharedReader) -> Option<Result<SharedSource, MediaError>> {
+    None
+}
+
+/// Byte opener: AV2 Annex B / IVF files are answered with `Unsupported` (Annex B opens through
+/// the external decoder when it is configured).
 pub fn opener(name: &str, bytes: std::sync::Arc<[u8]>) -> Option<Result<SharedSource, MediaError>> {
-    answer(name, &bytes)
+    let reader: cfa4_media::SharedReader = std::sync::Arc::new(cfa4_media::reader::MemReader(bytes.clone()));
+    external(name, &bytes, &reader).or_else(|| answer(name, &bytes))
 }
 
 /// Reader opener: like [`opener`], from the sniffed head only (the file is never read whole).
-pub fn reader_opener(name: &str, head: &[u8], _reader: &cfa4_media::SharedReader) -> Option<Result<SharedSource, MediaError>> {
-    answer(name, head)
+pub fn reader_opener(name: &str, head: &[u8], reader: &cfa4_media::SharedReader) -> Option<Result<SharedSource, MediaError>> {
+    external(name, head, reader).or_else(|| answer(name, head))
 }
 
 #[cfg(test)]

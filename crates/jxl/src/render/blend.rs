@@ -416,7 +416,7 @@ pub fn patch(image_header: &ImageHeader, base_grid: &mut ImageWithRegion, patch_
     Ok(())
 }
 
-fn blend_single(mut base: MutableSubgrid<f32>, new_grid: SharedSubgrid<f32>, blend_params: &BlendParams<'_>) {
+fn blend_single(mut base: MutableSubgrid<'_, f32>, new_grid: SharedSubgrid<'_, f32>, blend_params: &BlendParams<'_>) {
     let &BlendParams { ref mode, base_topleft: (base_x, base_y), new_topleft: (new_x, new_y), width, height } = blend_params;
 
     match mode {

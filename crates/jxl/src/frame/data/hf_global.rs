@@ -49,7 +49,7 @@ pub struct HfGlobal {
 impl Bundle<HfGlobalParams<'_, '_>> for HfGlobal {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, params: HfGlobalParams) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, params: HfGlobalParams<'_, '_>) -> Result<Self> {
         let HfGlobalParams { metadata, frame_header, ma_config, hf_block_ctx, tracker, pool } = params;
         let dequant_matrix_params = DequantMatrixSetParams::new(metadata.bit_depth.bits_per_sample(), frame_header.num_lf_groups(), ma_config, tracker, pool);
         let dequant_matrices = DequantMatrixSet::parse(bitstream, dequant_matrix_params)?;

@@ -41,7 +41,7 @@ pub struct ProgramConfig {
 }
 
 impl ProgramConfig {
-    pub fn parse(br: &mut BitReader) -> Result<ProgramConfig> {
+    pub fn parse(br: &mut BitReader<'_>) -> Result<ProgramConfig> {
         let mut p = ProgramConfig {
             element_instance_tag: br.read_bits(4)? as u8,
             object_type: br.read_bits(2)? as u8,
@@ -172,12 +172,12 @@ pub struct AudioSpecificConfig {
     pub pce: Option<ProgramConfig>,
 }
 
-fn read_aot(br: &mut BitReader) -> Result<u8> {
+fn read_aot(br: &mut BitReader<'_>) -> Result<u8> {
     let a = br.read_bits(5)? as u8;
     Ok(if a == 31 { 32 + br.read_bits(6)? as u8 } else { a })
 }
 
-fn read_rate(br: &mut BitReader) -> Result<(u8, u32)> {
+fn read_rate(br: &mut BitReader<'_>) -> Result<(u8, u32)> {
     let i = br.read_bits(4)? as u8;
     if i == 15 {
         let r = br.read_bits(24)?;

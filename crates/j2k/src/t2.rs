@@ -95,7 +95,7 @@ impl TagTree {
     }
 
     /// Whether the value of leaf (x, y) is below `threshold`, reading the bits that decide it.
-    pub fn decode(&mut self, bits: &mut Bits, x: usize, y: usize, threshold: u32) -> Result<bool> {
+    pub fn decode(&mut self, bits: &mut Bits<'_>, x: usize, y: usize, threshold: u32) -> Result<bool> {
         let mut low = 0;
         let mut leaf = 0;
         for (l, &(lw, _, off)) in self.levels.iter().enumerate().rev() {
