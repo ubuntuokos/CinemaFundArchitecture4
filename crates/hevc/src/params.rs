@@ -437,6 +437,62 @@ impl StRps {
     }
 }
 
+/// `sps_range_extension()` flags (H.265 7.3.2.2.2).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SpsRext {
+    pub transform_skip_rotation: bool,
+    pub transform_skip_context: bool,
+    pub implicit_rdpcm: bool,
+    pub explicit_rdpcm: bool,
+    pub extended_precision: bool,
+    pub intra_smoothing_disabled: bool,
+    pub high_precision_offsets: bool,
+    pub persistent_rice_adaptation: bool,
+    pub cabac_bypass_alignment: bool,
+}
+
+impl SpsRext {
+    /// Any tool outside Main / Main 10 is on.
+    pub fn any(&self) -> bool {
+        *self != SpsRext::default()
+    }
+}
+
+/// `pps_range_extension()` fields (H.265 7.3.2.3.2).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PpsRext {
+    /// Largest transform skip block, log2 (2 without the extension).
+    pub log2_max_transform_skip_size: u32,
+    pub cross_component_prediction: bool,
+    pub chroma_qp_offset_list_enabled: bool,
+    pub diff_cu_chroma_qp_offset_depth: u32,
+    /// (cb_qp_offset_list, cr_qp_offset_list).
+    pub chroma_qp_offset_list: Vec<(i32, i32)>,
+    pub log2_sao_offset_scale_luma: u32,
+    pub log2_sao_offset_scale_chroma: u32,
+}
+
+impl Default for PpsRext {
+    fn default() -> Self {
+        PpsRext {
+            log2_max_transform_skip_size: 2,
+            cross_component_prediction: false,
+            chroma_qp_offset_list_enabled: false,
+            diff_cu_chroma_qp_offset_depth: 0,
+            chroma_qp_offset_list: Vec::new(),
+            log2_sao_offset_scale_luma: 0,
+            log2_sao_offset_scale_chroma: 0,
+        }
+    }
+}
+
+impl PpsRext {
+    /// Any tool outside Main / Main 10 is on.
+    pub fn any(&self) -> bool {
+        *self != PpsRext::default()
+    }
+}
+
 /// Sequence parameter set.
 #[derive(Clone, Debug)]
 pub struct Sps {
@@ -482,6 +538,8 @@ pub struct Sps {
     pub vui: Option<Vui>,
     /// Range extension flags that change decoding (any set -> unsupported for now).
     pub range_extension: bool,
+    /// The range extension flags (all off without `sps_range_extension`).
+    pub rext: SpsRext,
     pub extension_flags: u8,
 }
 
@@ -568,13 +626,24 @@ impl Sps {
         let strong_intra_smoothing = r.read_flag()?;
         let vui = if r.read_flag()? { Some(parse_vui(&mut r, max_sub_layers_minus1)?) } else { None };
         let mut range_extension = false;
+        let mut rext = SpsRext::default();
         let mut extension_flags = 0;
         if r.read_flag()? {
             extension_flags = r.read_bits(8)? as u8;
             if extension_flags & 0x80 != 0 {
                 // sps_range_extension(): any enabled tool is outside Main / Main 10
-                let bits = r.read_bits(9)?;
-                range_extension = bits != 0;
+                rext = SpsRext {
+                    transform_skip_rotation: r.read_flag()?,
+                    transform_skip_context: r.read_flag()?,
+                    implicit_rdpcm: r.read_flag()?,
+                    explicit_rdpcm: r.read_flag()?,
+                    extended_precision: r.read_flag()?,
+                    intra_smoothing_disabled: r.read_flag()?,
+                    high_precision_offsets: r.read_flag()?,
+                    persistent_rice_adaptation: r.read_flag()?,
+                    cabac_bypass_alignment: r.read_flag()?,
+                };
+                range_extension = rext.any();
             }
         }
         // 4:0:0 has no chroma: the synthesized chroma planes take the luma bit depth, so that
@@ -619,6 +688,7 @@ impl Sps {
             strong_intra_smoothing,
             vui,
             range_extension,
+            rext,
             extension_flags,
         })
     }
@@ -666,7 +736,18 @@ impl Sps {
         (x, y, w, h)
     }
 
-    /// Features this decoder does not handle yet.
+    /// What the software decoder cannot decode (a subset of the range extensions is supported).
+    pub fn check_decodable(&self) -> Result<()> {
+        if self.separate_colour_plane {
+            return unsupported("separate_colour_plane (4:4:4 coded as three monochrome planes)");
+        }
+        if self.extension_flags & 0x7f != 0 {
+            return unsupported("SPS multilayer / 3D / SCC extensions");
+        }
+        Ok(())
+    }
+
+    /// Features the hardware paths do not take (Main / Main 10 / 4:2:2 / 4:4:4 up to 12 bits).
     pub fn check_supported(&self) -> Result<()> {
         if self.separate_colour_plane {
             return unsupported("separate_colour_plane (4:4:4 coded as three monochrome planes)");
@@ -727,6 +808,8 @@ pub struct Pps {
     pub log2_parallel_merge_level: u32,
     pub slice_header_extension_present: bool,
     pub range_extension: bool,
+    /// The range extension fields (defaults without `pps_range_extension`).
+    pub rext: PpsRext,
     pub extension_flags: u8,
 }
 
@@ -796,18 +879,33 @@ impl Pps {
         ensure!(log2_parallel_merge_level <= 6, "log2_parallel_merge_level out of range");
         let slice_header_extension_present = r.read_flag()?;
         let mut range_extension = false;
+        let mut rext = PpsRext::default();
         let mut extension_flags = 0;
         if r.read_flag()? {
             extension_flags = r.read_bits(8)? as u8;
             if extension_flags & 0x80 != 0 {
-                // pps_range_extension(): treated as unsupported when it enables anything
-                let mut any = false;
+                // pps_range_extension()
                 if transform_skip {
-                    any |= r.read_ue()? != 0;
+                    let v = r.read_ue()? + 2;
+                    ensure!(v <= 5, "log2_max_transform_skip_block_size_minus2 out of range");
+                    rext.log2_max_transform_skip_size = v;
                 }
-                any |= r.read_flag()?; // cross_component_prediction
-                any |= r.read_flag()?; // chroma_qp_offset_list
-                range_extension = any;
+                rext.cross_component_prediction = r.read_flag()?;
+                rext.chroma_qp_offset_list_enabled = r.read_flag()?;
+                if rext.chroma_qp_offset_list_enabled {
+                    rext.diff_cu_chroma_qp_offset_depth = r.read_ue()?;
+                    let n = r.read_ue()? + 1;
+                    ensure!(n <= 6, "chroma_qp_offset_list_len_minus1 out of range");
+                    for _ in 0..n {
+                        let (cb, cr) = (r.read_se()?, r.read_se()?);
+                        ensure!((-12..=12).contains(&cb) && (-12..=12).contains(&cr), "chroma QP offset list entry out of range");
+                        rext.chroma_qp_offset_list.push((cb, cr));
+                    }
+                }
+                rext.log2_sao_offset_scale_luma = r.read_ue()?;
+                rext.log2_sao_offset_scale_chroma = r.read_ue()?;
+                ensure!(rext.log2_sao_offset_scale_luma <= 6 && rext.log2_sao_offset_scale_chroma <= 6, "log2_sao_offset_scale out of range");
+                range_extension = rext.any();
             }
         }
         Ok(Pps {
@@ -850,10 +948,20 @@ impl Pps {
             log2_parallel_merge_level,
             slice_header_extension_present,
             range_extension,
+            rext,
             extension_flags,
         })
     }
 
+    /// What the software decoder cannot decode.
+    pub fn check_decodable(&self) -> Result<()> {
+        if self.extension_flags & 0x7f != 0 {
+            return unsupported("PPS multilayer / 3D / SCC extensions");
+        }
+        Ok(())
+    }
+
+    /// Features the hardware paths do not take: any range extension tool.
     pub fn check_supported(&self) -> Result<()> {
         if self.range_extension {
             return unsupported("PPS range extension tools");

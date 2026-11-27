@@ -74,6 +74,46 @@ pub fn transform_skip(c: &mut [i32], n: usize, bd_shift: u32) {
     }
 }
 
+/// The inverse transform of 8.6.4 for streams with `extended_precision_processing_flag`: the
+/// coefficients reach `log2TransformRange` (up to 22) bits, so the sums need 64 bits. `d` holds the
+/// scaled coefficients (row-major), the output is the residual after the final `bd_shift`.
+/// `coeff_min` / `coeff_max` clip the intermediate values (8-314).
+pub fn inverse_transform_wide(d: &mut [i32], n: usize, dst: bool, bd_shift: u32, coeff_min: i64, coeff_max: i64) {
+    let step = 32 / n;
+    let m = |j: usize, i: usize| -> i64 { if dst { DST_MATRIX[j][i] as i64 } else { TRANS_MATRIX[j * step][i] as i64 } };
+    let mut g = vec![0i64; n * n];
+    // columns: e[x][y] = sum_j M[j][y] * d[x][j]
+    for x in 0..n {
+        for y in 0..n {
+            let mut e = 0i64;
+            for j in 0..n {
+                e += m(j, y) * d[j * n + x] as i64;
+            }
+            g[y * n + x] = ((e + 64) >> 7).clamp(coeff_min, coeff_max);
+        }
+    }
+    // rows: r[x][y] = sum_j M[j][x] * g[j][y]
+    let round = 1i64 << (bd_shift - 1);
+    for y in 0..n {
+        for x in 0..n {
+            let mut r = 0i64;
+            for j in 0..n {
+                r += m(j, x) * g[y * n + j];
+            }
+            d[y * n + x] = ((r + round) >> bd_shift).clamp(i32::MIN as i64, i32::MAX as i64) as i32;
+        }
+    }
+}
+
+/// Transform skip with 64-bit intermediates (extended precision): r = (d << tsShift + round) >> bdShift.
+pub fn transform_skip_wide(c: &mut [i32], n: usize, bd_shift: u32) {
+    let ts_shift = 5 + n.trailing_zeros();
+    let round = 1i64 << (bd_shift - 1);
+    for v in c[..n * n].iter_mut() {
+        *v = ((((*v as i64) << ts_shift) + round) >> bd_shift).clamp(i32::MIN as i64, i32::MAX as i64) as i32;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -137,6 +177,26 @@ mod tests {
                     reference(&mut b, n, dst, max_x, max_y, bd_shift);
                     assert_eq!(a, b, "n {n} dst {dst} max ({max_x}, {max_y}) shift {bd_shift}");
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn the_wide_transform_matches_the_fast_one_in_range() {
+        let mut rng = 0x9e37_79b9_7f4a_7c15u64;
+        let mut next = move || {
+            rng ^= rng << 13;
+            rng ^= rng >> 7;
+            rng ^= rng << 17;
+            rng
+        };
+        for &(n, dst) in &[(4usize, true), (4, false), (8, false), (16, false), (32, false)] {
+            for _ in 0..50 {
+                let c: Vec<i32> = (0..n * n).map(|_| if next() % 4 == 0 { (next() % 4001) as i32 - 2000 } else { 0 }).collect();
+                let (mut a, mut b) = (c.clone(), c.clone());
+                inverse_transform(&mut a, n, dst, n - 1, n - 1, 12);
+                inverse_transform_wide(&mut b, n, dst, 12, -32768, 32767);
+                assert_eq!(a, b, "n {n} dst {dst}");
             }
         }
     }

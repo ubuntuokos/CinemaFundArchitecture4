@@ -62,7 +62,18 @@ pub(crate) static NEXT_STATE: [[u8; 2]; 128] = {
 
 /// Context states, padded to a power of two so that the per-bin index needs no bounds check.
 pub type Contexts = [u8; CTX_SLOTS];
-const CTX_SLOTS: usize = NUM_CTX.next_power_of_two();
+const CTX_SLOTS: usize = (STAT_COEFF + 4).next_power_of_two();
+
+/// Context variables of the cross-component prediction syntax (range extensions, Tables 9-36 and
+/// 9-37: initValue 154 for every initType), after the generated table: `log2_res_scale_abs_plus1`
+/// (ctxInc 4 * c + binIdx) and `res_scale_sign_flag` (ctxInc c).
+pub const LOG2_RES_SCALE_ABS: usize = NUM_CTX;
+pub const RES_SCALE_SIGN: usize = LOG2_RES_SCALE_ABS + 8;
+/// The four Rice parameter statistics `StatCoeff[]` (9.3.3.11) live in the context array behind
+/// the context variables, so that the storage / synchronization processes of 9.3.2.4 / 9.3.2.5
+/// (WPP, dependent slice segments) copy them with the contexts. They are plain counters, not
+/// context states, and start at 0.
+pub const STAT_COEFF: usize = RES_SCALE_SIGN + 2;
 
 /// Initialise all context variables for `slice_qp` and `init_type` (9.3.2.2). Each context is stored as
 /// `pStateIdx << 1 | valMps`.
@@ -76,6 +87,11 @@ pub fn init_contexts(ctx: &mut Contexts, slice_qp: i32, init_type: usize) {
         let pre = (((m * qp) >> 4) + n).clamp(1, 126);
         *c = if pre <= 63 { ((63 - pre) << 1) as u8 } else { (((pre - 64) << 1) | 1) as u8 };
     }
+    // initValue 154: m = 0, n = 64, so preCtxState 64 for any QP: pStateIdx 0, valMps 1
+    for c in &mut ctx[LOG2_RES_SCALE_ABS..STAT_COEFF] {
+        *c = 1;
+    }
+    ctx[STAT_COEFF..STAT_COEFF + 4].fill(0);
 }
 
 pub struct Cabac<'a> {
@@ -203,6 +219,12 @@ impl<'a> Cabac<'a> {
         self.value -= ((r as u64) * self.range as u64) << s;
         self.bits = s;
         r
+    }
+
+    /// 9.3.4.3.6: the alignment before the aligned bypass bins of a sub-block
+    /// (`cabac_bypass_alignment_enabled_flag`): ivlCurrRange = 256.
+    pub fn align_bypass(&mut self) {
+        self.range = 256;
     }
 
     pub fn decode_terminate(&mut self) -> u32 {

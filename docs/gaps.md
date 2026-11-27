@@ -73,7 +73,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Have:** our H.264 decoder does 4:2:0, 4:2:2 and 4:4:4 at 8 to 14 bits (High 10, High 4:2:2 and
   High 4:4:4 Predictive bit-exact with ffmpeg, #161).
 - **Missing:** H.264 interlaced field / MBAFF (#162), lossless (#163)
-  (`crates/h264/README.md`); HEVC now decodes 4:2:2 / 4:4:4 up to 12-bit (#93); its RExt coding tools are #167. Most mirrorless and
+  (`crates/h264/README.md`); HEVC now decodes 4:2:2 / 4:4:4 up to 16-bit with all range-extension coding tools (#93, #167). Most mirrorless and
   cinema cameras record exactly these (Sony XAVC S-I / XAVC HS 4:2:2 10-bit, Panasonic, Canon
   XF-AVC, Fujifilm).
 - **Evidence:** #626 (Panasonic Lumix 4K 10-bit 4:2:2 MOV). VA-API and NVDEC decline 10-bit
@@ -82,7 +82,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   (and in hardware on Intel and NVIDIA Blackwell).
 - **Impact:** interlaced and lossless H.264 camera originals do not open.
 - **Estimate:** H.264 interlaced (#162) 20–30 h, lossless (#163) 4–8 h; HEVC RExt tools (#167)
-  10–20 h. Doc: [codec-parity.md](codec-parity.md).
+  done. Doc: [codec-parity.md](codec-parity.md).
 
 ## G4. Crashes at start-up, and no test CI on pull requests
 
