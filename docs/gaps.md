@@ -154,14 +154,16 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   `cargo xtask parity --ci` fails below them and hints when one can be raised;
   `--check-ratchet --base REF` fails when a count is lowered or removed; `docs/parity-checklist.md` is
   generated from the committed references (`--write-checklist`; `--check-checklist` is part of
-  `cargo xtask ci`).
+  `cargo xtask ci`). The `parity` job in `ci-linux.yml` (full validation: label, merge queue or manual run;
+  part of `full-validation-gate`) runs the ratchet against the base and `--ci`, and keeps the report as
+  the `parity-report` artifact.
 - **Measured (committed references, 2026-11-23):** panels 24/28 present (1 stub, 23 unrated), menus
   16/17 present (16 unrated); no item is rated exact yet.
 - **Missing:** committed references for **commands, effects and transitions** (they stay "not
   measured" under `--committed` / `--ci`: the committed docs do not hold the full lists, so the owner
-  decides whether to add the names to docs or commit names-only lists), preferences and formats, the
-  `parity` CI job (next PR), and behaviour tests (G1): a tier is an annotation, not a behaviour test.
-- **Estimate:** 4–8 h left (CI job, references for the other areas).
+  decides whether to add the names to docs or commit names-only lists), preferences and formats, and
+  behaviour tests (G1): a tier is an annotation, not a behaviour test.
+- **Estimate:** 3–6 h left (references for the other areas).
 
 ## G8. UI fidelity: monitor handles, Effect Controls, docking
 
