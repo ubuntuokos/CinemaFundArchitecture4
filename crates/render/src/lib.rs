@@ -843,3 +843,5 @@ mod key_measure_tests;
 mod key_synth;
 #[cfg(test)]
 mod key_tests;
+#[cfg(test)]
+mod spill_tests;

@@ -282,6 +282,7 @@ pub const CFA4_FOLDERS: &[&str] = &["Stereoscopic 3D", "Creative Looks", "Enhanc
 /// CFA4's own effects that sit in one of Premiere's folders or in the Glitch folder.
 pub const CFA4_OWN: &[&str] = &[
     "slit_scan",
+    "spill_suppress",
     "six_point_pin",
     "film_gate",
     "particles",
@@ -869,6 +870,17 @@ fn build_effects() -> Vec<EffectDef> {
                 fs("tolerance", "Color Tolerance", 0.0, (0.0, 255.0), (0.0, 255.0), "", 0),
                 fs("thin", "Edge Thin", 0.0, (-5.0, 5.0), (-5.0, 5.0), "", 0),
                 fs("feather", "Edge Feather", 0.0, (0.0, 50.0), (0.0, 50.0), "", 1),
+            ],
+        ),
+        video(
+            "spill_suppress",
+            "Spill Suppress",
+            KEYING,
+            vec![
+                col("key_color", "Key Color", [0.0, 0.8, 0.2, 1.0]),
+                ch("method", "Method", &["Average", "Maximum"], 0),
+                f("amount", "Amount", 100.0, 0.0, 100.0, "%"),
+                f("luma", "Preserve Luminance", 0.0, 0.0, 100.0, "%"),
             ],
         ),
         video("luma_key", "Luma Key", KEYING, vec![f("threshold", "Threshold", 0.0, 0.0, 100.0, "%"), f("cutoff", "Cutoff", 0.0, 0.0, 100.0, "%")]),
