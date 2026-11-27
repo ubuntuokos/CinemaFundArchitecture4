@@ -27,7 +27,7 @@ pub use capability::{Context, Place, RenderCapability, Support, decide};
 pub use capture::{CaptureError, CaptureSource};
 pub use matte::{MAX_MATTE_DIM, MAX_MATTE_PIXELS, MatteData, MatteDepth, MatteError, MatteFrame, MatteMethod, MatteOrigin, MatteRef, ModelRef};
 pub use version::{CONTRACT_VERSION, ContractVersion};
-pub use worker::{HandshakeError, PathPolicy, ResourceLimits, WorkerKind, WorkerMessage, negotiate};
+pub use worker::{Describe, DescribeError, HandshakeError, PathPolicy, Ratio, ResourceLimits, WorkerKind, WorkerMessage, negotiate};
 
 // The existing types the contract is made of (not redefined).
 pub use cfa4_frame::convert::{Conversion, Cost, PixelFormat, Unsupported, convert, plan};

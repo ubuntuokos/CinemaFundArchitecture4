@@ -631,7 +631,14 @@ impl Exporter {
                 _ => 0,
             };
             let peak = self.settings.max_bitrate_kbps.unwrap_or(self.settings.bitrate_kbps);
-            self.mpeg = Some(MpegMux::new(&self.settings, self.pipe.rate, audio, crate::mpeg_out::mux_rate(peak, audio_bps))?);
+            let dvd = if crate::Mpeg2Container::of(&self.settings) == crate::Mpeg2Container::Dvd {
+                let chapters: Vec<u64> = self.chapters.iter().map(|c| c.start_100ns * 9 / 1000).collect();
+                let channels = self.audio.as_ref().map_or(0, |a| a.channels);
+                Some(crate::mpeg_out::dvd_spec(&self.settings, self.pipe.w, self.pipe.h, self.pipe.rate, audio.as_ref(), channels, &chapters)?)
+            } else {
+                None
+            };
+            self.mpeg = Some(MpegMux::new(&self.settings, self.pipe.rate, audio, crate::mpeg_out::mux_rate(peak, audio_bps), dvd)?);
             return Ok(());
         }
         if self.settings.format.is_mxf() {
