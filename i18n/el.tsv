@@ -4977,3 +4977,19 @@ export.summary	Low	χαμηλή
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Φάκελος DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 ανάμορφο, 6 Mbps, GOP 15, AC-3 192 kbps, κεφάλαια από τους δείκτες κεφαλαίων της ακολουθίας
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Φάκελος DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 ανάμορφο, 6 Mbps, GOP 18, AC-3 192 kbps, κεφάλαια από τους δείκτες κεφαλαίων της ακολουθίας
+
+# DCP package views (DCP-23)
+	Package	Πακέτο
+	Composition	Σύνθεση
+	Security	Ασφάλεια
+	Save HTML…	Αποθήκευση HTML…
+	Asset map	Χάρτης στοιχείων
+	Packing list	Λίστα συσκευασίας
+	Track file	Αρχείο κομματιού
+	Not a file	Δεν είναι αρχείο
+	Unsafe path	Μη ασφαλής διαδρομή
+	Reel {n}	Καρούλι {n}
+	Signed documents	Υπογεγραμμένα έγγραφα
+	Encrypted assets	Κρυπτογραφημένα στοιχεία
+	Key ID: {id}	Αναγνωριστικό κλειδιού: {id}
+	Package structure unavailable: {error}	Η δομή του πακέτου δεν είναι διαθέσιμη: {error}

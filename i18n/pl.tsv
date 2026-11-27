@@ -4975,3 +4975,19 @@ export.summary	Low	niska
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Folder DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorficzny, 6 Mbps, GOP 15, AC-3 192 kbps, rozdziały ze znaczników rozdziałów sekwencji
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Folder DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorficzny, 6 Mbps, GOP 18, AC-3 192 kbps, rozdziały ze znaczników rozdziałów sekwencji
+
+# DCP package views (DCP-23)
+	Package	Pakiet
+	Composition	Kompozycja
+	Security	Bezpieczeństwo
+	Save HTML…	Zapisz HTML…
+	Asset map	Mapa zasobów
+	Packing list	Lista pakunkowa
+	Track file	Plik ścieżki
+	Not a file	To nie jest plik
+	Unsafe path	Niebezpieczna ścieżka
+	Reel {n}	Rolka {n}
+	Signed documents	Podpisane dokumenty
+	Encrypted assets	Zaszyfrowane zasoby
+	Key ID: {id}	Identyfikator klucza: {id}
+	Package structure unavailable: {error}	Struktura pakietu niedostępna: {error}

@@ -4985,3 +4985,19 @@
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Pasta DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamórfico, 6 Mbps, GOP 15, AC-3 192 kbps, capítulos a partir dos marcadores de capítulo da sequência
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Pasta DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamórfico, 6 Mbps, GOP 18, AC-3 192 kbps, capítulos a partir dos marcadores de capítulo da sequência
+
+# DCP package views (DCP-23)
+	Package	Pacote
+	Composition	Composição
+	Security	Segurança
+	Save HTML…	Salvar HTML…
+	Asset map	Mapa de ativos
+	Packing list	Lista de empacotamento
+	Track file	Arquivo de trilha
+	Not a file	Não é um arquivo
+	Unsafe path	Caminho inseguro
+	Reel {n}	Rolo {n}
+	Signed documents	Documentos assinados
+	Encrypted assets	Ativos criptografados
+	Key ID: {id}	ID da chave: {id}
+	Package structure unavailable: {error}	Estrutura do pacote indisponível: {error}

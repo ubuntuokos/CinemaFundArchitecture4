@@ -124,6 +124,11 @@ material). It reads only the XML documents under the `cfa4-dcp` limits, opens no
 runs no program, so it answers at once and is not a job. Not in it yet: the certificate chain of the
 signatures (DCP-23 follows with the Qt tabs; the chain view needs its own step).
 
+Qt6 (DCP-23): after a check the window reads `dcp.package.info` and fills the **Package** (asset map, files with
+their state), **Composition** (reels, assets, markers) and **Security** (signed documents, encrypted assets by
+KeyId) tabs; double-clicking a finding that names a file shows it in the Package tree; **Save HTML…** writes the
+HTML report. The window only shows what the engine sends; it never reads the package itself.
+
 ## Repair proposals (DCP-14)
 
 `dcp.repair.plan {root}` turns the latest report of a package into `cfa4-dcp-repair/1`: every failure or
