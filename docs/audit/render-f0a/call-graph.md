@@ -832,7 +832,10 @@ graph LR
 | `cfa4-render` | `remix.rs` | `is_remixed` |
 | `cfa4-smart-edit` | `smart_render.rs` | `plan_smart_render` |
 | `cfa4-testkit` | `golden.rs` | `encode_png` |
+| `cfa4-testkit` | `oracle.rs` | `encoders_or_skip` |
 | `cfa4-testkit` | `oracle.rs` | `ffmpeg_has_encoder` |
+| `cfa4-testkit` | `oracle.rs` | `fixture_encoders_or_skip` |
+| `cfa4-testkit` | `oracle.rs` | `missing_fixture_encoder` |
 | `cfa4-testkit` | `wav.rs` | `encode_f32` |
 
 ## 4. Nyilvános típusok osztályonként
