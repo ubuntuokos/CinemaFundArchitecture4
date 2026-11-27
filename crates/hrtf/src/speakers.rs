@@ -140,14 +140,14 @@ impl Default for VirtualSpeakersConfig {
 
 /// A second-order low-pass (RBJ cookbook, Q = 1/√2), transposed direct form II.
 #[derive(Clone, Copy, Debug)]
-struct LowPass {
+pub(crate) struct LowPass {
     b: [f32; 3],
     a: [f32; 2],
     z: [f32; 2],
 }
 
 impl LowPass {
-    fn new(freq: f32, rate: f32) -> Self {
+    pub(crate) fn new(freq: f32, rate: f32) -> Self {
         let w = 2.0 * std::f32::consts::PI * freq / rate;
         let alpha = w.sin() / (2.0 * std::f32::consts::FRAC_1_SQRT_2);
         let c = w.cos();
@@ -155,12 +155,15 @@ impl LowPass {
         let b1 = (1.0 - c) / a0;
         LowPass { b: [b1 / 2.0, b1, b1 / 2.0], a: [-2.0 * c / a0, (1.0 - alpha) / a0], z: [0.0; 2] }
     }
-    fn run(&mut self, x: f32) -> f32 {
+    pub(crate) fn run(&mut self, x: f32) -> f32 {
         let y = self.b[0] * x + self.z[0];
         self.z[0] = self.b[1] * x - self.a[0] * y + self.z[1];
         self.z[1] = crate::dsp::flush(self.b[2] * x - self.a[1] * y);
         self.z[0] = crate::dsp::flush(self.z[0]);
         y
+    }
+    pub(crate) fn reset(&mut self) {
+        self.z = [0.0; 2];
     }
 }
 
@@ -219,7 +222,7 @@ impl VirtualSpeakers {
         for c in &mut self.channels {
             match c {
                 Channel::Full(b, _) => b.reset(),
-                Channel::Lfe(f) => f.z = [0.0; 2],
+                Channel::Lfe(f) => f.reset(),
             }
         }
     }

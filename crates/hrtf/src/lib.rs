@@ -18,21 +18,28 @@
 //!   and new responses when the direction changes.
 //! - [`VirtualSpeakers`]: a channel layout (2.0 … 7.1.4) heard through headphones, each channel a
 //!   [`Binaural`] at its loudspeaker's nominal direction, the LFE low-passed into both ears.
+//! - [`SceneRenderer`] (B-02): a scene of beds and moving objects with timed updates, with size,
+//!   Dolby's headphone render modes and a room; [`atmos`] feeds it from Dolby TrueHD Atmos and
+//!   IAB.
 //!
 //! Positions are in metres in the listener's frame: x to the right, y up, -z straight ahead.
-//! Nothing here allocates once a renderer is made, and no input makes it panic.
+//! Nothing here allocates once a renderer is made (a scene may when an update is scheduled), and
+//! no input makes it panic.
 
+pub mod atmos;
 mod binaural;
 mod dsp;
 mod file;
 mod near_field;
 mod near_field_table;
 mod resample;
+pub mod scene;
 mod set;
 mod speakers;
 
 pub use binaural::{Binaural, BinauralConfig};
 pub use near_field::{NearFieldFilter, ear_direction, near_field};
+pub use scene::{HeadphoneMode, Placement, SceneConfig, SceneRenderer, SceneState};
 pub use set::{HrtfSet, Neighbours};
 pub use speakers::{Speaker, SpeakerLayout, VirtualSpeakers, VirtualSpeakersConfig, position_of};
 
