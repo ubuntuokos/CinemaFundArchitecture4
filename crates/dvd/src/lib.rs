@@ -14,18 +14,15 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
-#[allow(dead_code)]
 mod hli;
 mod ifo;
-#[allow(dead_code)]
 mod menu;
 mod nav;
-#[allow(dead_code)]
 mod spu;
-// the menu authoring (D1) builds on these; the encoders are used from the next commits on
 #[allow(dead_code)]
 mod vm;
 
+pub use hli::ColorSet;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
@@ -134,7 +131,7 @@ pub fn author<F: Read + Write + Seek>(vob: &mut F, spec: &TitleSetSpec) -> Resul
     let cells = nav::cells(&scan.vobus, &spec.chapters);
     nav::fill(vob, &scan, &cells, 1, spec.audio.len().min(8), spec.timing)?;
     let vts_ifo = ifo::build_vts(spec, &scan.vobus, &cells, scan.total_sectors, 1);
-    let vmg_ifo = ifo::build_vmg(spec, cells.len(), &vts_ifo);
+    let vmg_ifo = ifo::build_vmg(spec, cells.len(), &vts_ifo, None);
     Ok(Authored { vmg_ifo, vts_ifo, vobus: scan.vobus.len(), chapters: cells.len(), sectors: scan.total_sectors })
 }
 
@@ -150,8 +147,134 @@ pub fn write_disc(dir: &Path, vob: &Path, spec: &TitleSetSpec) -> Result<Authore
     {
         std::fs::write(out.join(name), data)?;
     }
+    write_title_vobs(&mut f, &out, authored.sectors)?;
+    Ok(authored)
+}
+
+/// What a menu button does.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MenuAction {
+    /// Play title `n` from its start.
+    PlayTitle(u8),
+}
+
+/// One button: the area that is highlighted (inclusive pixels of the 720 x 480/576 picture) and
+/// its action. Buttons are numbered in the order given; up / down move through that list.
+#[derive(Clone, Copy, Debug)]
+pub struct MenuButton {
+    pub rect: (u16, u16, u16, u16),
+    pub action: MenuAction,
+}
+
+/// The button graphics: a 2-bit bitmap (values 0..=3, row by row) at (`x`, `y`) of the picture.
+#[derive(Clone, Debug)]
+pub struct Overlay {
+    pub x: u16,
+    pub y: u16,
+    pub w: usize,
+    pub h: usize,
+    pub pixels: Vec<u8>,
+}
+
+/// The title menu (the video manager menu, shown first). The caller renders the background
+/// picture and the button graphics (the writer only codes them).
+#[derive(Clone, Debug)]
+pub struct MenuSpec {
+    /// One coded MPEG-2 I picture: a sequence header, a GOP header and the picture, 720 wide and
+    /// as high as the title (480 or 576). Small pictures are better: the whole menu has to reach
+    /// the decoder at the DVD rate by its presentation time.
+    pub picture: Vec<u8>,
+    pub overlay: Overlay,
+    /// The 16 palette entries of the menu as (Y, Cr, Cb), shared by all colour sets.
+    pub palette: [[u8; 3]; 16],
+    /// Colours (palette index and contrast of the four overlay values) when the menu is shown,
+    /// when a button is selected and when it is activated.
+    pub normal: ColorSet,
+    pub select: ColorSet,
+    pub activate: ColorSet,
+    pub buttons: Vec<MenuButton>,
+    /// ISO 639-1 language of the menu, for example `*b"en"`.
+    pub language: [u8; 2],
+}
+
+/// The menu VOB and the IFO files built with a menu.
+#[derive(Clone, Debug)]
+pub struct AuthoredMenu {
+    pub disc: Authored,
+    /// `VIDEO_TS.VOB`.
+    pub menu_vob: Vec<u8>,
+}
+
+fn menu_action_command(a: MenuAction) -> vm::Cmd {
+    match a {
+        MenuAction::PlayTitle(n) => vm::jump_tt(n),
+    }
+}
+
+/// Like [`author`], and builds the menu: `VIDEO_TS.IFO` gets the menu tables and a first-play
+/// command that shows it, the menu VOB is returned in [`AuthoredMenu::menu_vob`].
+pub fn author_with_menu<F: Read + Write + Seek>(vob: &mut F, spec: &TitleSetSpec, menu: &MenuSpec) -> Result<AuthoredMenu> {
+    let mut disc = author(vob, spec)?;
+    let o = &menu.overlay;
+    let spu = spu::encode_menu(&spu::Spu { bitmap: &o.pixels, w: o.w, h: o.h, x: o.x, y: o.y, color: menu.normal.index, alpha: menu.normal.alpha })?;
+    let n = menu.buttons.len();
+    let buttons = menu
+        .buttons
+        .iter()
+        .enumerate()
+        .map(|(i, b)| {
+            // buttons stack vertically in the order given; at the ends a button stays put
+            let me = (i + 1) as u8;
+            hli::Button {
+                rect: b.rect,
+                color: 1,
+                auto_action: false,
+                up: if i == 0 { me } else { me - 1 },
+                down: if i + 1 == n { me } else { me + 1 },
+                left: me,
+                right: me,
+                cmd: menu_action_command(b.action),
+            }
+        })
+        .collect();
+    let template =
+        hli::Hli { status: 1, start_ptm: 0, end_ptm: 0, wide: spec.widescreen, colors: [[menu.select, menu.activate]; 3], buttons, forced_select: 0 };
+    let raw = menu::build_vob(&menu.picture, menu::MENU_FRAMES, spec.timing, &spu)?;
+    let mut cur = std::io::Cursor::new(raw);
+    let m = menu::author_vob(&mut cur, &template, spec.timing, 1)?;
+    let menu_vob = cur.into_inner();
+    let vob_sectors = m.scan.total_sectors;
+    let info = ifo::MenuIfo { vobus: &m.scan.vobus, cells: &m.cells, vob_sectors, palette: &menu.palette, first_button: 1, language: menu.language };
+    // the title set starts after the menu, so VIDEO_TS.IFO is built again with it
+    let vts_ifo = disc.vts_ifo.clone();
+    disc.vmg_ifo = ifo::build_vmg(spec, disc.chapters, &vts_ifo, Some(&info));
+    Ok(AuthoredMenu { disc, menu_vob })
+}
+
+/// Like [`write_disc`], with the title menu: also writes `VIDEO_TS.VOB` and `VIDEO_TS.BUP` and
+/// the IFO that shows the menu first.
+pub fn write_disc_with_menu(dir: &Path, vob: &Path, spec: &TitleSetSpec, menu: &MenuSpec) -> Result<AuthoredMenu> {
+    let mut f = std::fs::OpenOptions::new().read(true).write(true).open(vob)?;
+    let authored = author_with_menu(&mut f, spec, menu)?;
+    let out = dir.join("VIDEO_TS");
+    std::fs::create_dir_all(&out)?;
+    for (name, data) in [
+        ("VIDEO_TS.IFO", &authored.disc.vmg_ifo),
+        ("VIDEO_TS.BUP", &authored.disc.vmg_ifo),
+        ("VTS_01_0.IFO", &authored.disc.vts_ifo),
+        ("VTS_01_0.BUP", &authored.disc.vts_ifo),
+        ("VIDEO_TS.VOB", &authored.menu_vob),
+    ] {
+        std::fs::write(out.join(name), data)?;
+    }
+    write_title_vobs(&mut f, &out, authored.disc.sectors)?;
+    Ok(authored)
+}
+
+/// Split the authored title VOB into `VTS_01_n.VOB` files of at most 1 GiB.
+fn write_title_vobs(f: &mut File, out: &Path, sectors: u32) -> Result<()> {
     f.seek(SeekFrom::Start(0))?;
-    let mut left = authored.sectors;
+    let mut left = sectors;
     let mut part = 1;
     let mut buf = vec![0u8; SECTOR * 256];
     while left > 0 {
@@ -168,7 +291,7 @@ pub fn write_disc(dir: &Path, vob: &Path, spec: &TitleSetSpec) -> Result<Authore
         left -= take;
         part += 1;
     }
-    Ok(authored)
+    Ok(())
 }
 
 #[cfg(test)]

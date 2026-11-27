@@ -38,8 +38,10 @@ pub(crate) struct Button {
 /// The colours of one set: four 4-bit palette indexes (background, pattern, emphasis 1, emphasis 2
 /// as the subpicture's four colours 0..3) and four 4-bit contrasts.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct ColorSet {
+pub struct ColorSet {
+    /// Palette index (0..15) of each of the four overlay values.
     pub index: [u8; 4],
+    /// Contrast (0 transparent .. 15 opaque) of each of the four overlay values.
     pub alpha: [u8; 4],
 }
 

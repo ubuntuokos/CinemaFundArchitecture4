@@ -210,3 +210,80 @@ fn a_vob_from_our_muxer_authors_like_one_from_ffmpeg() {
     }
     let _ = std::fs::remove_dir_all(&d);
 }
+
+/// One MPEG-2 I picture (sequence header, GOP, picture) of a flat-colour PAL frame.
+fn still_picture() -> Option<Vec<u8>> {
+    let out = Command::new("ffmpeg")
+        .args([
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=0x203060:size=720x576:rate=25",
+            "-frames:v",
+            "1",
+            "-c:v",
+            "mpeg2video",
+            "-q:v",
+            "6",
+            "-g",
+            "1",
+            "-f",
+            "mpeg2video",
+            "-",
+        ])
+        .output()
+        .ok()?;
+    (out.status.success() && !out.stdout.is_empty()).then_some(out.stdout)
+}
+
+fn menu_spec(picture: Vec<u8>, buttons: Vec<MenuButton>) -> MenuSpec {
+    let mut palette = [[0u8; 3]; 16];
+    for (i, p) in palette.iter_mut().enumerate() {
+        *p = [(16 + i * 14) as u8, 0x80, 0x80];
+    }
+    let (w, h) = (400usize, 40usize);
+    MenuSpec {
+        picture,
+        overlay: Overlay { x: 100, y: 100, w, h, pixels: vec![1u8; w * h] },
+        palette,
+        normal: ColorSet { index: [0, 8, 4, 2], alpha: [0, 15, 15, 15] },
+        select: ColorSet { index: [0, 12, 4, 2], alpha: [0, 15, 15, 15] },
+        activate: ColorSet { index: [0, 15, 4, 2], alpha: [0, 15, 15, 15] },
+        buttons,
+        language: *b"en",
+    }
+}
+
+#[test]
+fn a_disc_with_a_title_menu_is_read_by_lsdvd() {
+    let d = dir("menu");
+    let (Some(vob), Some(pic)) = (ffmpeg_vob(&d), still_picture()) else { return };
+    let disc = d.join("disc");
+    let menu = menu_spec(pic, vec![MenuButton { rect: (100, 100, 499, 139), action: MenuAction::PlayTitle(1) }]);
+    let a = write_disc_with_menu(&disc, &vob, &spec(vec![2 * 90_000]), &menu).unwrap();
+    let v = disc.join("VIDEO_TS");
+    for name in ["VIDEO_TS.IFO", "VIDEO_TS.BUP", "VIDEO_TS.VOB", "VTS_01_0.IFO", "VTS_01_0.BUP", "VTS_01_1.VOB"] {
+        assert!(v.join(name).exists(), "{name}");
+    }
+    assert_eq!(std::fs::metadata(v.join("VIDEO_TS.VOB")).unwrap().len() as usize, a.menu_vob.len());
+    // the title set starts after IFO, VOB and BUP of the video manager
+    let ifo = &a.disc.vmg_ifo;
+    let n = ifo.len() / SECTOR;
+    let vob_sectors = a.menu_vob.len() / SECTOR;
+    assert_eq!(be32(ifo, 0x0C) as usize, 2 * n + vob_sectors - 1, "vmg_last_sector");
+    assert_eq!(be32(ifo, 0xC0) as usize, n, "VIDEO_TS.VOB starts behind the IFO");
+    let tt = be32(ifo, 0xC4) as usize * SECTOR;
+    assert_eq!(be32(&ifo[tt..], 8 + 8) as usize, 2 * n + vob_sectors, "title set sector");
+    if tool("lsdvd") {
+        let o = Command::new("lsdvd").arg("-x").arg(&disc).output().unwrap();
+        let text = String::from_utf8_lossy(&o.stdout).into_owned() + &String::from_utf8_lossy(&o.stderr);
+        assert!(o.status.success(), "{text}");
+        assert!(text.contains("Title: 01, Length: 00:00:08") && text.contains("Chapters: 02"), "{text}");
+        assert!(text.contains("Aspect ratio: 4/3"), "{text}");
+    }
+    if std::env::var_os("CFA4_DVD_KEEP").is_none() {
+        let _ = std::fs::remove_dir_all(&d);
+    }
+}
