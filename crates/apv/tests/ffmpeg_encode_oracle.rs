@@ -1,11 +1,12 @@
-//! FFmpeg 9.1's own APV encoder (`apv_vulkan`) as a second, independent APV source
+//! FFmpeg's own APV encoder (`apv_vulkan`) as a second, independent APV source
 //! (CFA4-FFMPEG-9.1-001 F2b). The other oracle direction (`oracle.rs`) checks that FFmpeg reads
 //! what our encoder writes; this one checks that our decoder reads what FFmpeg writes, bit-exact
 //! with FFmpeg's own decode of the same file.
 //!
 //! `apv_vulkan` needs a Vulkan device. CI uses Mesa lavapipe (software Vulkan);
 //! `CFA4_APV_VULKAN_DEVICE` picks another device (index or name, FFmpeg `-init_hw_device` syntax).
-//! Without FFmpeg 9.1, the encoder or a Vulkan device the test skips (a failure under
+//! Without the pinned FFmpeg (`CFA4_FFMPEG_MIN_VERSION` in `packaging/ffmpeg-version.env`),
+//! the encoder or a Vulkan device the test skips (a failure under
 //! `CFA4_REQUIRE_ORACLES=1`).
 
 use std::path::{Path, PathBuf};
@@ -19,9 +20,19 @@ fn vulkan_device() -> String {
     std::env::var("CFA4_APV_VULKAN_DEVICE").ok().filter(|d| !d.trim().is_empty()).unwrap_or_else(|| "0".into())
 }
 
-/// FFmpeg 9.1 or newer with `apv_vulkan` and a working Vulkan device, else `None` (skip).
+/// `CFA4_FFMPEG_MIN_VERSION` from `packaging/ffmpeg-version.env`, the single version source.
+fn min_ffmpeg_version() -> String {
+    let env =
+        std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../packaging/ffmpeg-version.env")).expect("read packaging/ffmpeg-version.env");
+    env.lines()
+        .find_map(|l| l.trim().strip_prefix("CFA4_FFMPEG_MIN_VERSION="))
+        .map(|v| v.trim().trim_matches('"').to_owned())
+        .expect("CFA4_FFMPEG_MIN_VERSION in packaging/ffmpeg-version.env")
+}
+
+/// The pinned minimum FFmpeg or newer with `apv_vulkan` and a working Vulkan device, else `None` (skip).
 fn ffmpeg() -> Option<PathBuf> {
-    let ff = cfa4_testkit::ffmpeg_with_format_or_skip(CONTEXT, "apv", "9.1")?;
+    let ff = cfa4_testkit::ffmpeg_with_format_or_skip(CONTEXT, "apv", &min_ffmpeg_version())?;
     if !cfa4_testkit::encoders_or_skip(CONTEXT, &ff, &["apv_vulkan"]) {
         return None;
     }
