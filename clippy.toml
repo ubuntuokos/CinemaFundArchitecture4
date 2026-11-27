@@ -2,3 +2,16 @@ allow-unwrap-in-tests = true
 allow-expect-in-tests = true
 allow-panic-in-tests = true
 allow-indexing-slicing-in-tests = true
+# Minimum támogatott Rust verzió rögzítése (rust-toolchain.toml alapján)
+msrv = "1.97.1"
+
+# Elavult vagy a CFA4 architektúrában tiltott függvények/típusok listája
+disallowed-methods = [
+    { path = "std::env::temp_dir", reason = "Használd a CFA4 izolált futásidejű munkakönyvtár-kezelőjét helyette." },
+    { path = "std::mem::uninitialized", reason = "Elavult és nem biztonságos (UB). Használd a MaybeUninit-et." },
+    { path = "std::mem::zeroed", reason = "Veszélyes és gyakran elavult minta. Használd a MaybeUninit::zeroed()-ot." },
+]
+
+disallowed-types = [
+    { path = "std::sync::mpsc::Sender", reason = "Ha a projekt crossbeam vagy flume csatornákat használ, maradj annál a konzisztencia érdekében." },
+]
