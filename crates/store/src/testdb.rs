@@ -113,6 +113,27 @@ impl TestDb {
     pub fn stop(&self) {
         let _ = self.command("pg_ctl").arg("-D").arg(self.dir.join("data")).args(["-m", "fast", "stop"]).output();
     }
+
+    /// Stop the server with a `pg_ctl` shutdown mode: `fast` is a clean stop, `immediate` skips the
+    /// shutdown checkpoint like a crash would, so the next start replays the WAL.
+    pub fn stop_with(&self, mode: &str) {
+        let _ = self.command("pg_ctl").arg("-D").arg(self.dir.join("data")).args(["-m", mode, "stop"]).output();
+    }
+
+    /// Start the server again on the same data directory and socket; `true` when it accepts
+    /// connections (`pg_ctl -w`).
+    pub fn start_again(&self) -> bool {
+        let opts = format!("-k {} -c listen_addresses='' -c fsync=off -c full_page_writes=off", self.dir.display());
+        self.command("pg_ctl")
+            .arg("-D")
+            .arg(self.dir.join("data"))
+            .args(["-w", "-o", &opts, "-l"])
+            .arg(self.dir.join("log"))
+            .arg("start")
+            .output()
+            .ok()
+            .is_some_and(|o| o.status.success())
+    }
 }
 
 fn server_major(bin: &Path) -> Result<u32, String> {

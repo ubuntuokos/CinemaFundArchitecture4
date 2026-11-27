@@ -188,13 +188,23 @@ impl StoreError {
         }
     }
 
-    pub(crate) fn query(e: impl std::fmt::Display) -> Self {
+    /// A failed query. A connection that is gone (the server stopped, restarted or terminated the
+    /// session) is [`StoreError::Unavailable`], not a failed query: the caller must not tell
+    /// "the database is not there" from "the database refused" by which call happened to be first.
+    pub(crate) fn query<E: std::error::Error + 'static>(e: E) -> Self {
+        let any: &(dyn std::error::Error + 'static) = &e;
+        if any.downcast_ref::<tokio_postgres::Error>().is_some_and(is_connection_loss) {
+            return StoreError::unavailable(e);
+        }
         StoreError::Query { detail: e.to_string() }
     }
 
     /// `tokio_postgres::Error`'s `Display` is often only "db error"; the SQLSTATE and message
     /// are what the caller can act on.
     pub(crate) fn postgres(e: tokio_postgres::Error) -> Self {
+        if is_connection_loss(&e) {
+            return StoreError::unavailable(e);
+        }
         StoreError::Query { detail: postgres_detail(&e) }
     }
 
@@ -265,12 +275,29 @@ fn error_chain(err: &dyn std::error::Error) -> String {
     if joined.len() <= 2_000 { joined } else { joined.get(..2_000).unwrap_or(&joined).to_owned() }
 }
 
+/// The session is gone, not the statement wrong: the connection closed or broke (`Closed`, an I/O
+/// error on the socket), or the server ended it on purpose (SQLSTATE class 57: `57P01` administrator
+/// shutdown or terminate, `57P02` crash shutdown, `57P03` cannot connect now).
+pub(crate) fn is_connection_loss(e: &tokio_postgres::Error) -> bool {
+    if e.is_closed() {
+        return true;
+    }
+    if let Some(db) = e.as_db_error() {
+        return db.code().code().starts_with("57P");
+    }
+    std::error::Error::source(e).is_some_and(|s| s.downcast_ref::<std::io::Error>().is_some())
+}
+
 pub(crate) fn classify_unavailable(detail: &str) -> ErrorCode {
     let d = detail.to_ascii_lowercase();
     if d.contains("authentication failed") || d.contains("pg_hba") || d.contains("peer authentication") {
         return ErrorCode::DbAuthFailed;
     }
     if d.contains("connection refused")
+        || d.contains("connection closed")
+        || d.contains("terminating connection")
+        || d.contains("connection reset")
+        || d.contains("broken pipe")
         || d.contains("timed out")
         || d.contains("timeout")
         || d.contains("os error 111")
@@ -375,6 +402,9 @@ impl Store {
 
 #[cfg(test)]
 pub(crate) mod testdb;
+
+#[cfg(test)]
+mod pg2_gate;
 
 #[cfg(test)]
 mod error_tests {
