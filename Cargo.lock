@@ -1901,6 +1901,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-hrtf"
+version = "0.10.0"
+dependencies = [
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-huffyuv"
 version = "0.10.0"
 dependencies = [
