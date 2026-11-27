@@ -1,0 +1,651 @@
+{
+  "schema": 1,
+  "area": "effects",
+  "outOfScope": [],
+  "items": [
+    {
+      "path": "Video Effects ▸ Adjust ▸ Extract",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Adjust ▸ Levels",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Adjust ▸ Lighting Effects",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Adjust ▸ ProcAmp",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Blur & Sharpen ▸ Bokeh Blur",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Blur & Sharpen ▸ Channel Blur",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Blur & Sharpen ▸ Compound Blur",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Blur & Sharpen ▸ Directional Blur",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Blur & Sharpen ▸ Focus Blur",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Blur & Sharpen ▸ Gaussian Blur",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Blur & Sharpen ▸ Reduce Interlace Flicker",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Blur & Sharpen ▸ Sharpen",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Blur & Sharpen ▸ Unsharp Mask",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Color Correction ▸ ASC CDL",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Color Correction ▸ Brightness & Contrast",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Color Correction ▸ Lumetri Color",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Color Correction ▸ Tint",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Color Correction ▸ Video Limiter",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Color Correction ▸ Vignette",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Distort ▸ Corner Pin",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Distort ▸ Lens Distortion",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Distort ▸ Magnify",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Distort ▸ Mirror",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Distort ▸ Spherize",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Distort ▸ Turbulent Displace",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Distort ▸ Twirl",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Distort ▸ Warp Stabilizer",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Distort ▸ Wave Warp",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Generate ▸ 4-Color Gradient",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Generate ▸ Gradient",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Image Control ▸ Black & White",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Image Control ▸ Channel Mix",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Image Control ▸ Color Pass",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Image Control ▸ Color Replace",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Image Control ▸ Gamma Correction",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Image Control ▸ Invert",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Image Control ▸ Rounded Crop",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Immersive Video ▸ VR Blur",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Immersive Video ▸ VR Chromatic Aberrations",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Immersive Video ▸ VR Color Gradients",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Immersive Video ▸ VR De-Noise",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Immersive Video ▸ VR Digital Glitch",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Immersive Video ▸ VR Fractal Noise",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Immersive Video ▸ VR Glow",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Immersive Video ▸ VR Plane to Sphere",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Immersive Video ▸ VR Projection",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Immersive Video ▸ VR Rotate Sphere",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Immersive Video ▸ VR Sharpen",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Keying ▸ Alpha Adjust",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Keying ▸ Color Key",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Keying ▸ Logo Cutout",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Keying ▸ Luma Key",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Keying ▸ Track Matte Key",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Keying ▸ Ultra Key",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Lights & Glows ▸ Echo Glow",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Lights & Glows ▸ Edge Glow",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Lights & Glows ▸ Glint",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Lights & Glows ▸ Lens Flare",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Lights & Glows ▸ Light Leaks",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Lights & Glows ▸ RGB Split",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Lights & Glows ▸ Volumetric Rays",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Lights & Glows ▸ Wonder Glow",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Noise & Grain ▸ Noise",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Perspective ▸ Basic 3D",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Perspective ▸ Drop Shadow",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Perspective ▸ Long Shadow",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Stylize ▸ Brush Strokes",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Stylize ▸ Color Emboss",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Stylize ▸ Find Edges",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Stylize ▸ Mosaic",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Stylize ▸ Posterize",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Stylize ▸ Roughen Edges",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Stylize ▸ Strobe Light",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Time ▸ Posterize Time",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Transform ▸ 3D Rotate",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Transform ▸ Auto Reframe",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Transform ▸ Camera Shake",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Transform ▸ Grow",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Transform ▸ Horizontal Flip",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Transform ▸ Move",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Transform ▸ Offset",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Transform ▸ Shrink",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Transform ▸ Spacer",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Transform ▸ Spin",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Transform ▸ Transform",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Transform ▸ Vertical Flip",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Transform ▸ Wiggle",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Utility ▸ Auto Align",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Utility ▸ Cineon Converter",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Utility ▸ Clone",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Utility ▸ Simple Text",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Utility ▸ Stroke",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Video Effects ▸ Video ▸ Metadata & Timecode Burn-in",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Alpha Glow",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Block Dissolve",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Camera Blur",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Crop",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Directional Blur (Legacy)",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Edge Feather",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Gaussian Blur (Legacy)",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Gradient Wipe (Legacy)",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Linear Wipe (Legacy)",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Magnify (Legacy)",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Mosaic (Legacy)",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Noise (Legacy)",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Ramp",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Replicate",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Legacy ▸ Video Effects ▸ Twirl (Legacy)",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Amplitude and Compression ▸ Amplify",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Amplitude and Compression ▸ Channel Mixer",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Amplitude and Compression ▸ Channel Volume",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Amplitude and Compression ▸ DeEsser",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Amplitude and Compression ▸ Dynamics",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Amplitude and Compression ▸ Dynamics Processing",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Amplitude and Compression ▸ Hard Limiter",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Amplitude and Compression ▸ Multiband Compressor",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Amplitude and Compression ▸ Single-band Compressor",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Amplitude and Compression ▸ Tube-modeled Compressor",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Delay and Echo ▸ Analog Delay",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Delay and Echo ▸ Delay",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Delay and Echo ▸ Multitap Delay",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ Bandpass",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ Bass",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ FFT Filter",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ Graphic Equalizer (10 Bands)",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ Graphic Equalizer (20 Bands)",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ Graphic Equalizer (30 Bands)",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ Highpass",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ Lowpass",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ Notch Filter",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ Parametric Equalizer",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ Scientific Filter",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ Simple Notch Filter",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ Simple Parametric EQ",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Filter and EQ ▸ Treble",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Modulation ▸ Chorus/Flanger",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Modulation ▸ Flanger",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Modulation ▸ Phaser",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Noise Reduction/Restoration ▸ Automatic Click Remover",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Noise Reduction/Restoration ▸ DeHummer",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Noise Reduction/Restoration ▸ DeNoise",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Noise Reduction/Restoration ▸ DeReverb",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Reverb ▸ Convolution Reverb",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Reverb ▸ Studio Reverb",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Reverb ▸ Surround Reverb",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Special ▸ Binauralizer - Ambisonics",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Special ▸ Distortion",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Special ▸ Fill Left with Right",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Special ▸ Fill Right with Left",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Special ▸ GuitarSuite",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Special ▸ Invert",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Special ▸ Loudness Meter",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Special ▸ Mastering",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Special ▸ Panner - Ambisonics",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Special ▸ Swap Channels",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Special ▸ Vocal Enhancer",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Stereo Imagery ▸ Stereo Expander",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Time and Pitch ▸ Pitch Shifter",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Balance",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Mute",
+      "source": "docs/target-effects-reference.md"
+    },
+    {
+      "path": "Audio Effects ▸ Volume",
+      "source": "docs/target-effects-reference.md"
+    }
+  ]
+}
