@@ -136,6 +136,22 @@ references are not reset. `libnvidia-encode.so.1` stays loaded with its function
 libraries come from the installed NVIDIA driver, not this project. Export registration does not
 claim that a hardware decoder is available.
 
+**API level (2026-11-24, plan CFA4-NVENC-131-001).** The session speaks NVENC API 13.1 when the
+driver's `NvEncodeAPIGetMaxSupportedVersion` is 13.1 or higher (SDK 13.1 asks for driver 610) and API
+12.1 otherwise; `CFA4_NVENC_API=12.1|13.1|auto` overrides it for testing both paths on one machine.
+The structures are the 12.1 layouts: 13.1 turned reserved words into named fields and shrank
+`NV_ENC_INITIALIZE_PARAMS` and `NV_ENC_LOCK_BITSTREAM` by 8 bytes at the end, so every field this
+backend uses sits at the same offset at both levels and only the version tags (`ffi::Versions`) and a
+few fields differ: 13.1 sets `outputBitDepth` / `inputBitDepth` instead of the `pixelBitDepthMinus8`
+flag bits and writes the HDR10 mastering display and content light level itself
+(`pMasteringDisplay`, `pMaxCll`) instead of through SEI payloads. The 13.1 deprecations (old presets,
+`*_HQ` rate control modes, byte slice mode) do not touch the P5 / VBR / CBR use here.
+**Licence:** only the three MIT headers of NVIDIA's Video Codec SDK (`nvEncodeAPI.h`, `cuviddec.h`,
+`nvcuvid.h`) are transcribed; the rest of the SDK (samples, libraries, documents) is under the
+NVIDIA DesignWorks SDK licence, which forbids open-source licensing and redistribution, and stays out
+of the repository. Not verifiable without an NVIDIA GPU: a real session at either level (the
+`tests/nvenc*.rs` and `tests/nvdec.rs` tests need one).
+
 **H.265 (HEVC).** The same session, ring and NV12 path serve both codecs; H.265 added no `unsafe`
 module (new data declarations and a second codec-configuration member of an existing union). There
 is no software HEVC encoder to fall back to, and there will not be one in this crate (x265 is GPL),

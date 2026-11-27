@@ -356,7 +356,7 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         }
     }
     if let Some(v) = str_p(p, "mpeg2Container") {
-        let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es"))?;
+        let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es | dvd"))?;
         settings.mpeg2_container = c.id().to_string();
     }
     if let Some(v) = str_p(p, "mpeg2Chroma") {
@@ -564,7 +564,9 @@ pub fn file_safe(n: &str) -> String {
 /// `path` with the settings' extension (added when missing; image sequences keep theirs).
 fn with_extension(path: &str, settings: &ExportSettings) -> String {
     // a DCP or IMF package and an AS-02 bundle are folders
-    if matches!(settings.format, Format::Dcp | Format::Imf) || settings.mxf_as02 {
+    // and so is a DVD-Video disc
+    let dvd = settings.format == Format::Mpeg2 && cfa4_export::Mpeg2Container::of(settings) == cfa4_export::Mpeg2Container::Dvd;
+    if matches!(settings.format, Format::Dcp | Format::Imf) || settings.mxf_as02 || dvd {
         return path.to_string();
     }
     let ext = settings.extension();
@@ -787,6 +789,12 @@ pub struct QueueItem {
     /// Why it has not started yet (the task queue's wait reasons), empty otherwise.
     #[serde(skip)]
     pub waiting_for: Vec<String>,
+    /// `import: true` on `export.queue.add` (KDN-47): put the finished file into the Project panel.
+    #[serde(skip)]
+    pub import_when_done: bool,
+    /// The project items the finished file became (empty until then, or when it was not imported).
+    #[serde(skip)]
+    pub imported: Vec<u64>,
 }
 
 /// The export queue (session state).
@@ -889,7 +897,33 @@ fn item_json(s: &Session, it: &QueueItem) -> Value {
         "offlineMedia": it.job.map_or_else(|| json!([]), |j| offline_media_json(s, j)),
         "qc": crate::qc::item_json(&it.qc),
         "dcpValidation": crate::dcp_export::item_json(&it.dcp),
+        "import": it.import_when_done,
+        "imported": it.imported,
     })
+}
+
+/// KDN-47: import the finished output of queue item `id` into the project (`file.import`). Only a
+/// single file is imported: a folder (image sequence, DCP, IMF) or a file that is not there is
+/// left alone and said so in a toast. A failed import never changes the item's render state.
+fn import_output(s: &mut Session, id: u64) {
+    let Some(it) = s.export_queue.items.iter().find(|i| i.id == id) else { return };
+    let path = it.settings.path.clone();
+    let name = file_name(&path);
+    let is_file = std::fs::metadata(&path).is_ok_and(|m| m.is_file());
+    if !is_file {
+        s.events.push(Event::Toast { message: format!("{name} was not added to the project: it is not a single file"), error: false });
+        return;
+    }
+    let imported = match s.execute("file.import", json!({"paths": [path]})) {
+        Ok(v) => v.get("items").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_u64).collect::<Vec<_>>()).unwrap_or_default(),
+        Err(e) => {
+            s.events.push(Event::Toast { message: format!("{name} was not added to the project: {e}"), error: true });
+            return;
+        }
+    };
+    if let Some(it) = s.export_queue.items.iter_mut().find(|i| i.id == id) {
+        it.imported = imported;
+    }
 }
 
 /// Advance the queue: settle finished encodes, start the next ready item. `wait` encodes all of
@@ -901,6 +935,7 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
         let mut finished_any = false;
         let mut checked = Vec::new();
         let mut dcp_checked = Vec::new();
+        let mut to_import = Vec::new();
         for i in 0..s.export_queue.items.len() {
             let it = &s.export_queue.items[i];
             if it.status != QueueStatus::Encoding {
@@ -913,6 +948,9 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
             let outcome = match r {
                 Ok(_) => {
                     it.status = QueueStatus::Done;
+                    if it.import_when_done {
+                        to_import.push(it.id);
+                    }
                     if it.qc.profile.is_some() {
                         checked.push(it.id);
                     }
@@ -938,6 +976,10 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
         }
         if !s.export_queue.running {
             release_waiting(s);
+        }
+        // KDN-47: finished files that were asked for go into the Project panel
+        for id in to_import {
+            import_output(s, id);
         }
         // automatic QC of finished outputs (`export.queue.add` with `qc`)
         for id in checked {
@@ -1087,6 +1129,10 @@ pub(crate) fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
     }
     // DCP preflight (DCP-13): a blocking finding refuses the whole add before anything is queued
     let dcp_profile = crate::dcp_export::profile_param(p, settings.format, cmd)?;
+    let import_when_done = match p.get("import") {
+        None | Some(Value::Null) => false,
+        Some(v) => v.as_bool().ok_or_else(|| bad(cmd, "`import` must be a boolean"))?,
+    };
     let mut dcp_preflight = Vec::new();
     for (seq, st) in &items {
         if st.format == Format::Dcp {
@@ -1115,6 +1161,8 @@ pub(crate) fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
             project: project.clone(),
             task: None,
             waiting_for: Vec::new(),
+            import_when_done,
+            imported: Vec::new(),
         });
         ids.push(id);
     }
@@ -1586,7 +1634,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "export.queue.add",
             "Send to Export Queue",
-            r#"{…settings params,"path":str|dir?,"sequences":[id]?,"ranges":[range]?,"qc":str|bool?,"dcpValidate":str|bool?,"start":bool?,"wait":bool?}"#,
+            r#"{…settings params,"path":str|dir?,"sequences":[id]?,"ranges":[range]?,"qc":str|bool?,"dcpValidate":str|bool?,"import":bool=false (put the finished file into the Project panel),"start":bool?,"wait":bool?}"#,
             has_seq,
             queue_add,
             true,

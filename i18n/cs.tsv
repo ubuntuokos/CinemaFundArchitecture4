@@ -4970,6 +4970,11 @@ export.summary	Low	nízká
 	Thresholds	Prahy
 	Trail	Stopa
 	Use gestures in the window	Používat gesta v okně
+	DVD-Video folder (VIDEO_TS)	Složka DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Složka DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfní, 6 Mbps, GOP 15, AC-3 192 kbps, kapitoly ze značek kapitol sekvence
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Složka DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfní, 6 Mbps, GOP 18, AC-3 192 kbps, kapitoly ze značek kapitol sekvence
 	DNx decoding:	Dekódování DNx:
 	As detected from the file ({detected})	Podle rozpoznání ze souboru ({detected})
 	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)

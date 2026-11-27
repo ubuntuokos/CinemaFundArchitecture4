@@ -65,6 +65,7 @@ MPEG2_CONTAINERS = (
     ("ts", N_("Transport Stream (.ts, AAC audio)"), "ts"),
     ("m2ts", N_("BDAV Transport Stream (.m2ts, AAC audio)"), "m2ts"),
     ("es", N_("Elementary Stream (.m2v, no audio)"), "m2v"),
+    ("dvd", N_("DVD-Video folder (VIDEO_TS)"), ""),
 )
 # DCP choices (`DcpResolution`, `DcpAspect`, `DCP_CONTENT_KINDS` in crates/export): id, label
 DCP_RESOLUTIONS = (("2k", N_("2K")), ("4k", N_("4K")))
@@ -1425,8 +1426,8 @@ class ExportDialog(QDialog):
         return self.format.currentData() == "dcp"
 
     def _package(self) -> bool:
-        """A DCP or an IMF package: the output is a folder."""
-        return self.format.currentData() in ("dcp", "imf")
+        """A DCP or an IMF package, or a DVD-Video disc folder: the output is a folder."""
+        return self.format.currentData() in ("dcp", "imf") or (self.container.isEnabled() and self.container.currentData() == "dvd")
 
     def _extension(self) -> str:
         """The output file's extension: the MPEG-2 container's, QuickTime's for H.264 / H.265 in
@@ -1443,7 +1444,7 @@ class ExportDialog(QDialog):
             # the elementary stream has no audio
             has_audio = self.container.currentData() != "es"
             self.audio.setEnabled(has_audio)
-            # Automatic: LPCM in program streams, AAC in transport streams; or AC-3 or MP2 in either
+            # Automatic: LPCM in program streams, AAC in transport streams, AC-3 on a DVD; or AC-3 or MP2 in any
             self.audio_codec.setEnabled(has_audio)
         self._changed()  # the output path takes the new extension
 

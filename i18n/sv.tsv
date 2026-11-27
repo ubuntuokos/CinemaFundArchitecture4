@@ -4972,6 +4972,11 @@ export.summary	Low	låg
 	Thresholds	Trösklar
 	Trail	Spår
 	Use gestures in the window	Använd gester i fönstret
+	DVD-Video folder (VIDEO_TS)	DVD-Video-mapp (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-mapp (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfisk, 6 Mbps, GOP 15, AC-3 192 kbps, kapitel från sekvensens kapitelmarkörer
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-mapp (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfisk, 6 Mbps, GOP 18, AC-3 192 kbps, kapitel från sekvensens kapitelmarkörer
 	DNx decoding:	DNx-avkodning:
 	As detected from the file ({detected})	Enligt identifiering från filen ({detected})
 	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)

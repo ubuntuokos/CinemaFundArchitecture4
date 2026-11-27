@@ -4964,6 +4964,11 @@
 	Thresholds	임계값
 	Trail	궤적
 	Use gestures in the window	창에서 제스처 사용
+	DVD-Video folder (VIDEO_TS)	DVD-Video 폴더 (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 폴더 (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 아나모픽, 6 Mbps, GOP 15, AC-3 192 kbps, 시퀀스의 챕터 마커로 챕터 생성
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 폴더 (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 아나모픽, 6 Mbps, GOP 18, AC-3 192 kbps, 시퀀스의 챕터 마커로 챕터 생성
 	DNx decoding:	DNx 디코딩:
 	As detected from the file ({detected})	파일에서 감지한 대로 ({detected})
 	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (표준)

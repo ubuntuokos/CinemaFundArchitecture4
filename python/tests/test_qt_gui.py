@@ -3026,6 +3026,12 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         dlg.container.setCurrentIndex(dlg.container.findData("ts"))
         assert dlg.path.text().endswith(".ts") and dlg.audio.isEnabled() and dlg.audio_codec.isEnabled()
         assert dlg.params()["mpeg2Container"] == "ts"
+        # a DVD-Video disc is a folder (no extension) and keeps its audio
+        dlg.container.setCurrentIndex(dlg.container.findData("dvd"))
+        assert dlg._package() and dlg._extension() == "" and dlg.audio.isEnabled()
+        assert dlg.params()["mpeg2Container"] == "dvd"
+        dlg.container.setCurrentIndex(dlg.container.findData("ts"))
+        assert not dlg._package() and dlg.path.text().endswith(".ts")
         # AC-3 instead of the container's own audio (#268)
         dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("ac3"))
         assert dlg.params()["audioCodec"] == "ac3"
