@@ -36,19 +36,18 @@ impl ButtonTest {
         let ctx = self.ctx.clone();
         let mut response = None;
         self.tint = None;
-        let mut output =
-            ctx.run_ui(RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(400.0, 200.0))), events, ..Default::default() }, |ui| {
-                let r = ui
-                    .add_enabled_ui(self.enabled, |ui| {
-                        IconButton::new(&self.label, self.size, &self.style).selected(self.selected).show(ui, |ui, rect, tint| {
-                            self.tint = Some(tint);
-                            ui.painter().circle_filled(rect.center(), 3.0, tint);
-                        })
+        let mut output = ctx.run_ui(RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(400.0, 200.0))), events, ..Default::default() }, |ui| {
+            let r = ui
+                .add_enabled_ui(self.enabled, |ui| {
+                    IconButton::new(&self.label, self.size, &self.style).selected(self.selected).show(ui, |ui, rect, tint| {
+                        self.tint = Some(tint);
+                        ui.painter().circle_filled(rect.center(), 3.0, tint);
                     })
-                    .inner;
-                self.clicks += usize::from(r.clicked());
-                response = Some(r);
-            });
+                })
+                .inner;
+            self.clicks += usize::from(r.clicked());
+            response = Some(r);
+        });
         output.textures_delta.clear();
         (response.unwrap(), output)
     }
@@ -247,11 +246,7 @@ fn single_shape_frame_preserves_original_rectangle_tessellation() {
             .into_iter()
             .map(|clipped| {
                 let egui::epaint::Primitive::Mesh(mesh) = clipped.primitive else { panic!("unexpected paint callback") };
-                DrawMesh {
-                    clip: clipped.clip_rect,
-                    indices: mesh.indices,
-                    vertices: mesh.vertices.into_iter().map(|v| (v.pos, v.uv, v.color)).collect(),
-                }
+                DrawMesh { clip: clipped.clip_rect, indices: mesh.indices, vertices: mesh.vertices.into_iter().map(|v| (v.pos, v.uv, v.color)).collect() }
             })
             .collect()
     }

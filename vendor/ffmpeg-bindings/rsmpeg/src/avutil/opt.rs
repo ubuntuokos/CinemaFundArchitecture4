@@ -30,12 +30,7 @@ use std::ffi::{CStr, c_double, c_int, c_void};
 /// # Safety
 ///
 /// `obj` should points to a struct whose first element is a pointer to an AVClass.
-pub unsafe fn opt_set(
-    obj: *mut c_void,
-    name: &CStr,
-    val: &CStr,
-    search_flags: c_int,
-) -> Result<()> {
+pub unsafe fn opt_set(obj: *mut c_void, name: &CStr, val: &CStr, search_flags: c_int) -> Result<()> {
     unsafe { ffi::av_opt_set(obj, name.as_ptr(), val.as_ptr(), search_flags) }.upgrade()?;
     Ok(())
 }
@@ -43,12 +38,7 @@ pub unsafe fn opt_set(
 /// # Safety
 ///
 /// `obj` should points to a struct whose first element is a pointer to an AVClass.
-pub unsafe fn opt_set_int(
-    obj: *mut c_void,
-    name: &CStr,
-    val: i64,
-    search_flags: c_int,
-) -> Result<()> {
+pub unsafe fn opt_set_int(obj: *mut c_void, name: &CStr, val: i64, search_flags: c_int) -> Result<()> {
     unsafe { ffi::av_opt_set_int(obj, name.as_ptr(), val, search_flags) }.upgrade()?;
     Ok(())
 }
@@ -56,12 +46,7 @@ pub unsafe fn opt_set_int(
 /// # Safety
 ///
 /// `obj` should points to a struct whose first element is a pointer to an AVClass.
-pub unsafe fn opt_set_double(
-    obj: *mut c_void,
-    name: &CStr,
-    val: c_double,
-    search_flags: c_int,
-) -> Result<()> {
+pub unsafe fn opt_set_double(obj: *mut c_void, name: &CStr, val: c_double, search_flags: c_int) -> Result<()> {
     unsafe { ffi::av_opt_set_double(obj, name.as_ptr(), val, search_flags) }.upgrade()?;
     Ok(())
 }
@@ -69,12 +54,7 @@ pub unsafe fn opt_set_double(
 /// # Safety
 ///
 /// `obj` should points to a struct whose first element is a pointer to an AVClass.
-pub unsafe fn opt_set_q(
-    obj: *mut c_void,
-    name: &CStr,
-    val: AVRational,
-    search_flags: c_int,
-) -> Result<()> {
+pub unsafe fn opt_set_q(obj: *mut c_void, name: &CStr, val: AVRational, search_flags: c_int) -> Result<()> {
     unsafe { ffi::av_opt_set_q(obj, name.as_ptr(), val, search_flags) }.upgrade()?;
     Ok(())
 }
@@ -84,35 +64,15 @@ pub unsafe fn opt_set_q(
 /// # Safety
 ///
 /// `obj` should points to a struct whose first element is a pointer to an AVClass.
-pub unsafe fn opt_set_bin(
-    obj: *mut c_void,
-    name: &CStr,
-    val: &[u8],
-    search_flags: c_int,
-) -> Result<()> {
-    unsafe {
-        ffi::av_opt_set_bin(
-            obj,
-            name.as_ptr(),
-            val.as_ptr(),
-            val.len().try_into()?,
-            search_flags,
-        )
-    }
-    .upgrade()?;
+pub unsafe fn opt_set_bin(obj: *mut c_void, name: &CStr, val: &[u8], search_flags: c_int) -> Result<()> {
+    unsafe { ffi::av_opt_set_bin(obj, name.as_ptr(), val.as_ptr(), val.len().try_into()?, search_flags) }.upgrade()?;
     Ok(())
 }
 
 /// # Safety
 ///
 /// `obj` should points to a struct whose first element is a pointer to an AVClass.
-pub unsafe fn opt_set_image_size(
-    obj: *mut c_void,
-    name: &CStr,
-    w: c_int,
-    h: c_int,
-    search_flags: c_int,
-) -> Result<()> {
+pub unsafe fn opt_set_image_size(obj: *mut c_void, name: &CStr, w: c_int, h: c_int, search_flags: c_int) -> Result<()> {
     unsafe { ffi::av_opt_set_image_size(obj, name.as_ptr(), w, h, search_flags) }.upgrade()?;
     Ok(())
 }
@@ -120,12 +80,7 @@ pub unsafe fn opt_set_image_size(
 /// # Safety
 ///
 /// `obj` should points to a struct whose first element is a pointer to an AVClass.
-pub unsafe fn opt_set_pixel_fmt(
-    obj: *mut c_void,
-    name: &CStr,
-    fmt: AVPixelFormat,
-    search_flags: c_int,
-) -> Result<()> {
+pub unsafe fn opt_set_pixel_fmt(obj: *mut c_void, name: &CStr, fmt: AVPixelFormat, search_flags: c_int) -> Result<()> {
     unsafe { ffi::av_opt_set_pixel_fmt(obj, name.as_ptr(), fmt, search_flags) }.upgrade()?;
     Ok(())
 }
@@ -133,12 +88,7 @@ pub unsafe fn opt_set_pixel_fmt(
 /// # Safety
 ///
 /// `obj` should points to a struct whose first element is a pointer to an AVClass.
-pub unsafe fn opt_set_sample_fmt(
-    obj: *mut c_void,
-    name: &CStr,
-    fmt: AVSampleFormat,
-    search_flags: c_int,
-) -> Result<()> {
+pub unsafe fn opt_set_sample_fmt(obj: *mut c_void, name: &CStr, fmt: AVSampleFormat, search_flags: c_int) -> Result<()> {
     unsafe { ffi::av_opt_set_sample_fmt(obj, name.as_ptr(), fmt, search_flags) }.upgrade()?;
     Ok(())
 }
@@ -146,12 +96,7 @@ pub unsafe fn opt_set_sample_fmt(
 /// # Safety
 ///
 /// `obj` should points to a struct whose first element is a pointer to an AVClass.
-pub unsafe fn opt_set_video_rate(
-    obj: *mut c_void,
-    name: &CStr,
-    val: AVRational,
-    search_flags: c_int,
-) -> Result<()> {
+pub unsafe fn opt_set_video_rate(obj: *mut c_void, name: &CStr, val: AVRational, search_flags: c_int) -> Result<()> {
     unsafe { ffi::av_opt_set_video_rate(obj, name.as_ptr(), val, search_flags) }.upgrade()?;
     Ok(())
 }

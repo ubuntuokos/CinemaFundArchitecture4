@@ -16,6 +16,12 @@ use std::path::Path;
 use std::sync::{Arc, Condvar, Mutex, PoisonError};
 use std::time::Duration;
 
+/// The capture modules the build installs (`scripts/dev/libobs-modules.cmake`).
+pub const CAPTURE_MODULES: &[&str] = &["linux-v4l2", "linux-pulseaudio", "linux-pipewire"];
+
+/// Sample rate of the audio mix (S2).
+pub const AUDIO_SAMPLE_RATE: u32 = 48_000;
+
 fn unavailable(what: impl std::fmt::Display) -> StudioError {
     StudioError::Unavailable(what.to_string())
 }
@@ -39,6 +45,11 @@ pub struct Api {
     startup: ffi::FnStartup,
     shutdown: ffi::FnShutdown,
     reset_video: ffi::FnResetVideo,
+    reset_audio: ffi::FnResetAudio,
+    open_module: ffi::FnOpenModule,
+    init_module: ffi::FnInitModule,
+    post_load_modules: ffi::FnPostLoadModules,
+    enum_input_types: ffi::FnEnumInputTypes,
     /// `obs_scene_create_private`: CFA4's scenes are private. A public scene belongs to libobs's
     /// main canvas, which keeps it (and its sources) alive until `obs_shutdown`, so a replaced
     /// scene would never be freed.
@@ -85,6 +96,11 @@ impl Api {
                 startup: symbol(&lib, b"obs_startup\0")?,
                 shutdown: symbol(&lib, b"obs_shutdown\0")?,
                 reset_video: symbol(&lib, b"obs_reset_video\0")?,
+                reset_audio: symbol(&lib, b"obs_reset_audio\0")?,
+                open_module: symbol(&lib, b"obs_open_module\0")?,
+                init_module: symbol(&lib, b"obs_init_module\0")?,
+                post_load_modules: symbol(&lib, b"obs_post_load_modules\0")?,
+                enum_input_types: symbol(&lib, b"obs_enum_input_types\0")?,
                 scene_create: symbol(&lib, b"obs_scene_create_private\0")?,
                 scene_get_source: symbol(&lib, b"obs_scene_get_source\0")?,
                 scene_release: symbol(&lib, b"obs_scene_release\0")?,
@@ -161,6 +177,62 @@ impl Api {
         // module name outlives it (libobs copies what it keeps).
         let code = unsafe { (self.reset_video)(&mut ovi) };
         if code == ffi::OBS_VIDEO_SUCCESS { Ok(()) } else { Err(StudioError::Backend(format!("obs_reset_video: {} ({code})", ffi::reset_video_error(code)))) }
+    }
+
+    /// `obs_reset_audio`: 48 kHz stereo, the audio mix the capture sources feed (S2; the tracks,
+    /// the speaker layout and the mixer are S3).
+    pub fn reset_audio(&self) -> Result<()> {
+        let oai = ffi::obs_audio_info { samples_per_sec: AUDIO_SAMPLE_RATE, speakers: ffi::SPEAKERS_STEREO };
+        // SAFETY: `oai` is a fully initialised `obs_audio_info` living across the call; libobs copies it.
+        if unsafe { (self.reset_audio)(&oai) } { Ok(()) } else { Err(StudioError::Backend("obs_reset_audio failed".into())) }
+    }
+
+    /// Loads the capture modules ([`CAPTURE_MODULES`]) installed under `dir` (`lib/obs-modules/core`,
+    /// data in `share/obs/obs-modules/core/<module>`), one by one with `obs_open_module` and
+    /// `obs_init_module`: OBS 33's own core-module loader looks next to the running executable and
+    /// stops at the first module it cannot find, which would let one missing module (no PipeWire)
+    /// hide the others. Call after [`Api::startup`] and after the video and audio are reset.
+    /// Returns the modules that did not load; their source types are then missing from
+    /// [`Api::input_types`], and the caller reports that.
+    pub fn load_modules(&self, dir: &Path) -> Vec<String> {
+        let mut failed = Vec::new();
+        for name in CAPTURE_MODULES {
+            let bin = dir.join("lib/obs-modules/core").join(format!("{name}.so"));
+            let data = dir.join("share/obs/obs-modules/core").join(name);
+            let (Ok(bin_c), Ok(data_c)) = (CString::new(bin.to_string_lossy().into_owned()), CString::new(data.to_string_lossy().into_owned())) else {
+                failed.push((*name).to_string());
+                continue;
+            };
+            let mut module: *mut ffi::obs_module_t = std::ptr::null_mut();
+            // SAFETY: NUL-terminated paths (copied by libobs); `module` is a valid out-pointer.
+            let code = unsafe { (self.open_module)(&mut module, bin_c.as_ptr(), data_c.as_ptr()) };
+            // SAFETY: `module` was returned by a successful `obs_open_module`; libobs owns it and
+            // frees it at `obs_shutdown`. A module that crashes in its load function takes only the
+            // host down (D2).
+            if code != ffi::MODULE_SUCCESS || module.is_null() || !unsafe { (self.init_module)(module) } {
+                failed.push((*name).to_string());
+            }
+        }
+        // SAFETY: no arguments; finishes the loading of the opened modules.
+        unsafe { (self.post_load_modules)() };
+        failed
+    }
+
+    /// The ids of the registered input source types (`obs_enum_input_types`).
+    pub fn input_types(&self) -> Vec<String> {
+        let mut out = Vec::new();
+        let mut idx = 0usize;
+        loop {
+            let mut id: *const c_char = std::ptr::null();
+            // SAFETY: `id` is a valid out-pointer; libobs sets it to a static NUL-terminated id.
+            if !unsafe { (self.enum_input_types)(idx, &mut id) } || id.is_null() {
+                break;
+            }
+            // SAFETY: non-null, NUL-terminated, valid while the source type stays registered.
+            out.push(unsafe { CStr::from_ptr(id) }.to_string_lossy().into_owned());
+            idx += 1;
+        }
+        out
     }
 
     /// Creates an empty scene and puts it on output channel 0.

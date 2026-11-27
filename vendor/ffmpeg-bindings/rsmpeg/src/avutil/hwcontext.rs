@@ -24,9 +24,7 @@ impl AVHWDeviceContext {
         let buffer_ref = unsafe { ffi::av_hwdevice_ctx_alloc(r#type) };
         // this only panic on OOM
         let buffer_ref = buffer_ref.upgrade().unwrap();
-        Self {
-            buffer_ref: unsafe { AVBufferRef::from_raw(buffer_ref) },
-        }
+        Self { buffer_ref: unsafe { AVBufferRef::from_raw(buffer_ref) } }
     }
 
     /// Finalize the device context before use. This function must be called after
@@ -48,19 +46,11 @@ impl AVHWDeviceContext {
     /// should not call [`Self::init()`] on it. The user_opaque/free fields of
     /// the created [`AVHWDeviceContext`] are set by this function and should not be
     /// touched by the caller.
-    pub fn create(
-        r#type: AVHWDeviceType,
-        device: Option<&CStr>,
-        opts: Option<&AVDictionary>,
-        flags: c_int,
-    ) -> Result<Self> {
+    pub fn create(r#type: AVHWDeviceType, device: Option<&CStr>, opts: Option<&AVDictionary>, flags: c_int) -> Result<Self> {
         let mut ptr = ptr::null_mut();
         let opts = opts.map(|opts| opts.as_ptr()).unwrap_or_else(ptr::null);
-        let device = device
-            .map(|device| device.as_ptr())
-            .unwrap_or_else(ptr::null);
-        unsafe { ffi::av_hwdevice_ctx_create(&mut ptr, r#type, device, opts as *mut _, flags) }
-            .upgrade()?;
+        let device = device.map(|device| device.as_ptr()).unwrap_or_else(ptr::null);
+        unsafe { ffi::av_hwdevice_ctx_create(&mut ptr, r#type, device, opts as *mut _, flags) }.upgrade()?;
         // this won't panic since av_hwdevice_ctx_create ensures it's non-null if successful.
         let ptr = ptr.upgrade().unwrap();
         let buffer_ref = unsafe { AVBufferRef::from_raw(ptr) };
@@ -81,56 +71,30 @@ impl AVHWDeviceContext {
     pub fn create_derived(&self, r#type: AVHWDeviceType) -> Result<Self> {
         let mut ptr = ptr::null_mut();
         // `flags` parameter of av_hwdevice_ctx_create_derived is unused and need to be set to 0
-        unsafe {
-            ffi::av_hwdevice_ctx_create_derived(&mut ptr, r#type, self.as_ptr() as *mut _, 0)
-        }
-        .upgrade()?;
+        unsafe { ffi::av_hwdevice_ctx_create_derived(&mut ptr, r#type, self.as_ptr() as *mut _, 0) }.upgrade()?;
         // this won't panic since av_hwdevice_ctx_create_derived ensures it's non-null if successful.
         let ptr = ptr.upgrade().unwrap();
-        Ok(Self {
-            buffer_ref: unsafe { AVBufferRef::from_raw(ptr) },
-        })
+        Ok(Self { buffer_ref: unsafe { AVBufferRef::from_raw(ptr) } })
     }
 
     /// Create a new device of the specified type from an existing device.
     ///
     /// This function performs the same action as av_hwdevice_ctx_create_derived,
     /// however, it is able to set options for the new device to be derived.
-    pub fn create_derived_opts(
-        &self,
-        r#type: AVHWDeviceType,
-        options: Option<&AVDictionary>,
-    ) -> Result<Self> {
+    pub fn create_derived_opts(&self, r#type: AVHWDeviceType, options: Option<&AVDictionary>) -> Result<Self> {
         let mut ptr = ptr::null_mut();
         let options = options.map(|opts| opts.as_ptr()).unwrap_or_else(ptr::null);
         // `flags` parameter of av_hwdevice_ctx_create_derived is unused and need to be set to 0
-        unsafe {
-            ffi::av_hwdevice_ctx_create_derived_opts(
-                &mut ptr,
-                r#type,
-                self.as_ptr() as *mut _,
-                options as *mut _,
-                0,
-            )
-        }
-        .upgrade()?;
+        unsafe { ffi::av_hwdevice_ctx_create_derived_opts(&mut ptr, r#type, self.as_ptr() as *mut _, options as *mut _, 0) }.upgrade()?;
         // this won't panic since av_hwdevice_ctx_create_derived_opts ensures it's non-null if successful.
         let ptr = ptr.upgrade().unwrap();
-        Ok(Self {
-            buffer_ref: unsafe { AVBufferRef::from_raw(ptr) },
-        })
+        Ok(Self { buffer_ref: unsafe { AVBufferRef::from_raw(ptr) } })
     }
 
     /// Allocate an [`AVHWFramesContext`] tied to a given device context.
     pub fn hwframe_ctx_alloc(&self) -> AVHWFramesContext {
-        let buffer_ref = unsafe {
-            ffi::av_hwframe_ctx_alloc(self.as_ptr() as *mut _)
-                .upgrade()
-                .unwrap()
-        };
-        AVHWFramesContext {
-            buffer_ref: unsafe { AVBufferRef::from_raw(buffer_ref) },
-        }
+        let buffer_ref = unsafe { ffi::av_hwframe_ctx_alloc(self.as_ptr() as *mut _).upgrade().unwrap() };
+        AVHWFramesContext { buffer_ref: unsafe { AVBufferRef::from_raw(buffer_ref) } }
     }
 
     /// Consume self and get the underlying buffer ref.
@@ -191,8 +155,7 @@ impl AVHWFramesContext {
     ///
     /// `frame`: an empty (freshly allocated or unreffed) frame to be filled with newly allocated buffers.
     pub fn get_buffer(&mut self, frame: &mut AVFrame) -> Result<()> {
-        unsafe { ffi::av_hwframe_get_buffer(self.buffer_ref.as_mut_ptr(), frame.as_mut_ptr(), 0) }
-            .upgrade()?;
+        unsafe { ffi::av_hwframe_get_buffer(self.buffer_ref.as_mut_ptr(), frame.as_mut_ptr(), 0) }.upgrade()?;
         Ok(())
     }
 
@@ -200,9 +163,7 @@ impl AVHWFramesContext {
     ///
     /// This function is only save when given `raw` points to a valid AVHWFramesContext.
     pub unsafe fn from_raw(raw: NonNull<ffi::AVBufferRef>) -> Self {
-        Self {
-            buffer_ref: unsafe { AVBufferRef::from_raw(raw) },
-        }
+        Self { buffer_ref: unsafe { AVBufferRef::from_raw(raw) } }
     }
 
     /// Consume self and get the underlying buffer ref.
@@ -232,11 +193,7 @@ pub fn hwdevice_find_type_by_name(name: &CStr) -> AVHWDeviceType {
 
 /// Get the string name of an AVHWDeviceType.
 pub fn hwdevice_get_type_name(r#type: AVHWDeviceType) -> Option<&'static CStr> {
-    unsafe {
-        ffi::av_hwdevice_get_type_name(r#type)
-            .upgrade()
-            .map(|x| CStr::from_ptr(x.as_ptr()))
-    }
+    unsafe { ffi::av_hwdevice_get_type_name(r#type).upgrade().map(|x| CStr::from_ptr(x.as_ptr())) }
 }
 
 /// Iterate over supported device types.
@@ -252,9 +209,7 @@ pub struct AVHWDeviceTypeIter {
 impl AVHWDeviceTypeIter {
     /// Create a new iterator over AVHWDeviceType.
     fn new() -> Self {
-        Self {
-            prev: ffi::AV_HWDEVICE_TYPE_NONE,
-        }
+        Self { prev: ffi::AV_HWDEVICE_TYPE_NONE }
     }
 }
 

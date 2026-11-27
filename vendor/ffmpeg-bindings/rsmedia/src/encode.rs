@@ -129,12 +129,7 @@ impl EncoderBuilder {
     /// * `nb_channels` - The number of channels in the audio stream.
     /// * `sample_rate` - The sample rate of the audio stream.
     /// * `sample_format` - The sample format of the audio stream.
-    pub fn new_audio(
-        bit_rate: i64,
-        nb_channels: i32,
-        sample_rate: i32,
-        sample_format: SampleFormat,
-    ) -> Self {
+    pub fn new_audio(bit_rate: i64, nb_channels: i32, sample_rate: i32, sample_format: SampleFormat) -> Self {
         Self::default()
             .with_bit_rate(bit_rate)
             .with_nb_channels(nb_channels)
@@ -438,10 +433,7 @@ impl EncoderBuilder {
     ) -> Result<()> {
         let media_type = self.media_type;
         if media_type as ffi::AVMediaType != encoder.codec_type {
-            return Err(RsmediaError::msg(format!(
-                "Encoder codec type not supported: {:?} vs. {:?}",
-                media_type, encoder.codec_type
-            )));
+            return Err(RsmediaError::msg(format!("Encoder codec type not supported: {:?} vs. {:?}", media_type, encoder.codec_type)));
         }
 
         if media_type == MediaType::VIDEO {
@@ -496,9 +488,7 @@ impl EncoderBuilder {
             encoder.set_time_base(self.effective_time_base());
             encoder.set_pkt_timebase(self.effective_time_base());
         } else {
-            return Err(RsmediaError::msg(format!(
-                "Unsupported media type: {media_type:?}"
-            )));
+            return Err(RsmediaError::msg(format!("Unsupported media type: {media_type:?}")));
         }
 
         // 参数集进 extradata（容器格式）还是随每个关键帧 in-band（裸流），
@@ -526,9 +516,7 @@ impl EncoderBuilder {
         match self.pixel_format {
             Some(fmt) => {
                 if self.hw_device_config.is_none() && !config.is_support_pixel_format(fmt as i32) {
-                    return Err(RsmediaError::InvalidConfig(format!(
-                        "encoder '{codec_name}' does not support pixel format {fmt:?}"
-                    )));
+                    return Err(RsmediaError::InvalidConfig(format!("encoder '{codec_name}' does not support pixel format {fmt:?}")));
                 }
                 Ok(fmt)
             }
@@ -547,17 +535,11 @@ impl EncoderBuilder {
     /// [`Self::resolve_pixel_format`]：显式指定则校验（fail fast），
     /// 未指定优先 [`SampleFormat::FLTP`]（aac/mp3 等原生平面浮点格式），
     /// 不支持时取支持列表首个（如 `pcm_s16le` 为 S16）。
-    fn resolve_sample_format(
-        &self,
-        config: &CodecConfig,
-        codec_name: &str,
-    ) -> Result<SampleFormat> {
+    fn resolve_sample_format(&self, config: &CodecConfig, codec_name: &str) -> Result<SampleFormat> {
         match self.sample_format {
             Some(fmt) => {
                 if !config.is_support_sample_format(fmt as i32) {
-                    return Err(RsmediaError::InvalidConfig(format!(
-                        "encoder '{codec_name}' does not support sample format {fmt:?}"
-                    )));
+                    return Err(RsmediaError::InvalidConfig(format!("encoder '{codec_name}' does not support sample format {fmt:?}")));
                 }
                 Ok(fmt)
             }
@@ -592,9 +574,7 @@ impl EncoderBuilder {
         if let Some(fps) = self.requested_fps
             && !(fps > 0.0 && fps.is_finite())
         {
-            return Err(RsmediaError::invalid_config(format!(
-                "fps must be a positive, finite number, got {fps}"
-            )));
+            return Err(RsmediaError::invalid_config(format!("fps must be a positive, finite number, got {fps}")));
         }
         let codec_name: String = match &self.codec_name {
             Some(codec_name) => codec_name.clone(),
@@ -603,16 +583,13 @@ impl EncoderBuilder {
                 MediaType::AUDIO => Self::AUDIO_CODEC_NAME.to_string(),
                 MediaType::SUBTITLE => Self::SUBTITLE_CODEC_NAME.to_string(),
                 _ => {
-                    return Err(RsmediaError::msg(format!(
-                        "Unsupported media type:{media_type:?}",
-                    )));
+                    return Err(RsmediaError::msg(format!("Unsupported media type:{media_type:?}",)));
                 }
             },
         };
         // `find_encoder_by_name` 不区分"名字拼错"与"该 FFmpeg 构建未编译此编码器",
         // 都归入 CodecNotFound —— 调用方据此跳过当前构建不可用的编码器。
-        let codec = AVCodec::find_encoder_by_name(&strutils::str_to_cstring(&codec_name))
-            .ok_or_else(|| RsmediaError::codec_not_found(codec_name.clone()))?;
+        let codec = AVCodec::find_encoder_by_name(&strutils::str_to_cstring(&codec_name)).ok_or_else(|| RsmediaError::codec_not_found(codec_name.clone()))?;
 
         // CRF 速率控制：仅对支持 crf 私有选项的视频编码器生效，其余编码器
         // 回退到 bit_rate 控制（与 ffmpeg CLI 行为一致，只是多一个警告）。
@@ -621,9 +598,7 @@ impl EncoderBuilder {
                 Some(Quality::Crf(_)) => {
                     let capable = CRF_CAPABLE_CODECS.contains(&codec_name.as_str());
                     if !capable {
-                        log::warn!(
-                            "codec '{codec_name}' has no CRF support, falling back to bit rate control"
-                        );
+                        log::warn!("codec '{codec_name}' has no CRF support, falling back to bit rate control");
                     }
                     capable
                 }
@@ -638,19 +613,10 @@ impl EncoderBuilder {
         let (pixel_format, sample_format) = if media_type == MediaType::SUBTITLE {
             (PixelFormat::YUV420P, SampleFormat::FLTP)
         } else {
-            (
-                self.resolve_pixel_format(&config, &codec_name)?,
-                self.resolve_sample_format(&config, &codec_name)?,
-            )
+            (self.resolve_pixel_format(&config, &codec_name)?, self.resolve_sample_format(&config, &codec_name)?)
         };
 
-        self.setup_codec_context(
-            &mut encode_ctx,
-            use_crf,
-            pixel_format,
-            sample_format,
-            &config,
-        )?;
+        self.setup_codec_context(&mut encode_ctx, use_crf, pixel_format, sample_format, &config)?;
 
         // 编码器输入时间基：与滤镜图 buffer 源（下方 FilterParams）和"滤镜未改写
         // 帧率时的编码器 time_base"同源。必须在 self 被部分 move 之前求值。
@@ -661,19 +627,14 @@ impl EncoderBuilder {
         // 滤镜链可声明要求的输入格式（如 GIF 调色板链要求 RGB 输入、输出
         // pal8；音频链可声明输入采样格式）；未声明时输入格式=编码器协商格式
         // （src/sink 同格式，零行为变化）。
-        let filter_input_format = self
-            .filters
-            .as_ref()
-            .and_then(|filters| filters.iter().find_map(|f| f.input_format()));
+        let filter_input_format = self.filters.as_ref().and_then(|filters| filters.iter().find_map(|f| f.input_format()));
         let mut filter_graph = if let Some(filters) = self.filters.as_ref() {
             let filter_params = match media_type {
                 MediaType::VIDEO => {
                     FilterParams::Video(VideoParams {
                         width: self.width as i32,
                         height: self.height as i32,
-                        src_format: filter_input_format
-                            .and_then(FrameFormat::into_pixel)
-                            .unwrap_or(pixel_format),
+                        src_format: filter_input_format.and_then(FrameFormat::into_pixel).unwrap_or(pixel_format),
                         format: pixel_format,
                         time_base: input_time_base,
                         frame_rate: self.frame_rate,
@@ -685,28 +646,20 @@ impl EncoderBuilder {
                         nb_channels: self.nb_channels,
                         sample_rate: self.sample_rate,
                         format: sample_format,
-                        src_format: filter_input_format
-                            .and_then(FrameFormat::into_sample)
-                            .unwrap_or(sample_format),
+                        src_format: filter_input_format.and_then(FrameFormat::into_sample).unwrap_or(sample_format),
                         time_base: input_time_base, // time_base = 1 / sample_rate
                     })
                 }
                 _ => {
-                    return Err(RsmediaError::msg(format!(
-                        "Unsupported filter for media type: {media_type:?}"
-                    )));
+                    return Err(RsmediaError::msg(format!("Unsupported filter for media type: {media_type:?}")));
                 }
             };
             let mut graph = FilterGraph::new();
             // check Filter media type
             if !filters.iter().all(|f| f.media_type() == media_type) {
-                return Err(RsmediaError::msg(format!(
-                    "Filter media type mismatch for encoder type {media_type:?}"
-                )));
+                return Err(RsmediaError::msg(format!("Filter media type mismatch for encoder type {media_type:?}")));
             }
-            graph
-                .init(&filter_params, filters.as_slice())
-                .context("Failed to initialize filter graph")?;
+            graph.init(&filter_params, filters.as_slice()).context("Failed to initialize filter graph")?;
 
             Some(graph)
         } else {
@@ -726,16 +679,9 @@ impl EncoderBuilder {
         };
         if media_type == MediaType::VIDEO {
             if let Some(out_fr) = filter_frame_rate {
-                let changed =
-                    out_fr.num != self.frame_rate.num || out_fr.den != self.frame_rate.den;
+                let changed = out_fr.num != self.frame_rate.num || out_fr.den != self.frame_rate.den;
                 if out_fr.num > 0 && out_fr.den > 0 && changed {
-                    log::info!(
-                        "Filter changes frame rate: {}/{} -> {}/{}",
-                        self.frame_rate.num,
-                        self.frame_rate.den,
-                        out_fr.num,
-                        out_fr.den
-                    );
+                    log::info!("Filter changes frame rate: {}/{} -> {}/{}", self.frame_rate.num, self.frame_rate.den, out_fr.num, out_fr.den);
                     encode_ctx.set_framerate(out_fr);
                     encode_ctx.set_time_base(avutil::av_inv_q(out_fr));
                 }
@@ -745,13 +691,7 @@ impl EncoderBuilder {
                 && fh > 0
                 && (fw != encode_ctx.width || fh != encode_ctx.height)
             {
-                log::info!(
-                    "Filter changes size: {}x{} -> {}x{}",
-                    encode_ctx.width,
-                    encode_ctx.height,
-                    fw,
-                    fh
-                );
+                log::info!("Filter changes size: {}x{} -> {}x{}", encode_ctx.width, encode_ctx.height, fw, fh);
                 encode_ctx.set_width(fw);
                 encode_ctx.set_height(fh);
             }
@@ -765,11 +705,7 @@ impl EncoderBuilder {
             })
             .map(|cfg| {
                 // codec support or not for hardware acceleration
-                log::info!(
-                    "Video Encoder with HW acceleration codec: {:?}, config: {:#?}",
-                    self.codec_name,
-                    cfg
-                );
+                log::info!("Video Encoder with HW acceleration codec: {:?}, config: {:#?}", self.codec_name, cfg);
 
                 // create hardware context
                 let (width, height) = (encode_ctx.width, encode_ctx.height);
@@ -815,16 +751,11 @@ impl EncoderBuilder {
                      subtitle stream in a transcode pipeline",
                 ));
             };
-            let header_c = std::ffi::CString::new(header.as_str())
-                .map_err(|e| RsmediaError::msg(format!("Invalid subtitle header: {e}")))?;
-            encode_ctx
-                .set_subtitle_header(header_c.as_c_str())
-                .context("Failed to set subtitle header")?;
+            let header_c = std::ffi::CString::new(header.as_str()).map_err(|e| RsmediaError::msg(format!("Invalid subtitle header: {e}")))?;
+            encode_ctx.set_subtitle_header(header_c.as_c_str()).context("Failed to set subtitle header")?;
         }
 
-        encode_ctx
-            .open(opts.into_dict())
-            .context("Failed to open encode context")?;
+        encode_ctx.open(opts.into_dict()).context("Failed to open encode context")?;
 
         Ok(Encoder {
             config,
@@ -834,8 +765,7 @@ impl EncoderBuilder {
             filter_graph,
             context: encode_ctx,
             state: CodecContextState::Normal,
-            scaler: Scaler::new_with_options(self.scale_algorithm, self.scale_quality)
-                .with_buffer_pool(self.scale_pool),
+            scaler: Scaler::new_with_options(self.scale_algorithm, self.scale_quality).with_buffer_pool(self.scale_pool),
             pending_packets: VecDeque::new(),
             audio_fifo: None,
             next_pts: 0,
@@ -961,11 +891,7 @@ impl Encoder {
     ///
     /// note: default audio codec is `aac`
     #[inline]
-    pub fn new_audio(
-        nb_channels: i32,
-        sample_rate: i32,
-        sample_format: SampleFormat,
-    ) -> Result<Encoder> {
+    pub fn new_audio(nb_channels: i32, sample_rate: i32, sample_format: SampleFormat) -> Result<Encoder> {
         EncoderBuilder::new_audio(128_000, nb_channels, sample_rate, sample_format).build()
     }
 
@@ -1039,10 +965,7 @@ impl Encoder {
     /// time_base（1/1000 毫秒精度）设置。
     pub fn encode_subtitle_segment(&mut self, segment: &SubtitleSegment) -> Result<Vec<AVPacket>> {
         if self.media_type != MediaType::SUBTITLE {
-            return Err(RsmediaError::unsupported(format!(
-                "encode_subtitle_segment requires a subtitle encoder, got media type: {:?}",
-                self.media_type
-            )));
+            return Err(RsmediaError::unsupported(format!("encode_subtitle_segment requires a subtitle encoder, got media type: {:?}", self.media_type)));
         }
         if segment.text.is_empty() {
             return Ok(Vec::new());
@@ -1058,17 +981,11 @@ impl Encoder {
         // decoded text plus a spurious zero-style record.
         let mut subtitle = AVSubtitle::new();
         let dialogue = format!("0,0,Default,,0,0,0,,{}", segment.text);
-        let dialogue_c = std::ffi::CString::new(dialogue)
-            .map_err(|e| RsmediaError::msg(format!("Subtitle text contains NUL byte: {e}")))?;
-        subtitle
-            .push_ass_rect(dialogue_c.as_c_str())
-            .context("Failed to build subtitle rect")?;
+        let dialogue_c = std::ffi::CString::new(dialogue).map_err(|e| RsmediaError::msg(format!("Subtitle text contains NUL byte: {e}")))?;
+        subtitle.push_ass_rect(dialogue_c.as_c_str()).context("Failed to build subtitle rect")?;
 
         let mut buf = vec![0u8; EncoderBuilder::SUBTITLE_BUFFER_SIZE];
-        let len = self
-            .context
-            .encode_subtitle(&subtitle, &mut buf)
-            .context("Subtitle encoding failed")?;
+        let len = self.context.encode_subtitle(&subtitle, &mut buf).context("Subtitle encoding failed")?;
         if len == 0 {
             return Ok(Vec::new());
         }
@@ -1120,13 +1037,8 @@ impl Encoder {
             // 先把帧转换到滤镜图输入格式（此转换需要 `&mut self` 以复用可变的
             // `scaler`/重采样上下文），转换完成后再借用 `filter_graph` 处理。
             let converted = match graph_input_format {
-                FrameFormat::Pixel(dst) if frame.format != dst as i32 => {
-                    self.scaler
-                        .scale_frame(&frame, frame.width, frame.height, dst)?
-                }
-                FrameFormat::Sample(dst) if frame.format != dst as i32 => {
-                    resample::convert_frame(&frame, frame.ch_layout, dst as _, frame.sample_rate)?
-                }
+                FrameFormat::Pixel(dst) if frame.format != dst as i32 => self.scaler.scale_frame(&frame, frame.width, frame.height, dst)?,
+                FrameFormat::Sample(dst) if frame.format != dst as i32 => resample::convert_frame(&frame, frame.ch_layout, dst as _, frame.sample_rate)?,
                 _ => frame,
             };
             if let Some(graph) = self.filter_graph.as_mut() {
@@ -1199,10 +1111,7 @@ impl Encoder {
         // 时间基：帧自带有效且与编码器**不同**的时间基时（解码侧容器时间基，如 mp4 的
         // 1/15360），pts 需先换算过来；无论换算与否，离开时帧都带编码器输入时间基。
         let frame_tb = frame.time_base;
-        let needs_rescale = frame.pts != ffi::AV_NOPTS_VALUE
-            && frame_tb.num > 0
-            && frame_tb.den > 0
-            && !time::av_rational_eq(&frame_tb, &input_tb);
+        let needs_rescale = frame.pts != ffi::AV_NOPTS_VALUE && frame_tb.num > 0 && frame_tb.den > 0 && !time::av_rational_eq(&frame_tb, &input_tb);
         if needs_rescale {
             frame.set_pts(frame.pts.rescale(frame_tb, input_tb));
         }
@@ -1217,11 +1126,7 @@ impl Encoder {
             frame.set_pts(self.next_pts);
         }
         // 输入时间基：视频 `1/fps`（每帧恰一 tick），音频 `1/sample_rate`（样本位置即时间轴）。
-        let step = if is_audio {
-            frame.nb_samples.max(1) as i64
-        } else {
-            1
-        };
+        let step = if is_audio { frame.nb_samples.max(1) as i64 } else { 1 };
         self.next_pts = frame.pts + step;
     }
 
@@ -1235,11 +1140,7 @@ impl Encoder {
         // 否则 B 帧重排得到的 dts 会乱序、mux 报 AVERROR(-22)。
         // 时间基按需从滤镜图实时查询，避免缓存冗余状态。
         let mut frame = frame;
-        if let Some(filter_tb) = self
-            .filter_graph
-            .as_mut()
-            .and_then(|g| g.output_time_base())
-        {
+        if let Some(filter_tb) = self.filter_graph.as_mut().and_then(|g| g.output_time_base()) {
             let enc_tb = self.context.time_base;
             if frame.pts != ffi::AV_NOPTS_VALUE {
                 frame.set_pts(frame.pts.rescale(filter_tb, enc_tb));
@@ -1254,9 +1155,7 @@ impl Encoder {
         let hw_frame = match self.hw_context.as_ref() {
             Some(hw_ctx) if hw_ctx.is_sw_frame(&scaled_frame) => {
                 // sw_frame -> hw_frame
-                hw_ctx
-                    .hw_upload(&mut self.context, &scaled_frame)
-                    .context("Failed to upload frame to HW")?
+                hw_ctx.hw_upload(&mut self.context, &scaled_frame).context("Failed to upload frame to HW")?
             }
             _ => scaled_frame, // 不需要上传或已经是 HW frame
         };
@@ -1270,12 +1169,7 @@ impl Encoder {
         } else {
             self.check_frame(Some(&hw_frame))?;
 
-            log::debug!(
-                "Send frame to encoder: {:?}, time_base: {:?}, media_type: {:?}",
-                hw_frame,
-                self.time_base(),
-                self.media_type()
-            );
+            log::debug!("Send frame to encoder: {:?}, time_base: {:?}, media_type: {:?}", hw_frame, self.time_base(), self.media_type());
 
             self.send_ready_frame(hw_frame)
         }
@@ -1299,10 +1193,7 @@ impl Encoder {
             self.audio_fifo = Some(AVAudioFifo::new(sample_fmt, channels, frame_size));
         }
         unsafe {
-            self.audio_fifo
-                .as_mut()
-                .unwrap()
-                .write(frame.data.as_ptr(), frame.nb_samples)?;
+            self.audio_fifo.as_mut().unwrap().write(frame.data.as_ptr(), frame.nb_samples)?;
         }
         self.drain_audio_fifo(frame_size)
     }
@@ -1337,13 +1228,8 @@ impl Encoder {
         frame.set_time_base(self.time_base());
         // SAFETY: `frame` 已分配缓冲，`fifo.read` 最多写入 `count` 个样本/声道。
         unsafe {
-            frame
-                .alloc_buffer()
-                .context("Failed to allocate audio frame buffer")?;
-            let fifo = self
-                .audio_fifo
-                .as_mut()
-                .ok_or_else(|| RsmediaError::msg("Audio FIFO is not initialised"))?;
+            frame.alloc_buffer().context("Failed to allocate audio frame buffer")?;
+            let fifo = self.audio_fifo.as_mut().ok_or_else(|| RsmediaError::msg("Audio FIFO is not initialised"))?;
             fifo.read(frame.data.as_ptr(), count)?;
         }
         frame.set_pts(self.next_pts);
@@ -1394,40 +1280,24 @@ impl Encoder {
     fn rescale(&mut self, frame: AVFrame) -> Result<AVFrame> {
         let scaled_frame = match self.media_type {
             MediaType::VIDEO => {
-                let target_sw_pix_fmt = if let Some(hw_ctx) = self.hw_context.as_ref() {
-                    hw_ctx.get_format(false).into()
-                } else {
-                    self.pix_fmt()
-                };
+                let target_sw_pix_fmt = if let Some(hw_ctx) = self.hw_context.as_ref() { hw_ctx.get_format(false).into() } else { self.pix_fmt() };
                 if frame.format != i32::from(target_sw_pix_fmt) {
-                    self.scaler
-                        .scale_frame(&frame, frame.width, frame.height, target_sw_pix_fmt)?
+                    self.scaler.scale_frame(&frame, frame.width, frame.height, target_sw_pix_fmt)?
                 } else {
                     frame
                 }
             }
             MediaType::AUDIO => {
                 let ch_layout = self.ch_layout();
-                if frame.sample_rate != self.sample_rate()
-                    || frame.format != self.sample_fmt() as i32
-                    || frame.ch_layout.nb_channels != ch_layout.nb_channels
-                {
-                    resample::convert_frame(
-                        &frame,
-                        ch_layout.clone().into_inner(),
-                        self.sample_fmt() as _,
-                        self.sample_rate(),
-                    )?
+                if frame.sample_rate != self.sample_rate() || frame.format != self.sample_fmt() as i32 || frame.ch_layout.nb_channels != ch_layout.nb_channels {
+                    resample::convert_frame(&frame, ch_layout.clone().into_inner(), self.sample_fmt() as _, self.sample_rate())?
                 } else {
                     frame
                 }
             }
             _ => {
                 // do nothing
-                return Err(RsmediaError::msg(format!(
-                    "Unsupported encode frame media type: {:?}",
-                    self.media_type
-                )));
+                return Err(RsmediaError::msg(format!("Unsupported encode frame media type: {:?}", self.media_type)));
             }
         };
         Ok(scaled_frame)
@@ -1452,33 +1322,21 @@ impl Encoder {
                     return Ok(());
                 }
                 if !self.config.is_support_pixel_format(frame.format) {
-                    return Err(RsmediaError::msg(format!(
-                        "Unsupported video encoder frame pixel format: {:?}",
-                        frame.format
-                    )));
+                    return Err(RsmediaError::msg(format!("Unsupported video encoder frame pixel format: {:?}", frame.format)));
                 }
             }
 
             MediaType::AUDIO => {
                 if !self.config.is_support_sample_format(frame.format) {
-                    return Err(RsmediaError::msg(format!(
-                        "Unsupported encode audio frame sample format: {:?}",
-                        frame.format
-                    )));
+                    return Err(RsmediaError::msg(format!("Unsupported encode audio frame sample format: {:?}", frame.format)));
                 }
 
                 if !self.config.is_support_frame_rates(self.context.framerate) {
-                    return Err(RsmediaError::msg(format!(
-                        "Unsupported encode audio frame rate: {:?}",
-                        self.context.framerate
-                    )));
+                    return Err(RsmediaError::msg(format!("Unsupported encode audio frame rate: {:?}", self.context.framerate)));
                 }
 
                 if !self.config.is_support_sample_rate(frame.sample_rate) {
-                    return Err(RsmediaError::msg(format!(
-                        "Unsupported encode audio frame sample rate: {:?}",
-                        frame.sample_rate
-                    )));
+                    return Err(RsmediaError::msg(format!("Unsupported encode audio frame sample rate: {:?}", frame.sample_rate)));
                 }
 
                 // 注意：不在此校验 `nb_samples == frame_size`。固定帧长音频编码器
@@ -1624,13 +1482,7 @@ impl Encoder {
     /// byte-sink writer sees its tail bytes too; `Ok(None)` when nothing was
     /// written (a subtitle stream, or a writer whose `Out` is `()`).
     /// May return an error if writing fails or encoder returns an error.
-    pub fn flush<W: Writer>(
-        &mut self,
-        writer: &mut W,
-        interleaved: bool,
-        index: usize,
-        out_stream_time_base: ffi::AVRational,
-    ) -> Result<Option<W::Out>> {
+    pub fn flush<W: Writer>(&mut self, writer: &mut W, interleaved: bool, index: usize, out_stream_time_base: ffi::AVRational) -> Result<Option<W::Out>> {
         // 已经 flush 过就幂等返回：EOS 只能送一次，重复送会拿到 FFmpeg 的
         // `EncoderFlushedError`。`Muxer::finish` 每个流都会调用本方法，而它自己
         // 承诺可重复调用，所以第二次必须是 no-op 而不是错误。
@@ -1686,11 +1538,7 @@ impl Encoder {
                     // 将编码器输出的数据包时间戳，从编码器时间基转换到输出流时间基
                     // encode_ctx_timebase => out_stream_time_base
                     packet.rescale_ts(self.time_base(), out_stream_time_base);
-                    let out = if interleaved {
-                        writer.write_interleaved(&mut packet)?
-                    } else {
-                        writer.write_frame(&mut packet)?
-                    };
+                    let out = if interleaved { writer.write_interleaved(&mut packet)? } else { writer.write_frame(&mut packet)? };
                     W::fold_out(&mut flushed_output, out);
                 }
                 Ok(None) => {
@@ -1698,9 +1546,7 @@ impl Encoder {
                         log::debug!("Encoder drained, try send new frame again.");
                         drained_iterations += 1;
                         if drained_iterations > crate::MAX_DRAIN_ITERATIONS {
-                            log::error!(
-                                "Encoder keeps returning EAGAIN after EOF, aborting flush."
-                            );
+                            log::error!("Encoder keeps returning EAGAIN after EOF, aborting flush.");
                             break;
                         }
                         continue;
@@ -1765,27 +1611,16 @@ mod tests {
 
         // 未指定 → 协商为 YUV420P（兼容性最好的默认值）。
         let builder = EncoderBuilder::new_video(64, 64);
-        assert_eq!(
-            builder.resolve_pixel_format(&config, "libx264")?,
-            PixelFormat::YUV420P
-        );
+        assert_eq!(builder.resolve_pixel_format(&config, "libx264")?, PixelFormat::YUV420P);
 
         // 显式且受支持 → 原样采用。
         let builder = EncoderBuilder::new_video(64, 64).with_pix_fmt(PixelFormat::YUV420P);
-        assert_eq!(
-            builder.resolve_pixel_format(&config, "libx264")?,
-            PixelFormat::YUV420P
-        );
+        assert_eq!(builder.resolve_pixel_format(&config, "libx264")?, PixelFormat::YUV420P);
 
         // 显式但不受支持 → InvalidConfig。
         let builder = EncoderBuilder::new_video(64, 64).with_pix_fmt(PixelFormat::RGB24);
-        let err = builder
-            .resolve_pixel_format(&config, "libx264")
-            .expect_err("libx264 does not accept RGB24");
-        assert!(
-            matches!(err, RsmediaError::InvalidConfig(_)),
-            "expected InvalidConfig, got {err:?}"
-        );
+        let err = builder.resolve_pixel_format(&config, "libx264").expect_err("libx264 does not accept RGB24");
+        assert!(matches!(err, RsmediaError::InvalidConfig(_)), "expected InvalidConfig, got {err:?}");
         Ok(())
     }
 
@@ -1793,16 +1628,10 @@ mod tests {
     /// Other 错误):调用方靠该变体跳过当前构建不可用的编码器。
     #[test]
     fn test_missing_encoder_reports_codec_not_found() {
-        let Err(err) = EncoderBuilder::new_video(64, 64)
-            .with_codec_name("no_such_encoder".to_string())
-            .build()
-        else {
+        let Err(err) = EncoderBuilder::new_video(64, 64).with_codec_name("no_such_encoder".to_string()).build() else {
             panic!("unknown codec name must fail");
         };
-        assert!(
-            matches!(err, RsmediaError::CodecNotFound(ref name) if name == "no_such_encoder"),
-            "expected CodecNotFound, got {err:?}"
-        );
+        assert!(matches!(err, RsmediaError::CodecNotFound(ref name) if name == "no_such_encoder"), "expected CodecNotFound, got {err:?}");
     }
 
     /// 采样格式协商：未指定时优先 FLTP，编码器不支持 FLTP 时取支持列表首个；
@@ -1812,38 +1641,21 @@ mod tests {
         // pcm_s16le 只接受 S16，而默认优先级是 FLTP → 落到列表首个 S16。
         let codec = strutils::str_to_cstring("pcm_s16le");
         let config = CodecConfig::new_with_name(&codec)?;
-        let builder = EncoderBuilder::default()
-            .with_media_type(MediaType::AUDIO)
-            .with_codec_name("pcm_s16le".to_string())
-            .with_nb_channels(2)
-            .with_sample_rate(44_100);
-        assert_eq!(
-            builder.resolve_sample_format(&config, "pcm_s16le")?,
-            SampleFormat::S16
-        );
+        let builder =
+            EncoderBuilder::default().with_media_type(MediaType::AUDIO).with_codec_name("pcm_s16le".to_string()).with_nb_channels(2).with_sample_rate(44_100);
+        assert_eq!(builder.resolve_sample_format(&config, "pcm_s16le")?, SampleFormat::S16);
 
         // 显式指定不支持的格式 → InvalidConfig。
         let builder = builder.with_sample_fmt(SampleFormat::FLTP);
-        let err = builder
-            .resolve_sample_format(&config, "pcm_s16le")
-            .expect_err("pcm_s16le does not accept FLTP");
-        assert!(
-            matches!(err, RsmediaError::InvalidConfig(_)),
-            "expected InvalidConfig, got {err:?}"
-        );
+        let err = builder.resolve_sample_format(&config, "pcm_s16le").expect_err("pcm_s16le does not accept FLTP");
+        assert!(matches!(err, RsmediaError::InvalidConfig(_)), "expected InvalidConfig, got {err:?}");
 
         // aac 原生平面浮点 → 未指定时协商为 FLTP。
         let codec = strutils::str_to_cstring("aac");
         let config = CodecConfig::new_with_name(&codec)?;
-        let builder = EncoderBuilder::default()
-            .with_media_type(MediaType::AUDIO)
-            .with_codec_name("aac".to_string())
-            .with_nb_channels(2)
-            .with_sample_rate(44_100);
-        assert_eq!(
-            builder.resolve_sample_format(&config, "aac")?,
-            SampleFormat::FLTP
-        );
+        let builder =
+            EncoderBuilder::default().with_media_type(MediaType::AUDIO).with_codec_name("aac".to_string()).with_nb_channels(2).with_sample_rate(44_100);
+        assert_eq!(builder.resolve_sample_format(&config, "aac")?, SampleFormat::FLTP);
         Ok(())
     }
 
@@ -1857,34 +1669,20 @@ mod tests {
 
         let audio = EncoderBuilder::new_audio(128_000, 2, 44_100, SampleFormat::FLTP);
         let tb = audio.effective_time_base();
-        assert_eq!(
-            (tb.num, tb.den),
-            (1, 44_100),
-            "audio input time base = 1/sample_rate"
-        );
+        assert_eq!((tb.num, tb.den), (1, 44_100), "audio input time base = 1/sample_rate");
 
         let subtitle = EncoderBuilder::new_subtitle();
         let tb = subtitle.effective_time_base();
-        assert_eq!(
-            (tb.num, tb.den),
-            (1, EncoderBuilder::SUBTITLE_TIME_BASE_DEN),
-            "subtitle input time base = 1/1000"
-        );
+        assert_eq!((tb.num, tb.den), (1, EncoderBuilder::SUBTITLE_TIME_BASE_DEN), "subtitle input time base = 1/1000");
     }
 
     /// 码率默认值按媒体类型区分：视频 1 Mbps、音频 128k（ffmpeg CLI 的 `-b:a`
     /// 默认）；显式 `with_bit_rate` 与 `Quality::Bitrate` 均可覆盖。
     #[test]
     fn test_default_bit_rate_per_media_type() {
+        assert_eq!(EncoderBuilder::new_video(64, 64).effective_bit_rate(), EncoderBuilder::VIDEO_BIT_RATE, "video default bit rate");
         assert_eq!(
-            EncoderBuilder::new_video(64, 64).effective_bit_rate(),
-            EncoderBuilder::VIDEO_BIT_RATE,
-            "video default bit rate"
-        );
-        assert_eq!(
-            EncoderBuilder::default()
-                .with_media_type(MediaType::AUDIO)
-                .effective_bit_rate(),
+            EncoderBuilder::default().with_media_type(MediaType::AUDIO).effective_bit_rate(),
             EncoderBuilder::AUDIO_BIT_RATE,
             "audio default bit rate is 128k, not the video default"
         );
@@ -1898,32 +1696,14 @@ mod tests {
         }
 
         assert_eq!(bitrate_builder().effective_bit_rate(), 500_000);
+        assert_eq!(bitrate_builder().with_quality(Quality::Bitrate(2_000_000)).effective_bit_rate(), 2_000_000, "Quality::Bitrate overrides with_bit_rate");
         assert_eq!(
-            bitrate_builder()
-                .with_quality(Quality::Bitrate(2_000_000))
-                .effective_bit_rate(),
-            2_000_000,
-            "Quality::Bitrate overrides with_bit_rate"
-        );
-        assert_eq!(
-            bitrate_builder()
-                .with_quality(Quality::Crf(20))
-                .effective_bit_rate(),
+            bitrate_builder().with_quality(Quality::Crf(20)).effective_bit_rate(),
             500_000,
             "Crf is a video quality knob and must not touch the bit rate"
         );
-        assert_eq!(
-            bitrate_builder()
-                .with_quality(Quality::Bitrate(0))
-                .effective_bit_rate(),
-            500_000,
-            "a non-positive Quality::Bitrate counts as unset"
-        );
-        assert_eq!(
-            EncoderBuilder::new_video(64, 64).effective_bit_rate(),
-            EncoderBuilder::VIDEO_BIT_RATE,
-            "default bit rate"
-        );
+        assert_eq!(bitrate_builder().with_quality(Quality::Bitrate(0)).effective_bit_rate(), 500_000, "a non-positive Quality::Bitrate counts as unset");
+        assert_eq!(EncoderBuilder::new_video(64, 64).effective_bit_rate(), EncoderBuilder::VIDEO_BIT_RATE, "default bit rate");
     }
 
     /// `check_frame` 按媒体类型校验帧格式：`None`（flush 空帧）直接放行，
@@ -1940,10 +1720,7 @@ mod tests {
         video.check_frame(Some(&frame))?;
 
         frame.set_format(PixelFormat::RGB24 as i32);
-        assert!(
-            video.check_frame(Some(&frame)).is_err(),
-            "libx264 does not accept RGB24 frames"
-        );
+        assert!(video.check_frame(Some(&frame)).is_err(), "libx264 does not accept RGB24 frames");
 
         let audio = EncoderBuilder::new_audio(128_000, 2, 44_100, SampleFormat::FLTP).build()?;
         audio.check_frame(None)?;
@@ -1954,10 +1731,7 @@ mod tests {
         audio.check_frame(Some(&frame))?;
 
         frame.set_format(SampleFormat::U8 as i32);
-        assert!(
-            audio.check_frame(Some(&frame)).is_err(),
-            "aac does not accept U8 frames"
-        );
+        assert!(audio.check_frame(Some(&frame)).is_err(), "aac does not accept U8 frames");
         Ok(())
     }
 
@@ -1990,18 +1764,14 @@ mod tests {
 
         let mut resumed = AVFrame::new();
         encoder.assign_pts_sample_rate(&mut resumed);
-        assert_eq!(
-            resumed.pts, 101,
-            "auto numbering resumes after the explicit pts"
-        );
+        assert_eq!(resumed.pts, 101, "auto numbering resumes after the explicit pts");
         Ok(())
     }
 
     /// 音频帧未声明采样率（0）时回退到编码器自己的率；已声明的不被覆盖。
     #[test]
     fn test_assign_pts_sample_rate_fills_missing_rate() -> Result<()> {
-        let mut encoder =
-            EncoderBuilder::new_audio(128_000, 2, 44_100, SampleFormat::FLTP).build()?;
+        let mut encoder = EncoderBuilder::new_audio(128_000, 2, 44_100, SampleFormat::FLTP).build()?;
 
         // 未声明（0）→ 用编码器的率补齐。用户直接构造的 AVFrame 就是这个状态。
         let mut undeclared = AVFrame::new();
@@ -2013,10 +1783,7 @@ mod tests {
         let mut declared = AVFrame::new();
         declared.set_sample_rate(16_000);
         encoder.assign_pts_sample_rate(&mut declared);
-        assert_eq!(
-            declared.sample_rate, 16_000,
-            "an explicitly declared source rate must not be overwritten"
-        );
+        assert_eq!(declared.sample_rate, 16_000, "an explicitly declared source rate must not be overwritten");
 
         // 视频帧不涉及采样率，不应被改写。
         let mut video = EncoderBuilder::new_video(64, 64).build()?;
@@ -2032,27 +1799,19 @@ mod tests {
     /// 按已输出样本数维护，`assign_pts_sample_rate` 不参与编号。
     #[test]
     fn test_assign_pts_sample_rate_defers_to_audio_fifo_for_fixed_frame_size() -> Result<()> {
-        let mut encoder =
-            EncoderBuilder::new_audio(128_000, 2, 44_100, SampleFormat::FLTP).build()?;
+        let mut encoder = EncoderBuilder::new_audio(128_000, 2, 44_100, SampleFormat::FLTP).build()?;
         assert!(encoder.frame_size() > 0, "aac has a fixed frame size");
 
         let mut frame = AVFrame::new();
         encoder.assign_pts_sample_rate(&mut frame);
-        assert_eq!(
-            frame.pts,
-            ffi::AV_NOPTS_VALUE,
-            "fixed-frame-size audio is numbered by the fifo, not here"
-        );
+        assert_eq!(frame.pts, ffi::AV_NOPTS_VALUE, "fixed-frame-size audio is numbered by the fifo, not here");
         Ok(())
     }
 
     /// 只读访问器反映 builder 的配置。
     #[test]
     fn test_encoder_accessors_reflect_builder() -> Result<()> {
-        let encoder = EncoderBuilder::new_video(320, 240)
-            .with_fps(30.0)
-            .with_pix_fmt(PixelFormat::YUV420P)
-            .build()?;
+        let encoder = EncoderBuilder::new_video(320, 240).with_fps(30.0).with_pix_fmt(PixelFormat::YUV420P).build()?;
 
         assert_eq!(encoder.width(), 320);
         assert_eq!(encoder.height(), 240);
@@ -2078,11 +1837,7 @@ mod tests {
     /// 输入，`receive_packet` 因此返回"暂无包"。
     #[test]
     fn test_eagain_mid_stream_is_not_the_draining_phase() -> Result<()> {
-        let mut encoder = match EncoderBuilder::new_video(64, 64)
-            .with_fps(25.0)
-            .with_pix_fmt(PixelFormat::YUV420P)
-            .build()
-        {
+        let mut encoder = match EncoderBuilder::new_video(64, 64).with_fps(25.0).with_pix_fmt(PixelFormat::YUV420P).build() {
             Ok(encoder) => encoder,
             Err(e) if e.is_codec_not_found() => {
                 println!("SKIP: no default video encoder in this build ({e})");
@@ -2096,16 +1851,11 @@ mod tests {
             frame.set_width(64);
             frame.set_height(64);
             frame.set_format(i32::from(PixelFormat::YUV420P));
-            frame
-                .alloc_buffer()
-                .context("Failed to allocate test frame buffer")?;
+            frame.alloc_buffer().context("Failed to allocate test frame buffer")?;
             frame.set_pts(index);
             encoder.encode_raw(frame)?;
 
-            assert!(
-                !encoder.is_drained(),
-                "frame {index}: still reading, so EAGAIN must not look like draining"
-            );
+            assert!(!encoder.is_drained(), "frame {index}: still reading, so EAGAIN must not look like draining");
             assert!(!encoder.is_flushed(), "frame {index}: not at EOF yet");
         }
         Ok(())
@@ -2153,10 +1903,7 @@ mod tests {
              Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n";
 
         // 缺 header：必须是 header 校验失败（编码器缺失时跳过，环境差异不算失败）。
-        match EncoderBuilder::new_subtitle()
-            .with_codec_name(Some("mov_text".to_string()))
-            .build()
-        {
+        match EncoderBuilder::new_subtitle().with_codec_name(Some("mov_text".to_string())).build() {
             Err(e) if e.is_invalid_config() => {}
             Err(e) => {
                 println!("SKIP: mov_text encoder unavailable in this build ({e})");
@@ -2165,11 +1912,7 @@ mod tests {
         }
 
         // 提供 header 后可正常构建。
-        if let Err(e) = EncoderBuilder::new_subtitle()
-            .with_codec_name(Some("mov_text".to_string()))
-            .with_subtitle_header(ASS_HEADER)
-            .build()
-        {
+        if let Err(e) = EncoderBuilder::new_subtitle().with_codec_name(Some("mov_text".to_string())).with_subtitle_header(ASS_HEADER).build() {
             panic!("subtitle encoder must open once an ASS header is provided: {e}");
         }
     }
@@ -2182,10 +1925,7 @@ mod tests {
     /// Quality::Bitrate 覆盖 with_bit_rate，并反映到 codecpar。
     #[test]
     fn test_quality_bitrate_applied() -> Result<()> {
-        let encoder = EncoderBuilder::new_video(64, 64)
-            .with_bit_rate(500_000)
-            .with_quality(Quality::Bitrate(2_000_000))
-            .build()?;
+        let encoder = EncoderBuilder::new_video(64, 64).with_bit_rate(500_000).with_quality(Quality::Bitrate(2_000_000)).build()?;
         assert_eq!(encoder.codecpar().bit_rate, 2_000_000);
         Ok(())
     }
@@ -2193,11 +1933,7 @@ mod tests {
     /// Crf 请求在不支持的编码器上回退为 bit_rate 控制（默认 1Mbps）。
     #[test]
     fn test_crf_fallback_bitrate() -> Result<()> {
-        let encoder = EncoderBuilder::new_video(64, 64)
-            .with_fps(25.0)
-            .with_codec_name("mpeg4".to_string())
-            .with_quality(Quality::Crf(20))
-            .build()?;
+        let encoder = EncoderBuilder::new_video(64, 64).with_fps(25.0).with_codec_name("mpeg4".to_string()).with_quality(Quality::Crf(20)).build()?;
         assert_eq!(encoder.codecpar().bit_rate, EncoderBuilder::VIDEO_BIT_RATE);
         Ok(())
     }
@@ -2205,9 +1941,7 @@ mod tests {
     /// 音频编码器忽略 Crf（视频概念），正常按 bit_rate 打开。
     #[test]
     fn test_audio_ignores_crf() -> Result<()> {
-        let encoder = EncoderBuilder::new_audio(128_000, 2, 44100, SampleFormat::FLTP)
-            .with_quality(Quality::Crf(20))
-            .build()?;
+        let encoder = EncoderBuilder::new_audio(128_000, 2, 44100, SampleFormat::FLTP).with_quality(Quality::Crf(20)).build()?;
         assert_eq!(encoder.codecpar().bit_rate, 128_000);
         Ok(())
     }
@@ -2220,18 +1954,11 @@ mod tests {
         // 多质量位（掩码）+ 非默认算法。
         let encoder = EncoderBuilder::new_video(320, 240)
             .with_scale_algorithm(ScaleAlgorithm::LANCZOS)
-            .with_scale_quality([
-                ScaleQuality::FULL_CHR_H_INT,
-                ScaleQuality::ACCURATE_RND,
-                ScaleQuality::BITEXACT,
-            ])
+            .with_scale_quality([ScaleQuality::FULL_CHR_H_INT, ScaleQuality::ACCURATE_RND, ScaleQuality::BITEXACT])
             .build()?;
         assert_eq!(encoder.scaler.algorithm(), ScaleAlgorithm::LANCZOS);
         assert_eq!(encoder.scaler.quality(), ScaleQuality::default_mask());
-        assert_eq!(
-            encoder.scaler.flags(),
-            ScaleAlgorithm::LANCZOS.as_raw() | ScaleQuality::default_mask()
-        );
+        assert_eq!(encoder.scaler.flags(), ScaleAlgorithm::LANCZOS.as_raw() | ScaleQuality::default_mask());
 
         // 默认策略：BICUBIC + 默认质量掩码。
         let encoder = EncoderBuilder::new_video(320, 240).build()?;
@@ -2239,16 +1966,12 @@ mod tests {
         assert_eq!(encoder.scaler.quality(), ScaleQuality::default_mask());
 
         // 单个质量位（`Into<u32>`）。
-        let encoder = EncoderBuilder::new_video(320, 240)
-            .with_scale_quality([ScaleQuality::BITEXACT])
-            .build()?;
+        let encoder = EncoderBuilder::new_video(320, 240).with_scale_quality([ScaleQuality::BITEXACT]).build()?;
         assert_eq!(encoder.scaler.quality(), ScaleQuality::BITEXACT.as_raw());
 
         // 池化开关进入 Scaler：默认关闭，with_scale_pool(true) 打开。
         assert!(!encoder.scaler.pool_enabled());
-        let encoder = EncoderBuilder::new_video(320, 240)
-            .with_scale_pool(true)
-            .build()?;
+        let encoder = EncoderBuilder::new_video(320, 240).with_scale_pool(true).build()?;
         assert!(encoder.scaler.pool_enabled());
         Ok(())
     }

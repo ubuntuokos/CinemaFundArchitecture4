@@ -54,11 +54,7 @@ pub trait RetUpgrade {
 
 impl RetUpgrade for c_int {
     fn upgrade(self) -> Ret {
-        if self < 0 {
-            Ret::Err(self)
-        } else {
-            Ret::Ok(self)
-        }
+        if self < 0 { Ret::Err(self) } else { Ret::Ok(self) }
     }
 }
 

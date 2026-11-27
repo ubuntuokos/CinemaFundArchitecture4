@@ -102,7 +102,22 @@ fn run(args: Args, events: &mut Events) -> Result<(), String> {
     let opened = cfa4_obs::open_backend(args.backend, args.video, &args.libobs_dir).map_err(|e| e.to_string())?;
     let mut backend: Box<dyn StudioBackend> = opened.backend;
     backend.show_empty_scene().map_err(|e| e.to_string())?;
-    events.send(&HostEvent::Ready { backend: backend.name().into(), version: backend.version(), fallback_reason: opened.fallback_reason });
+    let source_types = backend.source_types();
+    // the libobs backend must offer the capture modules (S2); the software one has no sources
+    let missing_sources = if backend.name() == "libobs" { cfa4_obs::missing_capture_sources(&source_types) } else { Vec::new() };
+    if !missing_sources.is_empty() {
+        eprintln!(
+            "cfa4-studio-host: capture source types not registered (module not loaded, or no desktop portal for the PipeWire ones): {}",
+            missing_sources.join(", ")
+        );
+    }
+    events.send(&HostEvent::Ready {
+        backend: backend.name().into(),
+        version: backend.version(),
+        fallback_reason: opened.fallback_reason,
+        source_types,
+        missing_sources,
+    });
 
     // stdin: a quit command or EOF ends the loop; scenes are loaded (files read, everything
     // checked) on this thread and handed to the frame loop

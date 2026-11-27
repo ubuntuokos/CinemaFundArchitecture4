@@ -45,6 +45,21 @@ pub const VIDEO_RANGE_FULL: video_range_type = 2;
 pub type obs_scale_type = c_int;
 pub const OBS_SCALE_BICUBIC: obs_scale_type = 2;
 
+/// `MODULE_SUCCESS` (`obs-module.h`): the result of `obs_open_module`.
+pub const MODULE_SUCCESS: c_int = 0;
+
+/// `enum speaker_layout` (audio-io.h); only the values used.
+pub type speaker_layout = c_int;
+pub const SPEAKERS_STEREO: speaker_layout = 2;
+
+/// `struct obs_audio_info` (obs.h): sample rate and speaker layout of the audio mix (S2).
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct obs_audio_info {
+    pub samples_per_sec: u32,
+    pub speakers: speaker_layout,
+}
+
 /// `struct obs_video_info` (obs.h).
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
@@ -82,6 +97,12 @@ pub struct video_scale_info {
     pub height: u32,
     pub range: video_range_type,
     pub colorspace: video_colorspace,
+}
+
+/// Opaque `obs_module_t`.
+#[repr(C)]
+pub struct obs_module_t {
+    _private: [u8; 0],
 }
 
 /// Opaque `obs_scene_t`.
@@ -230,6 +251,11 @@ pub type FnSetNixPlatform = unsafe extern "C" fn(obs_nix_platform_type);
 pub type FnSetNixPlatformDisplay = unsafe extern "C" fn(*mut c_void);
 pub type FnStartup = unsafe extern "C" fn(locale: *const c_char, module_config_path: *const c_char, store: *mut c_void) -> bool;
 pub type FnShutdown = unsafe extern "C" fn();
+pub type FnResetAudio = unsafe extern "C" fn(oai: *const obs_audio_info) -> bool;
+pub type FnOpenModule = unsafe extern "C" fn(module: *mut *mut obs_module_t, path: *const c_char, data_path: *const c_char) -> c_int;
+pub type FnInitModule = unsafe extern "C" fn(module: *mut obs_module_t) -> bool;
+pub type FnPostLoadModules = unsafe extern "C" fn();
+pub type FnEnumInputTypes = unsafe extern "C" fn(idx: usize, id: *mut *const c_char) -> bool;
 pub type FnResetVideo = unsafe extern "C" fn(ovi: *mut obs_video_info) -> c_int;
 pub type FnSceneCreate = unsafe extern "C" fn(name: *const c_char) -> *mut obs_scene_t;
 pub type FnSceneGetSource = unsafe extern "C" fn(scene: *const obs_scene_t) -> *mut obs_source_t;
@@ -304,6 +330,7 @@ int main(void) {
   printf("%zu %zu %zu %zu %zu %zu %zu\n", sizeof(struct obs_source_info), offsetof(struct obs_source_info, type_data),
     offsetof(struct obs_source_info, icon_type), offsetof(struct obs_source_info, version), offsetof(struct obs_source_info, get_light_icon),
     sizeof(struct vec2), sizeof(struct obs_sceneitem_crop));
+  printf("%zu %zu %d\n", sizeof(struct obs_audio_info), offsetof(struct obs_audio_info, speakers), (int)SPEAKERS_STEREO);
   printf("%d %d %u %u %u\n", (int)VIDEO_FORMAT_RGBA, (int)OBS_SOURCE_TYPE_INPUT, (unsigned)OBS_SOURCE_ASYNC_VIDEO,
     (unsigned)OBS_SOURCE_DO_NOT_DUPLICATE, (unsigned)OBS_SOURCE_CAP_DISABLED);
   return 0;
@@ -321,7 +348,7 @@ int main(void) {
         let _ = std::fs::remove_file(&out);
         let text = String::from_utf8_lossy(&printed.stdout);
         let expected = format!(
-            "{} {} {} {} {} {}\n{} {} {}\n{} {} {} {} {} {} {}\n{} {} {} {} {} {} {} {} {}\n{} {} {} {} {} {} {}\n{} {} {} {} {}\n",
+            "{} {} {} {} {} {}\n{} {} {}\n{} {} {} {} {} {} {}\n{} {} {} {} {} {} {} {} {}\n{} {} {} {} {} {} {}\n{} {} {}\n{} {} {} {} {}\n",
             size_of::<obs_video_info>(),
             offset_of!(obs_video_info, output_format),
             offset_of!(obs_video_info, gpu_conversion),
@@ -354,6 +381,9 @@ int main(void) {
             offset_of!(obs_source_info, get_light_icon),
             size_of::<vec2>(),
             size_of::<obs_sceneitem_crop>(),
+            size_of::<obs_audio_info>(),
+            offset_of!(obs_audio_info, speakers),
+            SPEAKERS_STEREO,
             VIDEO_FORMAT_RGBA,
             OBS_SOURCE_TYPE_INPUT,
             OBS_SOURCE_ASYNC_VIDEO,
