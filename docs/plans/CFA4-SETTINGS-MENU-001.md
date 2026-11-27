@@ -4,8 +4,9 @@
 > készült (<https://claude.ai/artifact/7tCP6EREnCdZ43owCSJPBC>). A tartalma itt változatlan, csak Markdownra
 > alakítva; ettől kezdve ez a fájl az irányadó. Az 1. fázis (PR #122) és a 2. fázis (PR #169) a `main`-ben van; a
 > következő lépés: [`CFA4-SETTINGS-HW-002.md`](CFA4-SETTINGS-HW-002.md). A szövegben hivatkozott „előző terv”
-> (root menü, <https://claude.ai/artifact/GcFzoqUGJK7KkmFq8UQLYd>) ennek a tervnek az elődje, a root-szakasz
-> saját terve készítésekor kerül át.
+> (root menü, <https://claude.ai/artifact/GcFzoqUGJK7KkmFq8UQLYd>) ennek a tervnek az elődje; a repóban:
+> [`CFA4-SETTINGS-ROOT-001-2026-10-26.md`](CFA4-SETTINGS-ROOT-001-2026-10-26.md), a root-rész mostani terve:
+> [`CFA4-SETTINGS-HW-003.md`](CFA4-SETTINGS-HW-003.md).
 
 2026-10-26 · ubuntuokos
 
