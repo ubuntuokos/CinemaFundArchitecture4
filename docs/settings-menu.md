@@ -1,6 +1,6 @@
 # Settings and Hardware menu (Qt 6)
 
-> **Last updated:** 2026-11-06 · **Change:** minor (Media & Playback ▸ Media Backends page, Edit ▸ Preferences ▸ Media Backends…, Help ▸ Restricted Codecs…, next to the phase 2 Decoding & Encoding page)
+> **Last updated:** 2026-11-27 · **Change:** minor (the menu plan moved into the repo as `plans/CFA4-SETTINGS-MENU-001.md`; next step proposed in `plans/CFA4-SETTINGS-HW-002.md`)
 
 The Settings window of the Qt 6 shell (`python/cfa4_devtools/qt_settings.py`, Edit ▸ Settings…,
 Ctrl+,). It merges the CFA3 Control Center layout, the FA3 SystemSettingsPage draft and the
@@ -8,7 +8,8 @@ current CFA4 preferences. New settings UI is Qt 6 / PySide6 only
 ([ADR F8](adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md)); the egui window is not extended.
 
 Full menu plan (all groups, Kdenlive / OpenShot mapping, codec settings, AI, publishing and
-providers, open questions): <https://claude.ai/artifact/7tCP6EREnCdZ43owCSJPBC>.
+providers, open questions): [plans/CFA4-SETTINGS-MENU-001.md](plans/CFA4-SETTINGS-MENU-001.md).
+Next step (approved 2026-11-27): [plans/CFA4-SETTINGS-HW-002.md](plans/CFA4-SETTINGS-HW-002.md).
 
 ## How it works
 
