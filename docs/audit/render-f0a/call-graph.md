@@ -359,6 +359,8 @@ graph LR
 | `cfa4-engine/program_overlay.rs` | `cfa4-project` | `ClipId`, `graphic` |
 | `cfa4-engine/program_overlay.rs` | `cfa4-render` | `graphic_clip`, `motion_matrix`, `source_par`, `source_size` |
 | `cfa4-engine/program_overlay.rs` | `cfa4-time` | `Tick` |
+| `cfa4-engine/project_check.rs` | `cfa4-media` | `MediaKind` |
+| `cfa4-engine/project_check.rs` | `cfa4-project` | `ItemId` |
 | `cfa4-engine/project_manager.rs` | `cfa4-export` | `Format`, `Progress`, `Report`, `prores_profile` |
 | `cfa4-engine/project_manager.rs` | `cfa4-media` | `MediaKind`, `SharedSource`, `open_bytes` |
 | `cfa4-engine/project_manager.rs` | `cfa4-project` | `ItemId`, `MediaClip` |

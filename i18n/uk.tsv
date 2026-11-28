@@ -4966,3 +4966,4 @@
 	DNx Coding	Кодування DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Сумісно з FFmpeg (для інструментів на основі FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Вимк.: кодування за SMPTE ST 2019-1. Увімк.: кодування так, як FFmpeg записує DNx, для інструментів на основі FFmpeg.
+	Check Project…	Перевірити проєкт…

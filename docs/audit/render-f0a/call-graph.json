@@ -10159,6 +10159,16 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-engine/project_check.rs",
+   "item": "MediaKind",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/project_check.rs",
+   "item": "ItemId",
+   "to": "cfa4-project"
+  },
+  {
    "from": "cfa4-engine/project_manager.rs",
    "item": "Format",
    "to": "cfa4-export"

@@ -4988,3 +4988,4 @@
 	DNx Coding	Codage DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Compatible FFmpeg (pour les outils basés sur FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Désactivé : codé selon SMPTE ST 2019-1. Activé : codé comme FFmpeg écrit le DNx, pour les outils fondés sur FFmpeg.
+	Check Project…	Vérifier le projet…

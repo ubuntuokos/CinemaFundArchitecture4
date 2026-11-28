@@ -4985,3 +4985,4 @@ export.summary	Low	låg
 	DNx Coding	DNx-kodning
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibel (för FFmpeg-baserade verktyg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Av: kodas enligt SMPTE ST 2019-1. På: kodas så som FFmpeg skriver DNx, för verktyg byggda på FFmpeg.
+	Check Project…	Kontrollera projekt…

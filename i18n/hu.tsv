@@ -5015,3 +5015,4 @@ export.summary	Low	alacsony
 	DNx Coding	DNx-kódolás
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibilis (FFmpeg-alapú eszközökhöz)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Ki: SMPTE ST 2019-1 szerinti kódolás. Be: úgy kódol, ahogy az FFmpeg írja a DNx-et, FFmpeg-re épülő eszközökhöz.
+	Check Project…	Projekt ellenőrzése…
