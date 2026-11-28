@@ -546,6 +546,15 @@ stereo / mono track ──5.1 panner───┼─► 5.1 submix / 5.1 Mix ─�
   WAV-order back pair moved behind the sides). Exports stay mono / stereo / 5.1 except the DCP IAB
   bed, which takes a 7.1 Mix as a 7.1 DS bed and a 7.1.2 Mix as a 9.1OH bed (the 5.1 fallback in
   the main sound is the 5.1 fold).
+- **7.1.4** (`docs/plans/CFA4-BINAURAL-MONITOR-001.md` B-03b). Tracks, submixes and the Mix can
+  also be 7.1.4 (12 ch: the 7.1 order, then Ltf Rtf Ltr Rtr). Up- and downmixes go through 7.1.2
+  (a 7.1.2 overhead feeds its side's top front and top rear at −3 dB each, the two tops fold back
+  into it at −3 dB each, so 7.1.2 → 7.1.4 → 7.1.2 is exact). On a 7.1.4 bus `pan51.height` lifts a
+  floor source to the four tops, left / right as on the floor and front / rear by the puck's y
+  (constant power); a 7.1.4 strip's tops pass through unpanned. A 12-channel source plays as 7.1.4
+  on a 7.1 or wider track (its WAV-order back pair moved behind the sides). A WAV export with 12
+  channels set writes the 7.1.4 Mix as `WAVE_FORMAT_EXTENSIBLE` (mask `0x2D63F`, WAV order: back
+  pair before side pair); the headphone monitor renders it at the speakers' directions.
 - **Playback.** On a device with ≥ 6 output channels a 5.1 Mix plays as six channels (a 7.1 / 7.1.2
   Mix as its own channels on a device with as many, else as 5.1); on a stereo
   device it is folded with Preferences ▸ Audio ▸ 5.1 Mixdown Type (Front Only, Front + Rear

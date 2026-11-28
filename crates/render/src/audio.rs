@@ -64,13 +64,14 @@ pub fn master_layout(seq: &Sequence) -> Layout {
         AudioChannels::Surround51 => Layout::Surround51,
         AudioChannels::Surround71 => Layout::Surround71,
         AudioChannels::Surround712 => Layout::Surround712,
+        AudioChannels::Surround714 => Layout::Surround714,
         _ => Layout::Stereo,
     }
 }
 
 /// The summed clip audio of one track (clip gain, clip effects, Volume / Channel Volume / Panner,
 /// audio transitions) for sequence samples `[start, start + frames)`: the track's mixer input
-/// (2 channels, or 6 / 8 / 10 for a 5.1 / 7.1 / 7.1.2 track).
+/// (2 channels, or 6 / 8 / 10 / 12 for a 5.1 / 7.1 / 7.1.2 / 7.1.4 track).
 pub fn track_input(project: &Project, track: &Track, start: i64, frames: usize, sr: u32, sources: &dyn SourceProvider) -> AudioBuffer {
     track_input_live(project, track, start, frames, sr, sources, &HashMap::new())
 }
@@ -421,6 +422,17 @@ fn raw_channels(item: &TrackItem, src: SourceAudio<'_>, x0: i64, len: usize, sr:
     if buf.channels.is_empty() {
         return out;
     }
+    // a 7.1.4 source without a channel pick plays as 7.1.4 on a 7.1.4 track (its sides and rears
+    // in the bus order) and through the 7.1.2 or 7.1 fold on a narrower surround track
+    if item.source_channels.is_empty() && w >= 8 && buf.channel_count() == 12 {
+        let picked: Vec<&[f32]> = WAV_714_TO_SMPTE.iter().filter_map(|&c| buf.channels.get(c).map(Vec::as_slice)).collect();
+        let conv = chans::convert(&picked, Layout::Surround714, Layout::from_channels(w), Mixdown::FrontRear);
+        for (dst, ch) in out.iter_mut().zip(&conv) {
+            let m = n.min(ch.len());
+            dst[off..off + m].copy_from_slice(&ch[..m]);
+        }
+        return out;
+    }
     // a 7.1 source without a channel pick plays as 7.1 on a 7.1 or 7.1.2 track (its sides and
     // rears in the SMPTE order of the bus) and as 5.1 elsewhere
     if item.source_channels.is_empty() && w >= 8 && buf.channel_count() == 8 {
@@ -475,6 +487,11 @@ fn raw_channels(item: &TrackItem, src: SourceAudio<'_>, x0: i64, len: usize, sr:
 /// The decoders' 7.1 order (L, R, C, LFE, back left / right, side left / right) as the 7.1 bus order
 /// (L, R, C, LFE, Lss, Rss, Lrs, Rrs).
 const WAV_71_TO_SMPTE: [usize; 8] = [0, 1, 2, 3, 6, 7, 4, 5];
+
+/// The decoders' 7.1.4 order (WAV mask 0x2D63F: L, R, C, LFE, back left / right, side left / right,
+/// top front left / right, top back left / right) as the 7.1.4 bus order (L, R, C, LFE, Lss, Rss,
+/// Lrs, Rrs, Ltf, Rtf, Ltr, Rtr).
+const WAV_714_TO_SMPTE: [usize; 12] = [0, 1, 2, 3, 6, 7, 4, 5, 8, 9, 10, 11];
 
 /// A 7.1 source folded to 5.1. The decoders give 7.1 in the WAV / SMPTE order L, R, C, LFE, back
 /// (rear) left / right, side left / right (`aac_to_wav_order`, `vorbis_to_wav_order` in

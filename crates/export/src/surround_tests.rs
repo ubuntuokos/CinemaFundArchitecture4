@@ -106,13 +106,18 @@ fn probe(path: &str) -> Option<(u64, String)> {
 
 /// ffmpeg's decode of the first audio stream as planar f64 (from s32le: exact for 24-bit PCM).
 fn decode(path: &str) -> Option<Vec<Vec<f64>>> {
+    decode_n(path, 6)
+}
+
+/// As [`decode`], for `n` channels.
+fn decode_n(path: &str, n_ch: usize) -> Option<Vec<Vec<f64>>> {
     let ffmpeg = cfa4_testkit::ffmpeg_or_skip("5.1 export")?;
     let out =
         std::process::Command::new(ffmpeg).args(["-v", "error", "-i", path, "-map", "0:a:0", "-f", "s32le", "-acodec", "pcm_s32le", "-"]).output().unwrap();
     assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
     let ints: Vec<i32> = out.stdout.as_chunks::<4>().0.iter().map(|b| i32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect();
-    let n = ints.len() / 6;
-    Some((0..6).map(|c| (0..n).map(|i| ints[i * 6 + c] as f64).collect()).collect())
+    let n = ints.len() / n_ch;
+    Some((0..n_ch).map(|c| (0..n).map(|i| ints[i * n_ch + c] as f64).collect()).collect())
 }
 
 /// Every decoded sample equals our 24-bit quantisation of the tone (sample-exact).
@@ -222,5 +227,97 @@ fn stereo_export_of_a_51_mix_is_the_bs775_downmix() {
         let l = tone(0, i as i64) + k * tone(2, i as i64) + k * tone(4, i as i64);
         let r = tone(1, i as i64) + k * tone(2, i as i64) + k * tone(5, i as i64);
         assert!((at(i, 0) - l).abs() < 2e-6 && (at(i, 1) - r).abs() < 2e-6, "frame {i}");
+    }
+}
+
+/// A 12-channel 7.1.4 source in the decoders' (WAV) order, L R C LFE Lrs Rrs Lss Rss Ltf Rtf Ltr
+/// Rtr: channel c is a 0.25-amplitude sine at `100 + 150·c` Hz.
+struct Tones12 {
+    info: MediaInfo,
+}
+
+fn tone12(c: usize, i: i64) -> f32 {
+    (0.25 * (2.0 * std::f64::consts::PI * (100.0 + 150.0 * c as f64) * i as f64 / SR as f64).sin()) as f32
+}
+
+impl MediaSource for Tones12 {
+    fn info(&self) -> &MediaInfo {
+        &self.info
+    }
+    fn video_frame(&self, _: FrameRequest) -> cfa4_media::Result<Arc<VideoFrame>> {
+        Err(MediaError::Unsupported("audio only".into()))
+    }
+    fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> cfa4_media::Result<AudioBuffer> {
+        Ok(AudioBuffer { sample_rate, channels: (0..12).map(|c| (0..frames).map(|i| tone12(c, start + i as i64)).collect()).collect() })
+    }
+}
+
+/// A sequence with a 7.1.4 Mix and one 7.1.4 audio track holding 1 s of the twelve tones.
+fn surround_714() -> (Arc<Project>, ItemId, SourceMap) {
+    let mut p = Project::new("714");
+    let info = MediaInfo {
+        name: "tones714".into(),
+        kind: MediaKind::AudioOnly,
+        duration: Tick(2 * TICKS_PER_SECOND),
+        video: None,
+        audio_streams: vec![AudioStreamInfo { sample_rate: SR, channels: 12, codec: "test".into(), bits_per_sample: Some(32), speakers: Vec::new() }],
+        container: "test".into(),
+        start_timecode: None,
+        file_size: None,
+    };
+    let id = p.add_item(
+        "tones714",
+        Label::Iris,
+        ItemKind::Media(MediaClip {
+            media: MediaRef::File { path: "/tones714.wav".into() },
+            info: info.clone(),
+            interpret: Default::default(),
+            mark_in: None,
+            mark_out: None,
+            markers: vec![],
+            offline: false,
+            proxy: None,
+            identity: None,
+        }),
+        None,
+    );
+    let r = FrameRate::FPS_24;
+    let mut st = SequenceSettings { width: 320, height: 180, frame_rate: r, ..Default::default() };
+    st.audio_master = AudioChannels::Surround714;
+    let seq = p.new_sequence("s", st, 1, 1, None);
+    let ai = p.make_track_item(id, TrackKind::Audio, Tick::ZERO, TimeRange::new(Tick::ZERO, r.tick_of(24)), r).unwrap();
+    let q = p.sequence_mut(seq).unwrap();
+    q.audio_tracks[0].channels = AudioChannels::Surround714;
+    q.audio_tracks[0].items.push(ai);
+    let mut m = SourceMap::default();
+    m.0.insert(id, Arc::new(Tones12 { info }) as Arc<dyn MediaSource>);
+    (Arc::new(p), seq, m)
+}
+
+#[test]
+fn wav_714_is_extensible_in_wav_order_and_sample_exact() {
+    let (p, seq, m) = surround_714();
+    let path = out_path("s714.wav");
+    let mut st = settings(Format::Wav, &path);
+    st.audio.channels = 12;
+    export(&p, seq, &st, &m, &Progress::default()).unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    assert_eq!(u16::from_le_bytes([bytes[20], bytes[21]]), 0xFFFE, "WAVE_FORMAT_EXTENSIBLE");
+    assert_eq!(u16::from_le_bytes([bytes[22], bytes[23]]), 12);
+    assert_eq!(u32::from_le_bytes([bytes[40], bytes[41], bytes[42], bytes[43]]), 0x2_D63F, "FL FR FC LFE BL BR SL SR TFL TFR TBL TBR");
+    if let Some((n, layout)) = probe(&path) {
+        assert_eq!(n, 12);
+        assert_eq!(layout, "7.1.4");
+    }
+    // the source's WAV order goes to the Mix's bus order (sides before rears) and back to the WAV
+    // order: every file channel carries the same source channel, sample-exactly
+    if let Some(ch) = decode_n(&path, 12) {
+        assert_eq!(ch[0].len(), SR as usize, "frame count");
+        for (c, v) in ch.iter().enumerate() {
+            for (i, x) in v.iter().enumerate() {
+                let want = ((tone12(c, i as i64).clamp(-1.0, 1.0) * 8_388_607.0).round() as i64) << 8;
+                assert_eq!(*x as i64, want, "channel {c} sample {i}");
+            }
+        }
     }
 }

@@ -622,6 +622,31 @@ fn a_71_source_plays_as_71_on_71_and_712_tracks_and_mixes() {
 }
 
 #[test]
+fn a_714_source_plays_as_714_on_a_714_track_and_mix() {
+    // L R C LFE Lb Rb Ls Rs Ltf Rtf Ltb Rtb (WAV order) = 0.1 … 1.2 → the bus order L R C LFE Lss
+    // Rss Lrs Rrs Ltf Rtf Ltr Rtr
+    let mut r = Rig::with_channels(&[chan_dc], 12);
+    r.track(0).channels = AudioChannels::Surround714;
+    r.p.sequence_mut(r.seq).unwrap().settings.audio_master = AudioChannels::Surround714;
+    let m = mix_all(&r, 0, 256);
+    assert_eq!(m.len(), 12);
+    for (c, want) in [0.1, 0.2, 0.3, 0.4, 0.7, 0.8, 0.5, 0.6, 0.9, 1.0, 1.1, 1.2].into_iter().enumerate() {
+        assert!(close(m[c][17], want, 1e-5), "7.1.4 channel {c} = {}", m[c][17]);
+    }
+    // a 7.1.2 Mix: each side's tops join the overhead at -3 dB
+    r.p.sequence_mut(r.seq).unwrap().settings.audio_master = AudioChannels::Surround712;
+    let k = std::f32::consts::FRAC_1_SQRT_2;
+    let m = mix_all(&r, 0, 256);
+    assert_eq!(m.len(), 10);
+    assert!(close(m[8][17], k * 0.9 + k * 1.1, 1e-5) && close(m[9][17], k * 1.0 + k * 1.2, 1e-5), "{} {}", m[8][17], m[9][17]);
+    // meters: one per channel of the Mix
+    r.p.sequence_mut(r.seq).unwrap().settings.audio_master = AudioChannels::Surround714;
+    let live = LiveMix::new();
+    mix_graph(&r.p, r.p.sequence(r.seq).unwrap(), 0, 256, &r.map, Some(&live));
+    assert_eq!(live.take_meters().get(&crate::mixer::MASTER).map(Vec::len), Some(12));
+}
+
+#[test]
 fn stereo_and_51_tracks_pan_into_a_712_mix() {
     use cfa4_project::mixer::{LANE_PAN51_X, LANE_PAN51_Y};
     // a stereo track at the default puck: L → L, R → R, nothing else

@@ -5,7 +5,9 @@
 //! different native order (AAC: C, L, R, Ls, Rs, LFE) reorder at the codec boundary.
 //! 7.1 (DS, the cinema 7.1 of SMPTE ST 428-12) is **L, R, C, LFE, Lss, Rss, Lrs, Rrs** (the side
 //! surrounds in the 5.1 surround slots, [`LSS`], [`RSS`], [`LRS`], [`RRS`]); 7.1.2 (9.1OH, the
-//! ISDCF Doc 15 IAB bed) adds the overhead **Lts, Rts** ([`LTS`], [`RTS`]).
+//! ISDCF Doc 15 IAB bed) adds the overhead **Lts, Rts** ([`LTS`], [`RTS`]); 7.1.4 (ITU-R BS.2051
+//! system J, 4+7+0) adds instead the top front and top rear pairs **Ltf, Rtf, Ltr, Rtr** ([`LTF`],
+//! [`RTF`], [`LTR`], [`RTR`]).
 //!
 //! **Downmix** follows ITU-R BS.775 (Table 2, "3/2 source" rows), with `k = 1/√2` (−3 dB):
 //!
@@ -26,7 +28,10 @@
 //! the rear surround at −3 dB (`Lss = Lrs = k·Ls`, as a 5.1 mix plays on a 7.1 DS cinema
 //! system); 7.1 → 5.1 is the reverse, `Ls = k·Lss + k·Lrs`, so 5.1 → 7.1 → 5.1 is exact. The
 //! overheads fold into the side surrounds at −3 dB (`Lss += k·Lts`); 7.1 → 7.1.2 leaves them
-//! silent. Stereo and mono of 7.1 / 7.1.2 are the 5.1 downmix of their 5.1 downmix.
+//! silent. Stereo and mono of 7.1 / 7.1.2 are the 5.1 downmix of their 5.1 downmix. **7.1.4** is
+//! reached through 7.1.2: each top surround splits to the top front and top rear at −3 dB
+//! (`Ltf = Ltr = k·Lts`), and 7.1.4 → 7.1.2 is the reverse, `Lts = k·Ltf + k·Ltr`, so
+//! 7.1.2 → 7.1.4 → 7.1.2 is exact.
 //!
 //! **5.1 panner** ([`Pan51`]): a puck at `(x, y)` in the listening square (x −1 left … +1 right,
 //! y −1 rear … +1 front). A point source at `(x, y)` is split front/rear and left/right with the
@@ -44,7 +49,10 @@
 //! (so the default puck splits them −3 dB, as the upmix does), a 7.1 source's at its own rows (the
 //! default puck is the identity). The panner is two-dimensional: a 7.1.2 source's overhead
 //! channels go to the overheads of a 7.1.2 bus unpanned, and fold into the side surrounds of
-//! anything narrower. A source wider than the bus is downmixed to the bus layout first.
+//! anything narrower. A source wider than the bus is downmixed to the bus layout first. On a
+//! 7.1.4 bus the height lifts a source to the top front pair at a front puck and to the top rear
+//! pair at a rear one (the same constant-power front/back law as the floor); a 7.1.2 source's
+//! overheads reach the top front and top rear at −3 dB, a 7.1.4 source's its own.
 
 use std::f32::consts::{FRAC_1_SQRT_2, FRAC_PI_2, FRAC_PI_4};
 
@@ -67,6 +75,11 @@ pub const RRS: usize = 7;
 /// 7.1.2 overhead (top surround) channels.
 pub const LTS: usize = 8;
 pub const RTS: usize = 9;
+/// 7.1.4 top channels (they take the 7.1.2 overhead slots and two more).
+pub const LTF: usize = 8;
+pub const RTF: usize = 9;
+pub const LTR: usize = 10;
+pub const RTR: usize = 11;
 
 /// Short names of the 5.1 channels in order.
 pub const NAMES_51: [&str; 6] = ["L", "R", "C", "LFE", "Ls", "Rs"];
@@ -74,6 +87,8 @@ pub const NAMES_51: [&str; 6] = ["L", "R", "C", "LFE", "Ls", "Rs"];
 pub const NAMES_71: [&str; 8] = ["L", "R", "C", "LFE", "Lss", "Rss", "Lrs", "Rrs"];
 /// Short names of the 7.1.2 (9.1OH) channels in order.
 pub const NAMES_712: [&str; 10] = ["L", "R", "C", "LFE", "Lss", "Rss", "Lrs", "Rrs", "Lts", "Rts"];
+/// Short names of the 7.1.4 channels in order.
+pub const NAMES_714: [&str; 12] = ["L", "R", "C", "LFE", "Lss", "Rss", "Lrs", "Rrs", "Ltf", "Rtf", "Ltr", "Rtr"];
 
 /// A channel layout.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
@@ -87,6 +102,8 @@ pub enum Layout {
     Surround71,
     /// 7.1.2 (9.1OH): 7.1 DS and the overhead Lts, Rts.
     Surround712,
+    /// 7.1.4: 7.1 DS and the top Ltf, Rtf, Ltr, Rtr.
+    Surround714,
 }
 
 impl Layout {
@@ -97,19 +114,21 @@ impl Layout {
             Layout::Surround51 => 6,
             Layout::Surround71 => 8,
             Layout::Surround712 => 10,
+            Layout::Surround714 => 12,
         }
     }
-    /// The layout of a plain channel count (1, 2, 6, 8 or 10; anything else is treated as stereo).
+    /// The layout of a plain channel count (1, 2, 6, 8, 10 or 12; anything else is treated as stereo).
     pub fn from_channels(n: usize) -> Layout {
         match n {
             1 => Layout::Mono,
             6 => Layout::Surround51,
             8 => Layout::Surround71,
             10 => Layout::Surround712,
+            12 => Layout::Surround714,
             _ => Layout::Stereo,
         }
     }
-    /// Whether this is a surround layout (5.1, 7.1 or 7.1.2), panned with the surround panner.
+    /// Whether this is a surround layout (5.1, 7.1, 7.1.2 or 7.1.4), panned with the surround panner.
     pub fn is_surround(self) -> bool {
         self.channels() >= 6
     }
@@ -121,6 +140,7 @@ impl Layout {
             Layout::Surround51 => &NAMES_51,
             Layout::Surround71 => &NAMES_71,
             Layout::Surround712 => &NAMES_712,
+            Layout::Surround714 => &NAMES_714,
         }
     }
 }
@@ -167,6 +187,23 @@ pub fn matrix(from: Layout, to: Layout, mixdown: Mixdown) -> Vec<Vec<f32>> {
     let (ni, no) = (from.channels(), to.channels());
     if from == to {
         return (0..no).map(|o| (0..ni).map(|i| if i == o { 1.0 } else { 0.0 }).collect()).collect();
+    }
+    // 7.1.4 goes through 7.1.2 (see the module documentation)
+    if from == Layout::Surround714 {
+        let mut down: Vec<Vec<f32>> = (0..10).map(|o| (0..ni).map(|i| if i == o && o < LTS { 1.0 } else { 0.0 }).collect()).collect();
+        down[LTS][LTF] = K;
+        down[LTS][LTR] = K;
+        down[RTS][RTF] = K;
+        down[RTS][RTR] = K;
+        return compose(&matrix(Layout::Surround712, to, mixdown), &down);
+    }
+    if to == Layout::Surround714 {
+        let mut up: Vec<Vec<f32>> = (0..no).map(|o| (0..10).map(|i| if i == o && o < LTS { 1.0 } else { 0.0 }).collect()).collect();
+        up[LTF][LTS] = K;
+        up[LTR][LTS] = K;
+        up[RTF][RTS] = K;
+        up[RTR][RTS] = K;
+        return compose(&up, &matrix(from, Layout::Surround712, mixdown));
     }
     // 7.1 and 7.1.2 go through 5.1 (see the module documentation)
     match (from, to) {
@@ -331,8 +368,8 @@ pub struct Pan51 {
     /// LFE gain (linear).
     pub lfe: f32,
     /// Height 0 … 1: the share of each floor source sent up to the top surrounds (Lts, Rts) of a
-    /// 7.1.2 bus, constant power (floor gains × cos(h·π/2), top gains × sin(h·π/2)); ignored on
-    /// other buses (#406).
+    /// 7.1.2 bus or the top front / rear pairs of a 7.1.4 bus, constant power (floor gains ×
+    /// cos(h·π/2), top gains × sin(h·π/2)); ignored on other buses (#406).
     pub height: f32,
 }
 
@@ -382,10 +419,21 @@ fn offsets(from: Layout, rows3: bool) -> &'static [(f32, f32)] {
         // L, R, C, LFE (not positioned), Ls, Rs
         (Layout::Surround51, false) => &[(-1.0, 0.0), (1.0, 0.0), (0.0, 0.0), (0.0, 0.0), (-1.0, -2.0), (1.0, -2.0)],
         (Layout::Surround51, true) => &[(-1.0, 0.0), (1.0, 0.0), (0.0, 0.0), (0.0, 0.0), (-1.0, -1.5), (1.0, -1.5)],
-        // L, R, C, LFE, Lss, Rss, Lrs, Rrs (and Lts, Rts, not positioned)
-        (Layout::Surround71 | Layout::Surround712, _) => {
-            &[(-1.0, 0.0), (1.0, 0.0), (0.0, 0.0), (0.0, 0.0), (-1.0, -1.0), (1.0, -1.0), (-1.0, -2.0), (1.0, -2.0), (0.0, 0.0), (0.0, 0.0)]
-        }
+        // L, R, C, LFE, Lss, Rss, Lrs, Rrs (and the overheads, not positioned)
+        (Layout::Surround71 | Layout::Surround712 | Layout::Surround714, _) => &[
+            (-1.0, 0.0),
+            (1.0, 0.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (-1.0, -1.0),
+            (1.0, -1.0),
+            (-1.0, -2.0),
+            (1.0, -2.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+        ],
     }
 }
 
@@ -442,7 +490,7 @@ fn snap(v: f32) -> f32 {
 }
 
 /// Panning matrix `m[out][in]` of a `from` source through the surround panner of a `bus` layout
-/// (5.1, 7.1 or 7.1.2; a non-surround bus is treated as 5.1). A 5.1 bus is [`pan51_matrix`];
+/// (5.1, 7.1, 7.1.2 or 7.1.4; a non-surround bus is treated as 5.1). A 5.1 bus is [`pan51_matrix`];
 /// a source wider than the bus is downmixed to it first.
 pub fn pan_matrix(from: Layout, bus: Layout, p: Pan51) -> Vec<Vec<f32>> {
     let bus = if bus.is_surround() { bus } else { Layout::Surround51 };
@@ -452,8 +500,8 @@ pub fn pan_matrix(from: Layout, bus: Layout, p: Pan51) -> Vec<Vec<f32>> {
         }
         return pan51_matrix(from, p);
     }
-    if bus == Layout::Surround71 && from == Layout::Surround712 {
-        return compose(&pan_matrix(Layout::Surround71, bus, p), &matrix(from, Layout::Surround71, Mixdown::FrontRear));
+    if from.channels() > bus.channels() {
+        return compose(&pan_matrix(bus, bus, p), &matrix(from, bus, Mixdown::FrontRear));
     }
     let (ni, no) = (from.channels(), bus.channels());
     let mut m = vec![vec![0.0f32; ni]; no];
@@ -464,20 +512,40 @@ pub fn pan_matrix(from: Layout, bus: Layout, p: Pan51) -> Vec<Vec<f32>> {
             continue;
         }
         if from == Layout::Surround712 && (i == LTS || i == RTS) {
-            // overheads are not panned (the bus is 7.1.2 here)
+            // overheads are not panned (the bus is 7.1.2 or 7.1.4 here)
+            if bus == Layout::Surround714 {
+                let (front, rear) = if i == LTS { (LTF, LTR) } else { (RTF, RTR) };
+                m[front][i] = K;
+                m[rear][i] = K;
+            } else {
+                m[i][i] = 1.0;
+            }
+            continue;
+        }
+        if from == Layout::Surround714 && i >= LTF {
             m[i][i] = 1.0;
             continue;
         }
         let g = point_gains_71(p.x + ox, p.y + oy, p.center);
-        // a 7.1.2 bus: the height lifts the source to the top surrounds, left / right as on the floor
-        let (floor, up) = if bus == Layout::Surround712 { height_split(p.height) } else { (1.0, 0.0) };
+        // a 7.1.2 or 7.1.4 bus: the height lifts the source to the top, left / right as on the
+        // floor (and front / back by the puck on 7.1.4)
+        let (floor, up) = if matches!(bus, Layout::Surround712 | Layout::Surround714) { height_split(p.height) } else { (1.0, 0.0) };
         for (o, gain) in g.iter().enumerate() {
             m[o][i] = *gain * floor;
         }
         if up > 0.0 {
             let lr = ((p.x + ox).clamp(-1.0, 1.0) + 1.0) * FRAC_PI_4;
-            m[LTS][i] = snap(up * lr.cos());
-            m[RTS][i] = snap(up * lr.sin());
+            if bus == Layout::Surround714 {
+                let fb = (1.0 - (p.y + oy).clamp(-1.0, 1.0)) * 0.5 * FRAC_PI_2;
+                let (f, b) = (fb.cos(), fb.sin());
+                m[LTF][i] = snap(up * f * lr.cos());
+                m[RTF][i] = snap(up * f * lr.sin());
+                m[LTR][i] = snap(up * b * lr.cos());
+                m[RTR][i] = snap(up * b * lr.sin());
+            } else {
+                m[LTS][i] = snap(up * lr.cos());
+                m[RTS][i] = snap(up * lr.sin());
+            }
         }
         if !multichannel {
             m[LFE][i] = p.lfe / ni as f32;
@@ -517,6 +585,54 @@ pub fn peaks(input: &[&[f32]]) -> Vec<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn surround_714_goes_through_712_exactly() {
+        assert_eq!(Layout::Surround714.channels(), 12);
+        assert_eq!(Layout::from_channels(12), Layout::Surround714);
+        assert_eq!(Layout::Surround714.names()[RTR], "Rtr");
+        assert!(Layout::Surround714.is_surround());
+        let up = matrix(Layout::Surround712, Layout::Surround714, Mixdown::FrontRear);
+        let down = matrix(Layout::Surround714, Layout::Surround712, Mixdown::FrontRear);
+        let round = compose(&down, &up);
+        for (o, row) in round.iter().enumerate() {
+            for (i, v) in row.iter().enumerate() {
+                assert!((v - if i == o { 1.0 } else { 0.0 }).abs() < 1e-6, "7.1.2 → 7.1.4 → 7.1.2 at [{o}][{i}] = {v}");
+            }
+        }
+        assert!((up[LTF][LTS] - K).abs() < 1e-7 && (up[LTR][LTS] - K).abs() < 1e-7 && up[RTF][LTS] == 0.0);
+        // 7.1 → 7.1.4 leaves the tops silent; 7.1.4 → stereo keeps the tops (through 7.1.2 and 5.1)
+        let rise = matrix(Layout::Surround71, Layout::Surround714, Mixdown::FrontRear);
+        assert!(rise[LTF..].iter().all(|r| r.iter().all(|&v| v == 0.0)));
+        let st = matrix(Layout::Surround714, Layout::Stereo, Mixdown::FrontRear);
+        assert!(st[0][LTF] > 0.0 && st[1][RTR] > 0.0 && st[0][RTF] == 0.0);
+        // the default panner maps 7.1.4 to itself
+        let m = pan_matrix(Layout::Surround714, Layout::Surround714, Pan51::default());
+        for (o, row) in m.iter().enumerate() {
+            for (i, v) in row.iter().enumerate() {
+                assert_eq!(*v, if i == o { 1.0 } else { 0.0 }, "[{o}][{i}]");
+            }
+        }
+        // a 7.1.4 source on a 7.1.2 bus is folded first
+        assert_eq!(pan_matrix(Layout::Surround714, Layout::Surround712, Pan51::default()).len(), 10);
+    }
+
+    #[test]
+    fn height_lifts_to_the_top_front_or_rear_on_a_714_bus() {
+        let up = |y: f32| pan_matrix(Layout::Mono, Layout::Surround714, Pan51 { y, height: 1.0, lfe: 0.0, ..Pan51::default() });
+        let front = up(1.0);
+        assert!((front[LTF][0] - K).abs() < 1e-6 && (front[RTF][0] - K).abs() < 1e-6, "{front:?}");
+        assert_eq!((front[LTR][0], front[RTR][0]), (0.0, 0.0));
+        let rear = up(-1.0);
+        assert!((rear[LTR][0] - K).abs() < 1e-6 && rear[LTF][0] == 0.0);
+        for m in [&front, &rear, &up(0.0)] {
+            let power: f32 = m.iter().map(|r| r[0] * r[0]).sum();
+            assert!((power - 1.0).abs() < 1e-5, "unit power: {power}");
+        }
+        // a 7.1.2 source's overheads reach both top pairs at −3 dB
+        let m = pan_matrix(Layout::Surround712, Layout::Surround714, Pan51::default());
+        assert!((m[LTF][LTS] - K).abs() < 1e-7 && (m[LTR][LTS] - K).abs() < 1e-7 && (m[RTR][RTS] - K).abs() < 1e-7);
+    }
 
     fn close(a: f32, b: f32) -> bool {
         (a - b).abs() < 1e-6

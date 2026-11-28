@@ -57,6 +57,8 @@ impl AudioOut {
             (crate::Format::Dcp, crate::dcp_iab::DcpImmersive::Bed, Some(n @ (8 | 10))) => n,
             // MXF OP1a (XDCAM HD422, D-10) carries up to eight channels: a 7.1 mix when 8 are set
             (crate::Format::MxfOp1a, _, _) if settings.audio.channels == 8 => 8,
+            // a WAV takes a 7.1.4 mix when 12 are set (binaural monitor plan B-03b)
+            (crate::Format::Wav, _, _) if settings.audio.channels == 12 => 12,
             _ => r.channels as usize,
         };
         let ln = &settings.effects.loudness;
@@ -152,10 +154,11 @@ impl AudioOut {
     /// Mix `n` samples from `pos`, folded to the output channels (silence past the range end).
     /// Stereo output of a 5.1 Mix is the ITU-R BS.775 downmix; 5.1 output of a stereo Mix places it
     /// on L and R; 5.1 is in L, R, C, LFE, Ls, Rs order, 7.1 / 7.1.2 (a DCP's IAB bed) in L, R, C,
-    /// LFE, Lss, Rss, Lrs, Rrs (, Lts, Rts) order.
+    /// LFE, Lss, Rss, Lrs, Rrs (, Lts, Rts) order, 7.1.4 (a WAV) in the 7.1 order and Ltf, Rtf, Ltr,
+    /// Rtr.
     fn mix(&self, pos: i64, n: usize, sources: &dyn SourceProvider) -> Vec<Vec<f32>> {
         let real = (self.end - pos).clamp(0, n as i64) as usize;
-        let out_ch = if matches!(self.channels, 6 | 8 | 10) { self.channels } else { 2 };
+        let out_ch = if matches!(self.channels, 6 | 8 | 10 | 12) { self.channels } else { 2 };
         let mut st = if real > 0 {
             let layout = cfa4_audio_dsp::channels::Layout::from_channels(out_ch);
             cfa4_render::audio::mix_sequence_layout(&self.project, &self.seq, pos, real, sources, layout, cfa4_audio_dsp::channels::Mixdown::FrontRear).channels

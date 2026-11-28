@@ -118,12 +118,12 @@ impl Recorder {
 }
 
 /// Lanes a Write pass records on a strip (the surround puck instead of pan when it feeds a
-/// surround bus, and the height when that bus is 7.1.2).
+/// surround bus, and the height when that bus is 7.1.2 or 7.1.4).
 fn write_lanes(seq: &Sequence, strip: TrackId) -> &'static [&'static str] {
     if strip == MASTER_STRIP {
         &[LANE_VOLUME]
-    } else if seq.output_channels(strip) == cfa4_project::AudioChannels::Surround712 {
-        // a 7.1.2 bus: the height too (#406)
+    } else if matches!(seq.output_channels(strip), cfa4_project::AudioChannels::Surround712 | cfa4_project::AudioChannels::Surround714) {
+        // a 7.1.2 or 7.1.4 bus: the height too (#406)
         &[LANE_VOLUME, LANE_PAN51_X, LANE_PAN51_Y, cfa4_project::mixer::LANE_PAN51_HEIGHT, LANE_MUTE]
     } else if seq.pans_51(strip) {
         &[LANE_VOLUME, LANE_PAN51_X, LANE_PAN51_Y, LANE_MUTE]
@@ -610,6 +610,7 @@ pub(crate) fn channels_name(c: AudioChannels) -> &'static str {
         AudioChannels::Surround51 => "5.1",
         AudioChannels::Surround71 => "7.1",
         AudioChannels::Surround712 => "7.1.2",
+        AudioChannels::Surround714 => "7.1.4",
         AudioChannels::Adaptive => "Adaptive",
     }
 }
@@ -623,6 +624,7 @@ pub(crate) fn channels_from(s: &str) -> Option<AudioChannels> {
         "5.1" | "surround51" => Some(AudioChannels::Surround51),
         "7.1" | "surround71" => Some(AudioChannels::Surround71),
         "7.1.2" | "surround712" => Some(AudioChannels::Surround712),
+        "7.1.4" | "surround714" => Some(AudioChannels::Surround714),
         "adaptive" => Some(AudioChannels::Adaptive),
         _ => None,
     }
@@ -669,8 +671,8 @@ pub fn strip_json(s: &Session, seq: &Sequence, id: TrackId, t: Tick) -> Value {
         "outputChannels": channels_name(seq.output_channels(id)),
         "pans51": seq.pans_51(id),
         "pan51": {"x": shown(LANE_PAN51_X), "y": shown(LANE_PAN51_Y), "center": shown(pm::LANE_PAN51_CENTER), "lfeDb": shown(pm::LANE_PAN51_LFE), "height": shown(pm::LANE_PAN51_HEIGHT)},
-        // a strip feeding a 7.1.2 bus also pans up to the top surrounds (#406)
-        "panHeight": id != MASTER_STRIP && seq.output_channels(id) == cfa4_project::AudioChannels::Surround712,
+        // a strip feeding a 7.1.2 or 7.1.4 bus also pans up to the top (#406)
+        "panHeight": id != MASTER_STRIP && matches!(seq.output_channels(id), cfa4_project::AudioChannels::Surround712 | cfa4_project::AudioChannels::Surround714),
         "lanes": lanes,
     })
 }
