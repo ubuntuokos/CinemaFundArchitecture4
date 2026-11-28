@@ -5051,3 +5051,41 @@ export.summary	Low	alacsony
 	not in this build	nincs benne ebben a buildben
 	switched off in the settings	a beállításokban kikapcsolva
 	vendor-locked backends are switched off	a gyártóhoz kötött hátterek ki vannak kapcsolva
+	Add user {user} to the group {group}.	{user} felhasználó felvétele a(z) {group} csoportba.
+	Apply the plan?	Alkalmazod a tervezetet?
+	Apply…	Alkalmazás…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	A CFA4 csak azt vonja vissza, amit maga változtatott. A rendszer rendszergazdai jelszót fog kérni.
+	Check failed: {error}	Az ellenőrzés nem sikerült: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Ellenőrzi az NPU kernelmeghajtóját és firmware-ét; csak útmutatást ad, semmit nem változtat.
+	Components	Komponensek
+	Done. Log out and back in for the change to take effect.	Kész. A változás ki- és bejelentkezés után lép életbe.
+	GPU access	GPU-hozzáférés
+	Install packages: {packages}	Csomagok telepítése: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Telepíti az Intel vagy AMD GPU hardveres videomeghajtójának Ubuntu-csomagját (az NVIDIA az NVDEC-et használja).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Lehetővé teszi a GPU- és NPU-eszközcsomópontok megnyitását: felvesz abba a csoportba (render, video), amelyiké.
+	Log	Napló
+	Log out and back in afterwards for the change to take effect.	A változás ezután ki- és bejelentkezéssel lép életbe.
+	Missing access or driver: System Settings (root)…	Hiányzó hozzáférés vagy meghajtó: Rendszerszintű beállítások (root)…
+	NPU driver	NPU-meghajtó
+	Not needed	Nem kell
+	Nothing happened yet in this window.	Ebben az ablakban még nem történt semmi.
+	Nothing to change.	Nincs mit változtatni.
+	Plan	Tervezet
+	Plan for {component} failed: {error}	A(z) {component} tervezete nem sikerült: {error}
+	Plan for {component}: {plan}	A(z) {component} tervezete: {plan}
+	Plan…	Tervezet…
+	System Settings (root)	Rendszerszintű beállítások (root)
+	System Settings (root)…	Rendszerszintű beállítások (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Az itt lévő műveletek rendszergazdai jelszót kérnek, és a CFA4-en kívül módosítják a rendszert.
+	The system will ask for an administrator password.	A rendszer rendszergazdai jelszót fog kérni.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Ebben a telepítésben nincs rendszer-segéd (a .deb csomaggal jön): látod, mi hiányzik, de itt nem változtathatod meg.
+	Undo the changes?	Visszavonod a változtatásokat?
+	Undo: removes the installed packages again.	Visszavonás: a telepített csomagokat újra eltávolítja.
+	Undo: removes you from the group again.	Visszavonás: újra kivesz a csoportból.
+	Undo…	Visszavonás…
+	VA-API drivers	VA-API-meghajtók
+	Waiting for log out	Kijelentkezésre vár
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	A pkexec nincs telepítve (Ubuntu-csomag: pkexec), ezért a CFA4 nem tud jelszót kérni.
+	{method} {component} failed: {error}	{method} {component} nem sikerült: {error}
+	{method} {component}: done	{method} {component}: kész
+	{method} {component}: waiting for the password…	{method} {component}: várakozás a jelszóra…

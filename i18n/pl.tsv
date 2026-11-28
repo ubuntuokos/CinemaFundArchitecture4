@@ -5017,3 +5017,41 @@ export.summary	Low	niska
 	not in this build	nie wchodzi w skład tej kompilacji
 	switched off in the settings	wyłączone w ustawieniach
 	vendor-locked backends are switched off	zaplecza powiązane z producentem są wyłączone
+	Add user {user} to the group {group}.	Dodaj użytkownika {user} do grupy {group}.
+	Apply the plan?	Zastosować plan?
+	Apply…	Zastosuj…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 cofa tylko to, co samo zmieniło. System poprosi o hasło administratora.
+	Check failed: {error}	Sprawdzenie nie powiodło się: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Sprawdza sterownik jądra i oprogramowanie układowe NPU; tylko doradza i niczego nie zmienia.
+	Components	Składniki
+	Done. Log out and back in for the change to take effect.	Gotowe. Wyloguj się i zaloguj ponownie, aby zmiana zaczęła działać.
+	GPU access	Dostęp do GPU
+	Install packages: {packages}	Zainstaluj pakiety: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Instaluje pakiet Ubuntu ze sprzętowym sterownikiem wideo dla GPU Intel lub AMD (NVIDIA używa NVDEC).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Pozwala otwierać węzły urządzeń GPU i NPU: dodaje cię do grupy (render, video), do której należą.
+	Log	Dziennik
+	Log out and back in afterwards for the change to take effect.	Potem wyloguj się i zaloguj ponownie, aby zmiana zaczęła działać.
+	Missing access or driver: System Settings (root)…	Brak dostępu lub sterownika: Ustawienia systemowe (root)…
+	NPU driver	Sterownik NPU
+	Not needed	Niepotrzebne
+	Nothing happened yet in this window.	W tym oknie nic się jeszcze nie wydarzyło.
+	Nothing to change.	Nie ma nic do zmiany.
+	Plan	Plan
+	Plan for {component} failed: {error}	Plan dla {component} nie powiódł się: {error}
+	Plan for {component}: {plan}	Plan dla {component}: {plan}
+	Plan…	Plan…
+	System Settings (root)	Ustawienia systemowe (root)
+	System Settings (root)…	Ustawienia systemowe (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Działania tutaj wymagają hasła administratora i zmieniają system poza CFA4.
+	The system will ask for an administrator password.	System poprosi o hasło administratora.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Ta instalacja nie ma pomocnika systemowego (jest dostarczany z pakietem .deb): widzisz, czego brakuje, ale nie możesz tego tu zmienić.
+	Undo the changes?	Cofnąć zmiany?
+	Undo: removes the installed packages again.	Cofnięcie: ponownie usuwa zainstalowane pakiety.
+	Undo: removes you from the group again.	Cofnięcie: ponownie usuwa cię z grupy.
+	Undo…	Cofnij…
+	VA-API drivers	Sterowniki VA-API
+	Waiting for log out	Oczekuje na wylogowanie
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec nie jest zainstalowany (pakiet Ubuntu pkexec), więc CFA4 nie może poprosić o hasło.
+	{method} {component} failed: {error}	{method} {component} nie powiodło się: {error}
+	{method} {component}: done	{method} {component}: gotowe
+	{method} {component}: waiting for the password…	{method} {component}: oczekiwanie na hasło…

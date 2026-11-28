@@ -5026,3 +5026,41 @@
 	not in this build	このビルドには含まれていません
 	switched off in the settings	設定でオフ
 	vendor-locked backends are switched off	ベンダー固有のバックエンドはオフです
+	Add user {user} to the group {group}.	ユーザー {user} をグループ {group} に追加します。
+	Apply the plan?	計画を適用しますか?
+	Apply…	適用…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 は自分で変更したものだけを元に戻します。システムが管理者パスワードを求めます。
+	Check failed: {error}	確認に失敗しました: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	NPU のカーネルドライバーとファームウェアを確認します。案内のみで、何も変更しません。
+	Components	コンポーネント
+	Done. Log out and back in for the change to take effect.	完了しました。変更を有効にするには、ログアウトして再度ログインしてください。
+	GPU access	GPU へのアクセス
+	Install packages: {packages}	パッケージをインストール: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Intel または AMD GPU のハードウェア動画ドライバーを含む Ubuntu パッケージをインストールします (NVIDIA は NVDEC を使用)。
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	GPU と NPU のデバイスノードを開けるようにします: それらを所有するグループ (render、video) に追加します。
+	Log	ログ
+	Log out and back in afterwards for the change to take effect.	その後、変更を有効にするにはログアウトして再度ログインしてください。
+	Missing access or driver: System Settings (root)…	アクセスまたはドライバーがありません: システム設定 (root)…
+	NPU driver	NPU ドライバー
+	Not needed	不要
+	Nothing happened yet in this window.	このウィンドウではまだ何も起きていません。
+	Nothing to change.	変更するものはありません。
+	Plan	計画
+	Plan for {component} failed: {error}	{component} の計画に失敗しました: {error}
+	Plan for {component}: {plan}	{component} の計画: {plan}
+	Plan…	計画…
+	System Settings (root)	システム設定 (root)
+	System Settings (root)…	システム設定 (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	ここでの操作は管理者パスワードを求め、CFA4 の外でシステムを変更します。
+	The system will ask for an administrator password.	システムが管理者パスワードを求めます。
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	このインストールにはシステムヘルパーがありません (.deb パッケージに含まれます): 不足しているものは確認できますが、ここでは変更できません。
+	Undo the changes?	変更を元に戻しますか?
+	Undo: removes the installed packages again.	元に戻す: インストールしたパッケージを再び削除します。
+	Undo: removes you from the group again.	元に戻す: グループから再び外します。
+	Undo…	元に戻す…
+	VA-API drivers	VA-API ドライバー
+	Waiting for log out	ログアウト待ち
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec がインストールされていません (Ubuntu パッケージ pkexec)。そのため CFA4 はパスワードを求められません。
+	{method} {component} failed: {error}	{method} {component} に失敗しました: {error}
+	{method} {component}: done	{method} {component}: 完了
+	{method} {component}: waiting for the password…	{method} {component}: パスワードを待っています…

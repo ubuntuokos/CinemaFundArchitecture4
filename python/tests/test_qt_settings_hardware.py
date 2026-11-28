@@ -32,6 +32,21 @@ def field(key: str, label: str, kind: dict[str, Any], value: Any) -> dict[str, A
     return {"type": "field", "field": {"key": key, "label": label, "kind": kind, "wired": True, "value": value}}
 
 
+SYSTEM: dict[str, Any] = {
+    "user": "anna",
+    "available": {"helper": "/usr/libexec/cfa4/cfa4-system-helper", "installed": True, "pkexec": True},
+    "components": [
+        {"component": "gpu-access", "status": "needs_action", "details": ["/dev/dri/renderD128: needs group render"], "can_apply": True, "relogin_required": True},
+        {"component": "vaapi-drivers", "status": "not_needed", "details": ["NVIDIA's driver decodes through NVDEC; VA-API is not needed."], "can_apply": False},
+        {"component": "npu-check", "status": "not_needed", "details": ["No NPU found."], "can_apply": False},
+    ],
+    "state": {"format": 1, "components": {}},
+}
+PLAN: dict[str, Any] = {
+    "digest": "ab" * 32,
+    "plan": {"format": 1, "component": "gpu-access", "user": "anna", "relogin_required": True,
+             "actions": [{"kind": "add_to_group", "user": "anna", "group": "render"}]},
+}
 HW_NOTE = "Hardware decoding: Auto uses the system's video decoder."
 SCHEMA: dict[str, Any] = {
     "groups": [
@@ -92,11 +107,14 @@ class StubEngine:
         self.fail = fail
         self.hold = hold
         self.held: list[tuple[Any, Any]] = []
+        self.system: dict[str, Any] = SYSTEM
         self.values: dict[str, Any] = {"playback": {"prerollSeconds": 2.0, "draftDecode": True, "hardwareDecoding": "auto"}}
 
     def call(self, method: str, params: dict[str, Any] | None = None, on_reply: Any = None, on_error: Any = None) -> int:
         self.sent.append((method, params or {}))
-        answers = {"hardware.inventory": HARDWARE, "codecs.capabilities": CODECS}
+        answers: dict[str, Any] = {"hardware.inventory": HARDWARE, "codecs.capabilities": CODECS, "system.components": self.system,
+                                   "system.plan": PLAN, "system.apply": {"component": "gpu-access", "relogin_required": True},
+                                   "system.disable": {"component": "gpu-access", "undone": []}}
         if method in self.fail:
             on_error(f"{method} failed")
         elif method in self.hold:
@@ -150,7 +168,7 @@ def test_arrange_orders_the_groups_and_adds_the_qt_only_pages() -> None:
     assert [(g["id"] if g else None, [c["id"] for c in pages]) for g, pages in sections] == [
         ("general", ["general", "orphan"]),  # a page of an unknown group goes under General
         ("media", ["media", "decoding", "playback"]),
-        ("hardware", ["accelerators", "memory"]),
+        ("hardware", ["accelerators", "memory", "systemComponents"]),
     ]
     decoding = sections[1][1][1]
     keys = [r["field"]["key"] for r in decoding["rows"] if r["type"] == "field"]
@@ -191,7 +209,7 @@ def test_pci_names_come_from_the_system_list(tmp_path: Path) -> None:
 
 def test_the_list_shows_group_headings_with_their_pages(app: Any) -> None:
     d = PreferencesDialog(None, StubEngine(), "general")
-    assert listed(d) == ["#general", "general", "orphan", "#media", "media", "decoding", "playback", "#hardware", "accelerators", "memory"]
+    assert listed(d) == ["#general", "general", "orphan", "#media", "media", "decoding", "playback", "#hardware", "accelerators", "memory", "systemComponents"]
     assert find(d, QtWidgets.QLabel, "settings.group.hardware").text() == "Hardware & Devices"
     # the reports are asked for only when their page opens
     assert not [m for m, _p in d.engine.sent if m in ("hardware.inventory", "codecs.capabilities")]
@@ -258,10 +276,91 @@ def test_menu_and_patch_reach_the_qt_only_pages(app: Any) -> None:
     from cfa4_qt.panels.settings import MENU
 
     assert ("accelerators", "Accelerators (GPU / NPU)…") in MENU and ("decoding", "Decoding & Encoding…") in MENU
+    assert ("systemComponents", "System Settings (root)…") in MENU
     d = PreferencesDialog(None, StubEngine(), "general")
     d.patch({"page": "decoding"})
     assert d.page == "decoding" and d.findChild(QtWidgets.QWidget, "settings.page.decoding") is not None
     d.close()
+
+
+def test_system_page_checks_plans_applies_and_undoes(app: Any) -> None:
+    engine = StubEngine()
+    d = PreferencesDialog(None, engine, "systemComponents")
+    asked: list[str] = []
+
+    def confirm(_title: str, text: str) -> bool:
+        asked.append(text)
+        return True
+
+    d.system.confirm = confirm
+    assert not find(d, QtWidgets.QPushButton, "settings.reset").isEnabled()
+    assert ("system.components", {}) in engine.sent
+    assert find(d, QtWidgets.QLabel, "settings.system.gpu-access.status").text() == "Missing"
+    assert find(d, QtWidgets.QLabel, "settings.system.vaapi-drivers.status").text() == "Not needed"
+    # Apply needs a plan the user looked at; Undo needs something the helper did
+    assert not find(d, QtWidgets.QPushButton, "settings.system.gpu-access.apply").isEnabled()
+    assert not find(d, QtWidgets.QPushButton, "settings.system.gpu-access.undo").isEnabled()
+    assert not find(d, QtWidgets.QPushButton, "settings.system.npu-check.plan").isEnabled()
+    d.system.plan("gpu-access")  # without a parent: no message box
+    assert ("system.plan", {"component": "gpu-access"}) in engine.sent
+    apply_button = find(d, QtWidgets.QPushButton, "settings.system.gpu-access.apply")
+    assert apply_button.isEnabled()
+    apply_button.click()
+    assert "Add user anna to the group render." in asked[0] and "administrator password" in asked[0]
+    assert ("system.apply", {"component": "gpu-access", "digest": "ab" * 32, "plan": PLAN["plan"]}) in engine.sent
+    # the helper recorded the change: the status waits for a new login, and Undo is offered
+    engine.system = {**SYSTEM, "state": {"format": 1, "components": {"gpu-access": {"status": "applied", "applied": [{"action": {}, "at": "x"}]}}}}
+    find(d, QtWidgets.QPushButton, "settings.system.gpu-access.check").click()
+    assert find(d, QtWidgets.QLabel, "settings.system.gpu-access.status").text() == "Waiting for log out"
+    find(d, QtWidgets.QPushButton, "settings.system.gpu-access.undo").click()
+    assert ("system.disable", {"component": "gpu-access"}) in engine.sent
+    log = find(d, QtWidgets.QPlainTextEdit, "settings.system.log").toPlainText()
+    assert "Log out and back in" in log
+    d.close()
+
+
+def test_system_page_without_the_helper_and_a_cancelled_confirmation(app: Any) -> None:
+    engine = StubEngine()
+    engine.system = {**SYSTEM, "available": {"helper": None, "installed": False, "pkexec": False}}
+    d = PreferencesDialog(None, engine, "systemComponents")
+    assert ".deb" in find(d, QtWidgets.QLabel, "settings.system.availability").text()
+    assert not find(d, QtWidgets.QPushButton, "settings.system.gpu-access.plan").isEnabled()
+    d.close()
+    engine = StubEngine()
+    d = PreferencesDialog(None, engine, "systemComponents")
+    d.system.confirm = lambda title, text: False
+    d.system.plan("gpu-access")
+    find(d, QtWidgets.QPushButton, "settings.system.gpu-access.apply").click()
+    assert not [m for m, _p in engine.sent if m == "system.apply"]
+    d.close()
+
+
+def test_report_pages_link_to_the_system_page_when_something_is_missing(app: Any) -> None:
+    d = PreferencesDialog(None, StubEngine(), "accelerators")
+    link = find(d, QtWidgets.QPushButton, "settings.system.open")
+    link.click()
+    assert d.page == "systemComponents"
+    d.close()
+    engine = StubEngine()
+    comps: list[dict[str, Any]] = SYSTEM["components"]
+    engine.system = {**SYSTEM, "components": [{**c, "status": "ok", "can_apply": False} for c in comps]}
+    d = PreferencesDialog(None, engine, "accelerators")
+    assert d.findChild(QtWidgets.QPushButton, "settings.system.open") is None
+    d.close()
+    # no hardware decoder: the decoding page links there too
+    d = PreferencesDialog(None, engine, "decoding")
+    assert d.findChild(QtWidgets.QPushButton, "settings.system.open") is not None
+    d.close()
+
+
+def test_plans_read_as_plain_lines() -> None:
+    from cfa4_qt.panels.settings_system import SystemReport, describe_plan, shown_status
+
+    text = describe_plan({"actions": [{"kind": "install_packages", "packages": ["mesa-va-drivers"]}, "junk"]})
+    assert text.splitlines() == ["Install packages: mesa-va-drivers", "  Undo: removes the installed packages again."]
+    r = SystemReport.parse({"components": [{"component": "gpu-access", "status": "weird"}, {"nope": 1}], "state": []})
+    assert [shown_status(c) for c in r.components] == ["unchecked"]
+    assert SystemReport.parse(None).components == []
 
 
 def _real_engine() -> Path | None:

@@ -59,5 +59,6 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 wgpu = { version = "30", default-features = false, features = ["wgsl", "vulkan", "gles"] }
 
 [dev-dependencies]
+tempfile = "3.27"
 cfa4-testkit = { workspace = true }
 cfa4-tts = { workspace = true }

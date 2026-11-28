@@ -48,16 +48,22 @@ pub struct Reply {
 }
 
 impl Reply {
-    fn ok(id: Value, result: Value) -> Self {
+    pub(crate) fn ok(id: Value, result: Value) -> Self {
         Self { json: json!({"id": id, "ok": true, "result": result}), binary: None }
     }
 
-    fn err(id: Value, error: impl std::fmt::Display) -> Self {
+    pub(crate) fn err(id: Value, error: impl std::fmt::Display) -> Self {
         Self { json: json!({"id": id, "ok": false, "error": error.to_string()}), binary: None }
     }
 
-    fn err_code(id: Value, error: impl std::fmt::Display, code: &str) -> Self {
+    pub(crate) fn err_code(id: Value, error: impl std::fmt::Display, code: &str) -> Self {
         Self { json: json!({"id": id, "ok": false, "error": error.to_string(), "code": code}), binary: None }
+    }
+
+    /// No reply now: the method answers later from a worker (`serve_system`), and the serve loop
+    /// writes nothing for this one.
+    pub(crate) fn deferred() -> Self {
+        Self { json: Value::Null, binary: None }
     }
 
     fn with_binary(id: Value, result: Value, bytes: Vec<u8>) -> Self {
@@ -863,7 +869,7 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
                 // `surfaceMonitor` = `surface.monitor` and its `surfaceMonitor` events,
                 // `surfaceLearn` = `surface.learn` and the assignments' `surfaceAction` events
                 // `hardware` = `hardware.inventory` and `codecs.capabilities`
-                "features": ["surface", "surfaceMonitor", "surfaceLearn", "hardware"],
+                "features": ["surface", "surfaceMonitor", "surfaceLearn", "hardware", "system"],
             }),
         ),
         "engine.execute" => {
@@ -1037,6 +1043,11 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
         // (CFA4-SETTINGS-HW-002): the same JSON as `cfa4-cli hardware` / `cfa4-cli codecs`
         "hardware.inventory" => Reply::ok(id, hardware_report(&params, &HARDWARE, crate::settings_cmd::hardware)),
         "codecs.capabilities" => Reply::ok(id, hardware_report(&params, &CODECS, crate::codecs_cmd::codecs)),
+        // Settings ▸ Hardware & Devices ▸ System Settings (root) (CFA4-SETTINGS-HW-003 R2, ADR 0017)
+        m if m.starts_with("system.") => match crate::serve_system::handle(id.clone(), m, &params) {
+            Some(r) => r,
+            None => Reply::err(id, format!("unknown method `{m}`")),
+        },
         "app.quit" => return None,
         other => Reply::err(id, format!("unknown method `{other}`")),
     };
@@ -1115,8 +1126,13 @@ pub fn run(mut s: Session) {
             },
         };
         if let Some(r) = reply
+            && !r.json.is_null()
             && write_reply(&mut out, &r).is_err()
         {
+            break;
+        }
+        // replies of system changes that finished on their worker (serve_system)
+        if crate::serve_system::upkeep().iter().any(|r| write_reply(&mut out, r).is_err()) {
             break;
         }
         // upkeep, as the desktop frontend does every frame

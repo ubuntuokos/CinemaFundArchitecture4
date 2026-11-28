@@ -47,9 +47,29 @@ Next step (approved 2026-11-27): [plans/CFA4-SETTINGS-HW-002.md](plans/CFA4-SETT
   `cfa4-cli codecs` ([qt-gui.md](qt-gui.md)), probed once per session and again on Detect Again.
 - Decoding & Encoding shows `playback.hardwareDecoding` and `playback.draftDecode`; they stay on
   the Playback page too, and Reset… is off on both Qt-only pages.
-- Edit ▸ Preferences ▸ Accelerators (GPU / NPU)… and Decoding & Encoding… open them.
+- Edit ▸ Preferences ▸ Accelerators (GPU / NPU)…, Decoding & Encoding… and System Settings (root)… open them.
 - Tests: `python/tests/test_qt_settings_hardware.py` (stub engine; the built engine when there is
   one), `cargo test -p cfa4-cli --bin cfa4-cli serve::`.
+
+## System Settings (root) (`cfa4-qt`, CFA4-SETTINGS-HW-003)
+
+- Hardware & Devices ▸ **System Settings (root)** is the group's last, Qt-only page
+  (`python/cfa4_qt/panels/settings_system.py`). It shows the components of `cfa4-system-helper`
+  ([ADR 0017](adr/ADR-0017-rendszerszintu-komponensek.md), [README](../apps/cfa4-system-helper/README.md)):
+  GPU access (`render` / `video` group), VA-API drivers and the NPU check, each with its status
+  (*Not needed*, *OK*, *Missing*, *Waiting for log out*, *Not checked*) and the facts behind it.
+- One way for every change: **Check** (no root) → **Plan…** (no root; the exact changes and how they
+  are undone) → **Apply…** (only the plan the user looked at; a confirmation, then the system's
+  password dialog through `pkexec`) → the page checks again. **Undo…** undoes only what the helper
+  did. The Log tab lists what happened in this window.
+- Engine side: `system.components`, `system.plan`, `system.apply`, `system.disable`,
+  `system.uninstall` ([qt-gui.md](qt-gui.md)); the changes answer later, from a worker, so the
+  editor keeps working under the password dialog.
+- Without the helper (tarball, AppImage, Flatpak, or no `pkexec`) the page says so and only shows
+  what is missing. Accelerators and Decoding & Encoding link here when GPU access or a driver is
+  missing (`settings.system.open`).
+- Tests: `python/tests/test_qt_settings_hardware.py`, `cargo test -p cfa4-system-helper`,
+  `cargo test -p cfa4-cli --bin cfa4-cli serve_system::`.
 
 ## Groups (phase 1)
 

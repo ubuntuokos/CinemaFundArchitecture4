@@ -5019,3 +5019,41 @@ export.summary	Low	χαμηλή
 	not in this build	δεν περιλαμβάνεται σε αυτή την έκδοση
 	switched off in the settings	απενεργοποιημένο στις ρυθμίσεις
 	vendor-locked backends are switched off	τα υποσυστήματα που δεσμεύονται σε κατασκευαστή είναι απενεργοποιημένα
+	Add user {user} to the group {group}.	Προσθήκη του χρήστη {user} στην ομάδα {group}.
+	Apply the plan?	Εφαρμογή του σχεδίου;
+	Apply…	Εφαρμογή…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	Το CFA4 αναιρεί μόνο ό,τι άλλαξε το ίδιο. Το σύστημα θα ζητήσει κωδικό διαχειριστή.
+	Check failed: {error}	Ο έλεγχος απέτυχε: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Ελέγχει το πρόγραμμα οδήγησης πυρήνα και το υλικολογισμικό της NPU· δίνει μόνο οδηγίες και δεν αλλάζει τίποτα.
+	Components	Στοιχεία
+	Done. Log out and back in for the change to take effect.	Έγινε. Αποσυνδεθείτε και συνδεθείτε ξανά για να ισχύσει η αλλαγή.
+	GPU access	Πρόσβαση στη GPU
+	Install packages: {packages}	Εγκατάσταση πακέτων: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Εγκαθιστά το πακέτο Ubuntu με το πρόγραμμα οδήγησης βίντεο υλικού μιας GPU Intel ή AMD (η NVIDIA χρησιμοποιεί NVDEC).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Σας επιτρέπει να ανοίγετε τους κόμβους συσκευών GPU και NPU: σας προσθέτει στην ομάδα (render, video) που τους κατέχει.
+	Log	Αρχείο καταγραφής
+	Log out and back in afterwards for the change to take effect.	Μετά αποσυνδεθείτε και συνδεθείτε ξανά για να ισχύσει η αλλαγή.
+	Missing access or driver: System Settings (root)…	Λείπει πρόσβαση ή πρόγραμμα οδήγησης: Ρυθμίσεις συστήματος (root)…
+	NPU driver	Πρόγραμμα οδήγησης NPU
+	Not needed	Δεν χρειάζεται
+	Nothing happened yet in this window.	Δεν έχει συμβεί ακόμη τίποτα σε αυτό το παράθυρο.
+	Nothing to change.	Τίποτα προς αλλαγή.
+	Plan	Σχέδιο
+	Plan for {component} failed: {error}	Το σχέδιο για {component} απέτυχε: {error}
+	Plan for {component}: {plan}	Σχέδιο για {component}: {plan}
+	Plan…	Σχέδιο…
+	System Settings (root)	Ρυθμίσεις συστήματος (root)
+	System Settings (root)…	Ρυθμίσεις συστήματος (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Οι ενέργειες εδώ ζητούν κωδικό διαχειριστή και αλλάζουν το σύστημα εκτός CFA4.
+	The system will ask for an administrator password.	Το σύστημα θα ζητήσει κωδικό διαχειριστή.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Αυτή η εγκατάσταση δεν έχει βοηθό συστήματος (έρχεται με το πακέτο .deb): βλέπετε τι λείπει, αλλά δεν μπορείτε να το αλλάξετε εδώ.
+	Undo the changes?	Αναίρεση των αλλαγών;
+	Undo: removes the installed packages again.	Αναίρεση: αφαιρεί ξανά τα εγκατεστημένα πακέτα.
+	Undo: removes you from the group again.	Αναίρεση: σας αφαιρεί ξανά από την ομάδα.
+	Undo…	Αναίρεση…
+	VA-API drivers	Προγράμματα οδήγησης VA-API
+	Waiting for log out	Αναμονή αποσύνδεσης
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	Το pkexec δεν είναι εγκατεστημένο (πακέτο Ubuntu pkexec), οπότε το CFA4 δεν μπορεί να ζητήσει τον κωδικό.
+	{method} {component} failed: {error}	{method} {component} απέτυχε: {error}
+	{method} {component}: done	{method} {component}: έγινε
+	{method} {component}: waiting for the password…	{method} {component}: αναμονή για τον κωδικό…

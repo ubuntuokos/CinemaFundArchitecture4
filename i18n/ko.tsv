@@ -5011,3 +5011,41 @@
 	not in this build	이 빌드에 포함되지 않음
 	switched off in the settings	설정에서 꺼짐
 	vendor-locked backends are switched off	제조사 종속 백엔드가 꺼져 있음
+	Add user {user} to the group {group}.	사용자 {user}을(를) {group} 그룹에 추가합니다.
+	Apply the plan?	계획을 적용할까요?
+	Apply…	적용…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4는 직접 변경한 것만 되돌립니다. 시스템이 관리자 암호를 요청합니다.
+	Check failed: {error}	확인 실패: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	NPU의 커널 드라이버와 펌웨어를 확인합니다. 안내만 하며 아무것도 변경하지 않습니다.
+	Components	구성 요소
+	Done. Log out and back in for the change to take effect.	완료되었습니다. 변경 사항을 적용하려면 로그아웃했다가 다시 로그인하세요.
+	GPU access	GPU 접근
+	Install packages: {packages}	패키지 설치: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Intel 또는 AMD GPU의 하드웨어 비디오 드라이버가 들어 있는 Ubuntu 패키지를 설치합니다(NVIDIA는 NVDEC 사용).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	GPU 및 NPU 장치 노드를 열 수 있게 합니다: 해당 노드를 소유한 그룹(render, video)에 추가합니다.
+	Log	로그
+	Log out and back in afterwards for the change to take effect.	그다음 변경 사항을 적용하려면 로그아웃했다가 다시 로그인하세요.
+	Missing access or driver: System Settings (root)…	접근 권한 또는 드라이버 없음: 시스템 설정 (root)…
+	NPU driver	NPU 드라이버
+	Not needed	필요 없음
+	Nothing happened yet in this window.	이 창에서는 아직 아무 일도 없었습니다.
+	Nothing to change.	변경할 것이 없습니다.
+	Plan	계획
+	Plan for {component} failed: {error}	{component} 계획 실패: {error}
+	Plan for {component}: {plan}	{component} 계획: {plan}
+	Plan…	계획…
+	System Settings (root)	시스템 설정 (root)
+	System Settings (root)…	시스템 설정 (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	여기의 작업은 관리자 암호를 요청하며 CFA4 외부에서 시스템을 변경합니다.
+	The system will ask for an administrator password.	시스템이 관리자 암호를 요청합니다.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	이 설치에는 시스템 도우미가 없습니다(.deb 패키지와 함께 제공): 무엇이 없는지는 볼 수 있지만 여기서 변경할 수는 없습니다.
+	Undo the changes?	변경 사항을 되돌릴까요?
+	Undo: removes the installed packages again.	되돌리기: 설치한 패키지를 다시 제거합니다.
+	Undo: removes you from the group again.	되돌리기: 그룹에서 다시 제외합니다.
+	Undo…	되돌리기…
+	VA-API drivers	VA-API 드라이버
+	Waiting for log out	로그아웃 대기 중
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec이 설치되어 있지 않아(Ubuntu 패키지 pkexec) CFA4가 암호를 요청할 수 없습니다.
+	{method} {component} failed: {error}	{method} {component} 실패: {error}
+	{method} {component}: done	{method} {component}: 완료
+	{method} {component}: waiting for the password…	{method} {component}: 암호를 기다리는 중…

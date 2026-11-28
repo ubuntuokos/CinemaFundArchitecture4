@@ -5018,3 +5018,41 @@ export.summary	Low	düşük
 	not in this build	bu derlemede yok
 	switched off in the settings	ayarlarda kapalı
 	vendor-locked backends are switched off	üreticiye bağlı arka uçlar kapalı
+	Add user {user} to the group {group}.	{user} kullanıcısını {group} grubuna ekle.
+	Apply the plan?	Plan uygulansın mı?
+	Apply…	Uygula…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 yalnızca kendi değiştirdiğini geri alır. Sistem bir yönetici parolası isteyecek.
+	Check failed: {error}	Denetim başarısız: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	NPU'nun çekirdek sürücüsünü ve donanım yazılımını denetler; yalnızca yol gösterir, hiçbir şeyi değiştirmez.
+	Components	Bileşenler
+	Done. Log out and back in for the change to take effect.	Tamam. Değişikliğin etkili olması için oturumu kapatıp yeniden açın.
+	GPU access	GPU erişimi
+	Install packages: {packages}	Paketleri kur: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Intel veya AMD GPU'nun donanım video sürücüsünü içeren Ubuntu paketini kurar (NVIDIA, NVDEC kullanır).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	GPU ve NPU aygıt düğümlerini açmanızı sağlar: sizi bunlara sahip olan gruba (render, video) ekler.
+	Log	Günlük
+	Log out and back in afterwards for the change to take effect.	Ardından değişikliğin etkili olması için oturumu kapatıp yeniden açın.
+	Missing access or driver: System Settings (root)…	Eksik erişim veya sürücü: Sistem Ayarları (root)…
+	NPU driver	NPU sürücüsü
+	Not needed	Gerekli değil
+	Nothing happened yet in this window.	Bu pencerede henüz bir şey olmadı.
+	Nothing to change.	Değiştirilecek bir şey yok.
+	Plan	Plan
+	Plan for {component} failed: {error}	{component} planı başarısız: {error}
+	Plan for {component}: {plan}	{component} planı: {plan}
+	Plan…	Plan…
+	System Settings (root)	Sistem Ayarları (root)
+	System Settings (root)…	Sistem Ayarları (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Buradaki eylemler yönetici parolası ister ve sistemi CFA4 dışında değiştirir.
+	The system will ask for an administrator password.	Sistem bir yönetici parolası isteyecek.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Bu kurulumda sistem yardımcısı yok (.deb paketiyle gelir): neyin eksik olduğunu görürsünüz ama burada değiştiremezsiniz.
+	Undo the changes?	Değişiklikler geri alınsın mı?
+	Undo: removes the installed packages again.	Geri al: kurulan paketleri yeniden kaldırır.
+	Undo: removes you from the group again.	Geri al: sizi yeniden gruptan çıkarır.
+	Undo…	Geri al…
+	VA-API drivers	VA-API sürücüleri
+	Waiting for log out	Oturumun kapatılması bekleniyor
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec kurulu değil (Ubuntu paketi pkexec), bu yüzden CFA4 parola isteyemiyor.
+	{method} {component} failed: {error}	{method} {component} başarısız: {error}
+	{method} {component}: done	{method} {component}: tamam
+	{method} {component}: waiting for the password…	{method} {component}: parola bekleniyor…

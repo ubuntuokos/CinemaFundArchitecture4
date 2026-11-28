@@ -5017,3 +5017,41 @@ export.summary	Low	thấp
 	not in this build	không có trong bản dựng này
 	switched off in the settings	đã tắt trong cài đặt
 	vendor-locked backends are switched off	các phần nền gắn với nhà sản xuất đã tắt
+	Add user {user} to the group {group}.	Thêm người dùng {user} vào nhóm {group}.
+	Apply the plan?	Áp dụng kế hoạch?
+	Apply…	Áp dụng…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 chỉ hoàn tác những gì chính nó đã thay đổi. Hệ thống sẽ hỏi mật khẩu quản trị.
+	Check failed: {error}	Kiểm tra thất bại: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Kiểm tra trình điều khiển nhân và firmware của NPU; chỉ hướng dẫn và không thay đổi gì.
+	Components	Thành phần
+	Done. Log out and back in for the change to take effect.	Xong. Đăng xuất rồi đăng nhập lại để thay đổi có hiệu lực.
+	GPU access	Quyền truy cập GPU
+	Install packages: {packages}	Cài gói: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Cài gói Ubuntu chứa trình điều khiển video phần cứng của GPU Intel hoặc AMD (NVIDIA dùng NVDEC).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Cho phép bạn mở các nút thiết bị GPU và NPU: thêm bạn vào nhóm (render, video) sở hữu chúng.
+	Log	Nhật ký
+	Log out and back in afterwards for the change to take effect.	Sau đó đăng xuất rồi đăng nhập lại để thay đổi có hiệu lực.
+	Missing access or driver: System Settings (root)…	Thiếu quyền truy cập hoặc trình điều khiển: Cài đặt hệ thống (root)…
+	NPU driver	Trình điều khiển NPU
+	Not needed	Không cần
+	Nothing happened yet in this window.	Chưa có gì xảy ra trong cửa sổ này.
+	Nothing to change.	Không có gì để thay đổi.
+	Plan	Kế hoạch
+	Plan for {component} failed: {error}	Kế hoạch cho {component} thất bại: {error}
+	Plan for {component}: {plan}	Kế hoạch cho {component}: {plan}
+	Plan…	Kế hoạch…
+	System Settings (root)	Cài đặt hệ thống (root)
+	System Settings (root)…	Cài đặt hệ thống (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Các thao tác ở đây hỏi mật khẩu quản trị và thay đổi hệ thống bên ngoài CFA4.
+	The system will ask for an administrator password.	Hệ thống sẽ hỏi mật khẩu quản trị.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Bản cài đặt này không có trình trợ giúp hệ thống (đi kèm gói .deb): bạn thấy được những gì còn thiếu nhưng không thể thay đổi ở đây.
+	Undo the changes?	Hoàn tác các thay đổi?
+	Undo: removes the installed packages again.	Hoàn tác: gỡ lại các gói đã cài.
+	Undo: removes you from the group again.	Hoàn tác: đưa bạn ra khỏi nhóm lần nữa.
+	Undo…	Hoàn tác…
+	VA-API drivers	Trình điều khiển VA-API
+	Waiting for log out	Đang chờ đăng xuất
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec chưa được cài (gói Ubuntu pkexec), nên CFA4 không thể hỏi mật khẩu.
+	{method} {component} failed: {error}	{method} {component} thất bại: {error}
+	{method} {component}: done	{method} {component}: xong
+	{method} {component}: waiting for the password…	{method} {component}: đang chờ mật khẩu…

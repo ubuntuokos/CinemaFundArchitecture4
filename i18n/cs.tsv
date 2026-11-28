@@ -5017,3 +5017,41 @@ export.summary	Low	nízká
 	not in this build	není součástí tohoto sestavení
 	switched off in the settings	vypnuto v nastavení
 	vendor-locked backends are switched off	podpůrné vrstvy vázané na výrobce jsou vypnuté
+	Add user {user} to the group {group}.	Přidat uživatele {user} do skupiny {group}.
+	Apply the plan?	Použít plán?
+	Apply…	Použít…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 vrací zpět jen to, co samo změnilo. Systém požádá o heslo správce.
+	Check failed: {error}	Kontrola selhala: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Kontroluje ovladač jádra a firmware NPU; jen radí a nic nemění.
+	Components	Součásti
+	Done. Log out and back in for the change to take effect.	Hotovo. Odhlaste se a znovu přihlaste, aby se změna projevila.
+	GPU access	Přístup ke GPU
+	Install packages: {packages}	Nainstalovat balíčky: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Nainstaluje balíček Ubuntu s hardwarovým video ovladačem GPU Intel nebo AMD (NVIDIA používá NVDEC).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Umožní otevřít uzly zařízení GPU a NPU: přidá vás do skupiny (render, video), které patří.
+	Log	Protokol
+	Log out and back in afterwards for the change to take effect.	Poté se odhlaste a znovu přihlaste, aby se změna projevila.
+	Missing access or driver: System Settings (root)…	Chybí přístup nebo ovladač: Systémová nastavení (root)…
+	NPU driver	Ovladač NPU
+	Not needed	Není potřeba
+	Nothing happened yet in this window.	V tomto okně se zatím nic nestalo.
+	Nothing to change.	Není co měnit.
+	Plan	Plán
+	Plan for {component} failed: {error}	Plán pro {component} selhal: {error}
+	Plan for {component}: {plan}	Plán pro {component}: {plan}
+	Plan…	Plán…
+	System Settings (root)	Systémová nastavení (root)
+	System Settings (root)…	Systémová nastavení (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Akce zde vyžadují heslo správce a mění systém mimo CFA4.
+	The system will ask for an administrator password.	Systém požádá o heslo správce.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Tato instalace nemá systémového pomocníka (dodává se s balíčkem .deb): vidíte, co chybí, ale zde to změnit nemůžete.
+	Undo the changes?	Vrátit změny zpět?
+	Undo: removes the installed packages again.	Vrácení: znovu odebere nainstalované balíčky.
+	Undo: removes you from the group again.	Vrácení: znovu vás odebere ze skupiny.
+	Undo…	Vrátit zpět…
+	VA-API drivers	Ovladače VA-API
+	Waiting for log out	Čeká na odhlášení
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec není nainstalován (balíček Ubuntu pkexec), takže CFA4 nemůže požádat o heslo.
+	{method} {component} failed: {error}	{method} {component} selhalo: {error}
+	{method} {component}: done	{method} {component}: hotovo
+	{method} {component}: waiting for the password…	{method} {component}: čeká se na heslo…

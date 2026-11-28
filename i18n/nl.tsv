@@ -5017,3 +5017,41 @@ export.summary	Low	laag
 	not in this build	niet in deze build
 	switched off in the settings	uitgeschakeld in de instellingen
 	vendor-locked backends are switched off	fabrikantgebonden backends zijn uitgeschakeld
+	Add user {user} to the group {group}.	Gebruiker {user} toevoegen aan de groep {group}.
+	Apply the plan?	Het plan toepassen?
+	Apply…	Toepassen…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 maakt alleen ongedaan wat het zelf heeft gewijzigd. Het systeem vraagt om een beheerderswachtwoord.
+	Check failed: {error}	Controle mislukt: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Controleert het kernelstuurprogramma en de firmware van de NPU; geeft alleen aanwijzingen en wijzigt niets.
+	Components	Onderdelen
+	Done. Log out and back in for the change to take effect.	Klaar. Meld je af en weer aan om de wijziging te laten werken.
+	GPU access	GPU-toegang
+	Install packages: {packages}	Pakketten installeren: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Installeert het Ubuntu-pakket met het hardware-videostuurprogramma van een Intel- of AMD-GPU (NVIDIA gebruikt NVDEC).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Laat je de GPU- en NPU-apparaatknooppunten openen: voegt je toe aan de groep (render, video) die er eigenaar van is.
+	Log	Logboek
+	Log out and back in afterwards for the change to take effect.	Meld je daarna af en weer aan om de wijziging te laten werken.
+	Missing access or driver: System Settings (root)…	Ontbrekende toegang of stuurprogramma: Systeeminstellingen (root)…
+	NPU driver	NPU-stuurprogramma
+	Not needed	Niet nodig
+	Nothing happened yet in this window.	In dit venster is nog niets gebeurd.
+	Nothing to change.	Niets te wijzigen.
+	Plan	Plan
+	Plan for {component} failed: {error}	Plan voor {component} mislukt: {error}
+	Plan for {component}: {plan}	Plan voor {component}: {plan}
+	Plan…	Plan…
+	System Settings (root)	Systeeminstellingen (root)
+	System Settings (root)…	Systeeminstellingen (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	De acties hier vragen om een beheerderswachtwoord en wijzigen het systeem buiten CFA4.
+	The system will ask for an administrator password.	Het systeem vraagt om een beheerderswachtwoord.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Deze installatie heeft geen systeemhulp (die komt met het .deb-pakket): je ziet wat ontbreekt, maar kunt het hier niet wijzigen.
+	Undo the changes?	De wijzigingen ongedaan maken?
+	Undo: removes the installed packages again.	Ongedaan maken: verwijdert de geïnstalleerde pakketten weer.
+	Undo: removes you from the group again.	Ongedaan maken: haalt je weer uit de groep.
+	Undo…	Ongedaan maken…
+	VA-API drivers	VA-API-stuurprogramma's
+	Waiting for log out	Wacht op afmelden
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec is niet geïnstalleerd (Ubuntu-pakket pkexec), dus CFA4 kan niet om het wachtwoord vragen.
+	{method} {component} failed: {error}	{method} {component} mislukt: {error}
+	{method} {component}: done	{method} {component}: klaar
+	{method} {component}: waiting for the password…	{method} {component}: wacht op het wachtwoord…

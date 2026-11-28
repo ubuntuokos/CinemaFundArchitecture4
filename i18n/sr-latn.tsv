@@ -5019,3 +5019,41 @@ export.summary	Low	nizak
 	not in this build	nije deo ove verzije
 	switched off in the settings	isključeno u podešavanjima
 	vendor-locked backends are switched off	pozadine vezane za proizvođača su isključene
+	Add user {user} to the group {group}.	Dodaj korisnika {user} u grupu {group}.
+	Apply the plan?	Primeniti plan?
+	Apply…	Primeni…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 poništava samo ono što je sam promenio. Sistem će zatražiti administratorsku lozinku.
+	Check failed: {error}	Provera nije uspela: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Proverava upravljački program jezgra i firmver NPU-a; samo savetuje i ništa ne menja.
+	Components	Komponente
+	Done. Log out and back in for the change to take effect.	Gotovo. Odjavite se i ponovo prijavite da bi promena stupila na snagu.
+	GPU access	Pristup GPU-u
+	Install packages: {packages}	Instaliraj pakete: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Instalira Ubuntu paket sa hardverskim video upravljačkim programom za Intel ili AMD GPU (NVIDIA koristi NVDEC).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Omogućava otvaranje čvorova uređaja GPU-a i NPU-a: dodaje vas u grupu (render, video) kojoj pripadaju.
+	Log	Dnevnik
+	Log out and back in afterwards for the change to take effect.	Zatim se odjavite i ponovo prijavite da bi promena stupila na snagu.
+	Missing access or driver: System Settings (root)…	Nedostaje pristup ili upravljački program: Sistemska podešavanja (root)…
+	NPU driver	Upravljački program NPU-a
+	Not needed	Nije potrebno
+	Nothing happened yet in this window.	U ovom prozoru se još ništa nije desilo.
+	Nothing to change.	Nema šta da se menja.
+	Plan	Plan
+	Plan for {component} failed: {error}	Plan za {component} nije uspeo: {error}
+	Plan for {component}: {plan}	Plan za {component}: {plan}
+	Plan…	Plan…
+	System Settings (root)	Sistemska podešavanja (root)
+	System Settings (root)…	Sistemska podešavanja (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Radnje ovde traže administratorsku lozinku i menjaju sistem van CFA4.
+	The system will ask for an administrator password.	Sistem će zatražiti administratorsku lozinku.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Ova instalacija nema sistemskog pomoćnika (dolazi sa .deb paketom): vidite šta nedostaje, ali to ne možete promeniti ovde.
+	Undo the changes?	Poništiti promene?
+	Undo: removes the installed packages again.	Poništavanje: ponovo uklanja instalirane pakete.
+	Undo: removes you from the group again.	Poništavanje: ponovo vas uklanja iz grupe.
+	Undo…	Poništi…
+	VA-API drivers	Upravljački programi VA-API
+	Waiting for log out	Čeka odjavu
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec nije instaliran (Ubuntu paket pkexec), pa CFA4 ne može da zatraži lozinku.
+	{method} {component} failed: {error}	{method} {component} nije uspelo: {error}
+	{method} {component}: done	{method} {component}: gotovo
+	{method} {component}: waiting for the password…	{method} {component}: čeka se lozinka…

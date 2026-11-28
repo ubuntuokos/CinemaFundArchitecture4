@@ -5020,3 +5020,41 @@ export.summary	Low	დაბალი
 	not in this build	ამ აწყობაში არ შედის
 	switched off in the settings	გამორთულია პარამეტრებში
 	vendor-locked backends are switched off	მწარმოებელზე მიბმული მოდულები გამორთულია
+	Add user {user} to the group {group}.	მომხმარებელ {user}-ის დამატება ჯგუფში {group}.
+	Apply the plan?	გამოვიყენო გეგმა?
+	Apply…	გამოყენება…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 აუქმებს მხოლოდ იმას, რაც თავად შეცვალა. სისტემა მოითხოვს ადმინისტრატორის პაროლს.
+	Check failed: {error}	შემოწმება ვერ მოხერხდა: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	ამოწმებს NPU-ს ბირთვის დრაივერს და ჩაშენებულ პროგრამას; მხოლოდ რჩევას იძლევა და არაფერს ცვლის.
+	Components	კომპონენტები
+	Done. Log out and back in for the change to take effect.	მზადაა. ცვლილების ასამოქმედებლად გამოდით და ხელახლა შედით.
+	GPU access	GPU-ზე წვდომა
+	Install packages: {packages}	პაკეტების დაყენება: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	აყენებს Ubuntu-ს პაკეტს Intel ან AMD GPU-ს აპარატურული ვიდეოდრაივერით (NVIDIA იყენებს NVDEC-ს).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	საშუალებას გაძლევთ გახსნათ GPU და NPU მოწყობილობის კვანძები: გამატებთ ჯგუფში (render, video), რომელსაც ისინი ეკუთვნის.
+	Log	ჟურნალი
+	Log out and back in afterwards for the change to take effect.	შემდეგ ცვლილების ასამოქმედებლად გამოდით და ხელახლა შედით.
+	Missing access or driver: System Settings (root)…	აკლია წვდომა ან დრაივერი: სისტემის პარამეტრები (root)…
+	NPU driver	NPU დრაივერი
+	Not needed	საჭირო არ არის
+	Nothing happened yet in this window.	ამ ფანჯარაში ჯერ არაფერი მომხდარა.
+	Nothing to change.	შესაცვლელი არაფერია.
+	Plan	გეგმა
+	Plan for {component} failed: {error}	{component}-ის გეგმა ვერ მოხერხდა: {error}
+	Plan for {component}: {plan}	{component}-ის გეგმა: {plan}
+	Plan…	გეგმა…
+	System Settings (root)	სისტემის პარამეტრები (root)
+	System Settings (root)…	სისტემის პარამეტრები (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	აქ არსებული მოქმედებები ითხოვს ადმინისტრატორის პაროლს და ცვლის სისტემას CFA4-ის გარეთ.
+	The system will ask for an administrator password.	სისტემა მოითხოვს ადმინისტრატორის პაროლს.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	ამ ინსტალაციას არ აქვს სისტემური დამხმარე (ის .deb პაკეტთან ერთად მოდის): ხედავთ, რა აკლია, მაგრამ აქ ვერ შეცვლით.
+	Undo the changes?	გავაუქმო ცვლილებები?
+	Undo: removes the installed packages again.	გაუქმება: ხელახლა შლის დაყენებულ პაკეტებს.
+	Undo: removes you from the group again.	გაუქმება: ხელახლა გამოგრიცხავთ ჯგუფიდან.
+	Undo…	გაუქმება…
+	VA-API drivers	VA-API დრაივერები
+	Waiting for log out	ელოდება გამოსვლას
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec არ არის დაყენებული (Ubuntu-ს პაკეტი pkexec), ამიტომ CFA4 ვერ მოითხოვს პაროლს.
+	{method} {component} failed: {error}	{method} {component} ვერ მოხერხდა: {error}
+	{method} {component}: done	{method} {component}: მზადაა
+	{method} {component}: waiting for the password…	{method} {component}: პაროლის მოლოდინი…

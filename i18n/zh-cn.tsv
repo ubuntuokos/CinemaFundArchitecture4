@@ -5015,3 +5015,41 @@
 	not in this build	本版本未包含
 	switched off in the settings	已在设置中关闭
 	vendor-locked backends are switched off	绑定厂商的后端已关闭
+	Add user {user} to the group {group}.	将用户 {user} 添加到组 {group}。
+	Apply the plan?	应用此计划？
+	Apply…	应用…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 只撤销它自己做出的更改。系统将要求输入管理员密码。
+	Check failed: {error}	检查失败：{error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	检查 NPU 的内核驱动和固件；只提供指导，不做任何更改。
+	Components	组件
+	Done. Log out and back in for the change to take effect.	完成。注销并重新登录后更改生效。
+	GPU access	GPU 访问
+	Install packages: {packages}	安装软件包：{packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	安装包含 Intel 或 AMD GPU 硬件视频驱动的 Ubuntu 软件包（NVIDIA 使用 NVDEC）。
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	让你能够打开 GPU 和 NPU 设备节点：将你加入拥有它们的组（render、video）。
+	Log	日志
+	Log out and back in afterwards for the change to take effect.	之后注销并重新登录，更改才会生效。
+	Missing access or driver: System Settings (root)…	缺少访问权限或驱动：系统设置（root）…
+	NPU driver	NPU 驱动
+	Not needed	不需要
+	Nothing happened yet in this window.	此窗口中尚未发生任何事情。
+	Nothing to change.	没有需要更改的内容。
+	Plan	计划
+	Plan for {component} failed: {error}	{component} 的计划失败：{error}
+	Plan for {component}: {plan}	{component} 的计划：{plan}
+	Plan…	计划…
+	System Settings (root)	系统设置（root）
+	System Settings (root)…	系统设置（root）…
+	The actions here ask for an administrator password and change the system outside CFA4.	此处的操作需要管理员密码，并会在 CFA4 之外更改系统。
+	The system will ask for an administrator password.	系统将要求输入管理员密码。
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	此安装没有系统助手（随 .deb 软件包提供）：你可以看到缺少什么，但不能在此更改。
+	Undo the changes?	撤销这些更改？
+	Undo: removes the installed packages again.	撤销：再次移除已安装的软件包。
+	Undo: removes you from the group again.	撤销：再次将你从组中移除。
+	Undo…	撤销…
+	VA-API drivers	VA-API 驱动
+	Waiting for log out	等待注销
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	未安装 pkexec（Ubuntu 软件包 pkexec），因此 CFA4 无法请求密码。
+	{method} {component} failed: {error}	{method} {component} 失败：{error}
+	{method} {component}: done	{method} {component}：完成
+	{method} {component}: waiting for the password…	{method} {component}：正在等待密码…
