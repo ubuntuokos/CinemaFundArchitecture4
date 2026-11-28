@@ -283,13 +283,27 @@ impl Exp<'_, '_> {
 
     fn transition_json(&mut self, x: &Transition, cut: Tick, rate: FrameRate) -> Value {
         let dissolve = matches!(x.effect.effect.as_str(), "cross_dissolve" | "constant_power" | "constant_gain" | "film_dissolve");
+        let mut name = transition_name(&x.effect);
+        let mut kind = if dissolve { "SMPTE_Dissolve".to_string() } else { "Custom_Transition".to_string() };
+        // A transition CFA4 could not map (OTIO-2.6, H7) keeps its type and name while it is still the
+        // dissolve it was read as; once the user changed it, CFA4's own mapping is written.
+        if matches!(x.effect.effect.as_str(), "cross_dissolve" | "constant_power")
+            && let Some(t) = x.interchange.get(OWN).and_then(|o| o.get("transition"))
+        {
+            if let Some(k) = t.get("transition_type").and_then(Value::as_str) {
+                kind = k.to_string();
+            }
+            if let Some(n) = t.get("name").and_then(Value::as_str) {
+                name = n.to_string();
+            }
+        }
         json!({
             "OTIO_SCHEMA": "Transition.1",
-            "name": transition_name(&x.effect),
-            "transition_type": if dissolve { "SMPTE_Dissolve" } else { "Custom_Transition" },
+            "name": name,
+            "transition_type": kind,
             "in_offset": rt(cut - x.start, rate),
             "out_offset": rt(x.end() - cut, rate),
-            "metadata": {"cfa4": {"effect": x.effect, "align": x.align, "reverse": x.reverse}},
+            "metadata": metadata(json!({"effect": x.effect, "align": x.align, "reverse": x.reverse}), &x.interchange),
         })
     }
 
@@ -752,6 +766,21 @@ impl Imp<'_, '_> {
                     }
                 }
             };
+            // Neither the name nor the type is one CFA4 knows (OTIO-2.6, H7): it was read as a dissolve,
+            // and both are kept to be written back while it stays one.
+            let unknown_type = {
+                let (n, ty) = (name_of(c), c.get("transition_type").and_then(Value::as_str).unwrap_or("SMPTE_Dissolve"));
+                let audio = kind == TrackKind::Audio;
+                let known = |s: &str| {
+                    !s.is_empty() && {
+                        let mut r = Report::default();
+                        transition_effect(s, audio, &mut r);
+                        r.entries.is_empty()
+                    }
+                };
+                (matches!(effect.effect.as_str(), "cross_dissolve" | "constant_power") && !known(&n) && !known(ty))
+                    .then(|| json!({"transition_type": ty, "name": n}))
+            };
             let align = meta.and_then(|m| m.get("align")).and_then(|a| serde_json::from_value(a.clone()).ok()).unwrap_or(if inn == Tick::ZERO {
                 TransitionAlign::StartAtCut
             } else if out == Tick::ZERO {
@@ -760,6 +789,10 @@ impl Imp<'_, '_> {
                 TransitionAlign::CenterAtCut
             });
             let reverse = meta.and_then(|m| m.get("reverse")).and_then(Value::as_bool).unwrap_or(false);
+            let mut interchange = self.foreign(c);
+            if let Some(t) = unknown_type {
+                interchange.insert(OWN.to_string(), json!({"transition": t}));
+            }
             track.transitions.push(Transition {
                 id: TransitionId(self.b.alloc()),
                 effect,
@@ -769,7 +802,7 @@ impl Imp<'_, '_> {
                 to,
                 align,
                 reverse,
-                interchange: Default::default(),
+                interchange,
             });
         }
         track.sort();

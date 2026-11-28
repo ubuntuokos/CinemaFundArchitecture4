@@ -70,6 +70,14 @@ against the same 16 MB budget. A clip with only its default reference keeps noth
 Not kept yet: metadata on markers, transitions, effects and the active media reference. CFA4's own work has
 no such keys, and an empty field is not written to the project file.
 
+## Transitions from other programs (OTIO-2.6, H7)
+
+| OTIO `Transition` | CFA4 | Written as |
+|---|---|---|
+| `SMPTE_Dissolve`, or a name CFA4 knows (`Dissolve`, `Cross Fade (0dB)`, `Wipe`, `Dip to Color Dissolve`, a CFA4 transition's name) | the matching CFA4 transition | `SMPTE_Dissolve` for the dissolves, else `Custom_Transition`, with the display name |
+| a type and a name CFA4 does not know | a dissolve, with a report entry; the type and name are kept in the transition's `interchange` under `cfa4.transition` | the original `transition_type` and `name`, while the transition is still the dissolve it was read as; once changed, CFA4's own mapping |
+| its `metadata` (keys other than CFA4's own) | the transition's `interchange` (16 MB budget shared with the rest) | `metadata`, unchanged |
+
 ## Image sequences
 
 An OTIO `ImageSequenceReference` is CFA4 image-sequence media (OTIO-2.3). OTIO describes the frames
