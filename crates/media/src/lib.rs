@@ -243,6 +243,30 @@ pub trait MediaSource: Send + Sync {
     fn missing_keys(&self) -> Vec<String> {
         Vec::new()
     }
+    /// The object audio of the primary stream from sample `start` (at the stream's own rate,
+    /// media time), unrendered, for the headphone monitor
+    /// (`docs/plans/CFA4-BINAURAL-MONITOR-001.md` B-03): `None` for a stream without objects (all
+    /// but Dolby TrueHD Atmos for now), an error when this block's objects cannot be decoded (the
+    /// rendered channels of [`audio`](Self::audio) still play).
+    fn object_audio(&self, _start: i64, _frames: usize) -> Option<Result<ObjectAudio>> {
+        None
+    }
+}
+
+/// Unrendered object audio of one block (see [`MediaSource::object_audio`]).
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ObjectAudio {
+    /// The stream's own rate.
+    pub sample_rate: u32,
+    /// The block's first sample.
+    pub start: i64,
+    /// One mono signal per object (beds first), each the block's length.
+    pub objects: Vec<Vec<f32>>,
+    /// Each object's last metadata update before `start` (offsets in media samples): its state
+    /// when playing starts here.
+    pub current: Vec<cfa4_truehd::render::Event>,
+    /// The updates within the block, in order (offsets in media samples).
+    pub events: Vec<cfa4_truehd::render::Event>,
 }
 
 pub type SharedSource = Arc<dyn MediaSource>;

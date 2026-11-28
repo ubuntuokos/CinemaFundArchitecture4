@@ -40,7 +40,7 @@ mod set;
 mod speakers;
 
 pub use binaural::{Binaural, BinauralConfig};
-pub use monitor::{ChannelMonitor, MonitorConfig};
+pub use monitor::{ChannelMonitor, MonitorConfig, ObjectMonitor};
 pub use near_field::{NearFieldFilter, ear_direction, near_field};
 pub use scene::{HeadphoneMode, Placement, SceneConfig, SceneRenderer, SceneState};
 pub use set::{HrtfSet, Neighbours};

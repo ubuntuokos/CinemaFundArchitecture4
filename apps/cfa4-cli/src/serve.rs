@@ -393,8 +393,15 @@ fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
         let (channels, heard_on) = if has_audio && start >= 0 {
             let provider = s.media.provider(s.project.clone(), s.services.clone());
             let source = cfa4_render::SourceProvider::source(&provider, media).ok_or("source audio is unavailable (offline media?)")?;
-            let sound = source.audio(start, frames, sr).map_err(|e| format!("source audio decoding failed: {e}"))?;
-            heard("source", start, sound, frames, binaural.as_ref(), cfa4_audio_dsp::channels::Mixdown::default())
+            // Dolby Atmos through headphones: the objects from their own places
+            let objects = binaural.as_ref().and_then(|b| crate::serve_monitor::render_objects(media.0, sr, start, frames, source.as_ref(), b));
+            match objects {
+                Some((ears, m)) => (ears.into(), Some(m)),
+                None => {
+                    let sound = source.audio(start, frames, sr).map_err(|e| format!("source audio decoding failed: {e}"))?;
+                    heard("source", start, sound, frames, binaural.as_ref(), cfa4_audio_dsp::channels::Mixdown::default())
+                }
+            }
         } else {
             (vec![vec![0.0; frames]; 2], None)
         };
@@ -1419,6 +1426,38 @@ mod tests {
         // a wrong monitor is refused, not guessed
         let bad = ask(&mut s, 6, json!({"start": 0, "frames": 480, "monitor": {"mode": "binaural", "room": 7}}));
         assert_eq!(bad.json["ok"], json!(false));
+    }
+
+    /// A real Dolby Atmos file (`CFA4_ATMOS_MKV`, never committed) in the Source monitor through
+    /// headphones: its objects from their own places; without the file the test passes.
+    #[test]
+    fn the_source_monitor_plays_atmos_objects_through_headphones() {
+        let Ok(path) = std::env::var("CFA4_ATMOS_MKV") else {
+            eprintln!("CFA4_ATMOS_MKV is not set: skipped");
+            return;
+        };
+        let mut s = Session::default();
+        let imported = s.execute("file.import", json!({"paths": [path]})).expect("import");
+        assert!(imported["errors"].as_array().is_none_or(Vec::is_empty), "{imported}");
+        let item = s.project.items.values().find(|i| i.as_media().is_some()).map(|i| i.id).expect("imported");
+        s.execute("source.open", json!({"item": item.0})).expect("open source");
+        assert!(crate::serve_monitor::wait_for(&crate::serve_monitor::SetId::Builtin, 48_000, 30));
+        let ask = |s: &mut Session, start: i64, room: f32| {
+            let p = json!({"target": "source", "start": start, "frames": 9_600, "monitor": {"mode": "binaural", "room": room}});
+            let r = handle(s, json!(1), "audio.render", p).expect("reply");
+            assert_eq!(r.json["ok"], json!(true), "{}", r.json);
+            let v: Vec<f32> = r.binary.as_deref().unwrap_or(&[]).chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect();
+            (r.json["result"].clone(), v)
+        };
+        let (meta, ears) = ask(&mut s, 480_000, 0.35);
+        assert_eq!(meta["monitor"]["format"], json!("Dolby TrueHD Atmos"), "{meta}");
+        assert!(meta["monitor"]["objects"].as_u64().is_some_and(|n| n >= 10), "{meta}");
+        assert!(ears.iter().all(|x| x.is_finite()) && ears.iter().any(|x| x.abs() > 1e-4));
+        // the next block goes on, a seek starts over
+        let (next, _) = ask(&mut s, 489_600, 0.35);
+        assert_eq!(next["monitor"]["format"], json!("Dolby TrueHD Atmos"));
+        let (back, _) = ask(&mut s, 96_000, 0.35);
+        assert_eq!(back["monitor"]["format"], json!("Dolby TrueHD Atmos"));
     }
 
     #[test]

@@ -39,7 +39,9 @@ room.process(&channels, &mut left, &mut right);                   // 12 channels
   layouts (1, 2, 6, 8, 10 or 12 channels), as scene beds; it keeps its history while the blocks
   follow each other and starts over on a jump or a layout change. `MonitorConfig::room` 0 is dry,
   up to 0.5 the small room, above the larger one. `cfa4-cli serve` plays `audio.render {monitor}`
-  through it (`docs/qt-gui.md`). One second of 7.1.4 with the room takes about 50–65 ms of one
+  through it (`docs/qt-gui.md`). `ObjectMonitor` does the same for Dolby TrueHD Atmos objects
+  (`cfa4_media::MediaSource::object_audio`: the block's object signals, each object's current state
+  and the block's updates), through `atmos::truehd_state`. One second of 7.1.4 with the room takes about 50–65 ms of one
   core (release, the CI container), so a monitor uses some 6 % of a core.
 - `atmos`: `schedule_truehd` / `truehd_state` turn the events of `cfa4_truehd::cfa4::ObjectDecoder`
   into scene updates (bed labels to loudspeaker directions, snap to the nearest 7.1.4 loudspeaker,

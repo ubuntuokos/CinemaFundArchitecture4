@@ -14,6 +14,8 @@
 
 use std::sync::Arc;
 
+use cfa4_truehd::render::Event;
+
 use crate::scene::{HeadphoneMode, Placement, SceneConfig, SceneRenderer, SceneState};
 use crate::{Error, HrtfSet, Result, SpeakerLayout};
 
@@ -125,6 +127,54 @@ impl ChannelMonitor {
         self.clock = self.clock.saturating_add(frames as u64);
         self.next = Some(start.saturating_add(frames as i64));
         Ok(())
+    }
+}
+
+/// Dolby TrueHD Atmos objects block after block, as the Source monitor plays them: each block's
+/// object signals and metadata updates (`cfa4_media::ObjectAudio`) go through
+/// [`crate::atmos::truehd_state`] into a [`SceneRenderer`]. A block that does not follow the last
+/// one starts over from the objects' current states.
+pub struct ObjectMonitor {
+    scene: SceneRenderer,
+    config: MonitorConfig,
+    next: Option<u64>,
+}
+
+impl ObjectMonitor {
+    /// A monitor with `hrtf` (at the rate of the objects to come).
+    pub fn new(hrtf: Arc<HrtfSet>, config: MonitorConfig) -> Result<Self> {
+        config.check()?;
+        let scene = SceneRenderer::new(hrtf, SceneConfig { lfe_db: config.lfe_db, room: config.room > 0.0, ..SceneConfig::default() })?;
+        Ok(ObjectMonitor { scene, config, next: None })
+    }
+
+    pub fn config(&self) -> MonitorConfig {
+        self.config
+    }
+
+    /// The HRTF set.
+    pub fn hrtf(&self) -> &Arc<HrtfSet> {
+        self.scene.hrtf()
+    }
+
+    /// Forgets the history: the next block starts over.
+    pub fn reset(&mut self) {
+        self.next = None;
+    }
+
+    /// Renders the block from sample `start`: `objects[o]` is object o's signal, `current` each
+    /// object's last update before the block (used when the block starts over), `events` the
+    /// updates within it (offsets in the same samples as `start`).
+    pub fn process(&mut self, start: u64, objects: &[&[f32]], current: &[Event], events: &[Event], left: &mut [f32], right: &mut [f32]) {
+        let frames = left.len().min(right.len());
+        let mode = self.config.mode();
+        if self.next != Some(start) {
+            self.scene.reset();
+            crate::atmos::schedule_truehd(&mut self.scene, current, mode);
+        }
+        crate::atmos::schedule_truehd(&mut self.scene, events, mode);
+        self.scene.render(start, objects, &mut left[..frames], &mut right[..frames]);
+        self.next = Some(start.saturating_add(frames as u64));
     }
 }
 

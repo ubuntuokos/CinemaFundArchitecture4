@@ -68,6 +68,8 @@ struct MkvAudio {
     starts: Vec<i64>,
     /// Decoder pre-roll after a seek, in source sample frames (0: prime with one packet).
     preroll: i64,
+    /// A Dolby TrueHD track's object decoding, for the headphone monitor.
+    objects: Option<crate::truehd_objects::TrueHdObjects>,
 }
 
 pub struct MkvSource {
@@ -772,7 +774,8 @@ impl MkvSource {
                     checkpoints: Default::default(),
                     real: None,
                 });
-                Some(MkvAudio { track: i, state, starts, preroll })
+                let objects = matches!(t.codec, Codec::TrueHd).then(crate::truehd_objects::TrueHdObjects::new);
+                Some(MkvAudio { track: i, state, starts, preroll, objects })
             })
             .collect();
         // WebM transparency: VP8 / VP9 alpha in each block's BlockAdditional (ID 1)
@@ -1029,6 +1032,13 @@ impl MediaSource for MkvSource {
 
     fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> Result<AudioBuffer, MediaError> {
         self.audio_stream(0, start, frames, sample_rate)
+    }
+
+    fn object_audio(&self, start: i64, frames: usize) -> Option<Result<cfa4_media::ObjectAudio, MediaError>> {
+        let a = self.audios.first()?;
+        let objects = a.objects.as_ref()?;
+        let rate = self.info.audio_streams.first()?.sample_rate;
+        objects.read(&a.starts, rate, a.preroll, start, frames, |i| self.read(a.track, i).map_err(|e| MediaError::Decode(e.to_string())))
     }
 
     fn audio_stream(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> Result<AudioBuffer, MediaError> {

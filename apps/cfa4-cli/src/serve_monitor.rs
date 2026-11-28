@@ -10,7 +10,7 @@
 
 use std::sync::{Arc, Mutex};
 
-use cfa4_hrtf::{ChannelMonitor, HrtfSet, MonitorConfig};
+use cfa4_hrtf::{ChannelMonitor, HrtfSet, MonitorConfig, ObjectMonitor};
 use serde_json::{Value, json};
 
 /// The HRTF set a request names.
@@ -188,6 +188,49 @@ pub fn render(target: &'static str, rate: u32, start: i64, channels: &[Vec<f32>]
         ),
         Err(e) => (None, speakers(json!({"error": e}))),
     }
+}
+
+/// The Source clip's object renderer: (media id, set, config, renderer).
+type Objects = (u64, SetId, MonitorConfig, ObjectMonitor);
+
+thread_local! {
+    static OBJECTS: std::cell::RefCell<Option<Objects>> = const { std::cell::RefCell::new(None) };
+}
+
+/// The two ears of the Source clip's object audio (Dolby TrueHD Atmos) from sample `start` at
+/// `rate`, and the reply's `monitor` object; `None` when the clip has no objects, when they are
+/// not at `rate`, when the set is not ready or when this block's objects cannot be decoded (the
+/// clip's channels then play through [`render`]).
+pub fn render_objects(media: u64, rate: u32, start: i64, frames: usize, source: &dyn cfa4_media::MediaSource, b: &Binaural) -> Option<([Vec<f32>; 2], Value)> {
+    let Load::Ready(set) = set_at(&b.set, rate) else { return None };
+    let block = match source.object_audio(start, frames)? {
+        Ok(block) => block,
+        Err(e) => {
+            log::warn!("headphone monitor: the objects do not decode here ({e}); their channels play");
+            return None;
+        }
+    };
+    if block.sample_rate != rate {
+        return None;
+    }
+    let start = u64::try_from(start).ok()?;
+    OBJECTS.with(|cell| {
+        let mut slot = cell.borrow_mut();
+        let fits = slot.as_ref().is_some_and(|(m, s, c, r)| *m == media && *s == b.set && *c == b.config && Arc::ptr_eq(r.hrtf(), &set));
+        if !fits {
+            *slot = Some((media, b.set.clone(), b.config, ObjectMonitor::new(set.clone(), b.config).ok()?));
+        }
+        let (.., monitor) = slot.as_mut()?;
+        let inputs: Vec<&[f32]> = block.objects.iter().map(Vec::as_slice).collect();
+        let mut ears = [vec![0.0_f32; frames], vec![0.0_f32; frames]];
+        let [l, r] = &mut ears;
+        monitor.process(start, &inputs, &block.current, &block.events, l, r);
+        let meta = json!({
+            "mode": "binaural", "hrtf": b.set.name(), "set": set.name(), "room": b.config.room, "lfe_db": b.config.lfe_db,
+            "objects": block.objects.len(), "format": "Dolby TrueHD Atmos",
+        });
+        Some((ears, meta))
+    })
 }
 
 #[cfg(test)]

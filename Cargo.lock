@@ -2081,6 +2081,7 @@ dependencies = [
  "cfa4-realaudio",
  "cfa4-testkit",
  "cfa4-time",
+ "cfa4-truehd",
  "cfa4-truespeech",
  "cfa4-twinvq",
  "cfa4-yamaha-oki",
