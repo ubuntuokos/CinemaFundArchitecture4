@@ -41,6 +41,7 @@ mod hls_out;
 mod imf_out;
 mod job;
 mod mpeg_out;
+pub mod mpegts_profile;
 mod mxf_out;
 mod opus_out;
 mod pace;
@@ -3754,6 +3755,8 @@ mod dcp_tests;
 mod imf_tests;
 #[cfg(test)]
 mod mpeg2_tests;
+#[cfg(test)]
+mod mpegts_profile_tests;
 #[cfg(test)]
 mod mxf_tests;
 #[cfg(test)]

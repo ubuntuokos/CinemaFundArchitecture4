@@ -26,6 +26,8 @@ mod mux;
 mod pes;
 pub use mux::{MuxCodec, MuxError, MuxFormat, MuxResult, Muxer, lpcm_unit_bytes};
 mod ps;
+pub mod si;
+pub use si::{ServiceType, SiError, TsParams};
 mod ts;
 
 use std::io;
@@ -358,6 +360,8 @@ impl Unwrap {
 
 #[cfg(test)]
 mod mux_tests;
+#[cfg(test)]
+mod si_tests;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
