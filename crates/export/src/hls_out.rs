@@ -160,7 +160,7 @@ impl HlsMux {
     pub fn new(s: HlsSetup<'_>) -> Result<Self> {
         let files = hls_files(&s.settings.path, s.height);
         let mut opts = WriterOptions::new(Brand::Mp4);
-        opts.metadata = s.settings.metadata.udta();
+        opts.metadata = crate::binaural::udta(s.settings);
         opts.chapters = s.chapters;
         let mut frag = FragmentedWriter::new(Vec::new(), opts.clone());
         let codecs = video_codecs(&s.video);

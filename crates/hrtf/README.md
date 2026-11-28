@@ -51,6 +51,10 @@ room.process(&channels, &mut left, &mut right);                   // 12 channels
   A dense object mix can pass full scale (the Altitude16 Atmos sample peaks at +3.8 dBFS and
   0.16 % of its samples clip; `--gain-db -4` keeps it under): the summary gives `peakDb` and
   `clippedSamples`. 87 s of that sample (16 objects, room on) take 34 s on the CI container.
+- Export ▸ Audio ▸ Binaural stereo (`ExportSettings.audio.binaural {hrtf, room, lfe_db}`, B-05):
+  `cfa4-export`'s `binaural` module plays the sequence's Mix through `ChannelMonitor` exactly as
+  the Program monitor does, in every format with sound; the file names the set (WAV `LIST/INFO`
+  `ICMT`, FLAC `COMMENT`, MP4 / QuickTime `©cmt`).
 - `atmos`: `schedule_truehd` / `truehd_state` turn the events of `cfa4_truehd::cfa4::ObjectDecoder`
   into scene updates (bed labels to loudspeaker directions, snap to the nearest 7.1.4 loudspeaker,
   elevation off to ear height; the OAMD headphone element's mode is not mapped, see the module

@@ -133,7 +133,7 @@ pub(crate) fn export(
         Sink::Adts { header: AdtsHeader::from_asc(&cfg.asc)?, out: Out::create(settings)? }
     } else {
         let mut opts = WriterOptions::new(Brand::Mp4);
-        opts.metadata = settings.metadata.udta();
+        opts.metadata = crate::binaural::udta(settings);
         let chapters = crate::export_chapters(project, seq, settings, range);
         opts.chapters = chapters.clone();
         let mut mux = Mp4Writer::new(Out::create(settings)?, opts).map_err(|e| ExportError::Io(e.to_string()))?;

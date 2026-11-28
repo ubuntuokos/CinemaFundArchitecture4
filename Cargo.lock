@@ -1652,6 +1652,7 @@ dependencies = [
  "cfa4-h264",
  "cfa4-h264enc",
  "cfa4-hevc",
+ "cfa4-hrtf",
  "cfa4-iab",
  "cfa4-isobmff",
  "cfa4-j2k",

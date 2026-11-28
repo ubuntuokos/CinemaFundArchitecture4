@@ -457,8 +457,11 @@ graph LR
 | `cfa4-export/as02_share.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-export/audio_out.rs` | `cfa4-audio-dsp` | `AudioEffect`, `LoudnessMeter`, `channels`, `effects`, `normalize_gain_db` |
 | `cfa4-export/audio_out.rs` | `cfa4-project` | `ItemId` |
-| `cfa4-export/audio_out.rs` | `cfa4-render` | `SourceProvider`, `audio` |
+| `cfa4-export/audio_out.rs` | `cfa4-render` | `SourceProvider`, `audio`, `mixer` |
 | `cfa4-export/audio_out.rs` | `cfa4-time` | `TimeRange` |
+| `cfa4-export/binaural.rs` | `cfa4-audio-dsp` | `channels` |
+| `cfa4-export/binaural.rs` | `cfa4-frame` | `AudioBuffer` |
+| `cfa4-export/binaural.rs` | `cfa4-render` | `audio` |
 | `cfa4-export/boundary_reencode.rs` | `cfa4-smart-edit` | `capabilities`, `media_index`, `plan` |
 | `cfa4-export/boundary_reencode_hevc.rs` | `cfa4-smart-edit` | `capabilities`, `media_index`, `plan` |
 | `cfa4-export/boundary_reencode_mpeg.rs` | `cfa4-smart-edit` | `capabilities`, `media_index`, `plan`, `timestamp` |
@@ -930,7 +933,7 @@ A többi 659 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-smart-edit` | `media_index.rs` | enum | `DependencyStatus` |
 | `cfa4-testkit` | `fixtures.rs` | enum | `Status` |
 
-### Hang (48)
+### Hang (49)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -959,6 +962,7 @@ A többi 659 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-export` | `lib.rs` | type | `AudioEncoderFactory` |
 | `cfa4-export` | `settings.rs` | enum | `AudioCodec` |
 | `cfa4-export` | `settings.rs` | struct | `AudioSettings` |
+| `cfa4-export` | `settings.rs` | struct | `BinauralAudio` |
 | `cfa4-export` | `settings.rs` | struct | `LoudnessNormalization` |
 | `cfa4-export` | `settings.rs` | enum | `SampleFormat` |
 | `cfa4-export` | `smart_cut_mpeg.rs` | struct | `MpegAudioDrop` |

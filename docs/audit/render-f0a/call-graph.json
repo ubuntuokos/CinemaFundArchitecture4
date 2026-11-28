@@ -1164,6 +1164,13 @@
    "crate": "cfa4-export",
    "kind": "struct",
    "module": "settings.rs",
+   "name": "BinauralAudio"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "settings.rs",
    "name": "LoudnessNormalization"
   },
   {
@@ -11222,8 +11229,28 @@
   },
   {
    "from": "cfa4-export/audio_out.rs",
+   "item": "mixer",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-export/audio_out.rs",
    "item": "TimeRange",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-export/binaural.rs",
+   "item": "channels",
+   "to": "cfa4-audio-dsp"
+  },
+  {
+   "from": "cfa4-export/binaural.rs",
+   "item": "AudioBuffer",
+   "to": "cfa4-frame"
+  },
+  {
+   "from": "cfa4-export/binaural.rs",
+   "item": "audio",
+   "to": "cfa4-render"
   },
   {
    "from": "cfa4-export/boundary_reencode.rs",

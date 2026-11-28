@@ -766,7 +766,10 @@ file.exportMedia {path, preset?, settings?, format?, range?, …}     export.qui
   → a Job {id, label, progress, result} on a background thread (export.queue.* runs them in order)
   → export: per output frame render (output rate) → fit into the output frame → overlays → limiter
             → encode in order → mux; audio mixed at the output rate, folded to mono/stereo,
-            loudness-normalized (measuring pass + gain + true-peak limiter) per batch
+            loudness-normalized (measuring pass + gain + true-peak limiter) per batch;
+            audio.binaural: the Mix in its own layout through the headphone monitor
+            (cfa4_hrtf::ChannelMonitor, export::binaural) to two ears, the HRTF set named in the
+            file (WAV LIST/INFO ICMT, FLAC COMMENT, MP4 ©cmt)
   → jobs.list shows progress; jobs.cancel sets the shared cancel flag
 ```
 
