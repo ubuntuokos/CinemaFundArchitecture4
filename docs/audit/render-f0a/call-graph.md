@@ -199,7 +199,7 @@ graph LR
 | `cfa4-engine/color.rs` | `cfa4-export` | `encode_png` |
 | `cfa4-engine/color.rs` | `cfa4-geom` | `Vec2` |
 | `cfa4-engine/color.rs` | `cfa4-media` | `AudioStreamInfo` |
-| `cfa4-engine/color.rs` | `cfa4-project` | `ClipId`, `MAX_LUT_TEXT_BYTES`, `MAX_PIXEL_ASPECT`, `MediaRef`, `Param`, `TrackItem`, `checked_par` |
+| `cfa4-engine/color.rs` | `cfa4-project` | `ClipId`, `DnxConventions`, `MAX_LUT_TEXT_BYTES`, `MAX_PIXEL_ASPECT`, `MediaRef`, `Param`, `TrackItem`, `checked_par` |
 | `cfa4-engine/color.rs` | `cfa4-render` | `RenderOptions`, `color_match`, `lumetri_presets`, `luts`, `render_clip`, `render_sequence` |
 | `cfa4-engine/color.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/commands.rs` | `cfa4-color` | `WorkingSpace`, `parse_hex`, `to_hex` |
@@ -305,7 +305,7 @@ graph LR
 | `cfa4-engine/media_browser.rs` | `cfa4-time` | `TimeDisplay`, `format_time` |
 | `cfa4-engine/media_pool.rs` | `cfa4-frame` | `AudioBuffer` |
 | `cfa4-engine/media_pool.rs` | `cfa4-media` | `FrameRequest`, `Generator`, `MediaKind`, `Result`, `SharedReader`, `generators`, `open_bytes`, `open_with_fallback`, `pending`, `reader`, `sequence`, `wav` |
-| `cfa4-engine/media_pool.rs` | `cfa4-project` | `ItemId`, `ItemKind`, `Label` |
+| `cfa4-engine/media_pool.rs` | `cfa4-project` | `DnxConventions`, `ItemId`, `ItemKind`, `Label` |
 | `cfa4-engine/media_pool.rs` | `cfa4-render` | `SourceProvider`, `colorman`, `offline`, `source_size` |
 | `cfa4-engine/media_pool.rs` | `cfa4-testkit` | `fixtures`, `fixtures_dir`, `oracle` |
 | `cfa4-engine/media_pool.rs` | `cfa4-time` | `FrameRate`, `Tick`, `TimeRange` |
@@ -837,7 +837,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 655 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 656 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (32)
 

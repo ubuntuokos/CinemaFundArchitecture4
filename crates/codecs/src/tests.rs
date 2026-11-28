@@ -1022,3 +1022,44 @@ fn ffmpeg_written_files_are_recognised() {
     assert!(!written_by_ffmpeg(["CFA4 0.10.0"]));
     assert!(!written_by_ffmpeg(std::iter::empty::<&str>()));
 }
+
+/// Interpret Footage ▸ DNx conventions (CFA4-DNX-SPEC-001 R5): FFmpeg's RGB 4:4:4 signalling
+/// (CLF = 0) is RGB as FFmpeg reads it and Y′CbCr by the standard. The source detects FFmpeg from
+/// the encoder's compressor name; the choice overrides the detection.
+#[test]
+fn dnx_conventions_follow_the_compressor_name_unless_chosen() {
+    use cfa4_isobmff::{Brand, FourCc, Mp4Writer, SampleEntry, TrackConfig, WriteSample, WriterOptions};
+    let (w, h) = (64u32, 32u32);
+    let mut f = cfa4_dnx::Frame::new(w, h, cfa4_dnx::ChromaFormat::Yuv444, 10, false);
+    f.rgb = true;
+    let mut cfg = cfa4_dnx::EncoderConfig::new(cfa4_dnx::Profile::R444, w, h);
+    cfg.bit_depth = 10;
+    cfg.ffmpeg_compat = true;
+    let au = cfa4_dnx::Encoder::with_config(cfg).expect("encoder").encode(&f).expect("encode");
+    let mov = |compressor: &str| -> Arc<[u8]> {
+        let mut entry = SampleEntry::dnx(FourCc(*b"AVdh"), w as u16, h as u16);
+        if let Some(v) = entry.video.as_mut() {
+            v.compressor_name = compressor.into();
+        }
+        let mut mux = Mp4Writer::new(std::io::Cursor::new(Vec::new()), WriterOptions::new(Brand::Mov)).expect("writer");
+        let t = mux.add_track(TrackConfig::new(entry, 25)).expect("track");
+        mux.write_sample(t, WriteSample { data: &au, duration: 1, composition_offset: 0, is_sync: true }).expect("sample");
+        mux.finish().expect("finish").into_inner().into()
+    };
+    let rgb = |s: &cfa4_media::SharedSource| {
+        let v = s.video_frame(FrameRequest::full(Tick::ZERO)).expect("frame");
+        matches!(v.data, cfa4_frame::PixelData::Rgb16 { .. })
+    };
+    for (compressor, detected) in [("Lavc63.24.100 dnxhd", true), ("Avid DNxHR", false)] {
+        let bytes = mov(compressor);
+        let auto = crate::open_bytes("clip.mov", bytes.clone()).expect("open");
+        assert_eq!(auto.dnx_ffmpeg_detected(), Some(detected), "{compressor}");
+        assert_eq!(rgb(&auto), detected, "{compressor}: detected conventions");
+        for ffmpeg in [false, true] {
+            let chosen = crate::open_bytes("clip.mov", bytes.clone()).expect("open");
+            chosen.set_dnx_conventions(Some(ffmpeg));
+            assert_eq!(chosen.dnx_ffmpeg_detected(), Some(detected), "the detection stays");
+            assert_eq!(rgb(&chosen), ffmpeg, "{compressor}: chosen {ffmpeg}");
+        }
+    }
+}
