@@ -1,0 +1,6 @@
+{
+  "name": "error-above-int64",
+  "input": "{\"a\":9223372036854775808}",
+  "event": true,
+  "error": "AUDIT_FLOAT_FORBIDDEN"
+}

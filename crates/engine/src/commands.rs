@@ -834,7 +834,16 @@ pub fn import_image_sequence(s: &mut Session, path: &str, bin: Option<cfa4_proje
     let missing: Vec<usize> = frames.iter().enumerate().filter(|(_, f)| f.is_none()).map(|(i, _)| i).collect();
     let src = crate::media_pool::open_image_sequence(path, &*s.services, rate, &name)?;
     let identity = crate::relink::identity_of(&*s.services, path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
-    let id = import_source(s, path, name, src, identity, bin)?;
+    let id = import_source(s, path, name.clone(), src, identity, bin)?;
+    if !missing.is_empty() {
+        // numbers are shown 1-based from the first frame, a long list cut short
+        let shown: Vec<String> = missing.iter().take(8).map(|i| (i + 1).to_string()).collect();
+        let more = if missing.len() > shown.len() { ", …" } else { "" };
+        s.warn_toast(
+            "import",
+            format!("{name}: {} missing frame(s) of {} (no. {}{more}); the previous frame is held", missing.len(), frames.len(), shown.join(", ")),
+        );
+    }
     Ok((id, frames.len(), missing))
 }
 
@@ -1566,6 +1575,17 @@ fn build() -> Vec<CommandSpec> {
                     }
                     continue;
                 }
+                // An AMWA AS-02 bundle: one sequence per version file.
+                if let Some(r) = crate::as02_import::import_package(s, &path, bin) {
+                    match r {
+                        Ok(r) => {
+                            sequences.extend(r["sequences"].as_array().cloned().unwrap_or_default());
+                            reports.push(r);
+                        }
+                        Err(e) => errors.push(format!("{path}: {e}")),
+                    }
+                    continue;
+                }
                 // DCP / IMF subtitles: timed text track files are caption tracks, not media.
                 if let Some(r) = crate::captions::import_timed_text_mxf(s, &path) {
                     match r {
@@ -1870,11 +1890,39 @@ fn build() -> Vec<CommandSpec> {
             "Media…",
             ["File", "Export"],
             None,
-            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|imf|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac|opus|ac3|mp2"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"dashManifest":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip|piz"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx|hd1235|hd1237|hd1238|hd1250|hd1251|hd1252|hd1253"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264|mpeg2|d10|xdcamHd422|v210|uyvy"?,"mxfAncCaptions":bool=false,"mxfAs11Core":str?,"mxfAs11Segments":str?,"mxfAs11Ukdpp":str?,"mxfAs10":str?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"dcpSubtitles":bool?,"dcpSubtitleLanguage":str?,"dcpSubtitleFont":str?,"imfLossless":bool?,"imfContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|psa|episode|highlights|event"?,"imfTimedTextKind":"subtitles|captions|forcedNarrative"?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
+            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|imf|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac|opus|ac3|mp2"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"dashManifest":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip|piz"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx|hd1235|hd1241|hd1242|hd1243|hd1237|hd1238|hd1250|hd1251|hd1252|hd1253"?,"dnxFfmpegCompat":bool=false,"dpxBitDepth":"10|12|16"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264|mpeg2|d10|xdcamHd422|v210|uyvy"?,"mxfAncCaptions":bool=false,"mxfAs02":bool=false,"mxfAs02Versions":[id]?,"mxfAs02Share":bool=true,"mxfAs11Core":str?,"mxfAs11Segments":str?,"mxfAs11Ukdpp":str?,"mxfAs03":str?,"mxfAs12":str?,"mxfAs10":str?,"mpeg2Container":"ps|ts|m2ts|es|dvd"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"dcpSubtitles":bool?,"dcpSubtitleLanguage":str?,"dcpSubtitleFont":str?,"imfLossless":bool?,"imfContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|psa|episode|highlights|event"?,"imfTimedTextKind":"subtitles|captions|forcedNarrative"?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
             has_seq,
             crate::export_tools::export_media
         ),
         query!("jobs.list", "List Jobs", "{}", |s, _| Ok(Value::Array(s.jobs.iter().map(|j| crate::export_tools::job_json(s, j)).collect()))),
+        // ACS-6: the CFA4 task queue the heavy work goes through (state, request, why it waits)
+        query!("tasks.list", "List Tasks", "{}", |s, _| Ok(s.tasks.to_json())),
+        // ACS-5: the user's decision on a task that has not started, e.g. after a missed start
+        cmd!("tasks.decide", "Decide on a Task", [], None, r#"{"id":str,"action":"runNow|nextSlot|cancel"}"#, always, |s, p| {
+            let id = str_p(p, "id").ok_or_else(|| bad("tasks.decide", "need `id`"))?;
+            let action = str_p(p, "action").ok_or_else(|| bad("tasks.decide", "need `action` (runNow, nextSlot, cancel)"))?;
+            let state = s.tasks.decide(id, action).map_err(|e| bad("tasks.decide", e))?;
+            crate::export_tools::pump_queue(s, false);
+            Ok(serde_json::json!({"id": id, "state": state}))
+        }),
+        // ACS-5: would a task asked for now start, wait (and why) or not run here? Nothing is reserved.
+        query!(
+            "tasks.check",
+            "Check Task Resources",
+            r#"{"class":"interactive|background|speculative|finalRender"=background,"ramBytes":u64=0,"cpuMilli":u64=0}"#,
+            |s, p| {
+                use cfa4_tasks::manager::Class;
+                let class = match str_p(p, "class").unwrap_or("background") {
+                    "interactive" => Class::Interactive,
+                    "background" => Class::Background,
+                    "speculative" => Class::Speculative,
+                    "finalRender" => Class::FinalRender,
+                    other => return Err(bad("tasks.check", format!("unknown class `{other}`"))),
+                };
+                let v = s.tasks.preview(class, u64_p(p, "ramBytes").unwrap_or(0), u64_p(p, "cpuMilli").unwrap_or(0));
+                Ok(serde_json::json!({"verdict": v.verdict, "reasons": v.reasons, "ahead": v.ahead}))
+            }
+        ),
         query!("perf.stats", "Performance Statistics", "{}", |s, _| Ok(crate::perf::stats(s))),
         query!("security.status", "Security Status", "{}", |s, _| Ok(crate::security::status(s))),
         cmd!("jobs.cancel", "Cancel Job", [], None, r#"{"job":id}"#, always, |s, p| {
@@ -3973,10 +4021,12 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::settings::commands());
     v.extend(crate::timecode_sync::commands());
     v.extend(crate::control_surfaces::commands());
+    v.extend(crate::gesture_ui::commands());
     v.extend(crate::ltc_read::commands());
     v.extend(crate::mixer::commands());
     v.extend(crate::multicam::commands());
     v.extend(crate::essential_sound::commands());
+    v.extend(crate::vdb::commands());
     v.extend(crate::color::commands());
     v.extend(crate::graphics::commands());
     v.extend(crate::graphic_templates::commands());
@@ -3991,8 +4041,14 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::atrac_convert::commands());
     v.extend(crate::dcpomatic::commands());
     v.extend(crate::proxies::commands());
+    v.extend(crate::camera_proxies::commands());
+    v.extend(crate::short_clips::commands());
+    v.extend(crate::marker_exports::commands());
+    v.extend(crate::captions_titles::commands());
+    v.extend(crate::contact_sheet::commands());
     v.extend(crate::project_manager::commands());
     v.extend(crate::masks::commands());
+    v.extend(crate::objects_track::commands());
     v.extend(crate::program_overlay::commands());
     v.extend(crate::eyedropper::commands());
     v.extend(crate::fx_editor::commands());
@@ -4000,11 +4056,16 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::export_tools::commands());
     v.extend(crate::smart_cut::commands());
     v.extend(crate::qc::commands());
+    v.extend(crate::dcp_validation::commands());
+    v.extend(crate::dcp_package::commands());
+    v.extend(crate::dcp_export::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
+    v.extend(crate::render_job::commands());
     v.extend(crate::scopes::commands());
     v.extend(crate::remix::commands());
     v.extend(crate::beat_markers::commands());
+    v.extend(crate::silence::commands());
     v.extend(crate::social::commands());
     v.extend(crate::delivery_check::commands());
     v.extend(crate::variants::commands());

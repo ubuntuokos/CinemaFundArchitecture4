@@ -351,7 +351,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
                 }
             });
         }
-        "ultra_key" | "color_key" => key(img, e, cx),
+        "color_key" => key(img, e, cx),
         "luma_key" => {
             let th = f(e, "threshold", cx) / 100.0;
             let cut = f(e, "cutoff", cx) / 100.0;
@@ -554,51 +554,87 @@ pub(crate) fn crop_px(img: &mut Image, x0: f32, x1: f32, y0: f32, y1: f32, fe: f
     });
 }
 
-pub(crate) fn key(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
-    let ultra = e.effect == "ultra_key";
-    let kc = if ultra { color(e, "key_color", cx) } else { color(e, "color", cx) };
-    let kycc = cfa4_color::rgb_to_ycbcr(kc[0], kc[1], kc[2], cfa4_color::Matrix::Bt709);
-    let (tol, soft, spill, output) = if ultra {
-        let tol = 0.05 + f(e, "tolerance", cx) / 100.0 * 0.25 + f(e, "transparency", cx) / 100.0 * 0.05;
-        (tol, 0.05 + f(e, "soften", cx) / 100.0 * 0.2 + f(e, "pedestal", cx) / 100.0 * 0.05, f(e, "spill", cx) / 100.0, choice(e, "output"))
-    } else {
-        (f(e, "tolerance", cx) / 255.0 * 0.6 + 0.01, f(e, "feather", cx) / 50.0 * 0.2 + 0.01, 0.0, 0)
-    };
-    let dom = if kc[1] >= kc[0] && kc[1] >= kc[2] {
-        1
-    } else if kc[2] >= kc[0] {
-        2
-    } else {
-        0
-    };
-    img.px.par_chunks_mut(4).for_each(|p| {
-        if p[3] <= 0.0 {
-            return;
+/// Largest Edge Thin radius in working-image pixels (the parameter itself is limited to ±5 source
+/// pixels; `px_scale` and hostile values must not make the filter unbounded).
+const KEY_THIN_MAX_RADIUS: usize = 32;
+
+/// Color Key's Edge Thin in working-image pixels: positive thins the foreground (erodes the alpha),
+/// negative fattens it (dilates the alpha). Non-finite values and zero give 0 (no change).
+fn key_thin_radius(thin: f32, px_scale: f32, longest_side: usize) -> (usize, bool) {
+    let scale = if px_scale.is_finite() { px_scale.max(0.0) } else { 1.0 };
+    if !thin.is_finite() {
+        return (0, false);
+    }
+    let r = (thin.abs().min(5.0) * scale).round();
+    let r = if r.is_finite() { r as usize } else { 0 };
+    (r.min(KEY_THIN_MAX_RADIUS).min(longest_side / 2), thin > 0.0)
+}
+
+/// Erode (`min`) or dilate (`max`) a single-channel plane with a square window of radius `r`
+/// (separable; the frame edge repeats, so thinning does not eat into the borders).
+fn morph_plane(a: &[f32], w: usize, h: usize, r: usize, erode: bool) -> Vec<f32> {
+    if r == 0 || w == 0 || h == 0 || a.len() != w * h {
+        return a.to_vec();
+    }
+    let pick = |x: f32, y: f32| if erode { x.min(y) } else { x.max(y) };
+    let mut tmp = vec![0.0f32; a.len()];
+    tmp.par_chunks_mut(w).zip(a.par_chunks(w)).for_each(|(out, row)| {
+        for (x, o) in out.iter_mut().enumerate() {
+            let mut v = row[x];
+            for d in 1..=r {
+                v = pick(v, row[x.saturating_sub(d)]);
+                v = pick(v, row[(x + d).min(w - 1)]);
+            }
+            *o = v;
         }
+    });
+    let mut out = vec![0.0f32; a.len()];
+    out.par_chunks_mut(w).enumerate().for_each(|(y, row)| {
+        for (x, o) in row.iter_mut().enumerate() {
+            let mut v = tmp[y * w + x];
+            for d in 1..=r {
+                v = pick(v, tmp[y.saturating_sub(d) * w + x]);
+                v = pick(v, tmp[(y + d).min(h - 1) * w + x]);
+            }
+            *o = v;
+        }
+    });
+    out
+}
+
+/// Color Key. (Ultra Key has its own keyer in `vfx::color::ultra_key`, which `effects::apply`
+/// dispatches to first, so this function only serves `color_key`.)
+pub(crate) fn key(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
+    let kc = color(e, "color", cx);
+    let kycc = cfa4_color::rgb_to_ycbcr(kc[0], kc[1], kc[2], cfa4_color::Matrix::Bt709);
+    let tol = f(e, "tolerance", cx) / 255.0 * 0.6 + 0.01;
+    let soft = f(e, "feather", cx) / 50.0 * 0.2 + 0.01;
+    let (radius, erode) = key_thin_radius(f(e, "thin", cx), cx.px_scale, img.w.max(img.h));
+    let matte = |p: &[f32]| {
         let c = enc([p[0] / p[3], p[1] / p[3], p[2] / p[3]]);
         let ycc = cfa4_color::rgb_to_ycbcr(c[0], c[1], c[2], cfa4_color::Matrix::Bt709);
         let d = ((ycc[1] - kycc[1]).powi(2) + (ycc[2] - kycc[2]).powi(2)).sqrt() + (ycc[0] - kycc[0]).abs() * 0.15;
-        let alpha = ((d - tol) / soft).clamp(0.0, 1.0);
-        let mut o = c;
-        if spill > 0.0 {
-            let others = (o[(dom + 1) % 3] + o[(dom + 2) % 3]) / 2.0;
-            if o[dom] > others {
-                o[dom] -= (o[dom] - others) * spill;
-            }
+        (c, ((d - tol) / soft).clamp(0.0, 1.0))
+    };
+    // Edge Thin works on the matte plane (pixels without source alpha count as 0, so a thinned
+    // foreground also recedes from the layer's own transparent edge and a fattened one never
+    // spreads into it).
+    let thin_plane = (radius > 0).then(|| {
+        let plane: Vec<f32> = img.px.par_chunks(4).map(|p| if p[3] <= 0.0 { 0.0 } else { matte(p).1 }).collect();
+        morph_plane(&plane, img.w, img.h, radius, erode)
+    });
+    img.px.par_chunks_mut(4).enumerate().for_each(|(i, p)| {
+        if p[3] <= 0.0 {
+            return;
         }
+        let (c, alpha) = matte(p);
+        let alpha = thin_plane.as_ref().and_then(|pl| pl.get(i)).copied().unwrap_or(alpha);
         let a = p[3] * alpha;
-        let lo = dec(o);
-        match output {
-            1 => {
-                p.copy_from_slice(&[alpha * p[3], alpha * p[3], alpha * p[3], p[3]]);
-            }
-            _ => {
-                p[0] = lo[0] * a;
-                p[1] = lo[1] * a;
-                p[2] = lo[2] * a;
-                p[3] = a;
-            }
-        }
+        let lo = dec(c);
+        p[0] = lo[0] * a;
+        p[1] = lo[1] * a;
+        p[2] = lo[2] * a;
+        p[3] = a;
     });
 }
 

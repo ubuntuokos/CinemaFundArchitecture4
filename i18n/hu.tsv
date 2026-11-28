@@ -46,6 +46,7 @@
 	Arrange	Elrendezés
 	Assembly	Összeállítás
 	Attach Proxies…	Proxyk csatolása…
+	Find Camera Proxies	Kameraproxik keresése
 	Audio	Hang
 	Audio Channels…	Hangcsatornák…
 	Audio Clip Mixer	Hangklipkeverő
@@ -2185,6 +2186,7 @@
 	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transzportfolyam (.m2ts, AAC hang)
 	Chroma	Króma
 	Elementary Stream (.m2v, no audio)	Elemi folyam (.m2v, hang nélkül)
+	DVD-Video folder (VIDEO_TS)	DVD-Video mappa (VIDEO_TS)
 	Key Frame Distance	Kulcskockák távolsága
 	None (I and P only)	Nincs (csak I és P)
 	Off (target bitrate)	Ki (célbitráta)
@@ -4146,7 +4148,7 @@ export.summary	Low	alacsony
 	Six-Point Pin	Hatpontos rögzítés
 	Upper Center	Felül középen
 	Lower Center	Alul középen
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	FFmpeg használata azokhoz a fájlokhoz, amelyeket a CFA4 motorja nem tud megnyitni (FFmpeg 9.0.2 vagy újabb, GPL-3 build)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	FFmpeg használata azokhoz a fájlokhoz, amelyeket a CFA4 motorja nem tud megnyitni (FFmpeg 9.1 vagy újabb, GPL-3 build)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	A rendszer GStreamerének használata azokhoz a fájlokhoz, amelyeket sem a motor, sem az FFmpeg nem tud megnyitni
 	Analyze Source for Smart Cut	Forrás elemzése a Smart Cuthoz
 	Plan Smart Cut	Smart Cut megtervezése
@@ -4511,6 +4513,15 @@ export.summary	Low	alacsony
 	video (tape) styles are not carried over	a videó- (szalag-) stílusok nem kerülnek át
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	a Cinecred-projekt {n} stáblista-táblázatot tartalmaz; a(z) “{name}” lesz használva (válassz másikat a Táblázat mezőben)
 # Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Show Frame	Kép megjelenítése
+	Select an event or a finding and press Show Frame.	Jelölj ki egy eseményt vagy észrevételt, és nyomd meg a „Kép megjelenítése” gombot.
+	Select an event first.	Előbb jelölj ki egy eseményt.
+	Select a finding first.	Előbb jelölj ki egy észrevételt.
+	The time code is not a time in this file (HH:MM:SS:FF).	Az időkód nem létező időpont ebben a fájlban (HH:MM:SS:FF).
+	This entry has no time code to show.	Ennek a bejegyzésnek nincs megjeleníthető időkódja.
+	The picture is unavailable.	A kép nem érhető el.
+	The file's length is unknown.	A fájl hossza ismeretlen.
+	Time code {tc}	Időkód: {tc}
 	Add Finding	Észrevétel hozzáadása
 	Add as Finding	Felvétel észrevételként
 	Are colour and contrast acceptable?	Elfogadható a szín és a kontraszt?
@@ -4561,6 +4572,7 @@ export.summary	Low	alacsony
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tömörítetlen 10 bites 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, tömörítetlen 10 bites Y'CbCr 4:2:2 v210 elrendezésben (SMPTE ST 384), 24 bites 48 kHz-es PCM, kezdő időkód
 	Write the captions as ANC data (CEA-608/708)	Feliratok írása ANC-adatként (CEA-608/708)
+	Write an AS-02 bundle (the path is a folder)	AS-02 csomag írása (az útvonal egy mappa)
 	Load KDM…	KDM betöltése…
 	Forget DCP Keys	DCP kulcsok elfelejtése
 	Load KDM	KDM betöltése
@@ -4842,6 +4854,11 @@ export.summary	Low	alacsony
 	Encode Resolution	Kódolási felbontás
 	Half	Fél
 	Quarter	Negyed
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-virágzás
+	Start Time (seconds)	Kezdőidő (másodperc)
+	Repeats	Ismétlések
+	Clean Blocks	Tiszta blokkok
 # SC-4: effect bulk switch and recent effects
 	Enable all effects	Összes effekt bekapcsolása
 	Disable all effects	Összes effekt kikapcsolása
@@ -4850,3 +4867,151 @@ export.summary	Low	alacsony
 	Recent effects	Legutóbbi effektek
 	Apply a recently used effect to the selected clips	Legutóbb használt effekt alkalmazása a kijelölt klipekre
 	No recent effects	Nincs legutóbbi effekt
+	Analyzing…	Elemzés…
+	Automatic threshold	Automatikus küszöb
+	Clear silence markers	Csendmarkerek törlése
+	Detector:	Észlelő:
+	Energy (level)	Energiaalapú (szint)
+	Mark only	Csak jelölés
+	Marked only: nothing was deleted.	Csak jelölés: semmi nem törlődött.
+	Minimum silence:	Legrövidebb csend:
+	Mode:	Mód:
+	No region is checked.	Nincs kijelölt régió.
+	No silence found with these settings.	Ezekkel a beállításokkal nincs csend.
+	Padding:	Ráhagyás:
+	Remove Silence	Csend eltávolítása
+	Remove Silence…	Csend eltávolítása…
+	Remove selected	Kijelöltek eltávolítása
+	Ripple (close the gaps)	Ripple (a hézagok bezárulnak)
+	Scope:	Hatókör:
+	Select all	Összes kijelölése
+	Select none	Kijelölés megszüntetése
+	Selected clips	Kijelölt klipek
+	Silence markers cleared.	A csendmarkerek törölve.
+	Silent regions (checked ones are removed):	Csendes régiók (a bejelöltek törlődnek):
+	Threshold:	Küszöb:
+	Track of the selected clips	A kijelölt klipek sávja
+	Whole sequence	A teljes sorozat
+	{n} regions removed	{n} régió eltávolítva
+	{n} silent regions, {s} s in all	{n} csendes régió, összesen {s} s
+	{n}: {start} s, {dur} s long	{n}.: {start} s-tól, {dur} s hosszú
+	Analysis failed.	Az elemzés nem sikerült.
+	Analysis cancelled.	Az elemzés megszakítva.
+	Clear Silence Markers	Csendmarkerek törlése
+	Detect Silence	Csend észlelése
+	Silence	Csend
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	AS-02	AS-02
+	Choose the DCP folder.	Válaszd ki a DCP mappát.
+	DCP Validation	DCP-ellenőrzés
+	DCP folder	DCP mappa
+	DCP folder (the one holding ASSETMAP)	DCP mappa (amelyik az ASSETMAP-ot tartalmazza)
+	Evidence	Bizonyíték
+	How to fix	Javítás módja
+	Interrupted	Megszakítva
+	Not applicable	Nem alkalmazható
+	Report	Jelentés
+	Report saved: {path}	Jelentés mentve: {path}
+	Required	Kötelező
+	Rule	Szabály
+	Rules	Szabályok
+	Save JSON…	JSON mentése…
+	Save Markdown…	Markdown mentése…
+	Save report	Jelentés mentése
+	Skipped	Kihagyva
+	Standard: {standard}	Szabvány: {standard}
+	Validate	Ellenőrzés
+	Validate DCP…	DCP ellenőrzése…
+	the engine sent no profiles	a motor nem küldött profilokat
+	{n} files checked	{n} fájl ellenőrizve
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktív voxelek:
+	Bounds:	Határok:
+	Voxel attributes	Voxel-attribútumok
+	Voxel size:	Voxelméret:
+	points	pont
+
+# WP3 DPX bit depth
+	Bit Depth	Bitmélység
+
+# AS-02 versions
+	AS-02 Versions	AS-02 verziók
+	Tick the sequences to write as further versions in the AS-02 bundle	Jelölje be azokat a szekvenciákat, amelyek további verzióként kerülnek az AS-02 csomagba
+	Delete Short Clips	Rövid klipek törlése
+	Speech model (Silero VAD)	Beszédmodell (Silero VAD)
+	I have read the model's licence and accept it	Elolvastam a modell licencét, és elfogadom
+	Download the speech model	A beszédmodell letöltése
+	The speech model is installed.	A beszédmodell telepítve van.
+	This build has no speech-model detector.	Ez a fordítás nem tartalmaz beszédmodell-érzékelőt.
+	The speech model ({mb} MB, {licence}) is not downloaded: read the licence, accept it, download it.	A beszédmodell ({mb} MB, {licence}) nincs letöltve: olvasd el a licencet, fogadd el, és töltsd le.
+	Accept the licence first.	Előbb fogadd el a licencet.
+	Downloading the speech model…	A beszédmodell letöltése…
+	The speech model was downloaded.	A beszédmodell letöltve.
+	The speech model is not downloaded: accept its licence and download it, or use the energy detector.	A beszédmodell nincs letöltve: fogadd el a licencét és töltsd le, vagy használd az energiaalapú érzékelőt.
+	A stored combination does not run a command yet.	A tárolt kombináció még nem indít parancsot.
+	Action hint	Műveletjelzés
+	Add combination	Kombináció hozzáadása
+	Add mapping	Hozzárendelés hozzáadása
+	Button Learn	Gombtanulás
+	Button Test	Gombpróba
+	Button name	Gomb neve
+	Cancel feedback	Megszakítás visszajelzése
+	Combination editor	Kombinációszerkesztő
+	Context	Kontextus
+	Delete profile	Profil törlése
+	Detected buttons	Észlelt gombok
+	Draw the gesture with a button held.	Rajzolja meg a gesztust lenyomott gombbal.
+	Error feedback	Hiba visszajelzése
+	Evdev device	Evdev-eszköz
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Az evdev csak a kiválasztott eszközt olvassa, és csak egy későbbi fázis kapcsolja be. Ez a változat a Qt-utat használja.
+	Execution feedback	Végrehajtás visszajelzése
+	Follow the system	A rendszer követése
+	Gesture	Gesztus
+	Gesture Learn	Gesztustanulás
+	Gesture editor	Gesztusszerkesztő
+	Gesture profiles	Gesztusprofilok
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	A gesztusok kikapcsolva maradnak, amíg be nem kapcsolja őket. A bekapcsolás nem tiltja a panelmenüt.
+	HUD	HUD
+	Hand	Kéz
+	High contrast	Nagy kontraszt
+	Hold time	Tartási idő
+	Input access	Bemeneti hozzáférés
+	Left-handed	Balkezes
+	Mapping	Hozzárendelés
+	Maximum length	Legnagyobb hossz
+	Maximum time	Legnagyobb idő
+	Minimum length	Legkisebb hossz
+	Mirror ergonomic gestures	Ergonomikus gesztusok tükrözése
+	Mouse Gestures	Egérgesztusok
+	Mouse Gestures…	Egérgesztusok…
+	No buttons yet. Press one in Button Learn or Button Test.	Még nincs gomb. Nyomjon meg egyet a gombtanulásban vagy a gombpróbában.
+	Press	Lenyomás
+	Qt pointer (this application)	Qt-mutató (ez az alkalmazás)
+	Recognition preview	Felismerés előnézete
+	Reduced animation	Csökkentett animáció
+	Right-handed	Jobbkezes
+	Roles	Szerepek
+	Save gesture	Gesztus mentése
+	Save profile	Profil mentése
+	Show the gesture HUD	Gesztus-HUD megjelenítése
+	Slop	Holtjáték
+	Spatial gesture	Térbeli gesztus
+	Thresholds	Küszöbök
+	Trail	Nyomvonal
+	Use gestures in the window	Gesztusok használata az ablakban
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video mappa (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorf, 6 Mbps, GOP 15, AC-3 192 kbps, fejezetek a szekvencia Fejezet jelölőiből
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video mappa (VIDEO_TS): MPEG-2 720×480, 29,97 fps, 16:9 anamorf, 6 Mbps, GOP 18, AC-3 192 kbps, fejezetek a szekvencia Fejezet jelölőiből
+	DVD-Video folder	DVD-Video mappa
+	DNx decoding:	DNx-dekódolás:
+	As detected from the file ({detected})	A fájlból felismert módon ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (szabvány)
+	FFmpeg-compatible	FFmpeg-kompatibilis
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	Az FFmpeg egyes DNx-fájlokat a szabványtól eltérően olvas (4:4:4 színek, inverz kvantálás). Az FFmpeg-gel kódolt felvételt a program felismeri; itt válasszon, ha a felismerés téved.
+	DNx Coding	DNx-kódolás
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibilis (FFmpeg-alapú eszközökhöz)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Ki: SMPTE ST 2019-1 szerinti kódolás. Be: úgy kódol, ahogy az FFmpeg írja a DNx-et, FFmpeg-re épülő eszközökhöz.

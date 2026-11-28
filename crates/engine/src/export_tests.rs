@@ -417,6 +417,19 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
             }
             continue;
         }
+        if fmt == "mpeg2" && settings["mpeg2Container"] == "dvd" {
+            // a folder: VIDEO_TS with the IFO and BUP files and the VOB
+            assert_eq!(out, path, "{name}: the folder keeps its name");
+            let files = files_in(&Path::new(&out).join("VIDEO_TS"));
+            assert_eq!(files, ["VIDEO_TS.BUP", "VIDEO_TS.IFO", "VTS_01_0.BUP", "VTS_01_0.IFO", "VTS_01_1.VOB"], "{name}");
+            if let Some(j) = probe(&Path::new(&out).join("VIDEO_TS/VTS_01_1.VOB").to_string_lossy()) {
+                let v = stream(&j, "video").unwrap();
+                assert_eq!(v["codec_name"], "mpeg2video", "{name}");
+                assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), (w, h), "{name}");
+                assert_eq!(stream(&j, "audio").unwrap()["codec_name"], "ac3", "{name}");
+            }
+            continue;
+        }
         assert!(Path::new(&out).exists(), "{name}: {out}");
         let Some(j) = probe(&out) else { continue };
         let fmt_name = j["format"]["format_name"].as_str().unwrap();
@@ -847,6 +860,96 @@ fn queue_cancels_a_running_export_and_retries_a_failed_one() {
     assert_eq!(queue(&mut s).into_iter().find(|i| i["id"] == bad).unwrap()["status"], "ready");
     s.execute("export.queue.remove", json!({"id": bad})).unwrap();
     assert!(queue(&mut s).iter().all(|i| i["id"] != bad));
+}
+
+#[test]
+fn a_scheduled_queue_start_that_was_missed_asks_the_user() {
+    let mut s = demo();
+    let dir = Scratch::new("acs5");
+    s.execute(
+        "export.queue.add",
+        json!({"preset": "Waveform Audio 48 kHz 16-bit", "path": dir.path("a.wav"), "range": "custom", "startSeconds": 0, "endSeconds": 0.1}),
+    )
+    .unwrap();
+    let now = web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).unwrap().as_millis() as u64;
+    // ahead: nothing starts yet
+    let r = s.execute("export.queue.start", json!({"at": now + 3_600_000})).unwrap();
+    assert_eq!((r["running"].as_bool(), r["scheduledStart"]["state"].as_str()), (Some(false), Some("scheduled")), "{r}");
+    // stopping the queue drops the scheduled start
+    s.execute("export.queue.stop", json!({})).unwrap();
+    assert!(s.execute("export.queue.list", json!({})).unwrap()["scheduledStart"].is_null());
+    // the start time passed while the computer slept: the user decides
+    s.execute("export.queue.start", json!({"at": now - 600_000, "ifMissed": "askUser"})).unwrap();
+    let r = s.execute("export.queue.list", json!({})).unwrap();
+    assert_eq!((r["running"].as_bool(), r["scheduledStart"]["needsDecision"].as_bool()), (Some(false), Some(true)), "{r}");
+    assert_eq!(queue(&mut s)[0]["status"], "ready");
+    let task = r["scheduledStart"]["task"].as_str().unwrap().to_owned();
+    let listed = s.execute("tasks.list", json!({})).unwrap();
+    let row = listed.as_array().unwrap().iter().find(|t| t["id"] == task.as_str()).cloned().unwrap();
+    assert_eq!((row["label"].as_str(), row["needsDecision"].as_bool()), (Some("Start the export queue"), Some(true)), "{row}");
+    assert!(s.execute("tasks.decide", json!({"id": task, "action": "later"})).is_err());
+    assert!(s.execute("export.queue.start", json!({"at": now, "ifMissed": "never"})).is_err());
+    s.execute("tasks.decide", json!({"id": task, "action": "runNow"})).unwrap();
+    let t0 = std::time::Instant::now();
+    while queue(&mut s)[0]["status"] != "done" {
+        assert!(t0.elapsed() < std::time::Duration::from_secs(60), "{}", queue(&mut s)[0]);
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    assert!(s.execute("export.queue.list", json!({})).unwrap()["scheduledStart"].is_null());
+    assert_eq!(s.tasks.held(), 0);
+}
+
+#[test]
+fn a_queued_export_waits_for_memory_and_starts_once_there_is_room() {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    use cfa4_tasks::{Current, Nominal, Snapshot};
+    const GIB: u64 = 1 << 30;
+    let free = Arc::new(AtomicU64::new(GIB));
+    let reading = free.clone();
+    let mut s = demo();
+    s.tasks = crate::task_host::TaskHost::new(Arc::new(move || Snapshot {
+        nominal: Nominal { ram_physical_bytes: Some(16 * GIB), cpus_online: Some(8), ..Nominal::default() },
+        current: Current { ram_available_bytes: Some(reading.load(Ordering::Relaxed)), ..Current::default() },
+        notes: vec![],
+    }));
+    let dir = Scratch::new("acs6");
+    s.execute(
+        "export.queue.add",
+        json!({"preset": "Waveform Audio 48 kHz 16-bit", "path": dir.path("a.wav"), "range": "custom", "startSeconds": 0, "endSeconds": 0.1, "start": true}),
+    )
+    .unwrap();
+    // 1 GiB free is less than the desktop reserve: the item stays ready and says why
+    let it = &queue(&mut s)[0];
+    assert_eq!(it["status"], "ready", "{it}");
+    assert!(it["waitingFor"][0].as_str().unwrap().contains("memory"), "{it}");
+    assert_eq!(s.tasks.held(), 0);
+    // room again: it starts, finishes, and gives its reservation back
+    free.store(14 * GIB, Ordering::Relaxed);
+    s.tasks.resample();
+    let t0 = std::time::Instant::now();
+    while queue(&mut s)[0]["status"] != "done" {
+        assert!(t0.elapsed() < std::time::Duration::from_secs(60), "{}", queue(&mut s)[0]);
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    assert!(queue(&mut s)[0]["waitingFor"].as_array().unwrap().is_empty());
+    assert_eq!(s.tasks.held(), 0);
+    assert!(s.tasks.queue().tasks().iter().all(|t| t.state == cfa4_tasks::State::Succeeded));
+    let listed = s.execute("tasks.list", json!({})).unwrap();
+    assert_eq!(listed[0]["state"], "succeeded", "{listed}");
+    assert_eq!(listed[0]["class"], "finalRender", "{listed}");
+    assert!(listed[0]["label"].as_str().unwrap().starts_with("Export: "), "{listed}");
+    // ACS-5: before the next one starts, the user can ask whether it would
+    let check = s.execute("tasks.check", json!({"class": "finalRender", "ramBytes": GIB, "cpuMilli": 1000})).unwrap();
+    assert_eq!((check["verdict"].as_str(), check["ahead"].as_u64()), (Some("start"), Some(0)), "{check}");
+    free.store(0, Ordering::Relaxed);
+    s.tasks.resample();
+    let check = s.execute("tasks.check", json!({"class": "finalRender", "ramBytes": GIB})).unwrap();
+    assert_eq!(check["verdict"], "wait", "{check}");
+    assert!(check["reasons"][0].as_str().unwrap().contains("memory"), "{check}");
+    assert!(s.execute("tasks.check", json!({"class": "bogus"})).is_err());
+    assert_eq!(s.tasks.held(), 0, "a check reserves nothing");
 }
 
 #[test]
@@ -1484,4 +1587,35 @@ fn mxf_op1a_writes_as11_metadata() {
         let e = s.execute("file.exportMedia", q).unwrap_err().to_string();
         assert!(e.contains("AS-11"), "{key}: {e}");
     }
+}
+
+#[test]
+fn queue_import_puts_the_finished_file_into_the_project() {
+    // KDN-47: `import: true` adds the finished file to the Project panel; the default does not
+    let mut s = demo();
+    let dir = Scratch::new("queue-import");
+    let items_before = s.project.items.len();
+    let plain = s
+        .execute(
+            "export.queue.add",
+            json!({"path": dir.path("plain.wav"), "format": "wav", "range": "custom", "startSeconds": 0, "endSeconds": 0.25, "start": true, "wait": true}),
+        )
+        .unwrap();
+    assert_eq!(plain["items"][0]["status"], "done", "{plain}");
+    assert_eq!(plain["items"][0]["import"], json!(false));
+    assert_eq!(s.project.items.len(), items_before, "nothing is imported unless asked");
+    let r = s
+        .execute(
+            "export.queue.add",
+            json!({"path": dir.path("imported.wav"), "format": "wav", "range": "custom", "startSeconds": 0, "endSeconds": 0.25, "import": true, "start": true, "wait": true}),
+        )
+        .unwrap();
+    let item = &r["items"][1];
+    assert_eq!(item["status"], "done", "{r}");
+    assert_eq!(item["import"], json!(true));
+    let imported = s.execute("export.queue.list", json!({})).unwrap();
+    let imported = imported.get("result").unwrap_or(&imported)["items"][1]["imported"].as_array().map(Vec::len).unwrap_or(0);
+    assert!(imported >= 1, "the file became a project item: {r}");
+    assert_eq!(s.project.items.len(), items_before + imported);
+    assert!(s.execute("export.queue.add", json!({"path": dir.path("x.wav"), "format": "wav", "import": "yes"})).is_err());
 }

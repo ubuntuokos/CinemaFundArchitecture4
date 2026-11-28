@@ -223,7 +223,7 @@ impl Supervisor {
             Ok(r) => r,
             Err(e) => {
                 ring::remove(&ring_path);
-                return Err(e);
+                return Err(e.into());
             }
         };
         let shared = Arc::new(Shared {
@@ -272,7 +272,7 @@ impl Supervisor {
 
     /// The newest frame in the ring (`None`: none yet, or torn and dropped).
     pub fn latest_frame(&self) -> Result<Option<ring::RingFrame>> {
-        self.reader.latest()
+        Ok(self.reader.latest()?)
     }
 
     /// Shows `scene` on the program: sends it to the running host and keeps it for every host

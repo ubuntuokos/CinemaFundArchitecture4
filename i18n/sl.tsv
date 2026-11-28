@@ -59,6 +59,7 @@
 	Arrange	Razporedi
 	Assembly	Montaža
 	Attach Proxies…	Pripni posredniške datoteke …
+	Find Camera Proxies	Poišči posredniške datoteke kamere
 	Audio	Zvok
 	Audio Channels…	Zvočni kanali …
 	Audio Clip Mixer	Mešalnik zvočnih posnetkov
@@ -3967,7 +3968,7 @@
 	Six-Point Pin	Šesttočkovna pripenjalka
 	Upper Center	Zgoraj na sredini
 	Lower Center	Spodaj na sredini
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Za datoteke, ki jih pogon CFA4 ne more odpreti, uporabi FFmpeg (FFmpeg 9.0.2 ali novejši, različica GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Za datoteke, ki jih pogon CFA4 ne more odpreti, uporabi FFmpeg (FFmpeg 9.1 ali novejši, različica GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Za datoteke, ki jih ne more odpreti niti pogon niti FFmpeg, uporabi sistemski GStreamer
 	Analyze Source for Smart Cut	Analiziraj vir za pametni rez
 	Plan Smart Cut	Načrtuj pametni rez
@@ -4816,6 +4817,11 @@ export.summary	Low	nizka
 	Encode Resolution	Ločljivost kodiranja
 	Half	Polovica
 	Quarter	Četrtina
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh razcvet
+	Start Time (seconds)	Začetni čas (sekunde)
+	Repeats	Ponovitve
+	Clean Blocks	Čisti bloki
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Uporabi nedavno uporabljen učinek na izbranih posnetkih
@@ -4868,3 +4874,115 @@ export.summary	Low	nizka
 	Subtitles	Podnapisi
 	Captions for the hearing impaired	Podnapisi za naglušne
 	Forced narrative	Prisilna pripoved (forced narrative)
+	Silence	Tišina
+	Detect Silence	Zaznaj tišino
+	Remove Silence	Odstrani tišino
+	Clear Silence Markers	Počisti oznake tišine
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Izberite mapo DCP.
+	DCP Validation	Preverjanje DCP
+	DCP folder	Mapa DCP
+	DCP folder (the one holding ASSETMAP)	Mapa DCP (tista z datoteko ASSETMAP)
+	Evidence	Dokaz
+	How to fix	Kako popraviti
+	Interrupted	Prekinjeno
+	Not applicable	Ni relevantno
+	Report	Poročilo
+	Report saved: {path}	Poročilo shranjeno: {path}
+	Required	Obvezno
+	Rule	Pravilo
+	Rules	Pravila
+	Save JSON…	Shrani JSON…
+	Save Markdown…	Shrani Markdown…
+	Save report	Shrani poročilo
+	Skipped	Preskočeno
+	Standard: {standard}	Standard: {standard}
+	Validate	Preveri
+	Validate DCP…	Preveri DCP…
+	the engine sent no profiles	pogon ni poslal nobenih profilov
+	{n} files checked	Preverjenih datotek: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Zapiši paket AS-02 (pot je mapa)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktivni vokslji:
+	Bounds:	Meje:
+	Voxel attributes	Atributi vokslov
+	Voxel size:	Velikost voksla:
+	points	točke
+
+# WP3 DPX bit depth
+	Bit Depth	Bitna globina
+
+# AS-02 versions
+	AS-02 Versions	Različice AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Označite zaporedja, ki se zapišejo kot dodatne različice v paketu AS-02
+	Delete Short Clips	Izbriši kratke posnetke
+	A stored combination does not run a command yet.	Shranjena kombinacija še ne zažene ukaza.
+	Action hint	Namig dejanja
+	Add combination	Dodaj kombinacijo
+	Add mapping	Dodaj preslikavo
+	Button Learn	Učenje gumba
+	Button Test	Preizkus gumba
+	Button name	Ime gumba
+	Cancel feedback	Signal preklica
+	Combination editor	Urejevalnik kombinacij
+	Context	Kontekst
+	Delete profile	Izbriši profil
+	Detected buttons	Zaznani gumbi
+	Draw the gesture with a button held.	Narišite potezo z držanim gumbom.
+	Error feedback	Signal napake
+	Evdev device	Evdev naprava
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev bere samo izbrano napravo in šele, ko jo poznejša faza vklopi. Ta različica ostane na poti Qt.
+	Execution feedback	Signal izvedbe
+	Follow the system	Sledi sistemu
+	Gesture	Poteza
+	Gesture Learn	Učenje poteze
+	Gesture editor	Urejevalnik potez
+	Gesture profiles	Profili potez
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Poteze ostanejo izklopljene, dokler jih ne vklopite. Vklop ne blokira menija pulta.
+	HUD	HUD
+	Hand	Roka
+	High contrast	Visok kontrast
+	Hold time	Čas držanja
+	Input access	Dostop do vhoda
+	Left-handed	Levičar
+	Mapping	Preslikava
+	Maximum length	Največja dolžina
+	Maximum time	Najdaljši čas
+	Minimum length	Najmanjša dolžina
+	Mirror ergonomic gestures	Zrcali ergonomske poteze
+	Mouse Gestures	Poteze miške
+	Mouse Gestures…	Poteze miške…
+	No buttons yet. Press one in Button Learn or Button Test.	Še ni gumbov. Pritisnite enega pri učenju ali preizkusu.
+	Press	Pritisk
+	Qt pointer (this application)	Kazalec Qt (ta program)
+	Recognition preview	Predogled prepoznave
+	Reduced animation	Zmanjšana animacija
+	Right-handed	Desničar
+	Roles	Vloge
+	Save gesture	Shrani potezo
+	Save profile	Shrani profil
+	Show the gesture HUD	Pokaži HUD potez
+	Slop	Ohlap
+	Spatial gesture	Prostorska poteza
+	Thresholds	Pragi
+	Trail	Sled
+	Use gestures in the window	Uporabi poteze v oknu
+	DVD-Video folder (VIDEO_TS)	Mapa DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Mapa DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfno, 6 Mbps, GOP 15, AC-3 192 kbps, poglavja iz oznak poglavij sekvence
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Mapa DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfno, 6 Mbps, GOP 18, AC-3 192 kbps, poglavja iz oznak poglavij sekvence
+	DNx decoding:	Dekodiranje DNx:
+	As detected from the file ({detected})	Kot je zaznano iz datoteke ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	Združljivo s FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg nekatere datoteke DNx bere drugače od standarda (barve 4:4:4, inverzna kvantizacija). Posnetki, ki jih je kodiral FFmpeg, se zaznajo; izberite tukaj, če je zaznava napačna.
+	DNx Coding	Kodiranje DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Združljivo s FFmpeg (za orodja na osnovi FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Izklopljeno: kodirano po SMPTE ST 2019-1. Vklopljeno: kodirano tako, kot FFmpeg zapisuje DNx, za orodja na osnovi FFmpeg.

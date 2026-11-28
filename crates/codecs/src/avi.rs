@@ -47,10 +47,26 @@ enum VCodec {
     Dirac,
     /// Huffyuv with its (reduced) `BITMAPINFOHEADER`.
     Huffyuv(Vec<u8>),
+    /// Huffyuv MT (`HYMT`, sliced packets) with its (reduced) `BITMAPINFOHEADER`.
+    HuffyuvMt(Vec<u8>),
     /// Lagarith with its `BITMAPINFOHEADER` bit count.
     Lagarith(u16),
+    /// Sorenson Video 3 with its extradata (the sequence header).
+    Svq3(Vec<u8>),
+    /// Sorenson Video 1.
+    Svq1,
+    /// Indeo 4 or 5 (the FourCC).
+    Indeo45([u8; 4]),
+    /// Indeo 3.
+    Indeo3,
+    /// Indeo 2.
+    Indeo2,
+    /// Cinepak with its `BITMAPINFOHEADER` bit count and palette.
+    Cinepak(u16, Vec<u8>),
     /// MagicYUV (every frame carries its own header).
     MagicYuv,
+    /// Microsoft Video 1 or Microsoft RLE with its (reduced) `BITMAPINFOHEADER`: bit count and palette.
+    MsVideo(crate::msvideo::Kind, Vec<u8>),
     /// Ut Video: the FourCC and the extradata.
     UtVideo([u8; 4], Vec<u8>),
     /// Matrox MPEG-2 I-frame (`MMES`, `M701`–`M705`): intra-only MPEG-2, every chunk a picture.
@@ -73,6 +89,9 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
     if let Some(c) = crate::canopus::codec(&b.compression) {
         return (VCodec::Canopus(c), crate::canopus::label(c).into());
     }
+    if let Some(k) = crate::msvideo::kind(&b.compression) {
+        return (VCodec::MsVideo(k, crate::msvideo::bitmap_info_header(b.bit_count, &b.extra)), k.label().into());
+    }
     let mut f = b.compression;
     f.make_ascii_uppercase();
     match &f {
@@ -81,9 +100,16 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
         b"CFHD" => (VCodec::Cineform, "GoPro CineForm".into()),
         b"HEVC" | b"H265" | b"HEV1" | b"HVC1" | b"X265" => (VCodec::Hevc, "HEVC".into()),
         _ if crate::utvideo::is_utvideo(&b.compression) => (VCodec::UtVideo(b.compression, b.extra.clone()), "Ut Video".into()),
+        c if crate::svq1::is_svq1(c) => (VCodec::Svq1, "Sorenson Video 1".into()),
+        c if crate::indeo45::is_indeo45(c) => (VCodec::Indeo45(*c), crate::indeo45::label(c).into()),
+        b"IV31" | b"IV32" => (VCodec::Indeo3, "Indeo 3".into()),
+        b"RT21" => (VCodec::Indeo2, "Indeo 2".into()),
+        b"CVID" => (VCodec::Cinepak(b.bit_count, b.extra.clone()), "Cinepak".into()),
         b"LAGS" => (VCodec::Lagarith(b.bit_count), "Lagarith".into()),
+        c if crate::svq3::is_svq3(c) => (VCodec::Svq3(b.extra.clone()), "Sorenson Video 3".into()),
         _ if crate::magicyuv::is_magicyuv(&b.compression) => (VCodec::MagicYuv, "MagicYUV".into()),
         b"HFYU" => (VCodec::Huffyuv(crate::huffyuv::bitmap_info_header(b.bit_count, &b.extra)), "Huffyuv".into()),
+        b"HYMT" => (VCodec::HuffyuvMt(crate::huffyuv::bitmap_info_header(b.bit_count, &b.extra)), "Huffyuv MT".into()),
         b"FFV1" => (VCodec::Ffv1(b.extra.clone()), "FFV1".into()),
         b"DRAC" => (VCodec::Dirac, "VC-2 / Dirac".into()),
         b"DIVX" | b"DX50" | b"XVID" | b"FMP4" | b"MP4V" | b"M4S2" | b"3IV2" | b"DIV3" | b"MP43" | b"MP42" => {
@@ -117,6 +143,8 @@ enum ACodec {
     },
     /// G.711, G.722, IMA or Microsoft ADPCM: whole blocks per chunk.
     Adpcm(cfa4_adpcm::Codec),
+    /// DSP Group TrueSpeech: whole 32-byte frames per chunk, one decoder state across chunks.
+    TrueSpeech,
     Unsupported(String),
 }
 
@@ -132,6 +160,7 @@ fn audio_codec(w: &WaveFormat) -> (ACodec, String) {
         0x55 => (ACodec::Framed { ts: cfa4_mpegts::Codec::MpegAudio, layer: 3 }, "MP3".into()),
         0x50 => (ACodec::Framed { ts: cfa4_mpegts::Codec::MpegAudio, layer: 2 }, "MPEG Audio".into()),
         0x2000 => (ACodec::Framed { ts: cfa4_mpegts::Codec::Ac3, layer: 0 }, "AC-3".into()),
+        0x22 if w.channels == 1 && w.sample_rate == cfa4_truespeech::SAMPLE_RATE => (ACodec::TrueSpeech, "TrueSpeech".into()),
         tag if let Some(c) = cfa4_adpcm::Codec::from_wave_format(tag, w.block_align, w.bits_per_sample, &w.extra) => match c {
             Ok(c) => {
                 let name = c.name().to_string();
@@ -154,6 +183,7 @@ struct AudioState {
     packets: HashMap<usize, Arc<Vec<Vec<f32>>>>,
     order: Vec<usize>,
     last_decoded: Option<usize>,
+    checkpoints: crate::audio::Checkpoints,
 }
 
 struct AviAudio {
@@ -314,6 +344,9 @@ impl AviSource {
                         file.read_chunk(&bytes, vstream.unwrap_or(0), k).is_ok_and(|d| random_access(&d, codec == VCodec::Hevc))
                     }
                     VCodec::H264 | VCodec::Hevc => c.key,
+                    // delta pictures: a seek starts at the last flagged key frame (or the first
+                    // picture when the index flags none)
+                    VCodec::MsVideo(..) => c.key && vs.keyframes_known || k == 0,
                     _ => true,
                 };
                 vframes.push(VFrame { pts: i64::from(vs.start) + k as i64, chunk: k, key });
@@ -462,6 +495,19 @@ impl AviSource {
                     let first = (0..pieces.len()).collect();
                     (pieces, first, starts)
                 }
+                ACodec::TrueSpeech => {
+                    let mut t = 0i64;
+                    let mut starts = Vec::with_capacity(st.chunks.len());
+                    for ch in &st.chunks {
+                        starts.push(t);
+                        t = t.saturating_add(
+                            i64::try_from(ch.size as usize / cfa4_truespeech::FRAME_BYTES * cfa4_truespeech::FRAME_SAMPLES).unwrap_or(i64::MAX),
+                        );
+                    }
+                    let pieces: Vec<Piece> = st.chunks.iter().enumerate().map(|(k, c)| (k, 0, c.size as usize)).collect();
+                    let first = (0..pieces.len()).collect();
+                    (pieces, first, starts)
+                }
                 ACodec::Unsupported(_) => (Vec::new(), Vec::new(), Vec::new()),
             };
             // a stream that starts late (dwStart, in scale / rate units)
@@ -474,7 +520,8 @@ impl AviSource {
                 bits_per_sample: (w.bits_per_sample > 0).then_some(u32::from(w.bits_per_sample)),
                 speakers: Vec::new(),
             });
-            let state = Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None });
+            let state =
+                Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None, checkpoints: Default::default() });
             audios.push(AviAudio { stream: s, codec, pieces, first, starts, state });
         }
         // type-1 DV: the sound is in the DIF frames themselves
@@ -564,6 +611,26 @@ impl AviSource {
                 st.last_decoded = Some(i);
                 r.unwrap_or_default()
             }
+            ACodec::TrueSpeech => {
+                if st.decoder.is_none() {
+                    st.decoder = Some(PacketDecoder::truespeech());
+                }
+                let d = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?;
+                // the state carries across chunks: after a jump restart from a saved one
+                if st.last_decoded.is_none_or(|l| l + 1 != i) {
+                    let from = st.checkpoints.restore(d, i).unwrap_or(0);
+                    for j in from..i {
+                        st.checkpoints.record(d, j);
+                        if let Ok(prev) = self.packet(a, j) {
+                            let _ = d.decode(&prev, 0);
+                        }
+                    }
+                }
+                st.checkpoints.record(d, i);
+                let r = d.decode(&data, 0);
+                st.last_decoded = Some(i);
+                r.unwrap_or_default()
+            }
             ACodec::Framed { ts, layer } => {
                 if st.decoder.is_none() {
                     st.decoder = Some(match ts {
@@ -639,8 +706,16 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::Ffv1(record) => make_video_decoder(&crate::ffv1::sample_entry(record, w, h)),
             VCodec::Dirac => make_video_decoder(&crate::dirac::sample_entry(w, h)),
             VCodec::Huffyuv(bih) => make_video_decoder(&crate::huffyuv::sample_entry(bih, w, h)),
+            VCodec::HuffyuvMt(bih) => make_video_decoder(&crate::huffyuv::sample_entry_mt(bih, w, h)),
+            VCodec::Svq1 => make_video_decoder(&crate::svq1::sample_entry(w, h)),
+            VCodec::Indeo45(fourcc) => make_video_decoder(&crate::indeo45::sample_entry(fourcc, w, h)),
+            VCodec::Indeo3 => make_video_decoder(&crate::indeo3::sample_entry(w, h)),
+            VCodec::Indeo2 => make_video_decoder(&crate::indeo::sample_entry_indeo2(w, h)),
+            VCodec::Svq3(extra) => make_video_decoder(&crate::svq3::sample_entry(w, h, extra)),
+            VCodec::Cinepak(bits, pal) => make_video_decoder(&crate::cinepak::sample_entry(*bits, pal, w, h)),
             VCodec::Lagarith(bits) => make_video_decoder(&crate::lagarith::sample_entry(*bits, w, h)),
             VCodec::MagicYuv => make_video_decoder(&crate::magicyuv::sample_entry(w, h)),
+            VCodec::MsVideo(k, bih) => make_video_decoder(&crate::msvideo::sample_entry(*k, bih, w, h)),
             VCodec::UtVideo(fourcc, extra) => make_video_decoder(&crate::utvideo::sample_entry(*fourcc, extra, w, h)),
             VCodec::Mpeg2 => {
                 // primed with the first picture's sequence header, so any picture decodes on its own

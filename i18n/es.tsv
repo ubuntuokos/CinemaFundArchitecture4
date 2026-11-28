@@ -42,6 +42,7 @@
 	Arrange	Organizar
 	Assembly	Ensamblaje
 	Attach Proxies…	Adjuntar proxies…
+	Find Camera Proxies	Buscar proxies de cámara
 	Audio Channels…	Canales de audio…
 	Audio Clip Mixer	Mezclador de clips de audio
 	Audio Gain…	Ganancia de audio…
@@ -3701,7 +3702,7 @@
 	Show Duplicate Frame Markers	Mostrar marcadores de fotogramas duplicados
 # Settings ▸ Media & Playback ▸ Media Backends (ADR 0005)
 	Media Backends	Backends de medios
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Usar FFmpeg para los archivos que el motor de CFA4 no puede abrir (FFmpeg 9.0.2 o posterior, compilación GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Usar FFmpeg para los archivos que el motor de CFA4 no puede abrir (FFmpeg 9.1 o posterior, compilación GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Usar el GStreamer del sistema para los archivos que ni el motor ni FFmpeg pueden abrir
 	Work Area Bar	Barra de área de trabajo
 	Set Work Area Bar In Point	Definir punto de entrada de la barra de área de trabajo
@@ -4820,6 +4821,11 @@
 	Encode Resolution	Resolución de codificación
 	Half	Mitad
 	Quarter	Cuarto
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Floración datamosh
+	Start Time (seconds)	Tiempo de inicio (segundos)
+	Repeats	Repeticiones
+	Clean Blocks	Bloques limpios
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Aplicar un efecto usado recientemente a los clips seleccionados
@@ -4872,3 +4878,115 @@
 	Subtitles	Subtítulos
 	Captions for the hearing impaired	Subtítulos para personas sordas o con discapacidad auditiva
 	Forced narrative	Narración forzada (forced narrative)
+	Clear Silence Markers	Borrar marcadores de silencio
+	Detect Silence	Detectar silencio
+	Remove Silence	Eliminar silencio
+	Silence	Silencio
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Elige la carpeta del DCP.
+	DCP Validation	Validación de DCP
+	DCP folder	Carpeta del DCP
+	DCP folder (the one holding ASSETMAP)	Carpeta del DCP (la que contiene el ASSETMAP)
+	Evidence	Evidencia
+	How to fix	Cómo corregirlo
+	Interrupted	Interrumpido
+	Not applicable	No aplicable
+	Report	Informe
+	Report saved: {path}	Informe guardado: {path}
+	Required	Obligatorio
+	Rule	Regla
+	Rules	Reglas
+	Save JSON…	Guardar JSON…
+	Save Markdown…	Guardar Markdown…
+	Save report	Guardar informe
+	Skipped	Omitido
+	Standard: {standard}	Norma: {standard}
+	Validate	Validar
+	Validate DCP…	Validar DCP…
+	the engine sent no profiles	el motor no envió ningún perfil
+	{n} files checked	{n} archivos comprobados
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Escribir un paquete AS-02 (la ruta es una carpeta)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Vóxeles activos:
+	Bounds:	Límites:
+	Voxel attributes	Atributos de vóxel
+	Voxel size:	Tamaño del vóxel:
+	points	puntos
+
+# WP3 DPX bit depth
+	Bit Depth	Profundidad de bits
+
+# AS-02 versions
+	AS-02 Versions	Versiones AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Marque las secuencias que se escribirán como versiones adicionales en el paquete AS-02
+	Delete Short Clips	Eliminar clips cortos
+	A stored combination does not run a command yet.	Una combinación guardada aún no ejecuta un comando.
+	Action hint	Aviso de acción
+	Add combination	Añadir combinación
+	Add mapping	Añadir asignación
+	Button Learn	Aprender botón
+	Button Test	Prueba de botón
+	Button name	Nombre del botón
+	Cancel feedback	Aviso de cancelación
+	Combination editor	Editor de combinaciones
+	Context	Contexto
+	Delete profile	Eliminar perfil
+	Detected buttons	Botones detectados
+	Draw the gesture with a button held.	Dibuje el gesto con un botón pulsado.
+	Error feedback	Aviso de error
+	Evdev device	Dispositivo evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev solo lee el dispositivo elegido, y solo cuando una fase posterior lo active. Esta versión sigue la vía Qt.
+	Execution feedback	Aviso de ejecución
+	Follow the system	Seguir el sistema
+	Gesture	Gesto
+	Gesture Learn	Aprender gesto
+	Gesture editor	Editor de gestos
+	Gesture profiles	Perfiles de gestos
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Los gestos siguen apagados hasta que los active. Activarlos no bloquea el menú del panel.
+	HUD	HUD
+	Hand	Mano
+	High contrast	Alto contraste
+	Hold time	Tiempo de pulsación
+	Input access	Acceso de entrada
+	Left-handed	Zurdo
+	Mapping	Asignación
+	Maximum length	Longitud máxima
+	Maximum time	Tiempo máximo
+	Minimum length	Longitud mínima
+	Mirror ergonomic gestures	Reflejar los gestos ergonómicos
+	Mouse Gestures	Gestos del ratón
+	Mouse Gestures…	Gestos del ratón…
+	No buttons yet. Press one in Button Learn or Button Test.	Aún no hay botones. Pulse uno en Aprender botón o en Prueba de botón.
+	Press	Pulsación
+	Qt pointer (this application)	Puntero Qt (esta aplicación)
+	Recognition preview	Vista previa del reconocimiento
+	Reduced animation	Animación reducida
+	Right-handed	Diestro
+	Roles	Roles
+	Save gesture	Guardar gesto
+	Save profile	Guardar perfil
+	Show the gesture HUD	Mostrar el HUD de gestos
+	Slop	Holgura
+	Spatial gesture	Gesto espacial
+	Thresholds	Umbrales
+	Trail	Rastro
+	Use gestures in the window	Usar gestos en la ventana
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Carpeta DVD-Video (VIDEO_TS): MPEG-2 720×576 a 25 fps, 16:9 anamórfico, 6 Mbps, GOP 15, AC-3 a 192 kbps, capítulos a partir de los marcadores de capítulo de la secuencia
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Carpeta DVD-Video (VIDEO_TS): MPEG-2 720×480 a 29,97 fps, 16:9 anamórfico, 6 Mbps, GOP 18, AC-3 a 192 kbps, capítulos a partir de los marcadores de capítulo de la secuencia
+	DVD-Video folder (VIDEO_TS)	Carpeta DVD-Video (VIDEO_TS)
+	DNx decoding:	Descodificación DNx:
+	As detected from the file ({detected})	Según lo detectado en el archivo ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (estándar)
+	FFmpeg-compatible	Compatible con FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg lee algunos archivos DNx de forma distinta al estándar (colores 4:4:4, cuantificación inversa). Se detecta el material codificado con FFmpeg; elija aquí si la detección es incorrecta.
+	DNx Coding	Codificación DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Compatible con FFmpeg (para herramientas basadas en FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Desactivado: codificado según SMPTE ST 2019-1. Activado: codificado como FFmpeg escribe DNx, para herramientas basadas en FFmpeg.

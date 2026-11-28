@@ -247,6 +247,10 @@ impl Runtime {
         if device_off {
             return Vec::new();
         }
+        if let SurfaceInput::Gesture { id, context } = input {
+            // The same `surfaceAction` event MIDI and the shuttle use. Not the event fabric.
+            return self.dispatch_gesture(prefs, device, id, context, seq).events;
+        }
         if matches!(input, SurfaceInput::Jog { .. } | SurfaceInput::Shuttle { .. }) {
             return self.motion(prefs, device, input, seq);
         }
@@ -355,7 +359,7 @@ impl Runtime {
 }
 
 fn learnable(input: &SurfaceInput) -> bool {
-    !matches!(input, SurfaceInput::Raw | SurfaceInput::Jog { .. } | SurfaceInput::Shuttle { .. })
+    !matches!(input, SurfaceInput::Raw | SurfaceInput::Jog { .. } | SurfaceInput::Shuttle { .. } | SurfaceInput::Gesture { .. })
 }
 
 fn value_of(input: &SurfaceInput) -> Option<f64> {
@@ -366,6 +370,58 @@ fn value_of(input: &SurfaceInput) -> Option<f64> {
         }
         SurfaceInput::PitchBend { value, .. } => Some(f64::from(*value) / 16383.0),
         _ => None,
+    }
+}
+
+struct GestureOutcome {
+    events: Vec<Value>,
+    feedback: Value,
+}
+
+impl Runtime {
+    /// Map one recognised gesture onto the existing assignment path. A gesture never enters MIDI
+    /// Learn and never moves [`Triggers`]. Cancelled and unbound gestures emit nothing.
+    fn dispatch_gesture(&self, prefs: &ControlSurfacePrefs, device: &str, id: &str, context: &str, seq: u64) -> GestureOutcome {
+        let context_key = crate::control_surfaces::gesture_context_key(context);
+        if !prefs.enabled || self.disabled(device) || (device.starts_with("midi:") && self.disabled("alsa")) {
+            return GestureOutcome::plain("disabled", context_key, "", "control surfaces are off");
+        }
+        if prefs.devices.iter().find(|d| d.device == device).is_some_and(|d| !d.enabled) {
+            return GestureOutcome::plain("disabled", context_key, "", "the device is off");
+        }
+        if !crate::control_surfaces::gesture_id_ok(id) {
+            return GestureOutcome::plain("rejected", context_key, "", "gesture id is not usable");
+        }
+        let Some(binding) = prefs.gesture_binding(device, id, context) else {
+            return GestureOutcome::plain("unbound", context_key, "", "");
+        };
+        if !crate::control_surfaces::gesture_command_allowed(&binding.command) {
+            return GestureOutcome::plain("refused", context_key, &binding.command, "gesture commands are playback, playhead or window");
+        }
+        let control = ControlId::Gesture { id: id.to_string() };
+        let action = Action { command: binding.command.clone(), params: binding.params.clone() };
+        let event = action_event(device, &control, action, seq);
+        let feedback = json!({
+            "status": "dispatched",
+            "command": binding.command,
+            "context": context_key,
+        });
+        GestureOutcome { events: vec![event], feedback }
+    }
+}
+
+impl GestureOutcome {
+    fn plain(status: &str, context: &str, command: &str, reason: &str) -> Self {
+        let mut feedback = json!({"status": status, "context": context});
+        if let Some(obj) = feedback.as_object_mut() {
+            if !command.is_empty() {
+                obj.insert("command".into(), json!(command));
+            }
+            if !reason.is_empty() {
+                obj.insert("reason".into(), json!(reason));
+            }
+        }
+        Self { events: Vec::new(), feedback }
     }
 }
 
@@ -558,9 +614,20 @@ pub fn inject(rt: &mut Runtime, prefs: &ControlSurfacePrefs, p: &Value, now: Ins
     if device.is_empty() {
         return Err(EngineError::Other("invalid_params: `device` is required".into()));
     }
-    let input: SurfaceInput =
+    let mut input: SurfaceInput =
         serde_json::from_value(p.get("input").cloned().unwrap_or(Value::Null)).map_err(|e| EngineError::Other(format!("invalid_params: input: {e}")))?;
+    if let SurfaceInput::Gesture { context, .. } = &mut input
+        && context.is_empty()
+        && let Some(given) = p.get("context").and_then(Value::as_str)
+    {
+        *context = given.to_string();
+    }
     let seq = rt.next_seq(device);
+    if let SurfaceInput::Gesture { id, context } = &input {
+        let outcome = rt.dispatch_gesture(prefs, device, id, context, seq);
+        rt.events.extend(outcome.events);
+        return Ok(json!({"seq": seq, "feedback": outcome.feedback}));
+    }
     let events = rt.handle(prefs, device, &input, seq, now);
     rt.events.extend(events);
     Ok(json!({"seq": seq}))
@@ -817,8 +884,12 @@ mod tests {
     fn learn_reports_cc_cc14_and_relative_and_a_conflict() {
         let mut rt = Runtime::default();
         let t0 = Instant::now();
-        let binding =
-            Binding { control: ControlId::Midi { channel: 0, kind: MidiKind::Cc, number: 16 }, command: "markers.markIn".into(), params: Value::Null };
+        let binding = Binding {
+            control: ControlId::Midi { channel: 0, kind: MidiKind::Cc, number: 16 },
+            command: "markers.markIn".into(),
+            params: Value::Null,
+            context: String::new(),
+        };
         let prefs = prefs_with(Some(binding));
         learn(&mut rt, &prefs, &json!({"target": {"command": "edit.undo"}, "silenceMs": 1500, "firstMs": 7000}), t0).ok();
         let _ = rt.handle(&prefs, "midi:k:p", &cc(16, 10), 1, t0);
@@ -861,7 +932,12 @@ mod tests {
     fn an_encoder_step_moves_its_value_target_without_pickup() {
         let mut rt = Runtime::default();
         let control = ControlId::Midi { channel: 0, kind: MidiKind::Cc, number: 16 };
-        let binding = Binding { control: control.clone(), command: "mixer.stripVolume".into(), params: json!({"strip": "A1", "encoding": "offset64"}) };
+        let binding = Binding {
+            control: control.clone(),
+            command: "mixer.stripVolume".into(),
+            params: json!({"strip": "A1", "encoding": "offset64"}),
+            context: String::new(),
+        };
         let prefs = prefs_with(Some(binding));
         let t0 = Instant::now();
         let step = |d| SurfaceInput::Relative { control: control.clone(), delta: d, encoding: cfa4_surface_model::RelEncoding::Offset64 };
@@ -876,7 +952,7 @@ mod tests {
     fn pickup_holds_a_jump_and_follows_a_value_inside_the_threshold() {
         let mut rt = Runtime::default();
         let control = ControlId::Midi { channel: 0, kind: MidiKind::Cc, number: 0 };
-        let binding = Binding { control: control.clone(), command: "mixer.stripVolume".into(), params: json!({"strip": "A1"}) };
+        let binding = Binding { control: control.clone(), command: "mixer.stripVolume".into(), params: json!({"strip": "A1"}), context: String::new() };
         let prefs = prefs_with(Some(binding));
         let t0 = Instant::now();
         let first = rt.handle(&prefs, "midi:k:p", &cc(0, 64), 1, t0);
@@ -899,7 +975,12 @@ mod tests {
     #[test]
     fn inject_matches_a_press_and_five_faults_disable() {
         let mut rt = Runtime::default();
-        let binding = Binding { control: ControlId::Midi { channel: 0, kind: MidiKind::Note, number: 60 }, command: "edit.undo".into(), params: Value::Null };
+        let binding = Binding {
+            control: ControlId::Midi { channel: 0, kind: MidiKind::Note, number: 60 },
+            command: "edit.undo".into(),
+            params: Value::Null,
+            context: String::new(),
+        };
         let prefs = prefs_with(Some(binding));
         let t0 = Instant::now();
         let v = inject(
@@ -933,5 +1014,38 @@ mod tests {
         let wide_id = ControlId::Midi { channel: 0, kind: MidiKind::Cc, number: 2 };
         let wide = SurfaceInput::Absolute { control: wide_id, value: 8192, bits: 14 };
         assert!(t.press("d", &wide).is_some(), "14-bit half is 8192");
+    }
+
+    #[test]
+    fn a_gesture_does_not_enter_midi_learn_and_the_lane_still_dispatches_it() {
+        let mut rt = Runtime::default();
+        let t0 = Instant::now();
+        let prefs = ControlSurfacePrefs {
+            devices: vec![crate::control_surfaces::DeviceSetting {
+                device: "pointer:seat".into(),
+                bindings: vec![Binding {
+                    control: ControlId::Gesture { id: "direction.right".into() },
+                    command: "playback.toggle".into(),
+                    params: Value::Null,
+                    context: String::new(),
+                }],
+                ..Default::default()
+            }],
+            ..ControlSurfacePrefs::default()
+        };
+        learn(&mut rt, &prefs, &json!({"target": {"command": "edit.undo"}, "silenceMs": 1500, "firstMs": 7000}), t0).ok();
+        let global = SurfaceInput::Gesture { id: "direction.right".into(), context: String::new() };
+        let out = rt.handle(&prefs, "pointer:seat", &global, 1, t0);
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0]["event"], "surfaceAction");
+        assert_eq!(out[0]["command"], "playback.toggle");
+        assert_eq!(out[0]["control"]["gesture"]["id"], "direction.right");
+        let timeline = SurfaceInput::Gesture { id: "direction.right".into(), context: "timeline".into() };
+        assert!(rt.handle(&prefs, "pointer:seat", &timeline, 2, t0).is_empty(), "timeline does not fall back to global");
+        assert_eq!(rt.learn_state(), "learning", "a gesture does not start a MIDI capture");
+        let note = SurfaceInput::Button { control: ControlId::Midi { channel: 0, kind: MidiKind::Note, number: 60 }, pressed: true };
+        let captured = rt.handle(&prefs, "midi:k:p", &note, 3, t0 + Duration::from_millis(10));
+        assert_eq!(captured[0]["state"], "capturing");
+        assert!(captured.iter().all(|event| event.get("event").and_then(Value::as_str) != Some("surfaceAction")));
     }
 }

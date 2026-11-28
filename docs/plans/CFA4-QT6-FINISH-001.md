@@ -1,6 +1,6 @@
 # CFA4-QT6-FINISH-001 – a Qt6 GUI befejezése és az egui eltávolítása
 
-**Állapot:** FINAL 1.3 – a tulajdonos 2026-11-15-én jóváhagyta (1.2: 2026-11-14; 1.1: 2026-11-10;
+**Állapot:** FINAL 1.4 – az 1.4 (Q1b, a 4.14 sor) a tulajdonos 2026-11-23-i döntése (CFA4-QT6-UI-ELEMZES-001 D-Q1: „javaslat szerint”); 1.3: 2026-11-15-i jóváhagyás (1.2: 2026-11-14; 1.1: 2026-11-10;
 1.0: 2026-11-08). Az 1.3 változása: a Q4.3-ba bekerült a futásidejű függőségek mérése (a fejlesztő
 kérte, a tulajdonos jóváhagyta). Az 1.2 változásai: D2 és D3 eldőlt, a Q4.3 a tulajdonos 2026-11-12-i és 2026-11-14-i döntése szerint
 (a csomagok semmilyen úton nem indítanak egui-t), a Q2 és a Q5.3 ehhez igazítva. Fejlesztés csak e
@@ -23,7 +23,7 @@ sem a `crates/ui-egui/src/i18n/`, sem a `python/cfa4_qt/i18n/` alá.
 
 ## 1. Kiinduló állapot (`main`, 2026-11-08)
 
-A `qt-parity.md` 63 sorából 59 ✅, 4 🟡, ❌ nincs.
+A `qt-parity.md` 63 sorából 59 ✅, 4 🟡, ❌ nincs. *(1.4: 2026-11-23-án a `main`-ben 67 sorból 62 ✅ és 5 🟡 van; az új 🟡 a 4.14, lásd Q1b.)*
 
 | Sor | Mi hiányzik a sor szerint | Jellege |
 |---|---|---|
@@ -51,6 +51,17 @@ bizonyítékkal lesz ✅ (teszt a `python/tests/`-ben vagy rögzített kézi ell
 2. Ha marad hiány, az egy újabb, kis PR.
 
 **Átvétel:** a 4.2 sor ✅, bizonyítékkal; vagy 🟡 a hiány megnevezésével.
+
+### Q1b – QC: a jelölt időpontnál az export megtekintése (4.14), 1.4
+
+A 4.14 sor egyetlen hiánya: a Quality Check ablakban egy eseménynél vagy megállapításnál (finding) nem lehet megnézni az exportált fájl képét az adott időkódnál. **Döntés (D-Q1, 2026-11-23):** csak olvasható előnézet a QC-ablakban; az export **nem kerül be** a felhasználó projektjébe, a projekt érintetlen marad.
+
+1. **Gomb és előnézet** a QC-ablakban („Show Frame”, automation-id `qc.showFrame`, `qc.framePreview`): a kijelölt esemény vagy megállapítás időkódjához a fájl képkockáját mutatja. Nincs lejátszás, nincs Source-elem.
+2. **Motor:** a meglévő `mediaBrowser.thumbnail` (`serve_media_browser.rs`; projekten kívüli fájlra is működik). Az időpont → `fraction` átváltáshoz a fájl hosszát a `mediaBrowser.probe` adja. Ha a fraction-alapú kép nem találja el pontosan a képkockát, a `thumbnail` egy opcionális `tick` paramétert kap (kis, tesztelt motorváltozás, külön commit).
+3. **Hiba esetén** (fájl hiányzik, nincs kép, dekódolási hiba) az ablak üzenetet ír, nem omlik össze (AGENTS.md §0); az elavult válaszok eldobása a meglévő `_generation` szabály szerint.
+4. Fordítás csak az `i18n/` alá; `docs/qt-parity.md` 4.14 sora csak a kód és a teszt után lesz ✅.
+
+**Átvétel:** Qt-teszt (hamis motorral és valódi motorral), automation-id, a 4.14 sor ✅ bizonyítékkal.
 
 ### Q2 – Kézi asztali ellenőrzés (1.9)
 
@@ -127,7 +138,7 @@ parancs és az AppImage minden indítási módja a Qt6 GUI-t indítja; az 1.10 �
 
 ### Q5 – Az egui eltávolítása
 
-Csak akkor indul, ha minden sor ✅ **és** a tulajdonos jóváhagyása az ADR F8-ban rögzítve van.
+Csak akkor indul, ha minden sor ✅ (a 4.14 is, Q1b) **és** a tulajdonos jóváhagyása az ADR F8-ban rögzítve van.
 Előtte fel kell számolni azt, ami ma az egui forrására támaszkodik:
 
 1. **Fordítási katalógusok: a felső szintű `i18n/`.** A tulajdonos döntése (2026-11-09) szerint minden
@@ -163,7 +174,7 @@ lezárul (ACCEPTED, QT6_GUI_DONE), a `qt-parity.md` archív dokumentum lesz.
 
 ## 3. Sorrend
 
-Q1 és Q2 előkészítése párhuzamosan indulhat (más fájlokat érintenek). Q3 független. Q4 bármikor indulhat (a D1 eldőlt), a valódi asztalon a Q2-vel együtt is futhat.
+Q1 és Q1b, valamint Q2 előkészítése párhuzamosan indulhat (más fájlokat érintenek). Q3 független. Q4 bármikor indulhat (a D1 eldőlt), a valódi asztalon a Q2-vel együtt is futhat.
 Q5 utolsó, minden ✅ és a tulajdonos jóváhagyása után.
 
 ## 4. Becslés

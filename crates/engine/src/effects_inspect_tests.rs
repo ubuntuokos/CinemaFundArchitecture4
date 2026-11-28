@@ -216,6 +216,92 @@ fn program_overlay_reports_the_crop_rectangle_of_the_selected_crop() {
     s.execute("effects.select", json!({"clip": c, "effect": "crop"})).unwrap();
     s.execute("playhead.set", json!({"time": it.end().0 + 1})).unwrap();
     assert!(crop(&mut s).is_null());
+    // an adjustment layer has no picture to crop a rectangle out of: no rectangle
+    let item = s.execute("file.newAdjustmentLayer", json!({"seconds": 4})).unwrap()["item"].as_u64().unwrap();
+    let layer = s.execute("timeline.place", json!({"item": item, "track": "V3", "seconds": 1.5})).unwrap()["clips"][0].as_u64().unwrap();
+    s.execute("playhead.set", json!({"time": Tick::from_seconds_f64(3.0).0})).unwrap();
+    s.execute("timeline.select", json!({"clips": [layer]})).unwrap();
+    s.execute("effects.apply", json!({"clips": [layer], "effect": "crop"})).unwrap();
+    s.execute("effects.select", json!({"clip": layer, "effect": "crop"})).unwrap();
+    assert!(crop(&mut s).is_null(), "{}", crop(&mut s));
+}
+
+/// SC-1 golden check: the rectangle the overlay draws is the part of the picture the Crop effect
+/// keeps when it is rendered, and the values a handle drag sends (the percents of the rectangle's
+/// edges, as `effects.setParam` carries them) bring the same picture as typing the numbers.
+#[test]
+fn the_crop_rectangle_is_the_part_the_crop_effect_keeps() {
+    use cfa4_render::{
+        effects::{FxCtx, apply},
+        image::Image,
+    };
+    let mut s = demo();
+    let it = v1_clip(&s);
+    let c = it.id.0;
+    s.execute("playhead.set", json!({"time": it.start.0 + it.duration.0 / 2})).unwrap();
+    s.execute("timeline.select", json!({"clips": [c]})).unwrap();
+    s.execute("effects.apply", json!({"clips": [c], "effect": "crop"})).unwrap();
+    s.execute("effects.select", json!({"clip": c, "effect": "crop"})).unwrap();
+    let overlay = |s: &mut Session| s.execute("program.overlay", json!({})).unwrap()["crop"].clone();
+    let v = overlay(&mut s);
+    let (w, h) = (v["size"][0].as_f64().unwrap(), v["size"][1].as_f64().unwrap());
+    let index = v["effect"].as_u64().unwrap() as usize;
+    let render = |s: &Session| -> Image {
+        let e = v1_clip(s).effects[index].clone();
+        let cx = FxCtx {
+            t: cfa4_time::Tick::ZERO,
+            px_scale: 1.0,
+            seconds: 0.0,
+            timecode: "00:00:00:00",
+            clip_name: "x",
+            project: None,
+            env: None,
+            frame_rate: 24.0,
+            working: cfa4_color::WorkingSpace::Rec709,
+        };
+        let mut img = Image::filled(100, 50, [1.0, 1.0, 1.0, 1.0]);
+        apply(&mut img, &e, &cx);
+        img
+    };
+    // the kept rectangles a drag can produce: an edge, a corner, a moved box
+    for rect in [[0.1, 0.2, 0.75, 0.5], [0.0, 0.0, 0.5, 1.0], [0.25, 0.1, 1.0, 0.9], [0.3, 0.3, 0.7, 0.7]] {
+        let drag = |s: &mut Session| {
+            // what the Qt drag sends: left, top, right, bottom as percents of the picture
+            let percents = [rect[0] * 100.0, rect[1] * 100.0, (1.0 - rect[2]) * 100.0, (1.0 - rect[3]) * 100.0];
+            for (param, value) in ["left", "top", "right", "bottom"].into_iter().zip(percents) {
+                s.execute("effects.setParam", json!({"clip": c, "effect": index, "param": param, "value": value})).unwrap();
+            }
+        };
+        drag(&mut s);
+        let v = overlay(&mut s);
+        let got: Vec<f64> = v["rect"].as_array().unwrap().iter().map(|x| x.as_f64().unwrap()).collect();
+        for (g, want) in got.iter().zip([rect[0] * w, rect[1] * h, rect[2] * w, rect[3] * h]) {
+            assert!((g - want).abs() < 1e-6, "{rect:?} {v}");
+        }
+        // pixels well inside the rectangle stay opaque, well outside are cleared (the edge is one pixel of antialiasing)
+        let img = render(&s);
+        for y in 0..50usize {
+            for x in 0..100usize {
+                let (cx, cy) = (x as f64 + 0.5, y as f64 + 0.5);
+                let d = (cx - rect[0] * 100.0).min(rect[2] * 100.0 - cx).min(cy - rect[1] * 50.0).min(rect[3] * 50.0 - cy);
+                let a = img.get(x, y)[3] as f64;
+                if d > 1.0 {
+                    assert!(a > 0.999, "{rect:?} ({x},{y}) alpha {a}");
+                } else if d < -1.0 {
+                    assert!(a < 0.001, "{rect:?} ({x},{y}) alpha {a}");
+                }
+            }
+        }
+        // the same numbers typed one by one in the opposite order bring the identical picture
+        let first = render(&s);
+        s.execute("effects.reset", json!({"clip": c, "index": index})).unwrap();
+        for (param, value) in
+            ["bottom", "right", "top", "left"].into_iter().zip([(1.0 - rect[3]) * 100.0, (1.0 - rect[2]) * 100.0, rect[1] * 100.0, rect[0] * 100.0])
+        {
+            s.execute("effects.setParam", json!({"clip": c, "effect": index, "param": param, "value": value})).unwrap();
+        }
+        assert_eq!(first.px, render(&s).px, "{rect:?}");
+    }
 }
 
 #[test]

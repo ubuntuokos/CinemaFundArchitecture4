@@ -12,17 +12,21 @@ use std::path::{Path, PathBuf};
 use cfa4_surface_model::{ControlId, DeviceId};
 use serde_json::{Value, json};
 
-use crate::control_surfaces::{Binding, ControlSurfacePrefs, DeviceSetting, PROFILES, VALUE_COMMANDS};
+use crate::control_surfaces::{
+    Binding, ControlSurfacePrefs, DeviceSetting, PROFILES, StoredGesture, VALUE_COMMANDS, gesture_command_allowed, gesture_context_key, gesture_id_ok,
+};
 
 const FORMAT: &str = "cfa4-surface-profile";
 const VERSION: i64 = 1;
+/// Pointer-gesture profiles. A version-2 file for any other driver stays read-only.
+const POINTER_VERSION: i64 = 2;
 
 /// Where active profiles live, next to the preferences file.
 pub fn dir_for(data_dir: &Path) -> PathBuf {
     data_dir.join("Control Surfaces")
 }
 
-fn active_path(dir: &Path, device: &str) -> PathBuf {
+pub(crate) fn active_path(dir: &Path, device: &str) -> PathBuf {
     dir.join(format!("active-{}.json", DeviceId(device.to_string()).file_stem()))
 }
 
@@ -59,8 +63,12 @@ fn mode_of(command: &str) -> &'static str {
     if VALUE_COMMANDS.contains(&command) { "absolute" } else { "trigger" }
 }
 
+fn is_pointer_device(device: &str) -> bool {
+    device == cfa4_surface_model::gesture::POINTER_SEAT || device.starts_with("pointer:")
+}
+
 fn binding_json(b: &Binding) -> Option<Value> {
-    if !command_ok(&b.command) {
+    if matches!(b.control, ControlId::Gesture { .. }) || !command_ok(&b.command) {
         return None;
     }
     let mut v = json!({
@@ -76,8 +84,64 @@ fn binding_json(b: &Binding) -> Option<Value> {
     Some(v)
 }
 
+fn pointer_binding_json(b: &Binding) -> Option<Value> {
+    let ControlId::Gesture { id } = &b.control else { return None };
+    if !gesture_id_ok(id) || !gesture_command_allowed(&b.command) || !command_ok(&b.command) {
+        return None;
+    }
+    let mut v = json!({
+        "control": b.control,
+        "mode": "trigger",
+        "command": b.command,
+    });
+    if let Some(obj) = v.as_object_mut() {
+        if b.params.is_object() {
+            obj.insert("params".into(), b.params.clone());
+        }
+        if gesture_context_key(&b.context) != "global" {
+            obj.insert("context".into(), json!(b.context.trim()));
+        }
+    }
+    Some(v)
+}
+
+fn pointer_template_json(template: &StoredGesture) -> Option<Value> {
+    if !gesture_id_ok(&template.id) || template.points.is_empty() || template.points.len() > cfa4_surface_model::gesture::MAX_TEMPLATE_POINTS {
+        return None;
+    }
+    Some(json!({"id": template.id, "spatial": template.spatial, "points": template.points}))
+}
+
+fn pointer_document(device: &DeviceSetting) -> Value {
+    let controls: Vec<Value> = device.bindings.iter().filter_map(pointer_binding_json).collect();
+    let gestures: Vec<Value> = device.gestures.iter().filter_map(pointer_template_json).collect();
+    let mut doc = json!({
+        "format": FORMAT,
+        "version": POINTER_VERSION,
+        "id": profile_id(&device.device),
+        "name": "Pointer gestures",
+        "driver": "pointer",
+        "match": {"midiPortName": device.device},
+        "modified": true,
+        "basedOn": if device.profile.is_empty() { Value::Null } else { json!(device.profile) },
+        "pickup": {"enabled": true, "threshold7": device.pickup_threshold7, "threshold14": device.pickup_threshold14},
+        "shuttle": {"sound": if device.shuttle_sound == "mute" { "mute" } else { "follow-playback" }},
+        "controls": controls,
+        "gestures": gestures,
+    });
+    if device.mirror_ergonomic
+        && let Some(obj) = doc.as_object_mut()
+    {
+        obj.insert("mirrorErgonomic".into(), json!(true));
+    }
+    doc
+}
+
 /// The document Settings OK writes for one device. `None` when nothing valid can be written.
 pub fn document(device: &DeviceSetting) -> Value {
+    if is_pointer_device(&device.device) {
+        return pointer_document(device);
+    }
     let controls: Vec<Value> = device.bindings.iter().filter_map(binding_json).collect();
     json!({
         "format": FORMAT,
@@ -110,6 +174,12 @@ pub fn validate(v: &Value) -> Result<String, ProfileFault> {
         return Err(ProfileFault::Invalid("format is not cfa4-surface-profile".into()));
     }
     let version = obj.get("version").and_then(Value::as_i64).ok_or_else(|| ProfileFault::Invalid("version is missing".into()))?;
+    if version > POINTER_VERSION {
+        return Err(ProfileFault::Readonly(version));
+    }
+    if version == POINTER_VERSION {
+        return validate_pointer(obj);
+    }
     if version > VERSION {
         return Err(ProfileFault::Readonly(version));
     }
@@ -198,8 +268,144 @@ fn check_control(v: &Value) -> Result<(), String> {
         return Err("control must have one protocol".into());
     }
     // the same parser as preferences: an unknown kind fails the control, not the whole file
-    serde_json::from_value::<ControlId>(control.clone()).map_err(|e| e.to_string())?;
+    let parsed = serde_json::from_value::<ControlId>(control.clone()).map_err(|e| e.to_string())?;
+    if matches!(parsed, ControlId::Gesture { .. }) {
+        return Err("a gesture control needs profile version 2".into());
+    }
     Ok(())
+}
+
+fn validate_pointer(obj: &serde_json::Map<String, Value>) -> Result<String, ProfileFault> {
+    let driver = obj.get("driver").and_then(Value::as_str).unwrap_or("");
+    if driver != "pointer" {
+        return Err(ProfileFault::Readonly(POINTER_VERSION));
+    }
+    let id = obj.get("id").and_then(Value::as_str).unwrap_or("");
+    if !id_ok(id) {
+        return Err(ProfileFault::Invalid("id is not a profile id".into()));
+    }
+    let name = obj.get("name").and_then(Value::as_str).unwrap_or("");
+    if name.is_empty() || name.len() > 128 {
+        return Err(ProfileFault::Invalid("name is missing".into()));
+    }
+    let Some(match_) = obj.get("match").and_then(Value::as_object) else {
+        return Err(ProfileFault::Invalid("match is missing".into()));
+    };
+    if match_.is_empty() {
+        return Err(ProfileFault::Invalid("match is empty".into()));
+    }
+    let device = match_.get("midiPortName").and_then(Value::as_str).unwrap_or("").to_string();
+    if !is_pointer_device(&device) {
+        return Err(ProfileFault::Invalid("match.midiPortName does not name the pointer".into()));
+    }
+    let Some(controls) = obj.get("controls").and_then(Value::as_array) else {
+        return Err(ProfileFault::Invalid("controls is missing".into()));
+    };
+    if controls.len() > crate::control_surfaces::MAX_BINDINGS {
+        return Err(ProfileFault::Invalid("controls is too long".into()));
+    }
+    for (i, c) in controls.iter().enumerate() {
+        check_gesture_control(c).map_err(|e| ProfileFault::Invalid(format!("controls[{i}]: {e}")))?;
+    }
+    let gestures = obj.get("gestures").and_then(Value::as_array);
+    let gestures = gestures.ok_or_else(|| ProfileFault::Invalid("gestures is missing".into()))?;
+    if gestures.len() > crate::control_surfaces::MAX_GESTURE_TEMPLATES {
+        return Err(ProfileFault::Invalid("gestures is too long".into()));
+    }
+    let mut seen = Vec::new();
+    for (i, template) in gestures.iter().enumerate() {
+        let id = check_template(template).map_err(|e| ProfileFault::Invalid(format!("gestures[{i}]: {e}")))?;
+        if seen.iter().any(|known: &String| known == &id) {
+            return Err(ProfileFault::Invalid(format!("gestures[{i}]: duplicate id")));
+        }
+        seen.push(id);
+    }
+    if let Some(mirror) = obj.get("mirrorErgonomic")
+        && !mirror.is_boolean()
+    {
+        return Err(ProfileFault::Invalid("mirrorErgonomic is not a boolean".into()));
+    }
+    for key in obj.keys() {
+        if !matches!(
+            key.as_str(),
+            "format"
+                | "version"
+                | "id"
+                | "name"
+                | "builtin"
+                | "modified"
+                | "basedOn"
+                | "driver"
+                | "match"
+                | "device"
+                | "banks"
+                | "pickup"
+                | "feedback"
+                | "shuttle"
+                | "contexts"
+                | "controls"
+                | "gestures"
+                | "mirrorErgonomic"
+        ) {
+            return Err(ProfileFault::Invalid(format!("unknown field {key}")));
+        }
+    }
+    Ok(device)
+}
+
+fn check_gesture_control(v: &Value) -> Result<(), String> {
+    let obj = v.as_object().ok_or_else(|| "not an object".to_string())?;
+    let mode = obj.get("mode").and_then(Value::as_str).unwrap_or("");
+    if mode != "trigger" {
+        return Err("gesture mode is trigger".into());
+    }
+    let command = obj.get("command").and_then(Value::as_str).unwrap_or("");
+    if !command_ok(command) || !gesture_command_allowed(command) {
+        return Err("command is not playback, playhead or window".into());
+    }
+    let control = obj.get("control").ok_or_else(|| "control is missing".to_string())?;
+    let parsed = serde_json::from_value::<ControlId>(control.clone()).map_err(|e| e.to_string())?;
+    let ControlId::Gesture { id } = parsed else {
+        return Err("a pointer profile assigns gestures".into());
+    };
+    if !gesture_id_ok(&id) {
+        return Err("gesture id is not usable".into());
+    }
+    if let Some(context) = obj.get("context") {
+        let text = context.as_str().ok_or_else(|| "context is not text".to_string())?;
+        if !gesture_id_ok(text) && gesture_context_key(text) != "global" {
+            return Err("context is not usable".into());
+        }
+    }
+    Ok(())
+}
+
+fn check_template(v: &Value) -> Result<String, String> {
+    let obj = v.as_object().ok_or_else(|| "not an object".to_string())?;
+    let id = obj.get("id").and_then(Value::as_str).unwrap_or("");
+    if !gesture_id_ok(id) {
+        return Err("id is not usable".into());
+    }
+    if !obj.get("spatial").and_then(Value::as_bool).is_some() {
+        return Err("spatial is missing".into());
+    }
+    let points = obj.get("points").and_then(Value::as_array).ok_or_else(|| "points is missing".to_string())?;
+    if points.is_empty() || points.len() > cfa4_surface_model::gesture::MAX_TEMPLATE_POINTS {
+        return Err("points is empty or too long".into());
+    }
+    for point in points {
+        let pair = point.as_array().ok_or_else(|| "a point is not a pair".to_string())?;
+        if pair.len() != 2 {
+            return Err("a point is not a pair".into());
+        }
+        for coord in pair {
+            let Some(n) = coord.as_i64() else { return Err("a point is not an integer".into()) };
+            if i32::try_from(n).is_err() {
+                return Err("a point is out of range".into());
+            }
+        }
+    }
+    Ok(id.to_string())
 }
 
 fn apply_file(d: &mut DeviceSetting, value: &Value) {
@@ -215,6 +421,27 @@ fn apply_file(d: &mut DeviceSetting, value: &Value) {
     d.shuttle_sound = if sound == "mute" { "mute".into() } else { String::new() };
 }
 
+fn gestures_of(v: &Value) -> Vec<StoredGesture> {
+    v.get("gestures")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|template| {
+            let id = template.get("id").and_then(Value::as_str)?.to_string();
+            let spatial = template.get("spatial").and_then(Value::as_bool).unwrap_or(false);
+            let points = template.get("points").and_then(Value::as_array)?;
+            let mut parsed = Vec::new();
+            for point in points {
+                let pair = point.as_array()?;
+                let x = pair.first().and_then(Value::as_i64)?;
+                let y = pair.get(1).and_then(Value::as_i64)?;
+                parsed.push((i32::try_from(x).ok()?, i32::try_from(y).ok()?));
+            }
+            Some(StoredGesture { id, points: parsed, spatial })
+        })
+        .collect()
+}
+
 fn bindings_of(v: &Value) -> Vec<Binding> {
     v.get("controls")
         .and_then(Value::as_array)
@@ -224,7 +451,8 @@ fn bindings_of(v: &Value) -> Vec<Binding> {
             let control = serde_json::from_value::<ControlId>(c.get("control")?.clone()).ok()?;
             let command = c.get("command").and_then(Value::as_str)?.to_string();
             let params = c.get("params").cloned().unwrap_or(Value::Null);
-            Some(Binding { control, command, params })
+            let context = c.get("context").and_then(Value::as_str).unwrap_or("").to_string();
+            Some(Binding { control, command, params, context })
         })
         .collect()
 }
@@ -272,6 +500,8 @@ pub fn load_into(prefs: &mut ControlSurfacePrefs, dir: &Path) -> Vec<String> {
                 }
                 if let Some(d) = prefs.devices.iter_mut().find(|d| d.device == device) {
                     d.bindings = bindings;
+                    d.gestures = gestures_of(&value);
+                    d.mirror_ergonomic = value.get("mirrorErgonomic").and_then(Value::as_bool).unwrap_or(false);
                     if !profile.is_empty() {
                         d.profile = profile;
                     }
@@ -353,7 +583,7 @@ mod tests {
             enabled: true,
             devices: vec![DeviceSetting {
                 device: "midi:k:p".into(),
-                bindings: vec![Binding { control: cc(), command: "edit.undo".into(), params: Value::Null }],
+                bindings: vec![Binding { control: cc(), command: "edit.undo".into(), params: Value::Null, context: String::new() }],
                 ..DeviceSetting::default()
             }],
             ..ControlSurfacePrefs::default()
@@ -391,7 +621,7 @@ mod tests {
                 pickup_threshold7: 12,
                 pickup_threshold14: 200,
                 shuttle_sound: "mute".into(),
-                bindings: vec![Binding { control: cc(), command: "edit.undo".into(), params: Value::Null }],
+                bindings: vec![Binding { control: cc(), command: "edit.undo".into(), params: Value::Null, context: String::new() }],
                 ..DeviceSetting::default()
             }],
             ..ControlSurfacePrefs::default()
@@ -414,5 +644,68 @@ mod tests {
         }
         let huge = json!({"format": FORMAT, "version": 1, "id": "u.x", "name": "n", "driver": "generic-midi", "match": {"midiPortName": "midi:k:p"}, "controls": vec![json!({"control": {"midi": {"channel": 0, "kind": "cc", "number": 1}}, "mode": "trigger", "command": "edit.undo"}); 600]});
         assert!(validate(&huge).is_err());
+    }
+
+    #[test]
+    fn a_pointer_profile_is_version_2_and_a_midi_file_stays_version_1() {
+        let dir = std::env::temp_dir().join(format!("cfa4-surface-profile-pointer-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).expect("temp dir");
+        let gesture = Binding {
+            control: ControlId::Gesture { id: "direction.right".into() },
+            command: "playback.toggle".into(),
+            params: Value::Null,
+            context: "timeline".into(),
+        };
+        let template = StoredGesture { id: "hook".into(), points: vec![(0, 0), (0, 100), (100, 100)], spatial: false };
+        let mut prefs = ControlSurfacePrefs {
+            devices: vec![
+                DeviceSetting {
+                    device: "midi:k:p".into(),
+                    bindings: vec![Binding { control: cc(), command: "edit.undo".into(), params: Value::Null, context: String::new() }],
+                    ..DeviceSetting::default()
+                },
+                DeviceSetting {
+                    device: "pointer:seat".into(),
+                    bindings: vec![gesture],
+                    gestures: vec![template.clone()],
+                    mirror_ergonomic: true,
+                    ..DeviceSetting::default()
+                },
+            ],
+            ..ControlSurfacePrefs::default()
+        };
+        assert!(save_all(&prefs, &dir).is_empty(), "both documents validate");
+        let midi = serde_json::from_slice::<Value>(&fs::read(active_path(&dir, "midi:k:p")).unwrap_or_default()).unwrap_or_default();
+        assert_eq!(midi["version"], 1);
+        assert_eq!(midi["driver"], "generic-midi");
+        assert!(midi.get("gestures").is_none(), "a MIDI profile has no gesture templates");
+        assert!(midi["controls"][0].get("context").is_none());
+        let pointer = serde_json::from_slice::<Value>(&fs::read(active_path(&dir, "pointer:seat")).unwrap_or_default()).unwrap_or_default();
+        assert_eq!(pointer["version"], 2);
+        assert_eq!(pointer["driver"], "pointer");
+        assert_eq!(pointer["mirrorErgonomic"], true);
+        assert_eq!(pointer["gestures"][0]["id"], "hook");
+        assert_eq!(pointer["controls"][0]["context"], "timeline");
+
+        prefs.devices.clear();
+        let warnings = load_into(&mut prefs, &dir);
+        assert!(warnings.is_empty(), "{warnings:?}");
+        let loaded = prefs.devices.iter().find(|d| d.device == "pointer:seat").expect("pointer");
+        assert_eq!(loaded.gestures, vec![template]);
+        assert!(loaded.mirror_ergonomic);
+        assert_eq!(loaded.bindings[0].command, "playback.toggle");
+        assert_eq!(loaded.bindings[0].context, "timeline");
+        assert_eq!(prefs.devices.iter().find(|d| d.device == "midi:k:p").map(|d| d.bindings[0].command.as_str()), Some("edit.undo"));
+
+        let foreign =
+            json!({"format": FORMAT, "version": 2, "id": "u.x", "name": "n", "driver": "generic-midi", "match": {"midiPortName": "midi:k:p"}, "controls": []});
+        let path = active_path(&dir, "midi:k:p");
+        fs::write(&path, serde_json::to_vec(&foreign).unwrap_or_default()).expect("foreign v2");
+        let before = fs::read(&path).unwrap_or_default();
+        let warnings = save_all(&prefs, &dir);
+        assert!(warnings.iter().any(|w| w.contains("read-only")), "{warnings:?}");
+        assert_eq!(fs::read(&path).unwrap_or_default(), before, "a version-2 MIDI profile is not overwritten");
+        let _ = fs::remove_dir_all(&dir);
     }
 }

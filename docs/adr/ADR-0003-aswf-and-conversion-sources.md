@@ -2,8 +2,10 @@
 
 **Dátum:** 2026-10-24 · **Állapot:** JÓVÁHAGYVA (a tulajdonos, `ubuntuokos`, 2026-10-24-én
 jóváhagyta, #38). A jóváhagyás a 10. pont minden pontjára kiterjed. **Kiegészítve:** 2026-10-25
-(12. pont, szabadalmilag korlátozott komponensek) és 2026-10-27 (13. pont, a szabadalmi vizsgálat
-hatóköre és eredményeinek rögzítése).
+(12. pont, szabadalmilag korlátozott komponensek), 2026-10-27 (13. pont, a szabadalmi vizsgálat
+hatóköre és eredményeinek rögzítése) és 2026-11-21 (14. pont: a Natron `openfx-misc` csak
+képesség-referencia, az első OFX-csomag tiszta szobás saját megvalósítás; ez módosítja a 2., 6. és 7.
+pontban, valamint az A4 sorában az `openfx-misc`-re vonatkozó mondatokat).
 
 **Előfeltételek:** a licencváltás (#37, `docs/licensing.md`, már a `main`-ben) és a
 GStreamer-háttérmotor (#40, [ADR 0002](ADR-0002-gstreamer-backend.md), összevonásra vár).
@@ -55,7 +57,7 @@ Három módon kerülhet be egy ASWF-projekt, ebben a sorrendben:
 | OpenColorIO + OpenColorIO-Config-ACES | BSD-3 | orákulum a `crates/color`-hoz (ΔE-mérés), majd az **első beépítés** (`crates/ocio`, külön ADR) | A1 (orákulum), A2 (beépítés, az ADR F8 5. lépésénél) |
 | OpenImageIO | Apache-2.0 | beépítés a hiányzó formátumokra (PSD, HEIF, JPEG 2000, kamera-RAW, `docs/gaps.md` G10); a saját függőségei (pl. LibRaw, libheif) egyenként ellenőrizendők | A3 (az ADR F8 3. lépése után) |
 | OpenEXR + Imath | BSD-3 | beépítés a hiányzó PIZ/DWA/B44, többrészes és mély EXR-re | A3, az OpenImageIO-val együtt |
-| OpenFX | BSD-3 | plugin-host (G11), csak GPL-3-kompatibilis effektekhez (4. pont); első betöltendő csomag a Natron openfx-misc (6. pont); külön folyamatban (9. pont) | A4 (az ADR F8 4. lépése után) |
+| OpenFX | BSD-3 | plugin-host (G11), csak GPL-3-kompatibilis effektekhez (4. pont); az első csomag saját, tiszta szobás megvalósítás (14. pont; a Natron openfx-misc csak képesség-referencia); külön folyamatban (9. pont) | A4 (az ADR F8 4. lépése után) |
 | xSTUDIO | Apache-2.0 | lejátszó/átnéző részek modulonként (Qt/C++) | A7 |
 | OpenRV | Apache-2.0, egyes komponensei eltérnek (`Notice.txt`) | csak komponensenkénti licencellenőrzés után | A7 |
 | MaterialX, OpenShadingLanguage, OpenVDB, openqmc | BSD-3 / Apache-2.0 | 3D/VFX-szakasz | A7 |
@@ -76,7 +78,7 @@ A VISION.md táblázatában a HandBrake helyét két GPL-3.0 licencű program ve
   profilkezelővel. A logikája a Python/Qt6 rétegbe átemelhető, a wxPython-felületet Qt6-ban újra
   kell írni.
 
-A konvertálás **motorja** a saját Rust-motor, kiegészítve az FFmpeggel (legalább 9.0.2) és a
+A konvertálás **motorja** a saját Rust-motor, kiegészítve az FFmpeggel (legalább `CFA4_FFMPEG_MIN_VERSION`, `packaging/ffmpeg-version.env`) és a
 GStreamerrel; köztük az automatikus útválasztó választ ([ADR 0005](ADR-0005-media-backends.md)).
 Ezek adják a gyártófüggetlen hardveres kódolást (VA-API AMD- és Intel-GPU-n). Az FFmpeg csak
 GPL-3-as builddel használható (`--enable-gpl --enable-version3`, soha `--enable-nonfree`).
@@ -117,7 +119,7 @@ igényelnek. Ezért minden gyártónak saját útja van, közös felület mögö
 | GPU | Hardveres kódolás útja | Megjegyzés |
 |---|---|---|
 | NVIDIA | NVENC (`crates/platform`, ma is megvan) | a meghajtó zárt könyvtárát futáskor tölti be; opcionális |
-| AMD | VA-API (Mesa `radeonsi`), GStreamer `va*enc` elemekkel (ADR 0002 3. lépés) | nyílt meghajtó; az AMD AMF nem kell, mert zárt futtatókörnyezetet igényel |
+| AMD | VA-API (Mesa `radeonsi`), GStreamer `va*enc` elemekkel (ADR 0002 3. lépés); kiegészítésként az FFmpeg AMF-útja (H.264 / HEVC / AV1 kódolás-dekódolás, `sr_amf`, `vpp_amf`) | nyílt meghajtó az alapút; az AMF zárt futtatókörnyezetét a meghajtó adja, és csak futáskor töltődik be, ahogy az NVENC-é (tulajdonosi döntés 2026-11-24, [CFA4-FFMPEG-9.1-001](../plans/CFA4-FFMPEG-9.1-001.md) D2, D8) |
 | Intel | VA-API (`iHD` meghajtó), ugyanígy | a oneVPL/Quick Sync csak akkor, ha a VA-API mérhetően kevés |
 | bármely Vulkan-képes GPU | Vulkan Video (GStreamer `vulkan*enc`, ahol a meghajtó tudja) | gyártófüggetlen jövőbeli út |
 | nincs GPU vagy hiba | a saját szoftveres kódolók (pl. `crates/h264enc`) | mindig elérhető tartalék |
@@ -139,7 +141,7 @@ saját motor tartalékként, fájlonkénti licencellenőrzés, `docs/licensing.m
 
 | Jelölt | Licenc | Mit ad | `docs/gaps.md` |
 |---|---|---|---|
-| Natron openfx-misc | GPL-2.0-or-later | kész OFX-effektek: keying (chroma key, despill), színkorrekció és görbék, transzformáció és pontkövetés, retime és deinterlace, zajszűrés és élesítés | G11, G18 |
+| ~~Natron openfx-misc~~ (**felváltva, 14. pont**) | GPL-2.0-or-later | ~~kész OFX-effektek~~ Csak képesség-referencia: a keying (chroma key, despill), színkorrekció és görbék, transzformáció és pontkövetés, retime és deinterlace, zajszűrés és élesítés képességeit a CFA4 saját kóddal valósítja meg, a Natron kódjából semmi nem kerül át | G11, G18 |
 | Natron további OFX-csomagjai (openfx-io, openfx-arena) | ellenőrizendő | további effektek és I/O | G11 |
 | LibRaw (az OpenImageIO-n át vagy közvetlenül) | LGPL-2.1 vagy CDDL-1.0 | kamera-RAW olvasás (a saját fejlesztés becslése 60–100 óra) | G10 |
 | libheif | LGPL-3.0 | HEIF/HEIC képek | G10 |
@@ -172,7 +174,7 @@ ADR F8 megfelelő lépéséhez kötődnek. A becslések durva, ügynökórában 
 | **A1** | Tesztorákulumok: OpenTimelineIO oda-vissza teszt az `otio.rs`-hez; OpenAPV bitpontos összevetés a `crates/apv`-vel; OpenColorIO + ACES-config ΔE-mérés a `crates/color`-hoz. A termékbe nem kerülnek, hiányzó eszköznél kihagyódnak | most indítható, a Qt6-munkát nem akasztja | 10–20 óra |
 | **A2** | **Külön ADR (a következő szabad számmal, várhatóan 0008): FFI-kivétel elve** (az AGENTS.md §0.3 bővítése: további FFI-crate-ek az ADR 0001 feltételeivel), majd `crates/ocio`: OpenColorIO-színkezelés, ACES-config olvasása | az ADR F8 5. lépésénél (előnézet, GPU) | 40–80 óra |
 | **A3** | OpenImageIO + OpenEXR + LibRaw + libheif: PSD, HEIF/HEIC, JPEG 2000, kamera-RAW, a hiányzó EXR-tömörítések, többrészes és mély EXR (G10) | az ADR F8 3. lépése (médiaböngésző) után | 60–120 óra |
-| **A4** | OpenFX-host **külön folyamatban** (lásd 9. pont), első csomag a Natron openfx-misc (G11, G18) | az ADR F8 4. lépése (idővonal) után | 120–250 óra |
+| **A4** | OpenFX-host **külön folyamatban** (lásd 9. pont), első csomag: saját, tiszta szobás megvalósítás az openfx-misc képességlistája szerint, a Natron kódja nélkül (14. pont; G11, G18) | az ADR F8 4. lépése (idővonal) után | 120–250 óra |
 | **A5** | Szoftveres kódolók: x265 (HEVC), x264 (H.264), LAME (MP3) (G13); előtte szabadalmi vizsgálat | az ADR F8 6. lépésénél (export) | 30–60 óra + jogi vizsgálat |
 | **A6** | Hang: Rubber Band (időnyújtás, hangmagasság), LV2-host lilv-vel, szintén külön folyamatban | a hangszerkesztési szakaszban (VISION.md 6.4) | 60–120 óra |
 | **A7** | Később: xSTUDIO- és OpenRV-részek, MaterialX, OpenShadingLanguage, OpenVDB, openqmc, dna, frei0r | a 3D/VFX- és az átnézési szakaszban | külön tervezendő |
@@ -187,7 +189,7 @@ A hardveres kódolás gyártónkénti útja (5. pont) nem itt, hanem az ADR 0002
 | A1 | OTIO: legalább 10 saját tesztidővonal exportja és visszaolvasása után a sávok, klipek, be- és kipontok, sebességek és jelölők egyeznek. OpenAPV: a hivatalos tesztfolyamok minden kockája bitre egyezik. OCIO: az ACES-transzformok egy rácsra mért legnagyobb eltérése ΔE2000 ≤ 1,0, vagy az eltérés dokumentált hibaként a `docs/gaps.md`-be kerül |
 | A2 | Az OCIO-s előnézet és export a CPU-s OCIO-referenciától ΔE2000 ≤ 1,0-ra tér el; OCIO nélkül a program a `crates/color`-ral fut tovább; az ADR 0001 minden feltétele teljesül (`// SAFETY:`, `Result` API, opcionális funkció) |
 | A3 | Minden új formátum fájljai megnyílnak, és a kép egyezik az `oiiotool` referenciájával; sérült fájlra hibaüzenet jön, nem összeomlás (mutációs fuzz-teszttel) |
-| A4 | Az openfx-misc effektjei betöltődnek és renderelnek; az eredmény a Natron referenciájától PSNR ≥ 50 dB; egy összeomló bővítmény nem viszi magával a programot |
+| A4 | Az első csomag effektjei (a 14. pont képességlistája) betöltődnek és renderelnek az OpenFX-hoston; az eredmény a nyilvános specifikációból vagy képletből számolt, kódfüggetlen referenciától PSNR ≥ 50 dB (a render-terv F0V-küszöbfájlja szerint mérve); egy összeomló bővítmény nem viszi magával a programot. A Natron kimenete referenciaként nem szerepel, külső programként sem (14. pont) |
 | A5 | A kimenetet az ffprobe és a saját dekóder is helyesnek látja; bitráta–PSNR görbe dokumentálva; a szabadalmi vizsgálat eredménye rögzítve |
 | A6 | Az időnyújtás és a hangmagasság-váltás hallható hibák nélkül, mérve; egy összeomló LV2-bővítmény nem viszi magával a programot |
 
@@ -224,7 +226,7 @@ A PR összevonásával a tulajdonos ezeket hagyja jóvá:
    változik, nem ezzel a PR-ral.
 3. A bővítmény-hostok (OpenFX, LV2) külön folyamatban futnak.
 4. Az FFmpeg a termékbe csak saját ADR-rel kerülhet. **Teljesült:** [ADR 0005](ADR-0005-media-backends.md)
-   (kiegészítő háttér, legalább 9.0.2); a CI-orákulum külön marad.
+   (kiegészítő háttér, legalább `CFA4_FFMPEG_MIN_VERSION`, `packaging/ffmpeg-version.env`); a CI-orákulum külön marad.
 5. Az x264 és az x265 kiadása előtt szabadalmi, az NVENC kiadása előtt licencjogi vizsgálat kell.
 6. Az A1 (tesztorákulumok) az összevonás után azonnal indulhat.
 
@@ -300,3 +302,39 @@ módosításával, PR-ban történik.
   nyilvántartásból ellenőrzi, nem csak a kimondott állapotából. Addig nyilvános kiadás nincs.
 
 *Ez műszaki-licenc összefoglaló, nem jogi tanács.*
+
+## 14. A Natron `openfx-misc` csak képesség-referencia (tulajdonosi döntés, 2026-11-21)
+
+**Döntés.** Az A4 első OFX-csomagjához a Natron `openfx-misc` kódját a CFA4 **nem veszi át**. A
+csomag **tiszta szobás, saját megvalósítás**: a CFA4 a nyilvános OpenFX-specifikációból és az egyes
+effektek nyilvános, szabványos képleteiből (színtér-átvitelek, ITU-R/SMPTE-ajánlások, a
+`docs/gaps.md` G11/G18 leírása) írja meg az effekteket. Aki az effektet írja, a Natron
+`openfx-misc` forrását nem olvassa; a Natron legfeljebb arra szolgál, hogy a felhasználó oldaláról
+megnézzék, milyen képességek és paraméterek várhatók (a csomag *képességlistája*: keying, despill,
+színkorrekció és görbék, transzformáció és pontkövetés, retime és deinterlace, zajszűrés és
+élesítés).
+
+**Miért.** A render-terv 2026-11-21-i döntései szerint a Natron kódja nem használható: a Natron a
+CFA4 Qt6-jával nem kompatibilis, régebbi Qt-re épül, és GPL-2.0-or-later licencű
+(a CFA4 GPL-3.0-or-later; a 6. pont táblája a kód átvételét eddig lehetségesnek írta). A teljes
+`openfx-misc`-forrásvizsgálat függőben volt; a döntés ezt kiváltja: nincs mit átvizsgálni, mert
+nincs átvétel.
+
+**Következmények.**
+
+- A 6. pont `openfx-misc` sora, a 2. pont OpenFX-sora, az A4 sora és az A4 elfogadási feltétele
+  ennek megfelelően módosult (fent, áthúzással vagy átírva).
+- A `docs/licensing.md` §5 nyilvántartásába a Natronból nem kerül sor, mert kód nem kerül át. Ha
+  később valaki a Natron kódjának átvételét javasolná, az új tulajdonosi döntést kér.
+- Az **OpenFX-host** (a bővítménybetöltő, 9. pont) és a harmadik fél GPL-3-kompatibilis,
+  felhasználó által telepített OFX-bővítményeinek betöltése a 4. pont szerint változatlan; a cél
+  továbbra is az, hogy minden betölthető bővítmény fusson, a hiányzó host-képességeket a CFA4 saját
+  kóddal pótolja (render-terv F5O, AC-20).
+- **A Natron nem használható külső kimenet-összevetési orákulumnak sem** (a tulajdonos által
+  a koordinátorra bízott döntés, 2026-11-21). A Natron Qt4-re épül, a tulajdonos Kubuntu 26.04
+  gépén nem indul el, illetve összeomlik, ezért reprodukálhatóan nem futtatható. Az orákulum: a
+  committolt golden fájlok, az OpenColorIO és a már meglévő orákulumok (`crates/testkit`,
+  `cfa4-metrics`, az F0V-küszöbök). Ha később független OFX-összevetés kell, azt egy másik,
+  karbantartott OFX-host adja; ehhez új döntés kell.
+- A render-terv (`docs/plans/CFA4-RENDER-INTEGRATION-PLAN-001.md`) Natron-sorait a terv véglegesítője
+  igazítja ehhez; ez a PR a tervet nem módosítja (`docs/coordination.md` §2.10).

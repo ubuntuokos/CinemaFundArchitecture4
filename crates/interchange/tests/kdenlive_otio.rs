@@ -1,4 +1,4 @@
-//! OpenTimelineIO written by Kdenlive (K1, first step of `.kdenlive` import): the CC0 test dataset of
+//! OpenTimelineIO written by Kdenlive (KDN-1, first step of `.kdenlive` import): the CC0 test dataset of
 //! Kdenlive's own OTIO export/import tests (`tests/data/kdenlive/README.md`). Expected values are read
 //! off the Kdenlive documents, not off our own output.
 

@@ -139,8 +139,10 @@ fn from_picture(p: &cfa4_h264::Picture, w: usize, h: usize) -> Option<Image> {
 }
 
 /// The encoder configuration both encoders share (so their SPS / PPS are identical): P pictures
-/// only, one slice, a fixed QP.
-fn config(w: usize, h: usize, qp: u8) -> EncoderConfig {
+/// only, one slice, a fixed QP. `clean` lets the encoder refresh poorly predicted blocks with
+/// intra blocks of the new picture; without it every block is moved from the reference, so the
+/// mosh stays dirtier for longer.
+fn config(w: usize, h: usize, qp: u8, clean: bool) -> EncoderConfig {
     let mut cfg = EncoderConfig::new(w as u32, h as u32, 25, 1);
     cfg.profile = Profile::High;
     cfg.preset = Preset::Speed;
@@ -154,6 +156,7 @@ fn config(w: usize, h: usize, qp: u8) -> EncoderConfig {
     cfg.aq_strength = 0.0;
     cfg.format = PacketFormat::AnnexB;
     cfg.color.full_range = true;
+    cfg.inter_only = !clean;
     cfg
 }
 
@@ -175,14 +178,15 @@ pub struct Session {
 
 impl Session {
     /// Start a mosh of `b0` (B's first picture, the key frame that gets dropped) onto `a`.
-    pub fn new(a: &Image, b0: &Image, qp: u8) -> Result<Self, MoshError> {
+    /// `clean`: B's P pictures may carry intra blocks (see [`config`]).
+    pub fn new(a: &Image, b0: &Image, qp: u8, clean: bool) -> Result<Self, MoshError> {
         let (w, h) = (a.w, a.h);
         if (b0.w, b0.h) != (w, h) {
             return Err(MoshError::BadInput);
         }
         let ya = to_yuv(a).ok_or(MoshError::BadInput)?;
         let yb = to_yuv(b0).ok_or(MoshError::BadInput)?;
-        let cfg = config(ya.w, ya.h, qp);
+        let cfg = config(ya.w, ya.h, qp, clean);
         let enc_err = |e: cfa4_h264enc::Error| MoshError::Encode(e.to_string());
         // A's key frame from its own encoder (same configuration, so the same SPS / PPS)
         let mut ea = Encoder::new(cfg.clone()).map_err(enc_err)?;
@@ -237,6 +241,69 @@ impl Session {
     }
 }
 
+/// A P-frame bloom: the motion from `prev` to `cur` (one P picture of CFA4's encoder) applied
+/// again and again. Each [`Bloom::step`] encodes the picture so far as a key frame and decodes
+/// the same P picture onto it, so the motion is repeated without rewriting the packet.
+pub struct Bloom {
+    w: usize,
+    h: usize,
+    cfg: EncoderConfig,
+    p: Vec<u8>,
+}
+
+impl Bloom {
+    /// `clean`: the P picture may carry intra blocks (see [`config`]).
+    pub fn new(prev: &Image, cur: &Image, qp: u8, clean: bool) -> Result<Self, MoshError> {
+        let (w, h) = (cur.w, cur.h);
+        if (prev.w, prev.h) != (w, h) {
+            return Err(MoshError::BadInput);
+        }
+        let (y0, y1) = (to_yuv(prev).ok_or(MoshError::BadInput)?, to_yuv(cur).ok_or(MoshError::BadInput)?);
+        let cfg = config(y0.w, y0.h, qp, clean);
+        let enc_err = |e: cfa4_h264enc::Error| MoshError::Encode(e.to_string());
+        let mut enc = Encoder::new(cfg.clone()).map_err(enc_err)?;
+        let first = enc.try_encode(&yuv_frame(&y0), 0).map_err(enc_err)?;
+        if !matches!(first.as_slice(), [p] if p.frame_type == FrameType::Idr) {
+            return Err(MoshError::Encode("no IDR for the previous picture".into()));
+        }
+        let mut second = enc.try_encode(&yuv_frame(&y1), 1).map_err(enc_err)?;
+        second.extend(enc.flush());
+        match second.as_slice() {
+            [p] if p.frame_type == FrameType::P => Ok(Self { w, h, cfg, p: p.data.clone() }),
+            _ => Err(MoshError::Encode("no P picture for the motion".into())),
+        }
+    }
+
+    /// The motion applied once more to `r` (opaque, the bloom's size).
+    pub fn step(&self, r: &Image) -> Result<Image, MoshError> {
+        if (r.w, r.h) != (self.w, self.h) {
+            return Err(MoshError::BadInput);
+        }
+        let yr = to_yuv(r).ok_or(MoshError::BadInput)?;
+        let enc_err = |e: cfa4_h264enc::Error| MoshError::Encode(e.to_string());
+        let mut enc = Encoder::new(self.cfg.clone()).map_err(enc_err)?;
+        let mut key = enc.try_encode(&yuv_frame(&yr), 0).map_err(enc_err)?;
+        key.extend(enc.flush());
+        let key = match key.as_slice() {
+            [p] if p.frame_type == FrameType::Idr => p,
+            _ => return Err(MoshError::Encode("no IDR for the bloom".into())),
+        };
+        let dec_err = |e: cfa4_h264::Error| MoshError::Decode(e.to_string());
+        let mut dec = cfa4_h264::Decoder::with_threads(1);
+        let mut pics = dec.decode(&key.data, 0).map_err(dec_err)?;
+        pics.extend(dec.decode(&self.p, 1).map_err(dec_err)?);
+        pics.extend(dec.flush());
+        if let Some(e) = dec.take_error() {
+            return Err(MoshError::Decode(e.to_string()));
+        }
+        pics.sort_by_key(|p| p.pts);
+        match pics.as_slice() {
+            [_, p] => from_picture(p, self.w, self.h).ok_or(MoshError::MissingPictures),
+            _ => Err(MoshError::MissingPictures),
+        }
+    }
+}
+
 /// Datamosh `b` onto `a`: the pictures of `b` after its first, predicted from `a` instead of
 /// `b[0]`. Returns `b.len() - 1` opaque pictures of `a`'s size (`b[0]` is the key frame that is
 /// dropped). `qp` (0–51) is the quantizer: low lets more of B's detail through, high leaves
@@ -246,7 +313,7 @@ pub fn mosh(a: &Image, b: &[Image], qp: u8) -> Result<Vec<Image>, MoshError> {
     if b.len() < 2 || b.len() > MAX_FRAMES || b.iter().any(|f| f.w != w || f.h != h) {
         return Err(MoshError::BadInput);
     }
-    let mut s = Session::new(a, &b[0], qp)?;
+    let mut s = Session::new(a, &b[0], qp, true)?;
     b[1..].iter().map(|f| s.push(f)).collect()
 }
 

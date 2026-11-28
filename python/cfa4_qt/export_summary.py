@@ -60,6 +60,7 @@ WHOLE = (
     N_("Transport Stream"),
     N_("BDAV Transport Stream"),
     N_("Elementary Stream"),
+    N_("DVD-Video folder"),
     N_("Image sequence"),
 )
 

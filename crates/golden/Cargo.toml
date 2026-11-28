@@ -27,8 +27,11 @@ cfa4-frame = { workspace = true }
 cfa4-time = { workspace = true }
 cfa4-geom = { workspace = true }
 cfa4-media = { workspace = true }
+cfa4-codecs = { workspace = true }
 cfa4-project = { workspace = true }
+cfa4-format = { workspace = true }
 cfa4-render = { workspace = true }
 cfa4-gpu = { workspace = true }
 pollster = "0.4"
 wgpu = { version = "30", features = ["wgsl", "vulkan", "gles"] }
+cfa4-export = { workspace = true }

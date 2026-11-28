@@ -896,7 +896,56 @@ pub fn apv_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
 }
 
 /// Our DNxHD / DNxHR (VC-3) decoder (every frame is intra; macroblock rows decode in parallel).
-pub struct DnxDecoder;
+///
+/// By default it decodes by SMPTE ST 2019-1. `ffmpeg_compat` decodes as FFmpeg does, for files
+/// FFmpeg wrote (CFA4-DNX-SPEC-001 R5; [`written_by_ffmpeg`]).
+#[derive(Default)]
+pub struct DnxDecoder {
+    pub ffmpeg_compat: bool,
+}
+
+/// Interpret Footage ▸ DNx conventions for one source (CFA4-DNX-SPEC-001 R5): FFmpeg's, the
+/// standard's, or (by default) as the source detects from its container.
+#[derive(Debug, Default)]
+pub(crate) struct DnxChoice(std::sync::atomic::AtomicU8);
+
+impl DnxChoice {
+    pub(crate) fn set(&self, ffmpeg: Option<bool>) {
+        let v = match ffmpeg {
+            None => 0,
+            Some(false) => 1,
+            Some(true) => 2,
+        };
+        self.0.store(v, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// FFmpeg's conventions? The choice, or `detected` when there is none.
+    pub(crate) fn ffmpeg(&self, detected: bool) -> bool {
+        match self.0.load(std::sync::atomic::Ordering::Relaxed) {
+            1 => false,
+            2 => true,
+            _ => detected,
+        }
+    }
+}
+
+/// Did FFmpeg write this MXF file? From the Identification set's company / product (`FFmpeg`,
+/// `Lavf…`). FFmpeg's MXF muxer records no encoder, so this cannot tell FFmpeg-encoded essence
+/// from essence FFmpeg only rewrapped (CFA4-DNX-SPEC-001 R5, owner decision 2026-11-25).
+pub fn written_by_ffmpeg<'a>(tags: impl IntoIterator<Item = &'a str>) -> bool {
+    tags.into_iter().any(|t| {
+        let t = t.trim();
+        t.starts_with("Lavf") || t.eq_ignore_ascii_case("FFmpeg") || t.starts_with("FFmpeg ")
+    })
+}
+
+/// Did FFmpeg (libavcodec) encode this QuickTime / MP4 stream? From the sample entry's compressor
+/// name, which FFmpeg sets to `Lavc… <encoder>` (`Lavc <encoder>` when bit-exact) and keeps on a
+/// stream copy. The muxer's `©too` (`Lavf…`) is not enough: FFmpeg writes it on every file, also on
+/// a rewrapped standard stream (CFA4-DNX-SPEC-001 R5, owner decision 2026-11-25).
+pub fn encoded_by_ffmpeg(compressor_name: &str) -> bool {
+    compressor_name.trim().starts_with("Lavc")
+}
 
 /// Convert a decoded VC-3 frame to a [`VideoFrame`]. RGB (4:4:4) frames stay R'G'B': their
 /// video-range codes are expanded to full range at the coded depth (one code to one code, so
@@ -968,7 +1017,8 @@ fn dnx_rgb_data(g: Vec<u16>, b: Vec<u16>, r: Vec<u16>, alpha: Option<Vec<u16>>, 
 
 impl VideoDecoder for DnxDecoder {
     fn decode(&mut self, sample: &[u8], pts: i64) -> Result<Vec<DecodedFrame>> {
-        let f = cfa4_dnx::decode_frame(sample).map_err(|e| CodecError::Decode(e.to_string()))?;
+        let opts = cfa4_dnx::DecodeOptions { ffmpeg_compat: self.ffmpeg_compat, ..Default::default() };
+        let f = cfa4_dnx::decode_frame_with(sample, &opts).map_err(|e| CodecError::Decode(e.to_string()))?;
         Ok(vec![DecodedFrame { pts, frame: dnx_to_video_frame(f), draft: false }])
     }
     fn flush(&mut self) -> Vec<DecodedFrame> {
@@ -984,7 +1034,7 @@ impl VideoDecoder for DnxDecoder {
 }
 
 pub fn dnx_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
-    matches!(e.codec, CodecConfig::Dnx { .. }).then(|| Ok(Box::new(DnxDecoder) as Box<dyn VideoDecoder>))
+    matches!(e.codec, CodecConfig::Dnx { .. }).then(|| Ok(Box::new(DnxDecoder::default()) as Box<dyn VideoDecoder>))
 }
 
 /// Our DV decoder (`cfa4-dv`: DV25 / DVCAM, DVCPRO 25 / 50, DVCPRO HD; every frame is intra,
@@ -1425,7 +1475,8 @@ impl RawFormat {
             (b"raw ", 24) => Some(RawFormat::Rgb24),
             (b"2vuy", _) => Some(RawFormat::Uyvy),
             (b"v210", _) => Some(RawFormat::V210),
-            _ => None,
+            // the YUV FourCCs of a Matroska `V_UNCOMPRESSED` track (`UncompressedFourCC`)
+            _ => Self::from_avi(fourcc, 0).filter(|f| !matches!(f, RawFormat::Bgr24 | RawFormat::Bgrx32)),
         }
     }
 

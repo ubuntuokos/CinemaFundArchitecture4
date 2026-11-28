@@ -28,11 +28,14 @@ use std::sync::atomic::Ordering;
 use cfa4_export::presets::{DEFAULT_PRESET, preset_key};
 use cfa4_export::{BitrateMode, ExportPreset, ExportSettings, Format, GpuRendering, HardwareEncoding, SampleFormat};
 use cfa4_project::{ItemId, Project};
+use cfa4_tasks::State;
+use cfa4_tasks::manager::{Class, Request};
 use cfa4_time::{FrameRate, Tick, TimeRange};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use crate::commands::{CommandSpec, always, bad, bool_p, f64_p, has_seq, str_p, time_p, u64_p};
+use crate::task_host::{Admission, Outcome, TaskHost};
 use crate::{EngineError, Event, Result, Session};
 
 pub const FILE_FORMAT: &str = "cfa4.export-presets";
@@ -294,6 +297,9 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = str_p(p, "dnxProfile") {
         settings.dnx_profile = v.to_string();
     }
+    if let Some(v) = bool_p(p, "dnxFfmpegCompat") {
+        settings.dnx_ffmpeg_compat = v;
+    }
     if let Some(v) = str_p(p, "apvProfile") {
         settings.apv_profile = v.to_string();
     }
@@ -316,6 +322,20 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         settings.mxf_video_codec =
             serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "mxfVideoCodec: dnxhr | proRes | h264 | mpeg2 | d10 | xdcamHd422 | v210 | uyvy"))?;
     }
+    if let Some(v) = bool_p(p, "mxfAs02") {
+        settings.mxf_as02 = v;
+    }
+    if let Some(v) = p.get("mxfAs02Versions") {
+        let ids: Option<Vec<u64>> = v.as_array().and_then(|a| a.iter().map(Value::as_u64).collect());
+        let ids = ids.ok_or_else(|| bad(cmd, "mxfAs02Versions: an array of sequence ids"))?;
+        if let Some(id) = ids.iter().find(|id| s.project.sequence(ItemId(**id)).is_none()) {
+            return Err(bad(cmd, format!("mxfAs02Versions: no sequence {id}")));
+        }
+        settings.mxf_as02_versions = ids;
+    }
+    if let Some(v) = bool_p(p, "mxfAs02Share") {
+        settings.mxf_as02_share = v;
+    }
     if let Some(v) = bool_p(p, "mxfAncCaptions") {
         settings.mxf_anc_captions = v;
     }
@@ -325,6 +345,8 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         ("mxfAs11Segments", &mut settings.mxf_as11_segments),
         ("mxfAs11Ukdpp", &mut settings.mxf_as11_ukdpp),
         ("mxfAs10", &mut settings.mxf_as10),
+        ("mxfAs03", &mut settings.mxf_as03),
+        ("mxfAs12", &mut settings.mxf_as12),
     ] {
         if let Some(v) = str_p(p, key) {
             if v.len() > 1 << 20 {
@@ -334,7 +356,7 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         }
     }
     if let Some(v) = str_p(p, "mpeg2Container") {
-        let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es"))?;
+        let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es | dvd"))?;
         settings.mpeg2_container = c.id().to_string();
     }
     if let Some(v) = str_p(p, "mpeg2Chroma") {
@@ -417,6 +439,12 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = bool_p(p, "alpha") {
         settings.alpha = v;
     }
+    if let Some(v) = p.get("dpxBitDepth") {
+        // a number, or the text of one (the Qt panel sends its choices as strings)
+        let bits = v.as_u64().or_else(|| v.as_str().and_then(|t| t.parse().ok()));
+        settings.dpx_bit_depth =
+            bits.and_then(|b| u8::try_from(b).ok()).filter(|b| matches!(b, 10 | 12 | 16)).ok_or_else(|| bad(cmd, "dpxBitDepth: 10 | 12 | 16"))?;
+    }
     if let Some(v) = str_p(p, "exrCompression") {
         settings.exr_compression = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "exrCompression: none | rle | zips | zip | piz"))?;
     }
@@ -466,7 +494,14 @@ pub fn single_frame_in_out(q: &cfa4_project::Sequence, range: TimeRange) -> bool
 
 const SINGLE_FRAME_WARNING: &str = "In/Out range is 1 frame; pass range: entire for the whole sequence";
 
-fn range_with_warnings(s: &Session, project: &Project, seq: ItemId, v: Option<&Value>, p: &Value, cmd: &str) -> Result<(Option<TimeRange>, Vec<&'static str>)> {
+pub(crate) fn range_with_warnings(
+    s: &Session,
+    project: &Project,
+    seq: ItemId,
+    v: Option<&Value>,
+    p: &Value,
+    cmd: &str,
+) -> Result<(Option<TimeRange>, Vec<&'static str>)> {
     let q = project.sequence(seq).ok_or(EngineError::NoSequence)?;
     q.check_bounds().map_err(|e| bad(cmd, e))?;
     let fd = q.settings.frame_rate.frame_duration();
@@ -528,8 +563,10 @@ pub fn file_safe(n: &str) -> String {
 
 /// `path` with the settings' extension (added when missing; image sequences keep theirs).
 fn with_extension(path: &str, settings: &ExportSettings) -> String {
-    // a DCP or IMF package is a folder
-    if matches!(settings.format, Format::Dcp | Format::Imf) {
+    // a DCP or IMF package and an AS-02 bundle are folders
+    // and so is a DVD-Video disc
+    let dvd = settings.format == Format::Mpeg2 && cfa4_export::Mpeg2Container::of(settings) == cfa4_export::Mpeg2Container::Dvd;
+    if matches!(settings.format, Format::Dcp | Format::Imf) || settings.mxf_as02 || dvd {
         return path.to_string();
     }
     let ext = settings.extension();
@@ -567,7 +604,7 @@ fn is_folder(x: &str) -> bool {
 
 /// Output path for `seq`: the `path` param (a file, or a directory ending in `/` or existing), else
 /// `<default dir>/<sequence name>.<ext>`; `suffix` distinguishes several items.
-fn output_path(s: &Session, p: &Value, seq: ItemId, settings: &ExportSettings, suffix: Option<usize>) -> String {
+pub(crate) fn output_path(s: &Session, p: &Value, seq: ItemId, settings: &ExportSettings, suffix: Option<usize>) -> String {
     let name = s.project.item(seq).map(|i| i.name.clone()).unwrap_or_else(|| "Sequence".into());
     let base = match str_p(p, "path").map(expand_home) {
         Some(x) if is_folder(&x) => Path::new(&x).join(file_safe(&name)).to_string_lossy().to_string(),
@@ -576,7 +613,7 @@ fn output_path(s: &Session, p: &Value, seq: ItemId, settings: &ExportSettings, s
     };
     let path = with_extension(&base, settings);
     match suffix {
-        Some(n) if n > 0 && matches!(settings.format, Format::Dcp | Format::Imf) => format!("{path}_{}", n + 1),
+        Some(n) if n > 0 && (matches!(settings.format, Format::Dcp | Format::Imf) || settings.mxf_as02) => format!("{path}_{}", n + 1),
         Some(n) if n > 0 => match path.rsplit_once('.') {
             Some((a, e)) => format!("{a}_{}.{e}", n + 1),
             None => format!("{path}_{}", n + 1),
@@ -740,9 +777,24 @@ pub struct QueueItem {
     /// Media QC of the output, kept apart from `status` (the render state).
     #[serde(skip)]
     pub qc: crate::qc::ItemQc,
+    /// DCP validation of the package (DCP-13), kept apart from `status` as well.
+    #[serde(skip)]
+    pub dcp: crate::dcp_export::ItemDcp,
     /// The project as it was when the item was queued.
     #[serde(skip)]
     pub project: Arc<Project>,
+    /// Its task in the CFA4 task queue ([`crate::task_host`]) while it waits or encodes.
+    #[serde(skip)]
+    pub task: Option<String>,
+    /// Why it has not started yet (the task queue's wait reasons), empty otherwise.
+    #[serde(skip)]
+    pub waiting_for: Vec<String>,
+    /// `import: true` on `export.queue.add` (KDN-47): put the finished file into the Project panel.
+    #[serde(skip)]
+    pub import_when_done: bool,
+    /// The project items the finished file became (empty until then, or when it was not imported).
+    #[serde(skip)]
+    pub imported: Vec<u64>,
 }
 
 /// The export queue (session state).
@@ -754,6 +806,49 @@ pub struct ExportQueue {
     next_id: u64,
     /// Quick Export's preset (the last one used).
     pub quick_preset: Option<String>,
+    /// A scheduled start (`export.queue.start` with `at`): its trigger task in the task queue,
+    /// which reserves nothing; the queue starts when the task does (ACS-5).
+    pub start_task: Option<String>,
+}
+
+/// What a scheduled queue start does when its time passed while CFA4 could not start it.
+fn missed_p(p: &Value) -> Result<cfa4_tasks::MissedStart> {
+    use cfa4_tasks::MissedStart;
+    match str_p(p, "ifMissed").unwrap_or("askUser") {
+        "askUser" => Ok(MissedStart::AskUser),
+        "runLate" => Ok(MissedStart::RunLate),
+        "nextSlot" => Ok(MissedStart::NextSlot),
+        other => Err(bad("export.queue.start", format!("unknown `ifMissed` `{other}` (askUser, runLate, nextSlot)"))),
+    }
+}
+
+/// Start the queue when its scheduled start task starts; forget one that was cancelled.
+fn check_scheduled_start(s: &mut Session) {
+    let Some(id) = s.export_queue.start_task.clone() else { return };
+    s.tasks.tick();
+    match s.tasks.state(&id) {
+        Some(State::Running) => {
+            s.tasks.end(&id, Outcome::Succeeded);
+            s.export_queue.start_task = None;
+            if s.export_queue.items.iter().any(|i| i.status == QueueStatus::Ready) {
+                s.export_queue.running = true;
+                s.events.push(Event::Toast { message: "Scheduled export queue started".into(), error: false });
+            }
+        }
+        Some(State::Scheduled | State::Paused | State::Queued | State::Waiting) => {}
+        _ => s.export_queue.start_task = None,
+    }
+}
+
+fn scheduled_start_json(s: &Session) -> Value {
+    let Some(id) = s.export_queue.start_task.as_deref() else { return Value::Null };
+    let t = s.tasks.queue().get(id);
+    json!({
+        "task": id,
+        "at": t.and_then(|t| t.start.at()),
+        "state": t.map(|t| t.state),
+        "needsDecision": s.tasks.needs_decision(id),
+    })
 }
 
 impl ExportQueue {
@@ -796,20 +891,51 @@ fn item_json(s: &Session, it: &QueueItem) -> Value {
         "progress": progress,
         "etaSeconds": job.filter(|_| it.status == QueueStatus::Encoding).and_then(|j| j.progress.eta()).map(|d| d.as_secs_f64()),
         "statusText": status_text,
+        "waitingFor": it.waiting_for,
         "job": it.job,
         "error": it.error,
         "offlineMedia": it.job.map_or_else(|| json!([]), |j| offline_media_json(s, j)),
         "qc": crate::qc::item_json(&it.qc),
+        "dcpValidation": crate::dcp_export::item_json(&it.dcp),
+        "import": it.import_when_done,
+        "imported": it.imported,
     })
+}
+
+/// KDN-47: import the finished output of queue item `id` into the project (`file.import`). Only a
+/// single file is imported: a folder (image sequence, DCP, IMF) or a file that is not there is
+/// left alone and said so in a toast. A failed import never changes the item's render state.
+fn import_output(s: &mut Session, id: u64) {
+    let Some(it) = s.export_queue.items.iter().find(|i| i.id == id) else { return };
+    let path = it.settings.path.clone();
+    let name = file_name(&path);
+    let is_file = std::fs::metadata(&path).is_ok_and(|m| m.is_file());
+    if !is_file {
+        s.events.push(Event::Toast { message: format!("{name} was not added to the project: it is not a single file"), error: false });
+        return;
+    }
+    let imported = match s.execute("file.import", json!({"paths": [path]})) {
+        Ok(v) => v.get("items").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_u64).collect::<Vec<_>>()).unwrap_or_default(),
+        Err(e) => {
+            s.events.push(Event::Toast { message: format!("{name} was not added to the project: {e}"), error: true });
+            return;
+        }
+    };
+    if let Some(it) = s.export_queue.items.iter_mut().find(|i| i.id == id) {
+        it.imported = imported;
+    }
 }
 
 /// Advance the queue: settle finished encodes, start the next ready item. `wait` encodes all of
 /// them now (blocking).
 pub fn pump_queue(s: &mut Session, wait: bool) {
+    check_scheduled_start(s);
     loop {
         // settle
         let mut finished_any = false;
         let mut checked = Vec::new();
+        let mut dcp_checked = Vec::new();
+        let mut to_import = Vec::new();
         for i in 0..s.export_queue.items.len() {
             let it = &s.export_queue.items[i];
             if it.status != QueueStatus::Encoding {
@@ -819,24 +945,49 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
             let res = j.result.lock().unwrap_or_else(|e| e.into_inner()).clone();
             let Some(r) = res else { continue };
             let it = &mut s.export_queue.items[i];
-            match r {
+            let outcome = match r {
                 Ok(_) => {
                     it.status = QueueStatus::Done;
+                    if it.import_when_done {
+                        to_import.push(it.id);
+                    }
                     if it.qc.profile.is_some() {
                         checked.push(it.id);
                     }
+                    if it.dcp.profile.is_some() {
+                        dcp_checked.push(it.id);
+                    }
+                    Outcome::Succeeded
                 }
-                Err(e) if e == "cancelled" => it.status = QueueStatus::Cancelled,
+                Err(e) if e == "cancelled" => {
+                    it.status = QueueStatus::Cancelled;
+                    Outcome::Cancelled
+                }
                 Err(e) => {
                     it.status = QueueStatus::Failed;
                     it.error = Some(e);
+                    Outcome::Failed
                 }
+            };
+            if let Some(task) = it.task.take() {
+                s.tasks.end(&task, outcome);
             }
             finished_any = true;
+        }
+        if !s.export_queue.running {
+            release_waiting(s);
+        }
+        // KDN-47: finished files that were asked for go into the Project panel
+        for id in to_import {
+            import_output(s, id);
         }
         // automatic QC of finished outputs (`export.queue.add` with `qc`)
         for id in checked {
             crate::qc::after_export(s, id, wait);
+        }
+        // postflight of finished DCP packages (`dcpValidate`, DCP-13)
+        for id in dcp_checked {
+            crate::dcp_export::after_export(s, id, wait);
         }
         if s.export_queue.items.iter().any(|i| i.status == QueueStatus::Encoding) || !s.export_queue.running {
             return;
@@ -851,6 +1002,32 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
             return;
         };
         let it = s.export_queue.items[i].clone();
+        // ACS-6: the item starts when the task queue gives it its resources. A blocking export
+        // (`wait`: CLI, scripts) was asked for now and runs at once.
+        let task = if wait {
+            None
+        } else {
+            let id = it.task.clone().unwrap_or_else(|| s.tasks.new_id("export"));
+            // only the head of the user's order asks; one that lost its place stops asking
+            s.tasks.withdraw("export-", Some(&id));
+            s.export_queue.items[i].task = Some(id.clone());
+            s.tasks.set_label(&id, &format!("Export: {}", it.sequence_name));
+            match s.tasks.admit(&id, |h| export_request(h, &it)) {
+                Admission::Start => Some(id),
+                Admission::Wait(reasons) => {
+                    s.export_queue.items[i].waiting_for = reasons;
+                    return;
+                }
+                Admission::Refused(reason) => {
+                    let x = &mut s.export_queue.items[i];
+                    x.task = None;
+                    x.status = QueueStatus::Failed;
+                    x.error = Some(format!("no resources for the export: {reason}"));
+                    continue;
+                }
+            }
+        };
+        s.export_queue.items[i].waiting_for.clear();
         let label = format!("Queue: {} → {}", it.sequence_name, file_name(&it.settings.path));
         match spawn_export(s, it.project.clone(), it.sequence, it.settings.clone(), label, wait) {
             Ok(job) => {
@@ -863,10 +1040,32 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
                 let x = &mut s.export_queue.items[i];
                 x.status = QueueStatus::Failed;
                 x.error = Some(e.to_string());
+                x.task = None;
+                if let Some(task) = task {
+                    s.tasks.end(&task, Outcome::Failed);
+                }
             }
         }
         if !wait {
             return;
+        }
+    }
+}
+
+/// What an export asks of the machine: a few frames of the output size at full precision plus the
+/// encoder's working set, and up to four CPUs (clamped to the budget by [`crate::task_host`]).
+fn export_request(h: &mut TaskHost, it: &QueueItem) -> Request {
+    let (w, hgt) = it.settings.frame_size.or_else(|| it.project.sequence(it.sequence).map(|q| (q.settings.width, q.settings.height))).unwrap_or((1920, 1080));
+    let frame = u64::from(w).saturating_mul(u64::from(hgt)).saturating_mul(16);
+    h.fit(Class::FinalRender, frame.saturating_mul(8).saturating_add(256 << 20), 4000)
+}
+
+/// The queue stopped: items that have not started give their task up (they ask again on start).
+fn release_waiting(s: &mut Session) {
+    for it in s.export_queue.items.iter_mut().filter(|i| i.status != QueueStatus::Encoding) {
+        it.waiting_for.clear();
+        if let Some(task) = it.task.take() {
+            s.tasks.end(&task, Outcome::Cancelled);
         }
     }
 }
@@ -876,7 +1075,7 @@ fn queue_item_p(s: &Session, p: &Value, cmd: &str) -> Result<usize> {
     s.export_queue.items.iter().position(|i| i.id == id).ok_or_else(|| bad(cmd, format!("no queued export {id}")))
 }
 
-fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
+pub(crate) fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.queue.add";
     let (preset, settings) = settings_from_params(s, p, cmd)?;
     let seqs: Vec<ItemId> = match p.get("sequences").and_then(Value::as_array) {
@@ -928,6 +1127,22 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
             items.push((seq, st));
         }
     }
+    // DCP preflight (DCP-13): a blocking finding refuses the whole add before anything is queued
+    let dcp_profile = crate::dcp_export::profile_param(p, settings.format, cmd)?;
+    let import_when_done = match p.get("import") {
+        None | Some(Value::Null) => false,
+        Some(v) => v.as_bool().ok_or_else(|| bad(cmd, "`import` must be a boolean"))?,
+    };
+    let mut dcp_preflight = Vec::new();
+    for (seq, st) in &items {
+        if st.format == Format::Dcp {
+            let findings = crate::dcp_export::preflight(s, *seq, st);
+            if let Some(why) = crate::dcp_export::blocking(&findings) {
+                return Err(bad(cmd, format!("DCP preflight: {why}")));
+            }
+            dcp_preflight.push(json!({"path": st.path, "verdict": crate::dcp_export::verdict_word(&findings), "findings": findings}));
+        }
+    }
     for (seq, st) in items {
         s.export_queue.next_id += 1;
         let id = s.export_queue.next_id;
@@ -942,7 +1157,12 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
             job: None,
             error: None,
             qc: crate::qc::ItemQc { profile: qc_profile.clone(), ..Default::default() },
+            dcp: crate::dcp_export::ItemDcp { profile: dcp_profile.clone(), ..Default::default() },
             project: project.clone(),
+            task: None,
+            waiting_for: Vec::new(),
+            import_when_done,
+            imported: Vec::new(),
         });
         ids.push(id);
     }
@@ -950,7 +1170,7 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
         s.export_queue.running = true;
         pump_queue(s, bool_p(p, "wait").unwrap_or(false));
     }
-    Ok(json!({"added": ids, "items": queue_list_json(s), "warnings": warnings}))
+    Ok(json!({"added": ids, "items": queue_list_json(s), "warnings": warnings, "dcpPreflight": dcp_preflight}))
 }
 
 fn queue_list_json(s: &Session) -> Value {
@@ -959,21 +1179,42 @@ fn queue_list_json(s: &Session) -> Value {
 
 fn queue_list(s: &mut Session, _: &Value) -> Result<Value> {
     pump_queue(s, false);
-    Ok(json!({"running": s.export_queue.running, "items": queue_list_json(s)}))
+    Ok(json!({"running": s.export_queue.running, "scheduledStart": scheduled_start_json(s), "items": queue_list_json(s)}))
+}
+
+fn drop_scheduled_start(s: &mut Session) {
+    if let Some(id) = s.export_queue.start_task.take() {
+        s.tasks.end(&id, Outcome::Cancelled);
+    }
 }
 
 fn queue_start(s: &mut Session, p: &Value) -> Result<Value> {
     if !s.export_queue.items.iter().any(|i| matches!(i.status, QueueStatus::Ready | QueueStatus::Encoding)) {
         return Err(bad("export.queue.start", "nothing to export: the queue has no ready items"));
     }
+    if let Some(at) = p.get("at").filter(|v| !v.is_null()) {
+        // ACS-5: start at a time (UTC milliseconds), e.g. overnight
+        let at = at.as_u64().ok_or_else(|| bad("export.queue.start", "`at` is a time in UTC milliseconds"))?;
+        let zone = str_p(p, "timeZone").map(str::to_owned);
+        let missed = missed_p(p)?;
+        drop_scheduled_start(s);
+        let id = s.tasks.new_id("queue-start");
+        s.tasks.schedule(&id, at, zone, missed).map_err(|e| bad("export.queue.start", e))?;
+        s.tasks.set_label(&id, "Start the export queue");
+        s.export_queue.start_task = Some(id);
+        pump_queue(s, false);
+        return Ok(json!({"running": s.export_queue.running, "scheduledStart": scheduled_start_json(s), "items": queue_list_json(s)}));
+    }
+    drop_scheduled_start(s);
     s.export_queue.running = true;
     pump_queue(s, bool_p(p, "wait").unwrap_or(false));
     Ok(json!({"running": s.export_queue.running, "items": queue_list_json(s)}))
 }
 
 fn queue_stop(s: &mut Session, _: &Value) -> Result<Value> {
-    // the encode in progress finishes; nothing new starts
+    // the encode in progress finishes; nothing new starts, and a scheduled start is dropped
     s.export_queue.running = false;
+    drop_scheduled_start(s);
     Ok(json!({"running": false, "items": queue_list_json(s)}))
 }
 
@@ -986,7 +1227,13 @@ fn cancel_item(s: &mut Session, i: usize) {
             }
             // settled to Cancelled by `pump_queue` when the job stops
         }
-        QueueStatus::Ready => it.status = QueueStatus::Cancelled,
+        QueueStatus::Ready => {
+            it.status = QueueStatus::Cancelled;
+            it.waiting_for.clear();
+            if let Some(task) = it.task.take() {
+                s.tasks.end(&task, Outcome::Cancelled);
+            }
+        }
         _ => {}
     }
 }
@@ -1027,6 +1274,7 @@ fn queue_retry(s: &mut Session, p: &Value) -> Result<Value> {
     it.job = None;
     let id = it.id;
     crate::qc::reset_for_retry(s, id);
+    crate::dcp_export::reset_for_retry(s, id);
     if bool_p(p, "start").unwrap_or(false) {
         s.export_queue.running = true;
         pump_queue(s, bool_p(p, "wait").unwrap_or(false));
@@ -1040,7 +1288,9 @@ fn queue_remove(s: &mut Session, p: &Value) -> Result<Value> {
     if s.export_queue.items[i].status == QueueStatus::Encoding {
         return Err(bad(cmd, "cancel the export before removing it"));
     }
-    s.export_queue.items.remove(i);
+    if let Some(task) = s.export_queue.items.remove(i).task {
+        s.tasks.end(&task, Outcome::Cancelled);
+    }
     Ok(json!({"items": queue_list_json(s)}))
 }
 
@@ -1064,7 +1314,12 @@ fn queue_clear(s: &mut Session, p: &Value) -> Result<Value> {
     if all && s.export_queue.items.iter().any(|i| i.status == QueueStatus::Encoding) {
         return Err(bad("export.queue.clear", "an export is encoding; cancel it first"));
     }
-    s.export_queue.items.retain(|i| !all && matches!(i.status, QueueStatus::Ready | QueueStatus::Encoding));
+    let (keep, drop): (Vec<QueueItem>, Vec<QueueItem>) =
+        std::mem::take(&mut s.export_queue.items).into_iter().partition(|i| !all && matches!(i.status, QueueStatus::Ready | QueueStatus::Encoding));
+    s.export_queue.items = keep;
+    for task in drop.into_iter().filter_map(|i| i.task) {
+        s.tasks.end(&task, Outcome::Cancelled);
+    }
     Ok(json!({"items": queue_list_json(s)}))
 }
 
@@ -1379,13 +1634,20 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "export.queue.add",
             "Send to Export Queue",
-            r#"{…settings params,"path":str|dir?,"sequences":[id]?,"ranges":[range]?,"qc":str|bool?,"start":bool?,"wait":bool?}"#,
+            r#"{…settings params,"path":str|dir?,"sequences":[id]?,"ranges":[range]?,"qc":str|bool?,"dcpValidate":str|bool?,"import":bool=false (put the finished file into the Project panel),"start":bool?,"wait":bool?}"#,
             has_seq,
             queue_add,
             true,
         ),
         spec("export.queue.list", "List Export Queue", "{}", always, queue_list, false),
-        spec("export.queue.start", "Start Export Queue", r#"{"wait":bool=false}"#, always, queue_start, true),
+        spec(
+            "export.queue.start",
+            "Start Export Queue",
+            r#"{"wait":bool=false,"at":u64?,"timeZone":str?,"ifMissed":"askUser|runLate|nextSlot"=askUser}"#,
+            always,
+            queue_start,
+            true,
+        ),
         spec("export.queue.stop", "Stop Export Queue", "{}", always, queue_stop, true),
         spec("export.queue.cancel", "Cancel Queued Export", r#"{"id":id?,"wait":bool?}"#, always, queue_cancel, true),
         spec("export.queue.retry", "Retry Queued Export", r#"{"id":id,"start":bool?,"wait":bool?}"#, always, queue_retry, true),

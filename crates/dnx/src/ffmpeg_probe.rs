@@ -4,7 +4,7 @@
 //! empty), decodes it with ffmpeg as an external process, and measures the reconstructed
 //! coefficient with a forward DCT of the output pixels. They established the two places where
 //! ffmpeg's decoder differs from the text of SMPTE ST 2019-1 (see the README): the quantisation
-//! weights it uses for CID 1271, and its reconstruction offset.
+//! weights it used for CID 1271 up to FFmpeg 9.0.x (fixed upstream since), and its reconstruction offset.
 //!
 //! `DNX_CID=1271 cargo test -p cfa4-dnx --lib ffmpeg_probe -- --ignored --nocapture`
 use crate::bits::Writer;
@@ -12,7 +12,7 @@ use crate::header::{self, EOF_SIGNATURE, FieldCode, FrameHeader, SCAN_INDEX_OFFS
 use crate::tables::{ZIGZAG, cid_info, vlc};
 use crate::{ChromaFormat, ColorVolume};
 
-fn stream_cid(cid: u32, w: u32, h: u32, depth: u8, q: u32, pos: usize, amp: u32, neg: bool, blk: usize) -> Vec<u8> {
+pub(crate) fn stream_cid(cid: u32, w: u32, h: u32, depth: u8, q: u32, pos: usize, amp: u32, neg: bool, blk: usize) -> Vec<u8> {
     let info = cid_info(cid).unwrap();
     let v = vlc(info.vlc);
     let p_bits = if depth == 8 { 4 } else { 6 };

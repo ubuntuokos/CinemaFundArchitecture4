@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ubuntu 26.04 packages for the pinned FFmpeg 9.0.2 test oracle build and the
+# Ubuntu 26.04 packages for the pinned FFmpeg test oracle build and the
 # Rust release tests that call it. Shared by ci-linux.yml (rust-release-tests)
 # and ci-cache-warm.yml, so both build FFmpeg and the Rust dependencies the
 # same way and the caches they write and read stay identical.
@@ -60,6 +60,14 @@ bash "$(dirname "$0")/install-g729-oracle.sh" \
 # built from the pinned upstream tag; the LCEVC oracle test skips without it)
 bash "$(dirname "$0")/install-lcevc-oracle.sh" \
   || echo "::warning::lcevc_oracle build failed: the LCEVC oracle test skips"
+# AVS2 oracles `davs2`, `xavs2` and their 10-bit builds (pinned upstream commits; the AVS2 oracle
+# tests skip without them)
+bash "$(dirname "$0")/install-avs2-oracle.sh" \
+  || echo "::warning::AVS2 oracle build failed: the AVS2 oracle tests skip"
+# AVS3 oracles `uavs3d`, `uavs3e` and their 10-bit builds (pinned upstream commits; the AVS3 oracle
+# tests skip without them)
+bash "$(dirname "$0")/install-avs3-oracle.sh" \
+  || echo "::warning::AVS3 oracle build failed: the AVS3 oracle tests skip"
 # MPEG-5 EVC oracles `xevdb_app` / `xeveb_app` (xevd v0.8.0, xeve v0.7.1, Baseline builds from the
 # pinned upstream tags; the EVC oracle tests skip without them)
 bash "$(dirname "$0")/install-evc-oracle.sh" \

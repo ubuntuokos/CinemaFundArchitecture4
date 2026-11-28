@@ -19,6 +19,8 @@
 use std::io::Write;
 
 mod aac_out;
+#[doc(hidden)]
+pub mod as02_share;
 pub mod atomic;
 pub mod audio_copy;
 mod audio_out;
@@ -444,6 +446,10 @@ pub struct ExportSettings {
     /// DNxHR profile: `lb`, `sq`, `hq` or `hqx` (empty = HQ).
     #[serde(default)]
     pub dnx_profile: String,
+    /// DNx coded as FFmpeg writes it, for FFmpeg-based tools (CFA4-DNX-SPEC-001 D3): its inverse
+    /// quantisation and 4:4:4 signalling. Off = SMPTE ST 2019-1.
+    #[serde(default)]
+    pub dnx_ffmpeg_compat: bool,
     /// APV profile: `422-10`, `422-12`, `444-10` or `444-12` (empty = `422-10`).
     #[serde(default)]
     pub apv_profile: String,
@@ -483,6 +489,47 @@ pub struct ExportSettings {
     /// essence. Empty: no AS-10 metadata.
     #[serde(default)]
     pub mxf_as10: String,
+    /// MXF OP1a with MPEG-2 or H.264 video: the AMWA AS-03 (MXF Program Delivery) DMS-AS-03
+    /// framework in bmx's text form, `Name: value` lines (`IdentifierKind`, `Identifier`,
+    /// `ShimName: PBS NGIS HD Playout`, `SignalStandard`, `IntendedAFD` required;
+    /// [`cfa4_mxf::as03`], [`cfa4_mxf::as11::AS03_ITEMS`]); the essence is checked against the
+    /// general provisions and the named shim. Empty: no AS-03 metadata.
+    #[serde(default)]
+    pub mxf_as03: String,
+    /// MXF OP1a: write an AMWA AS-02 (MXF Versioning) bundle. The output path is the bundle
+    /// folder: the version file `<name>.mxf` and `manifest.xml` in it, the picture and every audio
+    /// channel as mono OP1a component files under `media/` ([`cfa4_mxf::as02`]).
+    #[serde(default)]
+    pub mxf_as02: bool,
+    /// AS-02: further sequences (item ids) written into the same bundle as more versions, each
+    /// with its own component files and version file (`<bundle>_v2.mxf`, `_v3`, …).
+    #[serde(default)]
+    pub mxf_as02_versions: Vec<u64>,
+    /// Internal: the number (2 and up) of the version being appended to an existing bundle.
+    #[serde(skip)]
+    pub mxf_as02_version: u32,
+    /// AS-02 with several versions: let versions that cut the same material the same way share
+    /// their component files, encoding the common frames once (#1719). On by default.
+    #[serde(default = "default_true")]
+    pub mxf_as02_share: bool,
+    /// Internal: the bundle plan and the registry of the component files written for it.
+    #[serde(skip)]
+    #[doc(hidden)]
+    pub as02_share: as02_share::ShareHandle,
+    /// Internal: which own run of the version this export writes, and whether more follow.
+    #[serde(skip)]
+    #[doc(hidden)]
+    pub as02_run: u32,
+    #[serde(skip)]
+    #[doc(hidden)]
+    pub as02_more_runs: bool,
+    /// MXF OP1a: the AMWA AS-12 (MXF Commercials Delivery) Ad-ID advertisement identification
+    /// (`adid_prefix`, `adid_code`, `ad_title`, `Brand`, `Product`, `Advertiser`,
+    /// `agency_office_location`, `Length`, `Medium`, `sd_flag`, `Parent`; `ShimName` optional,
+    /// [`cfa4_mxf::as11::ADID_SHIM_NAME`]) as `Name: value` lines. It goes beside an AS-11 Core,
+    /// AS-10 or AS-03 framework, which must be given too. Empty: no AS-12 metadata.
+    #[serde(default)]
+    pub mxf_as12: String,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
     /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
     #[serde(default)]
@@ -563,6 +610,10 @@ pub struct ExportSettings {
     /// Compression of OpenEXR sequences (uncompressed unless set); other formats ignore it.
     #[serde(default)]
     pub exr_compression: ExrCompression,
+    /// Bits per component of DPX sequences: 10 (default), 12 or 16; other formats ignore it.
+    /// 12 and 16 bits can carry alpha ([`ExportSettings::alpha`]).
+    #[serde(default = "default_dpx_bit_depth")]
+    pub dpx_bit_depth: u8,
     /// Output frame size (None = Match Source: the sequence size times `scale`).
     pub frame_size: Option<(u32, u32)>,
     /// Output frame rate (None = Match Source).
@@ -650,6 +701,10 @@ enum AudioWriter {
 /// An export's output file: on disk, or in memory for an [`OutputSink`].
 enum Out {
     File(std::io::BufWriter<std::fs::File>),
+    /// The main output file: written to a temp file next to it and published by [`Out::finish`]
+    /// (`atomic::AtomicOutput`), so a cancel, an error or a kill never leaves a partial file under
+    /// the final name. Package outputs (`create_path`: DCP, IMF, MXF, OP-Atom) are staged per file the same way.
+    Atomic(std::io::BufWriter<atomic::AtomicOutput>),
     Mem(std::io::Cursor<Vec<u8>>),
 }
 
@@ -659,7 +714,13 @@ impl Out {
             let file = file.try_clone().map_err(|e| ExportError::Io(e.to_string()))?;
             return Ok(Out::File(std::io::BufWriter::new(file)));
         }
-        Out::create_path(settings, &settings.path)
+        if settings.sink.is_some() {
+            return Out::create_path(settings, &settings.path);
+        }
+        // An export replaced an existing file before this too (the caller asked for the path).
+        let staged = atomic::AtomicOutput::create(std::path::Path::new(&settings.path), atomic::Overwrite::Replace)
+            .map_err(|e| ExportError::Io(format!("{}: {e}", settings.path)))?;
+        Ok(Out::Atomic(std::io::BufWriter::new(staged)))
     }
 
     /// An output file at `path` (OP-Atom exports write several).
@@ -673,19 +734,29 @@ impl Out {
             let file = file.try_clone().map_err(|e| ExportError::Io(e.to_string()))?;
             return Ok(Out::File(std::io::BufWriter::new(file)));
         }
-        let f = std::fs::OpenOptions::new()
-            .read(settings.format.is_mp4_with(settings.multiplexer))
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(path)
-            .map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
-        Ok(Out::File(std::io::BufWriter::new(f)))
+        // Every file of a package is staged and published on its own, so no track file ever
+        // appears under its final name half written (C0 v0.1 spec, D6). The CPL, PKL and asset map
+        // are written after the track files, so a package that was cut short has none of them.
+        let staged =
+            atomic::AtomicOutput::create(std::path::Path::new(path), atomic::Overwrite::Replace).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+        Ok(Out::Atomic(std::io::BufWriter::new(staged)))
     }
 
     /// Flush (and hand in-memory output to the sink); returns the file size.
     fn finish(self, settings: &ExportSettings) -> Result<u64> {
         self.finish_path(settings, &settings.path)
+    }
+
+    /// Flush a file output and, when it is atomic, publish it under `path`; the caller reads the
+    /// finished file from `path` next. Nothing to do for in-memory output.
+    pub(crate) fn publish(self, path: &str) -> Result<()> {
+        match self {
+            Out::File(mut w) => w.flush().map_err(|e| ExportError::Io(e.to_string())),
+            Out::Atomic(w) => {
+                w.into_inner().map_err(|e| ExportError::Io(e.to_string()))?.commit().map(drop).map_err(|e| ExportError::Io(format!("{path}: {e}")))
+            }
+            Out::Mem(_) => Ok(()),
+        }
     }
 
     fn finish_path(self, settings: &ExportSettings, path: &str) -> Result<u64> {
@@ -694,6 +765,7 @@ impl Out {
                 w.flush().map_err(|e| ExportError::Io(e.to_string()))?;
                 Ok(std::fs::metadata(path).map(|m| m.len()).unwrap_or(0))
             }
+            Out::Atomic(w) => w.into_inner().map_err(|e| ExportError::Io(e.to_string()))?.commit().map_err(|e| ExportError::Io(format!("{path}: {e}"))),
             Out::Mem(c) => write_output(settings, path, c.into_inner()),
         }
     }
@@ -703,10 +775,15 @@ impl Out {
 fn write_output(settings: &ExportSettings, path: &str, data: Vec<u8>) -> Result<u64> {
     let n = data.len() as u64;
     match &settings.sink {
-        Some(sink) => (sink.0)(path, data),
-        None => std::fs::write(path, &data),
+        Some(sink) => (sink.0)(path, data).map_err(|e| ExportError::Io(e.to_string()))?,
+        None => {
+            use std::io::Write as _;
+            let mut staged =
+                atomic::AtomicOutput::create(std::path::Path::new(path), atomic::Overwrite::Replace).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+            staged.write_all(&data).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+            staged.commit().map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+        }
     }
-    .map_err(|e| ExportError::Io(e.to_string()))?;
     Ok(n)
 }
 
@@ -714,12 +791,14 @@ impl Write for Out {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         match self {
             Out::File(w) => w.write(buf),
+            Out::Atomic(w) => w.write(buf),
             Out::Mem(w) => w.write(buf),
         }
     }
     fn flush(&mut self) -> std::io::Result<()> {
         match self {
             Out::File(w) => w.flush(),
+            Out::Atomic(w) => w.flush(),
             Out::Mem(w) => w.flush(),
         }
     }
@@ -734,6 +813,10 @@ impl std::io::Read for Out {
                 w.flush()?;
                 std::io::Read::read(w.get_mut(), buf)
             }
+            Out::Atomic(w) => {
+                w.flush()?;
+                std::io::Read::read(w.get_mut(), buf)
+            }
             Out::Mem(w) => std::io::Read::read(w, buf),
         }
     }
@@ -743,6 +826,7 @@ impl std::io::Seek for Out {
     fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
         match self {
             Out::File(w) => w.seek(pos),
+            Out::Atomic(w) => w.seek(pos),
             Out::Mem(w) => w.seek(pos),
         }
     }
@@ -813,6 +897,7 @@ impl Default for ExportSettings {
             max_threads: 0,
             prores_profile: String::new(),
             dnx_profile: String::new(),
+            dnx_ffmpeg_compat: false,
             apv_profile: String::new(),
             cineform_profile: String::new(),
             cineform_quality: String::new(),
@@ -822,6 +907,15 @@ impl Default for ExportSettings {
             mxf_as11_segments: String::new(),
             mxf_as11_ukdpp: String::new(),
             mxf_as10: String::new(),
+            mxf_as03: String::new(),
+            mxf_as02: false,
+            mxf_as02_versions: Vec::new(),
+            mxf_as02_version: 0,
+            mxf_as02_share: true,
+            as02_share: Default::default(),
+            as02_run: 0,
+            as02_more_runs: false,
+            mxf_as12: String::new(),
             mpeg2_container: String::new(),
             mpeg2_422: false,
             mpeg2_quantizer: None,
@@ -842,6 +936,7 @@ impl Default for ExportSettings {
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,
+            dpx_bit_depth: default_dpx_bit_depth(),
             frame_size: None,
             frame_rate: None,
             scaling: Scaling::default(),
@@ -892,6 +987,9 @@ impl ExportSettings {
         if let Some((width, height)) = self.frame_size {
             cfa4_project::validate_frame_size(width, height).map_err(ExportError::Unsupported)?;
         }
+        if self.format == Format::DpxSequence && !matches!(self.dpx_bit_depth, 10 | 12 | 16) {
+            return Err(ExportError::Unsupported(format!("DPX has 10, 12 or 16 bits per component, not {}", self.dpx_bit_depth)));
+        }
         if let Some(rate) = self.frame_rate
             && (rate.num <= 0
                 || rate.den <= 0
@@ -933,8 +1031,14 @@ impl ExportSettings {
         }
         if self.field_order != FieldOrder::Progressive && self.has_video() && !self.codes_interlaced() {
             return Err(ExportError::Unsupported(format!(
-                "{} field order: only MPEG-2 and ProRes export (in MXF: MPEG-2, XDCAM HD422, D-10, ProRes) code interlaced video; the other encoders write progressive frames",
+                "{} field order: only MPEG-2, ProRes and the interlaced DNxHD IDs (1241–1243) export (in MXF: MPEG-2, XDCAM HD422, D-10, ProRes, DNxHD 1080i) code interlaced video; the other encoders write progressive frames",
                 self.field_order.label()
+            )));
+        }
+        if self.dnx_interlaced() && self.field_order != FieldOrder::UpperFirst {
+            return Err(ExportError::Unsupported(format!(
+                "{} codes interlaced pictures, top field first: set the field order to upper first",
+                crate::dnx_profile(&self.dnx_profile).name()
             )));
         }
         if self.field_order == FieldOrder::LowerFirst && self.format.is_mxf() && self.mxf_video_codec == MxfVideoCodec::D10 {
@@ -980,6 +1084,41 @@ impl ExportSettings {
             }
             cfa4_mxf::as11::check_as10_text(&self.mxf_as10).map_err(|e| ExportError::Unsupported(format!("AS-10: {e}")))?;
         }
+        if self.mxf_as02 {
+            let bad = |m: &str| ExportError::Unsupported(format!("AS-02: {m}"));
+            if self.format != Format::MxfOp1a {
+                return Err(bad("a bundle is written in MXF OP1a"));
+            }
+            if self.sink.is_some() || self.output_file.is_some() {
+                return Err(bad("a bundle is a folder, it cannot go to a sink or an open file"));
+            }
+            if self.mxf_anc_captions || !self.mxf_as11_core.trim().is_empty() || !self.mxf_as10.trim().is_empty() || !self.mxf_as03.trim().is_empty() {
+                return Err(bad("the AS-10 / AS-11 / AS-03 frameworks and ANC captions belong to single-file OP1a, not to a bundle"));
+            }
+            if matches!(self.mxf_video_codec, MxfVideoCodec::D10 | MxfVideoCodec::XdcamHd422) {
+                return Err(bad("D-10 and XDCAM HD422 interleave sound with the picture: AS-02 components are mono files"));
+            }
+            if self.mxf_as02_versions.len() > 98 {
+                return Err(bad("a bundle holds at most 99 versions"));
+            }
+        } else if !self.mxf_as02_versions.is_empty() {
+            return Err(ExportError::Unsupported("AS-02: more versions need the AS-02 bundle switch".into()));
+        }
+        if !self.mxf_as03.trim().is_empty() {
+            if self.format != Format::MxfOp1a || !matches!(self.video_format(), Format::Mpeg2 | Format::H264) {
+                return Err(ExportError::Unsupported("AS-03 metadata is written in MXF OP1a with MPEG-2 or H.264 video".into()));
+            }
+            cfa4_mxf::as11::check_as03_text(&self.mxf_as03).map_err(|e| ExportError::Unsupported(format!("AS-03: {e}")))?;
+        }
+        if !self.mxf_as12.trim().is_empty() {
+            if self.format != Format::MxfOp1a {
+                return Err(ExportError::Unsupported("AS-12 metadata is written in MXF OP1a".into()));
+            }
+            if [&self.mxf_as11_core, &self.mxf_as10, &self.mxf_as03].iter().all(|s| s.trim().is_empty()) {
+                return Err(ExportError::Unsupported("AS-12 goes beside an AS-11 Core, AS-10 or AS-03 framework: give one of them too".into()));
+            }
+            cfa4_mxf::as11::check_as12_text(&self.mxf_as12).map_err(|e| ExportError::Unsupported(format!("AS-12: {e}")))?;
+        }
         if self.format.is_mxf() && self.mxf_anc_captions {
             if self.format == Format::MxfOpAtom {
                 return Err(ExportError::Unsupported("closed captions (ANC) are written in MXF OP1a".into()));
@@ -1009,7 +1148,7 @@ impl ExportSettings {
                 return Err(ExportError::Unsupported("MPEG-2 export encodes to an average bitrate: choose CBR or VBR, 1 pass".into()));
             }
             if self.format == Format::Mpeg2 && !self.mpeg2_container.trim().is_empty() && Mpeg2Container::from_name(&self.mpeg2_container).is_none() {
-                return Err(ExportError::Unsupported(format!("unknown MPEG-2 container {:?}: choose ps, ts, m2ts or es", self.mpeg2_container)));
+                return Err(ExportError::Unsupported(format!("unknown MPEG-2 container {:?}: choose ps, ts, m2ts, es or dvd", self.mpeg2_container)));
             }
             if self.format == Format::Mpeg2
                 && self.has_audio()
@@ -1749,6 +1888,10 @@ impl VideoEncoder for D10Encoder {
     }
 }
 
+/// Most kbit/s of DVD-Video video: the disc's 9.8 Mbit/s limit less room for the audio and the
+/// navigation packs in the 10.08 Mbit/s multiplex.
+const DVD_MAX_VIDEO_KBPS: u32 = 9_000;
+
 fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
     if format != Format::Mpeg2 {
         return None;
@@ -1763,6 +1906,21 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
         let (Ok(w16), Ok(h16)) = (u16::try_from(w), u16::try_from(h)) else {
             return Err(ExportError::Unsupported(format!("MPEG-2 video has no {w}x{h} pictures")));
         };
+        let dvd = Mpeg2Container::of(s) == Mpeg2Container::Dvd;
+        if dvd {
+            mpeg_out::dvd_picture(w, h, rate)?;
+            if s.mpeg2_422 {
+                return Err(ExportError::Unsupported("DVD-Video is MPEG-2 Main Profile 4:2:0".into()));
+            }
+            if s.mpeg2_quantizer.is_some() {
+                return Err(ExportError::Unsupported("DVD-Video video needs a bit rate (at most 9000 kbps), not a fixed quantiser".into()));
+            }
+            if s.bitrate_kbps > DVD_MAX_VIDEO_KBPS || s.max_bitrate_kbps.is_some_and(|m| m > DVD_MAX_VIDEO_KBPS) {
+                return Err(ExportError::Unsupported(format!(
+                    "DVD-Video video is at most {DVD_MAX_VIDEO_KBPS} kbps (the disc's 9.8 Mbit/s video limit leaves room for the audio and navigation packs)"
+                )));
+            }
+        }
         let mut cfg = cfa4_mpeg2v::encode::Config::new(w, h, rate.num as u32, rate.den as u32);
         cfg.rate = match s.mpeg2_quantizer {
             Some(q) => cfa4_mpeg2v::encode::Rate::Quantizer(q.clamp(1, 31)),
@@ -1774,6 +1932,7 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
                     BitrateMode::Cbr => cfa4_mpeg2v::encode::Rate::Cbr { bits_per_second: bps, buffer_bits: 0 },
                     _ => {
                         let max = s.max_bitrate_kbps.filter(|m| *m >= kbps).map_or(bps * 3 / 2, |m| u64::from(m) * 1000);
+                        let max = if dvd { max.min(u64::from(DVD_MAX_VIDEO_KBPS) * 1000) } else { max };
                         cfa4_mpeg2v::encode::Rate::ConstrainedVbr { bits_per_second: bps, max_bits_per_second: max, buffer_bits: 0 }
                     }
                 }
@@ -1784,14 +1943,24 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
         if yuv422 {
             cfg.chroma = cfa4_mpeg2v::ChromaFormat::Yuv422;
         }
-        cfg.gop = s.keyframe_distance.filter(|k| *k > 0).unwrap_or(15).min(1000);
+        cfg.gop = if dvd {
+            // a GOP is at most 0.6 s on a DVD (15 PAL, 18 NTSC pictures): a VOBU holds one
+            let max = if rate.num == 25 { 15 } else { 18 };
+            let gop = s.keyframe_distance.filter(|k| *k > 0).unwrap_or(max);
+            if gop > max {
+                return Err(ExportError::Unsupported(format!("DVD-Video GOPs are at most {max} pictures at this frame rate, not {gop}")));
+            }
+            gop
+        } else {
+            s.keyframe_distance.filter(|k| *k > 0).unwrap_or(15).min(1000)
+        };
         cfg.b_frames = u32::from(s.mpeg2_b_frames.unwrap_or(2).min(7));
         cfg.interlaced = match s.field_order {
             FieldOrder::Progressive => None,
             FieldOrder::UpperFirst => Some(cfa4_mpeg2v::FieldOrder::TopFirst),
             FieldOrder::LowerFirst => Some(cfa4_mpeg2v::FieldOrder::BottomFirst),
         };
-        cfg.aspect = mpeg2_aspect(w, h, s.pixel_aspect);
+        cfg.aspect = if dvd { mpeg_out::dvd_aspect(w, h, s.pixel_aspect) } else { mpeg2_aspect(w, h, s.pixel_aspect) };
         // BT.709 primaries, transfer and matrix, as `rgba_to_yuv420_8` converts
         cfg.colour = Some((1, 1, 1));
         cfg.adaptive_quantization = true;
@@ -2089,7 +2258,8 @@ fn prores_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSet
 
 /// The DNxHR or DNxHD profile named by [`ExportSettings::dnx_profile`]: `lb`, `sq`, `hq`,
 /// `hqx`, or a 4:2:2 DNxHD compression ID as `hd1235`, `hd1237`, `hd1238`, `hd1250`, `hd1251`,
-/// `hd1252`, `hd1253` (each codes one raster).
+/// `hd1252`, `hd1253` (each codes one raster), or an interlaced one as `hd1241`, `hd1242`,
+/// `hd1243` (1080i: two field coding units per frame, top field first).
 pub fn dnx_profile(name: &str) -> cfa4_dnx::Profile {
     use cfa4_dnx::Profile;
     match name.to_ascii_lowercase().as_str() {
@@ -2099,6 +2269,9 @@ pub fn dnx_profile(name: &str) -> cfa4_dnx::Profile {
         "hd1235" => Profile::Hd1235,
         "hd1237" => Profile::Hd1237,
         "hd1238" => Profile::Hd1238,
+        "hd1241" => Profile::Hd1241,
+        "hd1242" => Profile::Hd1242,
+        "hd1243" => Profile::Hd1243,
         "hd1250" => Profile::Hd1250,
         "hd1251" => Profile::Hd1251,
         "hd1252" => Profile::Hd1252,
@@ -2117,12 +2290,17 @@ struct DnxEncoder {
     h: u32,
     rate: FrameRate,
     signal: ColorSignal,
+    /// Interlaced DNxHD ID: two woven fields per frame, the top one first (QuickTime `fiel` 1).
+    interlaced: bool,
 }
 
 impl VideoEncoder for DnxEncoder {
     fn sample_entry(&self) -> SampleEntry {
         let mut e = SampleEntry::dnx(cfa4_isobmff::FourCc(self.fourcc), self.w as u16, self.h as u16);
         self.signal.apply_to(&mut e, true);
+        if let (true, Some(v)) = (self.interlaced, e.video.as_mut()) {
+            v.field_info = Some(cfa4_isobmff::FieldInfo { fields: 2, detail: 1 });
+        }
         e
     }
     fn timescale(&self) -> u32 {
@@ -2159,11 +2337,12 @@ fn dnx_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
         }
         let fourcc = if profile.hd_raster().is_some() { *b"AVdn" } else { *b"AVdh" };
         let mut cfg = cfa4_dnx::EncoderConfig::new(profile, w, h);
+        cfg.ffmpeg_compat = s.dnx_ffmpeg_compat;
         if s.signal.primaries == 9 {
             cfg.color_volume = cfa4_dnx::ColorVolume::Bt2020Ncl;
         }
         let enc = cfa4_dnx::Encoder::with_config(cfg).map_err(|e| ExportError::Encode(e.to_string()))?;
-        Ok(Box::new(DnxEncoder { enc, fourcc, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
+        Ok(Box::new(DnxEncoder { enc, fourcc, w, h, rate, signal: s.signal, interlaced: profile.interlaced() }) as Box<dyn VideoEncoder>)
     })
 }
 
@@ -3080,7 +3259,9 @@ fn av1_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
 ///
 /// [`MarkerKind::Chapter`]: cfa4_project::MarkerKind::Chapter
 pub fn export_chapters(project: &Project, seq: ItemId, settings: &ExportSettings, range: TimeRange) -> Vec<cfa4_isobmff::Chapter> {
-    let Some(q) = project.sequence(seq).filter(|_| settings.chapters) else { return Vec::new() };
+    // a DVD-Video title always has its chapters
+    let dvd = settings.format == Format::Mpeg2 && Mpeg2Container::of(settings) == Mpeg2Container::Dvd;
+    let Some(q) = project.sequence(seq).filter(|_| settings.chapters || dvd) else { return Vec::new() };
     let end = range.start.0.saturating_add(range.duration.0);
     let mut marks: Vec<&cfa4_project::Marker> =
         q.markers.iter().filter(|m| m.kind == cfa4_project::MarkerKind::Chapter && m.start.0 >= range.start.0 && m.start.0 < end).collect();
@@ -3192,6 +3373,14 @@ pub fn encode_png(rgba: Vec<u8>, w: u32, h: u32) -> Result<Vec<u8>> {
     encode_still(Format::PngSequence, rgba, w, h, true)
 }
 
+fn default_true() -> bool {
+    true
+}
+
+fn default_dpx_bit_depth() -> u8 {
+    10
+}
+
 /// Encode one still of an image sequence (also Export Frame). `alpha` keeps the alpha channel in
 /// PNG, TIFF, Targa and OpenEXR, which are otherwise written as RGB.
 /// JPEG uses the default export quality ([`encode_still_with_quality`] picks another).
@@ -3206,12 +3395,13 @@ pub fn encode_still_with_quality(format: Format, rgba: Vec<u8>, w: u32, h: u32, 
 
 /// [`encode_still_with_quality`] with the OpenEXR compression (ignored by the other formats).
 pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: bool, quality: u8, exr: ExrCompression) -> Result<Vec<u8>> {
-    encode_still_timed(format, rgba, None, w, h, alpha, quality, exr, None)
+    encode_still_timed(format, rgba, None, w, h, alpha, quality, exr, 10, None)
 }
 
 /// [`encode_still_with`] for a frame of a sequence: OpenEXR also records its time code and the
 /// frame rate (ignored by the other formats). DPX and OpenEXR take the frame's straight sRGB
-/// R'G'B' floats (3 per pixel) from `float` when given, instead of the 8-bit `rgba`.
+/// R'G'B' floats (3 per pixel) from `float` when given, instead of the 8-bit `rgba`. `dpx_bits`
+/// (10, 12 or 16) is the DPX component depth.
 #[allow(clippy::too_many_arguments)]
 pub fn encode_still_timed(
     format: Format,
@@ -3222,6 +3412,7 @@ pub fn encode_still_timed(
     alpha: bool,
     quality: u8,
     exr: ExrCompression,
+    dpx_bits: u8,
     timing: Option<StillTiming>,
 ) -> Result<Vec<u8>> {
     let enc = |e: image::ImageError| ExportError::Encode(e.to_string());
@@ -3239,7 +3430,7 @@ pub fn encode_still_timed(
             .map_err(enc)?
         }
         Format::TgaSequence => return raster::tga(&rgba, w, h, alpha),
-        Format::DpxSequence => return raster::dpx_deep(&rgba, float, w, h, timing),
+        Format::DpxSequence => return raster::dpx_with(&rgba, float, w, h, timing, raster::DpxFormat { depth: dpx_bits, alpha: alpha && dpx_bits >= 12 }),
         Format::ExrSequence => return raster::exr_with(&rgba, float, w, h, alpha, exr, timing),
         Format::PngSequence if alpha => {
             image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut out), &rgba, w, h, image::ExtendedColorType::Rgba8).map_err(enc)?
@@ -3276,10 +3467,92 @@ fn capped_pool(max_threads: u32) -> Option<rayon::ThreadPool> {
 /// Run an export (blocking; call from a worker thread). With `settings.max_threads` set it runs on
 /// a pool of that many threads, so its rendering and software encoding use at most that many cores.
 pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
-    match capped_pool(settings.max_threads) {
+    let one = |seq: ItemId, settings: &ExportSettings| match capped_pool(settings.max_threads) {
         Some(pool) => pool.install(|| export_here(project, seq, settings, sources, progress)),
         None => export_here(project, seq, settings, sources, progress),
+    };
+    // AS-02: every further sequence becomes one more version of the same bundle, whole sequence
+    for (i, id) in settings.mxf_as02_versions.iter().enumerate() {
+        if project.sequence(ItemId(*id)).is_none() {
+            return Err(ExportError::Unsupported(format!("AS-02: version {} names a sequence that does not exist", i + 2)));
+        }
     }
+    if let Some(plan) = as02_plan(project, seq, settings)? {
+        return export_shared_bundle(plan, settings, &one);
+    }
+    let mut report = one(seq, settings)?;
+    for (i, id) in settings.mxf_as02_versions.iter().enumerate() {
+        let id = ItemId(*id);
+        let mut s = settings.clone();
+        s.mxf_as02_versions.clear();
+        s.mxf_as02_version = i as u32 + 2;
+        s.range = None;
+        let r = one(id, &s)?;
+        report.frames += r.frames;
+        report.bytes += r.bytes;
+        report.seconds += r.seconds;
+        report.extra_files.extend(r.extra_files);
+    }
+    Ok(report)
+}
+
+/// The component sharing plan of an AS-02 bundle with several versions, or `None` when nothing
+/// can be shared (the bundle is then written version by version, each with its own components).
+fn as02_plan(project: &Project, seq: ItemId, settings: &ExportSettings) -> Result<Option<as02_share::Plan>> {
+    if !settings.mxf_as02 || settings.mxf_as02_versions.is_empty() || !settings.mxf_as02_share {
+        return Ok(None);
+    }
+    let mut versions = vec![(seq, export_range(project, seq, settings)?)];
+    for id in &settings.mxf_as02_versions {
+        let id = ItemId(*id);
+        let own = ExportSettings { range: None, ..settings.clone() };
+        versions.push((id, export_range(project, id, &own)?));
+    }
+    let q = project.sequence(seq).ok_or(ExportError::NoSequence)?;
+    let audio = (settings.audio.channels > 0).then(|| settings.audio.sample_rate.unwrap_or(q.settings.sample_rate));
+    let plan = as02_share::plan(project, &versions, audio, settings.burn_captions);
+    Ok((!plan.is_trivial()).then_some(plan))
+}
+
+/// Write an AS-02 bundle whose versions share component files: every version encodes only the
+/// runs of frames no earlier version has, then writes its version file.
+fn export_shared_bundle(plan: as02_share::Plan, settings: &ExportSettings, one: &dyn Fn(ItemId, &ExportSettings) -> Result<Report>) -> Result<Report> {
+    let share = Arc::new(as02_share::Share { plan, registry: Default::default() });
+    let mut report: Option<Report> = None;
+    for (v, vp) in share.plan.versions.iter().enumerate() {
+        let rate = vp.range_rate;
+        if vp.runs.is_empty() {
+            // nothing of its own: the version file and the manifest only
+            let mut s = settings.clone();
+            s.mxf_as02_version = if v == 0 { 0 } else { v as u32 + 1 };
+            s.as02_share = as02_share::ShareHandle(Some(share.clone()));
+            let (bytes, extra_files) = mxf_out::finish_shared_version(&s, rate, settings.audio.channels as usize)?;
+            let t = report.as_mut().ok_or(ExportError::NoSequence)?;
+            t.bytes += bytes;
+            t.extra_files.extend(extra_files);
+            continue;
+        }
+        for run in 0..vp.runs.len() {
+            let mut s = settings.clone();
+            s.mxf_as02_versions.clear();
+            s.mxf_as02_version = if v == 0 { 0 } else { v as u32 + 1 };
+            s.range = Some(vp.run_range(rate, run));
+            s.as02_share = as02_share::ShareHandle(Some(share.clone()));
+            s.as02_run = run as u32;
+            s.as02_more_runs = run + 1 < vp.runs.len();
+            let r = one(vp.seq, &s)?;
+            match &mut report {
+                None => report = Some(r),
+                Some(t) => {
+                    t.frames += r.frames;
+                    t.bytes += r.bytes;
+                    t.seconds += r.seconds;
+                    t.extra_files.extend(r.extra_files);
+                }
+            }
+        }
+    }
+    report.ok_or(ExportError::NoSequence)
 }
 
 /// [`export`] on the threads it is called from.
@@ -3428,6 +3701,7 @@ fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, s
                                 settings.alpha,
                                 settings.quality,
                                 settings.exr_compression,
+                                settings.dpx_bit_depth,
                                 Some(pipe.still_timing(fi)),
                             )?;
                             write_output(settings, &pcm::image_sequence_path(&settings.path, (fi - f0) as u64, count), data)
@@ -3494,6 +3768,9 @@ mod smart_cut_mpeg_tests;
 mod smart_cut_tests;
 #[cfg(test)]
 mod timeline_render_tests;
+
+#[cfg(test)]
+mod cancel_latency_tests;
 
 #[cfg(test)]
 mod determinism_tests;

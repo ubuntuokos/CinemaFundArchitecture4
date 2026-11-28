@@ -54,6 +54,7 @@
 	Apply Video Transition	Rakenda videoüleminek
 	Assembly	Koostamine
 	Attach Proxies…	Lisa asendusfailid…
+	Find Camera Proxies	Otsi kaamera asendusfaile
 	Audio	Heli
 	Audio Channels…	Helikanalid…
 	Audio Clip Mixer	Heliklipi mikser
@@ -3933,7 +3934,7 @@
 	Six-Point Pin	Kuuepunktiline kinnitus
 	Upper Center	Keskel ülal
 	Lower Center	Keskel all
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Kasuta FFmpegi failide jaoks, mida CFA4 mootor avada ei suuda (FFmpeg 9.0.2 või uuem, GPL-3 versioon)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Kasuta FFmpegi failide jaoks, mida CFA4 mootor avada ei suuda (FFmpeg 9.1 või uuem, GPL-3 versioon)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Kasuta süsteemi GStreamerit failide jaoks, mida ei mootor ega FFmpeg avada ei suuda
 	Analyze Source for Smart Cut	Analüüsi allikat nutika lõikamise jaoks
 	Plan Smart Cut	Planeeri nutikas lõikamine
@@ -4815,6 +4816,11 @@ export.summary	Low	madal
 	Encode Resolution	Kodeerimise eraldusvõime
 	Half	Pool
 	Quarter	Veerand
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamoshi õitsemine
+	Start Time (seconds)	Algusaeg (sekundites)
+	Repeats	Kordused
+	Clean Blocks	Puhtad plokid
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Rakenda hiljuti kasutatud efekt valitud klippidele
@@ -4867,3 +4873,115 @@ export.summary	Low	madal
 	Subtitles	Subtiitrid
 	Captions for the hearing impaired	Subtiitrid kuulmispuudega inimestele
 	Forced narrative	Sunnitud jutustus (forced narrative)
+	Silence	Vaikus
+	Detect Silence	Tuvasta vaikus
+	Remove Silence	Eemalda vaikus
+	Clear Silence Markers	Tühjenda vaikuse märgid
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Vali DCP kaust.
+	DCP Validation	DCP valideerimine
+	DCP folder	DCP kaust
+	DCP folder (the one holding ASSETMAP)	DCP kaust (see, milles on ASSETMAP)
+	Evidence	Tõend
+	How to fix	Kuidas parandada
+	Interrupted	Katkestatud
+	Not applicable	Ei kohaldu
+	Report	Aruanne
+	Report saved: {path}	Aruanne salvestatud: {path}
+	Required	Kohustuslik
+	Rule	Reegel
+	Rules	Reeglid
+	Save JSON…	Salvesta JSON…
+	Save Markdown…	Salvesta Markdown…
+	Save report	Salvesta aruanne
+	Skipped	Vahele jäetud
+	Standard: {standard}	Standard: {standard}
+	Validate	Valideeri
+	Validate DCP…	Valideeri DCP…
+	the engine sent no profiles	mootor ei saatnud ühtegi profiili
+	{n} files checked	{n} faili kontrollitud
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Kirjuta AS-02 pakett (tee on kaust)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktiivsed vokslid:
+	Bounds:	Piirid:
+	Voxel attributes	Voksli atribuudid
+	Voxel size:	Voksli suurus:
+	points	punkti
+
+# WP3 DPX bit depth
+	Bit Depth	Bitisügavus
+
+# AS-02 versions
+	AS-02 Versions	AS-02 versioonid
+	Tick the sequences to write as further versions in the AS-02 bundle	Märkige järjestused, mis kirjutatakse AS-02 paketti lisaversioonidena
+	Delete Short Clips	Kustuta lühikesed klipid
+	A stored combination does not run a command yet.	Salvestatud kombinatsioon ei käivita veel käsku.
+	Action hint	Tegevuse vihje
+	Add combination	Lisa kombinatsioon
+	Add mapping	Lisa vastendus
+	Button Learn	Nupu õppimine
+	Button Test	Nupu proov
+	Button name	Nupu nimi
+	Cancel feedback	Tühistuse teade
+	Combination editor	Kombinatsiooniredaktor
+	Context	Kontekst
+	Delete profile	Kustuta profiil
+	Detected buttons	Tuvastatud nupud
+	Draw the gesture with a button held.	Joonistage žest nuppu all hoides.
+	Error feedback	Vea teade
+	Evdev device	Evdev-seade
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev loeb ainult valitud seadet ja alles siis, kui hilisem etapp selle sisse lülitab. See versioon jääb Qt teele.
+	Execution feedback	Täitmise teade
+	Follow the system	Järgi süsteemi
+	Gesture	Žest
+	Gesture Learn	Žesti õppimine
+	Gesture editor	Žestiredaktor
+	Gesture profiles	Žestiprofiilid
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Žestid jäävad välja, kuni need sisse lülitate. Sisselülitamine ei blokeeri paneeli menüüd.
+	HUD	HUD
+	Hand	Käsi
+	High contrast	Suur kontrast
+	Hold time	Hoidmisaeg
+	Input access	Sisendi juurdepääs
+	Left-handed	Vasakukäeline
+	Mapping	Vastendus
+	Maximum length	Suurim pikkus
+	Maximum time	Suurim aeg
+	Minimum length	Väikseim pikkus
+	Mirror ergonomic gestures	Peegelda ergonoomilised žestid
+	Mouse Gestures	Hiirežestid
+	Mouse Gestures…	Hiirežestid…
+	No buttons yet. Press one in Button Learn or Button Test.	Nuppe veel pole. Vajutage üht õppimisel või proovil.
+	Press	Vajutus
+	Qt pointer (this application)	Qt kursor (see rakendus)
+	Recognition preview	Tuvastuse eelvaade
+	Reduced animation	Vähendatud animatsioon
+	Right-handed	Paremakäeline
+	Roles	Rollid
+	Save gesture	Salvesta žest
+	Save profile	Salvesta profiil
+	Show the gesture HUD	Näita žesti HUD-i
+	Slop	Lõtk
+	Spatial gesture	Ruumiline žest
+	Thresholds	Läved
+	Trail	Jälg
+	Use gestures in the window	Kasuta žeste aknas
+	DVD-Video folder (VIDEO_TS)	DVD-Video kaust (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video kaust (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfne, 6 Mbps, GOP 15, AC-3 192 kbps, peatükid järjestuse peatükimarkeritest
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video kaust (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfne, 6 Mbps, GOP 18, AC-3 192 kbps, peatükid järjestuse peatükimarkeritest
+	DNx decoding:	DNx-i dekodeerimine:
+	As detected from the file ({detected})	Nagu failist tuvastatud ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	FFmpegiga ühilduv
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg loeb mõnda DNx-faili standardist erinevalt (4:4:4 värvid, pöördkvantimine). FFmpegiga kodeeritud materjal tuvastatakse; valige siin, kui tuvastus on vale.
+	DNx Coding	DNx-i kodeerimine
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpegiga ühilduv (FFmpegil põhinevatele tööriistadele)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Väljas: kodeeritud SMPTE ST 2019-1 järgi. Sees: kodeeritud nii, nagu FFmpeg DNx-i kirjutab, FFmpegil põhinevatele tööriistadele.

@@ -327,6 +327,10 @@ fn crop(s: &Session, frame: (u32, u32)) -> Option<Value> {
     if !it.range().contains(ph) {
         return None;
     }
+    // an adjustment layer has no picture of its own to crop a rectangle out of
+    if s.project.item(it.item).is_some_and(|pi| matches!(pi.kind, ItemKind::AdjustmentLayer { .. })) {
+        return None;
+    }
     let index = sel.index(&it.effects)?;
     let e = it.effects.get(index).filter(|e| e.enabled)?;
     let def = e.def().filter(|d| d.id == "crop")?;

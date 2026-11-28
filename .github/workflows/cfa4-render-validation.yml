@@ -1,0 +1,82 @@
+name: CFA4 render validation tiers (F0V)
+
+# Tiers of docs/audit/render-f0v/F0V-ci-tiers.md.
+#   smoke    : path-filtered pull requests; no compiling (the repo gates compiling jobs behind the
+#              `cfa4-full-validation` label, see ci-linux.yml), so only the fixture generator's tests and list.
+#   nightly  : once a day and on workflow_dispatch; CPU only; builds and runs the harness and the A/V drift scene.
+#   hardware : not here. GPU, NVENC/NVDEC, VRAM and cross-machine noise need the reference machine (PENDING).
+# A check that was not measured is never a pass: CFA4_REQUIRE_ORACLES=1 turns every skip into a failure.
+
+on:
+  pull_request:
+    paths:
+      - 'python/cfa4_devtools/render_fixtures.py'
+      - 'python/tests/test_render_fixtures.py'
+      - 'docs/audit/render-f0v/F0V-fixtures-manifest.json'
+      - 'docs/audit/render-f0v/F0V-thresholds.json'
+      - '.github/workflows/cfa4-render-validation.yml'
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout CFA4 source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Install Python development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --require-hashes -r requirements/linux-amd64.txt
+          python -m pip install --no-deps -e .
+      - name: Fixture generator tests and fixture list (no media is generated)
+        run: |
+          python -m ruff check python/cfa4_devtools/render_fixtures.py python/tests/test_render_fixtures.py
+          python -m pytest -q python/tests/test_render_fixtures.py
+          python python/cfa4_devtools/render_fixtures.py list
+
+  nightly:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 120
+    env:
+      CFA4_REQUIRE_ORACLES: '1'
+    steps:
+      - name: Checkout CFA4 source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Native Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config clang cmake ninja-build nasm ffmpeg
+      - name: Rust toolchain from rust-toolchain.toml
+        run: |
+          rustup show
+          rustc --version
+      - name: Generate and verify the fixture package
+        run: |
+          python3 python/cfa4_devtools/render_fixtures.py generate
+          python3 python/cfa4_devtools/render_fixtures.py verify
+      - name: Harness, mutation self-test, ten identical runs and the A/V drift scene
+        run: cargo test --locked --release -p cfa4-metrics -p cfa4-golden
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: f0v-report
+          path: target/f0v-report/
+          if-no-files-found: warn

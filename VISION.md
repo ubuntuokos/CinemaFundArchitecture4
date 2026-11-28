@@ -37,7 +37,7 @@ támogatási idő. A CFA4 **önkéntes adománnyal** támogatható. A licencszab
    nem tudja ugyanazt, amit az egui (lista és bizonyítékok: `docs/qt-parity.md`). Addig az egui
    befagyasztva: csak hibajavítás kerülhet bele, új funkció csak a Qt6-os felületbe
    (tulajdonosi döntés, 2026-10-24). Törölni csak a tulajdonos kifejezett jóváhagyásával lehet.
-   A **saját Rust-motor az alap**. Mellette kiegészítő háttérmotorok: az **FFmpeg** (legalább 9.0.2)
+   A **saját Rust-motor az alap**. Mellette kiegészítő háttérmotorok: az **FFmpeg** (legalább a `packaging/ffmpeg-version.env` `CFA4_FFMPEG_MIN_VERSION` értéke)
    és a **GStreamer** (hardveres kódolás nem NVIDIA GPU-n, VP9/AV1 hardveres dekódolás,
    Qt6-előnézet, felvétel, egyéb formátumok), később további motorok is. Alapértelmezés az Ubuntu
    tárolóiból telepített rendszer-GStreamer; elkülönített, CFA4 saját futtatókörnyezete csak akkor
@@ -114,7 +114,7 @@ függőségként használható. A szabályok:
 | **Kinewright** | ügynökvezérelt vágás (Rust) | Atomikus, revízióhoz kötött ügynöki szerkesztési terv egy visszavonási lépéssel; ügynökönkénti idővonal-ág; típusos incidensek biztonságos javítással; kis MCP-felület; mért ügynöki teljesítmény; export utáni hang- és képellenőrzés; storyboard és ütemelemzés. Csak az elveket írjuk újra (GPL-3.0-only) – [`docs/open-editors-parity.md`](docs/open-editors-parity.md) E1, E2, E4–E6, E14, E15 |
 | **Cutlass** | MI-asszisztenses vágás (Rust) | Próba homokozóban, élesítés egy lépésben; MI-asszisztens panel helyi végponttal; Lottie-animációk; Python-szkriptelés – E1, E3, E5, E10, E11 |
 | **Concat** | CapCut-szerű vágás (Rust) | Csak ötlet, kód nem (AGPL): modelljegyzék rögzített SHA-256-tal és saját tükörrel, modelljelöltek (kivágás, felskálázás, hangklónozás) – E7–E9 |
-| **Gausian Native Editor** | natív vágás (Rust) | Automatikus proxydöntés a média és a hardver alapján; SQLite-séma minta a nyilvántartáshoz – E12, K17 |
+| **Gausian Native Editor** | natív vágás (Rust) | Automatikus proxydöntés a média és a hardver alapján; SQLite-séma minta a nyilvántartáshoz – E12, KDN-17 |
 | **OpenCut** | vágás (Rust, GPUI) | A projektformátum géppel olvasható sémája és CLI-ellenőrzése – E13 |
 | **Lumina**, **RueyMediaEditor** | vágás (Rust + Qt/QML, Tauri) | Csak referencia: képességeik a CFA4-ben már megvannak, vagy még csak tervek |
 

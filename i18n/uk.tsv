@@ -37,6 +37,7 @@
 	Arrange	Упорядкувати
 	Assembly	Компонування
 	Attach Proxies…	Приєднати проксі…
+	Find Camera Proxies	Знайти проксі камери
 	Audio	Аудіо
 	Audio Channels…	Аудіоканали…
 	Audio Clip Mixer	Мікшер аудіокліпів
@@ -3703,7 +3704,7 @@
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Відео MPEG-2 (Main Profile 4:2:0, 0,4 біта на піксель) з розміром кадру й частотою секвенції, LPCM 16 біт 48 кГц, .mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Відео MPEG-2 1920×1080, у середньому 18 Мбіт/с, AAC 192 кбіт/с, .ts
 	Media Backends	Медіабекенди
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Використовувати FFmpeg для файлів, яких рушій CFA4 не відкриває (FFmpeg 9.0.2 або новіший, збірка GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Використовувати FFmpeg для файлів, яких рушій CFA4 не відкриває (FFmpeg 9.1 або новіший, збірка GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Використовувати системний GStreamer для файлів, яких не відкривають ні рушій, ні FFmpeg
 	Analyze Source for Smart Cut	Аналіз джерела для Smart Cut
 	Plan Smart Cut	Спланувати Smart Cut
@@ -4796,6 +4797,11 @@
 	Encode Resolution	Роздільність кодування
 	Half	Половина
 	Quarter	Чверть
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-розквіт
+	Start Time (seconds)	Час початку (секунди)
+	Repeats	Повтори
+	Clean Blocks	Чисті блоки
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Застосувати нещодавно використаний ефект до вибраних кліпів
@@ -4848,3 +4854,115 @@
 	Subtitles	Субтитри
 	Captions for the hearing impaired	Субтитри для людей із порушенням слуху
 	Forced narrative	Примусовий переклад (forced narrative)
+	Silence	Тиша
+	Detect Silence	Виявити тишу
+	Remove Silence	Видалити тишу
+	Clear Silence Markers	Очистити маркери тиші
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Виберіть теку DCP.
+	DCP Validation	Перевірка DCP
+	DCP folder	Тека DCP
+	DCP folder (the one holding ASSETMAP)	Тека DCP (та, де лежить ASSETMAP)
+	Evidence	Доказ
+	How to fix	Як виправити
+	Interrupted	Перервано
+	Not applicable	Не застосовується
+	Report	Звіт
+	Report saved: {path}	Звіт збережено: {path}
+	Required	Обов'язково
+	Rule	Правило
+	Rules	Правила
+	Save JSON…	Зберегти JSON…
+	Save Markdown…	Зберегти Markdown…
+	Save report	Зберегти звіт
+	Skipped	Пропущено
+	Standard: {standard}	Стандарт: {standard}
+	Validate	Перевірити
+	Validate DCP…	Перевірити DCP…
+	the engine sent no profiles	рушій не надіслав профілів
+	{n} files checked	Перевірено файлів: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Записати пакет AS-02 (шлях — це тека)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Активні воксели:
+	Bounds:	Межі:
+	Voxel attributes	Атрибути вокселів
+	Voxel size:	Розмір вокселя:
+	points	точки
+
+# WP3 DPX bit depth
+	Bit Depth	Розрядність
+
+# AS-02 versions
+	AS-02 Versions	Версії AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Позначте послідовності, які буде записано як додаткові версії в пакеті AS-02
+	Delete Short Clips	Видалити короткі кліпи
+	A stored combination does not run a command yet.	Збережена комбінація ще не запускає команду.
+	Action hint	Підказка дії
+	Add combination	Додати комбінацію
+	Add mapping	Додати призначення
+	Button Learn	Навчання кнопки
+	Button Test	Перевірка кнопки
+	Button name	Назва кнопки
+	Cancel feedback	Сигнал скасування
+	Combination editor	Редактор комбінацій
+	Context	Контекст
+	Delete profile	Видалити профіль
+	Detected buttons	Виявлені кнопки
+	Draw the gesture with a button held.	Намалюйте жест, утримуючи кнопку.
+	Error feedback	Сигнал помилки
+	Evdev device	Пристрій evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev читає лише вибраний пристрій і лише після того, як пізніший етап його увімкне. Ця версія лишається на шляху Qt.
+	Execution feedback	Сигнал виконання
+	Follow the system	Як у системі
+	Gesture	Жест
+	Gesture Learn	Навчання жесту
+	Gesture editor	Редактор жестів
+	Gesture profiles	Профілі жестів
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Жести вимкнені, доки ви їх не увімкнете. Увімкнення не блокує меню панелі.
+	HUD	HUD
+	Hand	Рука
+	High contrast	Високий контраст
+	Hold time	Час утримання
+	Input access	Доступ до введення
+	Left-handed	Лівша
+	Mapping	Призначення
+	Maximum length	Найбільша довжина
+	Maximum time	Найбільший час
+	Minimum length	Найменша довжина
+	Mirror ergonomic gestures	Віддзеркалити ергономічні жести
+	Mouse Gestures	Жести миші
+	Mouse Gestures…	Жести миші…
+	No buttons yet. Press one in Button Learn or Button Test.	Кнопок ще немає. Натисніть одну в навчанні або в перевірці.
+	Press	Натискання
+	Qt pointer (this application)	Вказівник Qt (ця програма)
+	Recognition preview	Попередній перегляд розпізнавання
+	Reduced animation	Зменшена анімація
+	Right-handed	Правша
+	Roles	Ролі
+	Save gesture	Зберегти жест
+	Save profile	Зберегти профіль
+	Show the gesture HUD	Показувати HUD жестів
+	Slop	Люфт
+	Spatial gesture	Просторовий жест
+	Thresholds	Пороги
+	Trail	Слід
+	Use gestures in the window	Жести у вікні
+	DVD-Video folder (VIDEO_TS)	Папка DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 анаморфне, 6 Mbps, GOP 15, AC-3 192 kbps, розділи з маркерів розділів послідовності
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 анаморфне, 6 Mbps, GOP 18, AC-3 192 kbps, розділи з маркерів розділів послідовності
+	DNx decoding:	Декодування DNx:
+	As detected from the file ({detected})	Як визначено з файлу ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (стандарт)
+	FFmpeg-compatible	Сумісно з FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg читає деякі файли DNx інакше, ніж передбачає стандарт (кольори 4:4:4, зворотне квантування). Матеріал, закодований FFmpeg, визначається автоматично; оберіть тут, якщо визначення хибне.
+	DNx Coding	Кодування DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Сумісно з FFmpeg (для інструментів на основі FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Вимк.: кодування за SMPTE ST 2019-1. Увімк.: кодування так, як FFmpeg записує DNx, для інструментів на основі FFmpeg.

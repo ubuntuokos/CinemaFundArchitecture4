@@ -1,0 +1,6 @@
+{
+  "name": "array-value",
+  "input": "[1,\"a\",null,true,{\"k\":[]}]",
+  "event": false,
+  "canonical": "[1,\"a\",null,true,{\"k\":[]}]"
+}

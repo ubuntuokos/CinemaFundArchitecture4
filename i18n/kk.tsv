@@ -58,6 +58,7 @@
 	Arrange	Реттеу
 	Assembly	Жинақтау
 	Attach Proxies…	Проксилерді тіркеу…
+	Find Camera Proxies	Камера проксилерін іздеу
 	Audio	Аудио
 	Audio Channels…	Аудио арналар…
 	Audio Clip Mixer	Аудио клиптер микшері
@@ -3966,7 +3967,7 @@
 	Six-Point Pin	Алты нүктелі бекіту
 	Upper Center	Жоғарғы ортада
 	Lower Center	Төменгі ортада
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	CFA4 қозғалтқышы аша алмайтын файлдар үшін FFmpeg пайдалану (FFmpeg 9.0.2 немесе жаңарағы, GPL-3 нұсқасы)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	CFA4 қозғалтқышы аша алмайтын файлдар үшін FFmpeg пайдалану (FFmpeg 9.1 немесе жаңарағы, GPL-3 нұсқасы)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Қозғалтқыш та, FFmpeg те аша алмайтын файлдар үшін жүйенің GStreamer-ін пайдалану
 	Analyze Source for Smart Cut	Ақылды кесу үшін көзді талдау
 	Plan Smart Cut	Ақылды кесуді жоспарлау
@@ -4815,6 +4816,11 @@ export.summary	Low	төмен
 	Encode Resolution	Кодтау ажыратымдылығы
 	Half	Жарты
 	Quarter	Ширек
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh гүлденуі
+	Start Time (seconds)	Басталу уақыты (секунд)
+	Repeats	Қайталаулар
+	Clean Blocks	Таза блоктар
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Соңғы қолданылған эффектті таңдалған клиптерге қолдану
@@ -4867,3 +4873,115 @@ export.summary	Low	төмен
 	Subtitles	Субтитрлер
 	Captions for the hearing impaired	Есту қабілеті нашар адамдарға арналған субтитрлер
 	Forced narrative	Мәжбүрлі баяндау (forced narrative)
+	Silence	Үнсіздік
+	Detect Silence	Үнсіздікті анықтау
+	Remove Silence	Үнсіздікті жою
+	Clear Silence Markers	Үнсіздік маркерлерін тазалау
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCP қалтасын таңдаңыз.
+	DCP Validation	DCP тексеру
+	DCP folder	DCP қалтасы
+	DCP folder (the one holding ASSETMAP)	DCP қалтасы (ASSETMAP бар қалта)
+	Evidence	Дәлел
+	How to fix	Қалай түзетуге болады
+	Interrupted	Үзілді
+	Not applicable	Қолданылмайды
+	Report	Есеп
+	Report saved: {path}	Есеп сақталды: {path}
+	Required	Міндетті
+	Rule	Ереже
+	Rules	Ережелер
+	Save JSON…	JSON сақтау…
+	Save Markdown…	Markdown сақтау…
+	Save report	Есепті сақтау
+	Skipped	Өткізілді
+	Standard: {standard}	Стандарт: {standard}
+	Validate	Тексеру
+	Validate DCP…	DCP тексеру…
+	the engine sent no profiles	қозғалтқыш профильдерді жібермеді
+	{n} files checked	{n} файл тексерілді
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	AS-02 бумасын жазу (жол — қалта)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Белсенді воксельдер:
+	Bounds:	Шекаралар:
+	Voxel attributes	Воксель атрибуттары
+	Voxel size:	Воксель өлшемі:
+	points	нүкте
+
+# WP3 DPX bit depth
+	Bit Depth	Разрядтылық
+
+# AS-02 versions
+	AS-02 Versions	AS-02 нұсқалары
+	Tick the sequences to write as further versions in the AS-02 bundle	AS-02 бумасына қосымша нұсқа ретінде жазылатын реттіліктерді белгілеңіз
+	Delete Short Clips	Қысқа клиптерді жою
+	A stored combination does not run a command yet.	Сақталған тіркесім әлі пәрменді орындамайды.
+	Action hint	Әрекет ишарасы
+	Add combination	Тіркесім қосу
+	Add mapping	Сәйкестікті қосу
+	Button Learn	Түймені үйрету
+	Button Test	Түйме сынағы
+	Button name	Түйме атауы
+	Cancel feedback	Бас тарту белгісі
+	Combination editor	Тіркесім өңдегіші
+	Context	Мәнмәтін
+	Delete profile	Профильді жою
+	Detected buttons	Табылған түймелер
+	Draw the gesture with a button held.	Түймені басып тұрып қимылды сызыңыз.
+	Error feedback	Қате белгісі
+	Evdev device	Evdev құрылғысы
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev тек таңдалған құрылғыны оқиды және оны кейінгі кезең қосқанда ғана. Бұл нұсқа Qt жолында қалады.
+	Execution feedback	Орындау белгісі
+	Follow the system	Жүйені қуу
+	Gesture	Қимыл
+	Gesture Learn	Қимылды үйрету
+	Gesture editor	Қимыл өңдегіші
+	Gesture profiles	Қимыл профильдері
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Қимылдар сіз қосқанша өшірулі қалады. Қосу панель мәзірін бөгемейді.
+	HUD	HUD
+	Hand	Қол
+	High contrast	Жоғары контраст
+	Hold time	Ұстау уақыты
+	Input access	Кіріс қатынасы
+	Left-handed	Солақай
+	Mapping	Сәйкестік
+	Maximum length	Ең үлкен ұзындық
+	Maximum time	Ең үлкен уақыт
+	Minimum length	Ең кіші ұзындық
+	Mirror ergonomic gestures	Эргономикалық қимылдарды айнадау
+	Mouse Gestures	Тінтуір қимылдары
+	Mouse Gestures…	Тінтуір қимылдары…
+	No buttons yet. Press one in Button Learn or Button Test.	Әлі түйме жоқ. Үйретуде немесе сынақта біреуін басыңыз.
+	Press	Басу
+	Qt pointer (this application)	Qt нұсқағыш (осы бағдарлама)
+	Recognition preview	Тану алдын ала көрінісі
+	Reduced animation	Азайтылған анимация
+	Right-handed	Оңқай
+	Roles	Рөлдер
+	Save gesture	Қимылды сақтау
+	Save profile	Профильді сақтау
+	Show the gesture HUD	Қимыл HUD көрсету
+	Slop	Люфт
+	Spatial gesture	Кеңістіктік қимыл
+	Thresholds	Шектер
+	Trail	Із
+	Use gestures in the window	Терезені қимылмен басқару
+	DVD-Video folder (VIDEO_TS)	DVD-Video қалтасы (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video қалтасы (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 анаморфты, 6 Mbps, GOP 15, AC-3 192 kbps, тараулар реттіліктің Тарау белгілерінен
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video қалтасы (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 анаморфты, 6 Mbps, GOP 18, AC-3 192 kbps, тараулар реттіліктің Тарау белгілерінен
+	DNx decoding:	DNx декодтау:
+	As detected from the file ({detected})	Файлдан анықталғандай ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (стандарт)
+	FFmpeg-compatible	FFmpeg-пен үйлесімді
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg кейбір DNx файлдарын стандарттан өзгеше оқиды (4:4:4 түстері, кері кванттау). FFmpeg кодтаған материал анықталады; анықтау қате болса, осында таңдаңыз.
+	DNx Coding	DNx кодтау
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-пен үйлесімді (FFmpeg негізіндегі құралдар үшін)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Өшірулі: SMPTE ST 2019-1 бойынша кодталады. Қосулы: FFmpeg DNx-ті қалай жазса, солай кодталады, FFmpeg негізіндегі құралдар үшін.

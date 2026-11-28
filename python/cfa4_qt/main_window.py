@@ -36,12 +36,14 @@ from PySide6.QtWidgets import (
 )
 
 from . import __version__, crash, dock_commands, theme
+from .gesture_hud import GestureLayer
 from .commands import Command, CommandRegistry, qt_shortcut
 from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
 from .dock_gutters import DockGutters
 from .engine import EngineClient, EngineError
 from .i18n import LANGUAGES, N_, TR, fmt, tr
 from .i18n import system_language as i18n_system_language
+from .render_notices import new_notices
 from .media_backends import MediaBackendsDialog
 from .panels.about import AboutDialog
 from .panels.clip_dialogs import DIALOGS as CLIP_DIALOGS
@@ -59,6 +61,7 @@ from .panels.export_dialogs import EXPORT_DIALOGS, ExportSettingsDialog
 from .panels.fx_editor import FxEditor, target_key
 from .panels.home import HomePage
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
+from .panels.dcp_validation import DcpValidationDialog
 from .panels.kdm_dialog import KdmDialog
 from .panels.live import LiveDialog
 from .panels.lumetri import LumetriColorPanel
@@ -144,7 +147,7 @@ LAYOUT_VERSION = 21  # 2: Source monitor; 3: Effect Controls; 4: Properties (egu
 # commands that can change which media an item shows, done or undone
 SOURCE_COMMANDS = frozenset({
     "media.relink", "media.replaceFootage", "media.makeOffline", "media.offlineAll", "media.autoRelink", "media.linkMedia",
-    "media.findMissing", "media.refreshChanged", "media.refreshGrowingFiles", "media.attachProxies", "media.detachProxies",
+    "media.findMissing", "media.refreshChanged", "media.refreshGrowingFiles", "media.attachProxies", "media.findCameraProxies", "media.detachProxies",
     "media.toggleProxies", "media.enableProxies", "media.reconnectFullRes", "clip.interpretFootage", "edit.undo", "edit.redo",
     "dcp.loadKdm", "dcp.clearKeys",
 })
@@ -315,6 +318,11 @@ class MainWindow(QMainWindow):
         self.monitor = ProgramMonitor(engine, self)
         self.source_monitor = SourceMonitor(engine, self)
         self.timeline = TimelinePanel(self)
+        # SC-3: the waveform channel mode and channel zoom are kept between sessions
+        self.timeline.canvas.restore_waveform_display(
+            self.settings.value("timeline/waveformChannels"), self.settings.value("timeline/channelZoom")
+        )
+        self.timeline.canvas.display_changed.connect(self._save_waveform_display)
         self.timeline.canvas.media.attach(engine)  # clip thumbnails and waveforms
         self.tools = ToolsPanel(self)
         self.tools.tool_selected.connect(self.timeline.set_tool)
@@ -465,6 +473,7 @@ class MainWindow(QMainWindow):
         self.job_watch.timeout.connect(self.watch_jobs)
         self._watched_render: tuple[int, int] | None = None  # (job, where playback starts after it)
         self._new_jobs: set[int] = set()
+        self._render_seen: set[tuple[str, str, str]] = set()  # warning/fallback events already announced
 
         for panel in (
             self.monitor,
@@ -569,6 +578,7 @@ class MainWindow(QMainWindow):
 
         engine.started.connect(self._on_started)
         engine.event.connect(self._on_event)
+        self.gestures = GestureLayer(self, engine)
         engine.job.connect(self._job_started)
         engine.failure.connect(lambda m: self.events.log(m, error=True))
         engine.stopped.connect(self._on_engine_stopped)
@@ -886,6 +896,10 @@ class MainWindow(QMainWindow):
         self.load_kdm_action = QAction(tr("Load KDM…"), self)
         self.load_kdm_action.setObjectName("qt.file.loadKdm")
         self.load_kdm_action.triggered.connect(self.open_kdm)
+        self.dcp_validation_dialog: DcpValidationDialog | None = None
+        self.validate_dcp_action = QAction(tr("Validate DCP…"), self)
+        self.validate_dcp_action.setObjectName("qt.file.validateDcp")
+        self.validate_dcp_action.triggered.connect(self.open_dcp_validation)
         self.forget_keys_action = QAction(tr("Forget DCP Keys"), self)
         self.forget_keys_action.setObjectName("qt.file.forgetDcpKeys")
         self.forget_keys_action.triggered.connect(self.forget_dcp_keys)
@@ -1032,7 +1046,7 @@ class MainWindow(QMainWindow):
     def _build_menus(self) -> None:
         self.registry.build_menus(
             self.menuBar(), self, {
-                "File": [self.load_kdm_action, self.forget_keys_action, self.quit_action],
+                "File": [self.load_kdm_action, self.validate_dcp_action, self.forget_keys_action, self.quit_action],
                 "Sequence": [self.play_action, *(a for a, _k in self.shuttle_actions)],
                 "Edit": [self.shortcuts_action, self.preferences_menu.menuAction()],
                 "View": [self.fit_action, self.multicam_actions[0][0], self.dynamic_waveforms_action],
@@ -1928,6 +1942,11 @@ class MainWindow(QMainWindow):
         if self.engine.running:
             self.engine.call("engine.commands", on_reply=lambda r, _b: self.registry.update_enabled(r))
 
+    def _save_waveform_display(self) -> None:
+        canvas = self.timeline.canvas
+        self.settings.setValue("timeline/waveformChannels", canvas.waveform_channels)
+        self.settings.setValue("timeline/channelZoom", canvas.channel_zoom)
+
     def _on_engine_stopped(self, reason: str) -> None:
         self.status_engine.setText(tr("Engine stopped"))
         self.monitor.stop(notify=False)
@@ -2487,7 +2506,7 @@ class MainWindow(QMainWindow):
     def interpret_footage(self, cid: str, params: dict[str, Any]) -> bool:
         """Interpret Footage without settings opens its dialog (egui's), for the items given or
         the Project panel's selection. True when it did."""
-        if cid != "clip.interpretFootage" or "colorSpace" in params or "pixelAspect" in params:
+        if cid != "clip.interpretFootage" or any(k in params for k in ("colorSpace", "pixelAspect", "dnxConventions")):
             return False
         items = [i for i in params.get("items") or self.project_panel.selected_items() or self.selected_clip_items() if isinstance(i, int)]
         dialog = InterpretFootageDialog(self, self.engine, items, self.execute)
@@ -2729,6 +2748,7 @@ class MainWindow(QMainWindow):
             self.metadata.set_fields(it, data)
             self.item_info = data
             self.info.update_info(data, self.sequence, self.monitor.playhead)
+            self._update_voxels(it, data)
 
         if item is None:
             got(None, None)
@@ -2742,6 +2762,23 @@ class MainWindow(QMainWindow):
         self.update_clip_mixer()
         for editor in list(self.fx_editors.values()):
             editor.refresh()
+
+    def _update_voxels(self, item: int | None, data: dict[str, Any] | None) -> None:
+        """N1-10: a selected OpenVDB volume shows its grids in the Info panel (``vdb.inspect``)."""
+        volume = (data or {}).get("volume")
+        if item is None or not isinstance(volume, dict) or not volume.get("path"):
+            self.info.update_voxels(None)
+            return
+
+        def got(result: Any, _b: bytes | None) -> None:
+            if item == self.target_item and isinstance(result, dict):
+                self.info.update_voxels(result.get("inspection"))
+
+        def failed(message: str) -> None:
+            if item == self.target_item:
+                self.info.update_voxels(None, str(message))
+
+        self.engine.execute("vdb.inspect", {"path": volume["path"]}, on_reply=got, on_error=failed)
 
     def show_error(self, summary: str) -> None:
         """egui's error window: playback stops, the error is shown with its log file, the
@@ -3031,6 +3068,13 @@ class MainWindow(QMainWindow):
             got(jobs, b)
 
         self.engine.execute("jobs.list", {}, on_reply=got_all, on_error=lambda _m: self.job_watch.stop())
+        # warning and fallback events of the render job API (A4: nothing degrades quietly)
+        self.engine.execute("render.list", {}, on_reply=self._render_notices, on_error=lambda _m: None)
+
+    def _render_notices(self, reply: Any, _b: bytes | None) -> None:
+        for text, error in new_notices(reply, self._render_seen):
+            self.events.log(text, error=error, source="render")
+            self.statusBar().showMessage(text, 8000)
 
     def _after_render(self, jobs: Any) -> None:
         if self._watched_render is None or not isinstance(jobs, list):
@@ -3141,6 +3185,7 @@ class MainWindow(QMainWindow):
             self.export_dialog = ExportDialog(self.engine, self)
             self.export_dialog.finished_export.connect(self._export_finished)
         path = (self.project or {}).get("path")
+        self.export_dialog.set_project_sequences(sequences_of((self.project or {}).get("root")))
         self.export_dialog.open_for(self.sequence, path if isinstance(path, str) else None)
 
     def _media_backends(self) -> MediaBackendsDialog:
@@ -3163,6 +3208,12 @@ class MainWindow(QMainWindow):
             self.kdm_dialog = KdmDialog(self.engine, self, changed=lambda: self._command_done("dcp.loadKdm"))
         self.kdm_dialog.show()
         self.kdm_dialog.raise_()
+
+    def open_dcp_validation(self) -> None:
+        """File ▸ Validate DCP…: the DCP Validation window (``dcp.validate``)."""
+        if self.dcp_validation_dialog is None:
+            self.dcp_validation_dialog = DcpValidationDialog(self.engine, self)
+        self.dcp_validation_dialog.open_for()
 
     def forget_dcp_keys(self) -> None:
         """File ▸ Forget DCP Keys: ``dcp.clearKeys``; encrypted clips go silent / black again."""

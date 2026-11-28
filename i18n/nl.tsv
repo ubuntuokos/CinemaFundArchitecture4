@@ -54,6 +54,7 @@
 	Apply Video Transition	Video-overgang toepassen
 	Assembly	Montage
 	Attach Proxies…	Proxy's koppelen…
+	Find Camera Proxies	Cameraproxy's zoeken
 	Audio Channels…	Audiokanalen…
 	Audio Clip Mixer	Audioclipmixer
 	Audio Effects	Audio-effecten
@@ -3605,7 +3606,7 @@
 	Six-Point Pin	Zespuntsbevestiging
 	Upper Center	Midden boven
 	Lower Center	Midden onder
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	FFmpeg gebruiken voor bestanden die de CFA4-engine niet kan openen (FFmpeg 9.0.2 of later, GPL-3-build)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	FFmpeg gebruiken voor bestanden die de CFA4-engine niet kan openen (FFmpeg 9.1 of later, GPL-3-build)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	De GStreamer van het systeem gebruiken voor bestanden die de engine en FFmpeg niet kunnen openen
 	Analyze Source for Smart Cut	Bron analyseren voor slim knippen
 	Plan Smart Cut	Slim knippen plannen
@@ -4813,6 +4814,11 @@ export.summary	Low	laag
 	Encode Resolution	Coderingsresolutie
 	Half	Half
 	Quarter	Kwart
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-bloei
+	Start Time (seconds)	Begintijd (seconden)
+	Repeats	Herhalingen
+	Clean Blocks	Schone blokken
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Een onlangs gebruikt effect toepassen op de geselecteerde clips
@@ -4865,3 +4871,115 @@ export.summary	Low	laag
 	Subtitles	Ondertitels
 	Captions for the hearing impaired	Ondertitels voor doven en slechthorenden
 	Forced narrative	Geforceerde vertelling (forced narrative)
+	Silence	Stilte
+	Detect Silence	Stilte detecteren
+	Remove Silence	Stilte verwijderen
+	Clear Silence Markers	Stiltemarkeringen wissen
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Kies de DCP-map.
+	DCP Validation	DCP-validatie
+	DCP folder	DCP-map
+	DCP folder (the one holding ASSETMAP)	DCP-map (de map met de ASSETMAP)
+	Evidence	Bewijs
+	How to fix	Hoe op te lossen
+	Interrupted	Onderbroken
+	Not applicable	Niet van toepassing
+	Report	Rapport
+	Report saved: {path}	Rapport opgeslagen: {path}
+	Required	Vereist
+	Rule	Regel
+	Rules	Regels
+	Save JSON…	JSON opslaan…
+	Save Markdown…	Markdown opslaan…
+	Save report	Rapport opslaan
+	Skipped	Overgeslagen
+	Standard: {standard}	Standaard: {standard}
+	Validate	Valideren
+	Validate DCP…	DCP valideren…
+	the engine sent no profiles	de engine stuurde geen profielen
+	{n} files checked	{n} bestanden gecontroleerd
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Een AS-02-bundel schrijven (het pad is een map)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Actieve voxels:
+	Bounds:	Grenzen:
+	Voxel attributes	Voxelattributen
+	Voxel size:	Voxelgrootte:
+	points	punten
+
+# WP3 DPX bit depth
+	Bit Depth	Bitdiepte
+
+# AS-02 versions
+	AS-02 Versions	AS-02-versies
+	Tick the sequences to write as further versions in the AS-02 bundle	Vink de sequenties aan die als extra versies in het AS-02-pakket worden geschreven
+	Delete Short Clips	Korte clips verwijderen
+	A stored combination does not run a command yet.	Een opgeslagen combinatie voert nog geen opdracht uit.
+	Action hint	Actiehint
+	Add combination	Combinatie toevoegen
+	Add mapping	Toewijzing toevoegen
+	Button Learn	Knop leren
+	Button Test	Knoptest
+	Button name	Knopnaam
+	Cancel feedback	Annuleringsmelding
+	Combination editor	Combinatiebewerker
+	Context	Context
+	Delete profile	Profiel verwijderen
+	Detected buttons	Gevonden knoppen
+	Draw the gesture with a button held.	Teken het gebaar met een ingedrukte knop.
+	Error feedback	Foutmelding
+	Evdev device	Evdev-apparaat
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev leest alleen het gekozen apparaat, en pas als een latere fase het aanzet. Deze versie blijft op het Qt-pad.
+	Execution feedback	Uitvoeringsmelding
+	Follow the system	Het systeem volgen
+	Gesture	Gebaar
+	Gesture Learn	Gebaar leren
+	Gesture editor	Gebarenbewerker
+	Gesture profiles	Gebaarprofielen
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gebaren blijven uit tot u ze aanzet. Aanzetten blokkeert het paneelmenu niet.
+	HUD	HUD
+	Hand	Hand
+	High contrast	Hoog contrast
+	Hold time	Vasthoudtijd
+	Input access	Ingangstoegang
+	Left-handed	Linkshandig
+	Mapping	Toewijzing
+	Maximum length	Grootste lengte
+	Maximum time	Grootste tijd
+	Minimum length	Kleinste lengte
+	Mirror ergonomic gestures	Ergonomische gebaren spiegelen
+	Mouse Gestures	Muisgebaren
+	Mouse Gestures…	Muisgebaren…
+	No buttons yet. Press one in Button Learn or Button Test.	Nog geen knop. Druk er een in Knop leren of Knoptest.
+	Press	Indrukken
+	Qt pointer (this application)	Qt-aanwijzer (deze toepassing)
+	Recognition preview	Herkenningsvoorbeeld
+	Reduced animation	Minder animatie
+	Right-handed	Rechtshandig
+	Roles	Rollen
+	Save gesture	Gebaar opslaan
+	Save profile	Profiel opslaan
+	Show the gesture HUD	Gebaren-HUD tonen
+	Slop	Speling
+	Spatial gesture	Ruimtelijk gebaar
+	Thresholds	Drempels
+	Trail	Spoor
+	Use gestures in the window	Gebaren in het venster gebruiken
+	DVD-Video folder (VIDEO_TS)	DVD-Video-map (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-map (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorf, 6 Mbps, GOP 15, AC-3 192 kbps, hoofdstukken uit de hoofdstukmarkeringen van de sequentie
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-map (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorf, 6 Mbps, GOP 18, AC-3 192 kbps, hoofdstukken uit de hoofdstukmarkeringen van de sequentie
+	DNx decoding:	DNx-decodering:
+	As detected from the file ({detected})	Zoals gedetecteerd uit het bestand ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standaard)
+	FFmpeg-compatible	FFmpeg-compatibel
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg leest sommige DNx-bestanden anders dan de standaard (4:4:4-kleuren, inverse kwantisatie). Door FFmpeg gecodeerd materiaal wordt herkend; kies hier als de detectie onjuist is.
+	DNx Coding	DNx-codering
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-compatibel (voor op FFmpeg gebaseerde tools)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Uit: gecodeerd volgens SMPTE ST 2019-1. Aan: gecodeerd zoals FFmpeg DNx schrijft, voor tools die op FFmpeg zijn gebouwd.
