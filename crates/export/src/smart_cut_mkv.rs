@@ -204,13 +204,6 @@ pub fn plan_mkv_audio<S: ByteSource + ?Sized>(file: &MkvFile, bytes: &S, output:
             plan.dropped.push(drop(format!("WebM carries only Opus and Vorbis audio, not {}", t.codec_id)));
             continue;
         }
-        // into MP4 / MOV the track needs a sample entry built from the Matroska track (R2-05)
-        if matches!(output, Container::Mp4 | Container::Mov)
-            && let Err(reason) = crate::smart_cut_cross::mp4_audio_entry(t)
-        {
-            plan.dropped.push(drop(reason));
-            continue;
-        }
         if !t.frames_readable() {
             plan.dropped.push(drop("the audio frames are compressed or encrypted in the file".into()));
             continue;
@@ -249,6 +242,15 @@ pub fn plan_mkv_audio<S: ByteSource + ?Sized>(file: &MkvFile, bytes: &S, output:
             }
             _ => s.saturating_sub(pre_roll),
         };
+        // into MP4 / MOV the track needs a sample entry built from the Matroska track and its first
+        // copied frame (R2-05)
+        if matches!(output, Container::Mp4 | Container::Mov) {
+            let head = file.read_sample(bytes, i, first).map_err(io)?;
+            if let Err(reason) = crate::smart_cut_cross::mp4_audio_entry(t, &head) {
+                plan.dropped.push(drop(reason));
+                continue;
+            }
+        }
         if let Some(codec) = bitstream {
             let mut packets = Vec::with_capacity(last - first + 1);
             for k in first..=last {

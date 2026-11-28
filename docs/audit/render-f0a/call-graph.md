@@ -495,7 +495,7 @@ graph LR
 | `cfa4-export/raster.rs` | `cfa4-time` | `FrameRate`, `Tick`, `frames_to_fields` |
 | `cfa4-export/settings.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-export/smart_cut.rs` | `cfa4-smart-edit` | `av1_index`, `capabilities`, `media_index`, `plan`, `timestamp` |
-| `cfa4-export/smart_cut_cross.rs` | `cfa4-smart-edit` | `av1_index`, `capabilities`, `media_index`, `plan` |
+| `cfa4-export/smart_cut_cross.rs` | `cfa4-smart-edit` | `audio_index`, `av1_index`, `capabilities`, `media_index`, `plan` |
 | `cfa4-export/smart_cut_mkv.rs` | `cfa4-smart-edit` | `audio_index`, `av1_index`, `capabilities`, `media_index`, `plan`, `timestamp` |
 | `cfa4-export/smart_cut_mpeg.rs` | `cfa4-smart-edit` | `capabilities`, `media_index`, `mpeg2_index`, `plan`, `timestamp` |
 | `cfa4-export/still.rs` | `cfa4-color` | `linear_to_srgb` |

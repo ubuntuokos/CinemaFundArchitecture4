@@ -93,15 +93,16 @@ fn check_mkv_to_mp4(name: &str, video: &[&str], audio: &[Audio<'_>], ext: &str, 
     for (k, (t, &(codec, exact))) in c.audio.tracks.iter().zip(expect).enumerate() {
         let channels = c.file.tracks[t.track].audio.as_ref().unwrap().channels as usize;
         let (src, out) = (decode(&ff, &path, k), decode(&ff, &cut, k));
-        // FFmpeg 6 decodes a Matroska track from its first frame, keeping the CodecDelay (AAC
-        // priming), so the source sample at a time lies that much further on; FFmpeg 9 drops it.
-        // Both are tried: the placement must be right against one of them
-        let delay = c.file.tracks[t.track].codec_delay_ns;
+        // FFmpeg decodes a Matroska track from its first frame. FFmpeg 6 keeps the CodecDelay (AAC
+        // priming, a first frame before 0), FFmpeg 9 drops it; neither pads a track that starts
+        // late. Both readings are tried: the placement must be right against one of them
+        let st = &c.file.tracks[t.track];
+        let first_ns = st.ticks_to_ns(st.samples[0].pts);
         let skip = if exact { 0 } else { 2048 * channels };
-        let (shift, worst) = [0, delay]
+        let (shift, worst) = [first_ns, first_ns.max(0)]
             .into_iter()
-            .map(|d| {
-                let from = ((i128::from(start_ns) + i128::from(d)) * i128::from(RATE) / 1_000_000_000) as i64 * channels as i64;
+            .map(|f| {
+                let from = (i128::from(start_ns - f) * i128::from(RATE) / 1_000_000_000) as i64 * channels as i64;
                 best_match(&out, &src, from, skip, (RATE as usize / 4) * channels, channels)
             })
             .min_by(|a, b| a.1.total_cmp(&b.1))
@@ -128,12 +129,55 @@ fn h264_matroska_with_aac_flac_and_pcm_is_cut_into_mp4() {
         Audio { encoder: "aac", layout: "stereo" },
         Audio { encoder: "flac", layout: "stereo" },
         Audio { encoder: "pcm_s16le", layout: "stereo" },
-        Audio { encoder: "ac3", layout: "stereo" },
+        Audio { encoder: "dca", layout: "5.1(side)" },
     ];
     let Some(c) = check_mkv_to_mp4("h264-mkv-mp4", &H264, &audio, "mkv", Container::Mp4, &[("aac", false), ("flac", true), ("pcm", true)]) else { return };
-    // AC-3 into MP4 needs its dac3 sample entry, which is not built yet: named, not dropped silently
+    // DTS into MP4 needs its ddts sample entry, which is not built yet: named, not dropped silently
     assert_eq!(c.audio.dropped.len(), 1, "{:?}", c.audio.dropped);
-    assert!(c.audio.dropped[0].reason.contains("A_AC3"), "{:?}", c.audio.dropped);
+    assert!(c.audio.dropped[0].reason.contains("A_DTS"), "{:?}", c.audio.dropped);
+}
+
+#[test]
+fn hevc_matroska_with_truehd_ac3_and_eac3_is_cut_into_mp4() {
+    let video = ["libx265", "-pix_fmt", "yuv420p", "-x265-params", "keyint=12:min-keyint=12:scenecut=0:open-gop=0:bframes=3:log-level=error"];
+    let audio =
+        [Audio { encoder: "truehd", layout: "5.1(side)" }, Audio { encoder: "ac3", layout: "5.1(side)" }, Audio { encoder: "eac3", layout: "5.1(side)" }];
+    let Some(c) = check_mkv_to_mp4("hevc-mkv-dolby-mp4", &video, &audio, "mkv", Container::Mp4, &[("truehd", true), ("ac3", false), ("eac3", false)]) else {
+        return;
+    };
+    assert!(c.audio.dropped.is_empty(), "{:?}", c.audio.dropped);
+    let out = cfa4_isobmff::open(c.output.as_slice()).unwrap();
+    let formats: Vec<String> = out.tracks.iter().skip(1).map(|t| String::from_utf8_lossy(&t.entries[0].format.0).into_owned()).collect();
+    assert_eq!(formats, ["mlpa", "ac-3", "ec-3"]);
+}
+
+/// The `dac3`, `dec3` and `dmlp` payloads built from the first frame equal the ones FFmpeg writes
+/// for the same stream.
+#[test]
+fn dolby_sample_entries_match_ffmpeg() {
+    use crate::smart_cut_cross::{dac3_from_frame, dec3_from_access_unit, dmlp_from_access_unit};
+    let audio = [Audio { encoder: "ac3", layout: "5.1(side)" }, Audio { encoder: "eac3", layout: "stereo" }, Audio { encoder: "truehd", layout: "5.1(side)" }];
+    let Some(path) = source("cross-dolby-entries", &H264, &audio, "mp4") else { return };
+    let bytes = std::fs::read(&path).unwrap();
+    let file = cfa4_isobmff::open(bytes.as_slice()).unwrap();
+    let mut seen = 0;
+    for (i, t) in file.tracks.iter().enumerate() {
+        let Some(e) = t.entries.first() else { continue };
+        let first = file.read_sample(bytes.as_slice(), i, 0).unwrap();
+        match &e.codec {
+            cfa4_isobmff::CodecConfig::Ac3 { dac3 } => assert_eq!(&dac3_from_frame(&first).unwrap(), dac3, "dac3"),
+            cfa4_isobmff::CodecConfig::Eac3 { dec3 } => {
+                // FFmpeg 6 always writes the optional extension byte, FFmpeg 9 only for Atmos
+                let built = dec3_from_access_unit(&first).unwrap();
+                let padded = [built.as_slice(), &[0]].concat();
+                assert!(&built == dec3 || &padded == dec3, "dec3: built {built:?}, FFmpeg {dec3:?}");
+            }
+            cfa4_isobmff::CodecConfig::TrueHd { dmlp } => assert_eq!(&dmlp_from_access_unit(&first).unwrap(), dmlp, "dmlp"),
+            _ => continue,
+        }
+        seen += 1;
+    }
+    assert_eq!(seen, 3);
 }
 
 #[test]
@@ -319,6 +363,13 @@ fn physical_samples_cut_across_containers() {
                 std::fs::write(out_path("physical", &format!("{name}.mkv")), &out).unwrap();
                 eprintln!("{name} → Matroska: {} frames, audio {:?}, dropped {:?}, log {:?}", report.frames, report.audio, audio.dropped, report.log);
                 assert!(audio.dropped.is_empty(), "{name}: {:?}", audio.dropped);
+                // the Dolby-authored dec3 (Atmos joint object coding) is rebuilt from the first access unit
+                for (i, t) in file.tracks.iter().enumerate() {
+                    if let Some(cfa4_isobmff::CodecConfig::Eac3 { dec3 }) = t.entries.first().map(|e| &e.codec) {
+                        let first = file.read_sample(bytes.as_slice(), i, 0).unwrap();
+                        assert_eq!(&crate::smart_cut_cross::dec3_from_access_unit(&first).unwrap(), dec3, "{name}: dec3");
+                    }
+                }
             }
             _ => continue,
         }

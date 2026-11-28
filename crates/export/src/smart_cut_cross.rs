@@ -17,11 +17,14 @@
 //!   scale that holds the MP4 timescale exactly where one exists (1 ms otherwise); the largest
 //!   rounding is reported.
 //! - **Audio:** into MP4, AAC, FLAC and PCM tracks of the Matroska source get a sample entry from
-//!   their `CodecPrivate` and audio element (the bitstream codecs follow in later steps and are
-//!   named as dropped until then). Into Matroska, every track the MP4 Smart Cut copies (AAC, PCM,
-//!   AC-3, E-AC-3, DTS, TrueHD, see [`crate::audio_copy`]) is written with its codec ID and
-//!   `CodecPrivate`. As in the same-container copies, the audio keeps its source offset against
-//!   the picture and may start one entry unit before it.
+//!   their `CodecPrivate` and audio element, and AC-3, E-AC-3 and TrueHD one built from their first
+//!   copied frame: `dac3`, `dec3` (with the Dolby Atmos joint object coding flag and complexity
+//!   index from `addbsi`) and `dmlp` (format info and peak data rate of the major sync), each as
+//!   FFmpeg and the Dolby tools write them. DTS (`ddts`) and E-AC-3 with dependent substreams are
+//!   named as dropped until their entries are built. Into Matroska, every track the MP4 Smart Cut
+//!   copies (AAC, PCM, AC-3, E-AC-3, DTS, TrueHD, see [`crate::audio_copy`]) is written with its
+//!   codec ID and `CodecPrivate`. As in the same-container copies, the audio keeps its source
+//!   offset against the picture and may start one entry unit before it.
 
 use std::io::{Cursor, Seek, Write};
 
@@ -29,6 +32,7 @@ use cfa4_isobmff::{
     AacConfig, Av1Config, AvcConfig, CodecConfig, HevcConfig, Mp4File, Mp4Writer, PcmConfig, SampleEntry, TrackConfig, TrackKind, WriteSample, WriterOptions,
 };
 use cfa4_matroska::{Codec as MkvCodec, MkvFile, MkvWriter, MuxOptions, TrackSpec};
+use cfa4_smart_edit::audio_index::{AudioCodec, index_audio};
 use cfa4_smart_edit::av1_index::Av1AccessPoints;
 use cfa4_smart_edit::capabilities::{Codec, Container};
 use cfa4_smart_edit::media_index::StreamIndex;
@@ -79,8 +83,89 @@ fn rescale(v: i128, num: i128, den: i128) -> i128 {
 
 // --- Matroska → MP4 / MOV -----------------------------------------------------------------
 
-/// The MP4 sample entry and timescale of a Matroska audio track, or why it has none yet.
-pub fn mp4_audio_entry(t: &cfa4_matroska::Track) -> Result<(SampleEntry, u32), String> {
+/// The `dac3` payload (ETSI TS 102 366 Annex F.4) of an AC-3 stream, from its first syncframe.
+pub fn dac3_from_frame(frame: &[u8]) -> Result<Vec<u8>, String> {
+    let h = cfa4_ac3::parse_header(frame).map_err(|e| format!("the first AC-3 frame does not parse: {e}"))?;
+    if h.is_eac3() || frame.len() < 6 {
+        return Err("the first frame is not an AC-3 syncframe".into());
+    }
+    let (fscod, frmsizecod, bsid, bsmod) = (frame[4] >> 6, frame[4] & 0x3F, frame[5] >> 3, frame[5] & 7);
+    // fscod(2) bsid(5) bsmod(3) acmod(3) lfeon(1) bit_rate_code(5) reserved(5)
+    let v = u32::from(fscod) << 22
+        | u32::from(bsid) << 17
+        | u32::from(bsmod) << 14
+        | u32::from(h.acmod) << 11
+        | u32::from(h.lfeon) << 10
+        | u32::from(frmsizecod >> 1) << 5;
+    Ok(v.to_be_bytes()[1..].to_vec())
+}
+
+/// The `dec3` payload (ETSI TS 102 366 Annex F.6) of an E-AC-3 stream, from its first access
+/// unit: one independent substream, its rate, configuration and, for Dolby Atmos, the joint
+/// object coding flag and complexity index from `addbsi`. Access units with dependent or further
+/// independent substreams (7.1 and more) are refused: their channel locations are not mapped yet.
+pub fn dec3_from_access_unit(au: &[u8]) -> Result<Vec<u8>, String> {
+    let info = cfa4_ac3::eac3_info(au).map_err(|e| format!("the first E-AC-3 frame does not parse: {e}"))?;
+    let h = info.header;
+    if h.strmtyp == 1 || h.substreamid != 0 {
+        return Err("the first E-AC-3 frame is not independent substream 0".into());
+    }
+    if au.len() != h.frame_bytes {
+        return Err("E-AC-3 with dependent or several independent substreams (7.1 and more) is not copied into MP4 yet".into());
+    }
+    let mut bits: Vec<(u32, u32)> = vec![
+        (h.bitrate_kbps.min(0x1FFF), 13), // data_rate
+        (0, 3),                           // num_ind_sub − 1
+        (u32::from(info.fscod), 2),
+        (u32::from(h.bsid), 5),
+        (0, 1), // reserved
+        (0, 1), // asvc
+        (u32::from(info.bsmod), 3),
+        (u32::from(h.acmod), 3),
+        (u32::from(h.lfeon), 1),
+        (0, 3), // reserved
+        (0, 4), // num_dep_sub
+        (0, 1), // reserved
+    ];
+    // reserved(7) flag_ec3_extension_type_a(1) complexity_index_type_a(8), only for joint object
+    // coding: without it the optional trailing byte is left out, as FFmpeg 9 and Dolby write it
+    if let [flags, complexity, ..] = info.addbsi.as_slice()
+        && flags & 1 == 1
+    {
+        bits.extend([(0, 7), (1, 1), (u32::from(*complexity), 8)]);
+    }
+    let mut out = Vec::new();
+    let (mut acc, mut n) = (0u64, 0u32);
+    for (v, w) in bits {
+        acc = acc << w | u64::from(v);
+        n += w;
+        while n >= 8 {
+            n -= 8;
+            out.push((acc >> n) as u8);
+        }
+    }
+    if n > 0 {
+        out.push((acc << (8 - n)) as u8);
+    }
+    Ok(out)
+}
+
+/// The `dmlp` payload (Dolby TrueHD in ISOBMFF) from a TrueHD access unit with a major sync:
+/// `format_info`, the 15-bit peak data rate and reserved bits.
+pub fn dmlp_from_access_unit(au: &[u8]) -> Result<Vec<u8>, String> {
+    if au.len() < 20 || au[4..8] != [0xF8, 0x72, 0x6F, 0xBA] {
+        return Err("the first TrueHD access unit has no major sync".into());
+    }
+    let peak = u16::from_be_bytes([au[18], au[19]]) & 0x7FFF;
+    let mut out = au[8..12].to_vec();
+    out.extend_from_slice(&(peak << 1).to_be_bytes());
+    out.extend_from_slice(&[0; 4]);
+    Ok(out)
+}
+
+/// The MP4 sample entry and timescale of a Matroska audio track, or why it has none yet. `first`
+/// is the first copied frame (the bitstream codecs describe their configuration from it).
+pub fn mp4_audio_entry(t: &cfa4_matroska::Track, first: &[u8]) -> Result<(SampleEntry, u32), String> {
     let a = t.audio.as_ref().ok_or_else(|| format!("track {} has no audio element", t.number))?;
     let channels = u32::try_from(a.channels).unwrap_or(0);
     let rate = a.sampling_frequency;
@@ -110,9 +195,16 @@ pub fn mp4_audio_entry(t: &cfa4_matroska::Track) -> Result<(SampleEntry, u32), S
             let cfg = PcmConfig { bits, float: *float, big_endian: *big_endian, signed: !*float && bits > 8, channels, sample_rate: f64::from(rate) };
             Ok((SampleEntry::pcm(cfg), rate))
         }
-        MkvCodec::Ac3 | MkvCodec::Eac3 | MkvCodec::Dts | MkvCodec::TrueHd => {
-            Err(format!("{} audio is not copied from Matroska into MP4 yet (its sample entry is not built)", t.codec_id))
+        MkvCodec::Ac3 | MkvCodec::Eac3 | MkvCodec::TrueHd => {
+            let rate = whole_rate.ok_or("the sample rate is not a whole number")?;
+            let (format, codec) = match &t.codec {
+                MkvCodec::Ac3 => (*b"ac-3", CodecConfig::Ac3 { dac3: dac3_from_frame(first)? }),
+                MkvCodec::Eac3 => (*b"ec-3", CodecConfig::Eac3 { dec3: dec3_from_access_unit(first)? }),
+                _ => (*b"mlpa", CodecConfig::TrueHd { dmlp: dmlp_from_access_unit(first)? }),
+            };
+            Ok((SampleEntry::audio(cfa4_isobmff::FourCc(format), codec, channels, f64::from(rate), 16), rate))
         }
+        MkvCodec::Dts => Err(format!("{} audio is not copied from Matroska into MP4 yet (its ddts sample entry is not built)", t.codec_id)),
         _ => Err(format!("{} audio is not copied by Smart Cut yet", t.codec_id)),
     }
 }
@@ -166,13 +258,31 @@ fn mkv_audio_inputs<S: cfa4_matroska::ByteSource + ?Sized>(
     for a in &audio.tracks {
         let t = file.tracks.get(a.track).ok_or(SmartCutError::NoTrack { track: a.track })?;
         let id = u32::try_from(t.number).unwrap_or(u32::MAX);
-        let (entry, rate) = mp4_audio_entry(t).map_err(|detail| SmartCutError::Incompatible { detail: format!("audio track {id}: {detail}") })?;
-        let mut samples = Vec::with_capacity(a.last - a.first + 1);
+        let mut data = Vec::with_capacity(a.last - a.first + 1);
         for f in a.first..=a.last {
-            let data = file.read_sample(bytes, a.track, f).map_err(io)?;
-            let n = frame_samples(&entry, &data)
-                .ok_or_else(|| SmartCutError::Incompatible { detail: format!("audio track {id}: frame {f} has no known length") })?;
-            samples.push((data, n));
+            data.push(file.read_sample(bytes, a.track, f).map_err(io)?);
+        }
+        let incompatible = |detail: String| SmartCutError::Incompatible { detail: format!("audio track {id}: {detail}") };
+        let (entry, rate) = mp4_audio_entry(t, data.first().map_or(&[][..], Vec::as_slice)).map_err(incompatible)?;
+        // the bitstream codecs: every packet's length from the R2-01 index
+        let bitstream = match &entry.codec {
+            CodecConfig::Ac3 { .. } => Some(AudioCodec::Ac3),
+            CodecConfig::Eac3 { .. } => Some(AudioCodec::Eac3),
+            CodecConfig::TrueHd { .. } => Some(AudioCodec::TrueHd),
+            _ => None,
+        };
+        let units = match bitstream {
+            Some(c) => Some(index_audio(c, data.iter().map(Vec::as_slice)).map_err(|e| incompatible(e.to_string()))?.units),
+            None => None,
+        };
+        let mut samples = Vec::with_capacity(data.len());
+        for (k, d) in data.into_iter().enumerate() {
+            let n = match &units {
+                Some(u) => u.get(k).map(|u| u.samples),
+                None => frame_samples(&entry, &d),
+            };
+            let n = n.filter(|&n| n > 0).ok_or_else(|| incompatible(format!("frame {} has no known length", a.first + k)))?;
+            samples.push((d, n));
         }
         let total: u64 = samples.iter().map(|s| u64::from(s.1)).sum();
         let r = i128::from(rate);
