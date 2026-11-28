@@ -108,7 +108,7 @@ A fázisok csak a függőségeket rögzítik. A sorrendről és az időzítésr�
 | Rész | 9.1 újdonság | CFA4-haszon | Követelmény |
 |------|--------------|-------------|-------------|
 | F2a | APV kódolás Vulkanon | Gyártófüggetlen GPU-s APV-export útvonal a `cfa4-route`-ban; a saját `crates/apv` kódoló marad az elsődleges és a CPU-tartalék. Előbb mérés: mely GPU-kon fut, és bitrátában/minőségben hol áll a saját kódolóhoz képest. | R10 |
-| F2b | APV kódolás (orákulum) | Második független APV-forrás a `crates/apv` oda-vissza tesztjéhez (az OpenAPV mellett, [ADR 0003](../adr/ADR-0003-aswf-and-conversion-sources.md) A1). | R6 |
+| F2b | APV kódolás (orákulum) | Második független APV-forrás a `crates/apv` oda-vissza tesztjéhez (az OpenAPV mellett, [ADR 0003](../adr/ADR-0003-aswf-and-conversion-sources.md) A1). **Kész** (#1914): `crates/apv/tests/ffmpeg_encode_oracle.rs`, `apv_vulkan` a CI-ben lavapipe-on, mind a 7 profil bitre egyezik az FFmpeg dekódolásával. | R6 |
 | F2c | LCEVC payload-merge BSF, LCEVC az MPEG-TS muxerben | Tesztanyag-előállítás a `crates/lcevc` hátralékához (`lvc1` sáv és TS 0x36 hordozás, ma csak felismerve, 10–20 óra, [`codec-parity.md`](../codec-parity.md)); az `ffmpeg` CLI kétsávos LCEVC-kezelése a kétsávos minták előállításához. Csak orákulum; a dekódolás saját marad. | R6 |
 | F2d | Panasonic RW2 dekódolás | Az első kamera-RAW, amit a CFA4 megnyit (#345, #383), az FFmpeg-háttéren át. A saját dekóder kérdése D3. | R10 |
 | F2e | AMF-képességek AMD-n (az AMF VQE helyett, amely Linuxon nem épül, II/a) | H.264 / HEVC / AV1 hardveres kódolás és dekódolás (`*_amf`), `sr_amf` (felskálázás) és `vpp_amf` (skálázás, színtér) a routerben, CPU-tartalékkal; a VA-API és a Vulkan út egyenrangú marad (D2, D8). | R10 |

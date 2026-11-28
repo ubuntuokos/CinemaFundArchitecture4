@@ -234,7 +234,10 @@ fn stream_list_matches_ffprobe() {
     for case in cases() {
         if let Some(missing) = case.encoders.iter().find(|e| !cfa4_testkit::ffmpeg_has_encoder(&ff, e)) {
             let context = format!("stream list oracle, {}", case.file);
-            if OPTIONAL_ENCODERS.contains(missing) {
+            if cfa4_testkit::RESTRICTED_ENCODERS.contains(missing) {
+                // libx264 / libx265 are never in CFA4's FFmpeg: a plain skip, even in CI
+                cfa4_testkit::encoders_or_skip(&context, &ff, &[missing]);
+            } else if OPTIONAL_ENCODERS.contains(missing) {
                 eprintln!("SKIPPED ({context}): ffmpeg has no {missing} encoder (optional case)");
             } else {
                 cfa4_testkit::skip(&context, &format!("ffmpeg has no {missing} encoder"));

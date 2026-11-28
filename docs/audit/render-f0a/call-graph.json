@@ -948,7 +948,22 @@
   },
   {
    "crate": "cfa4-testkit",
+   "fn": "encoders_or_skip",
+   "module": "oracle.rs"
+  },
+  {
+   "crate": "cfa4-testkit",
    "fn": "ffmpeg_has_encoder",
+   "module": "oracle.rs"
+  },
+  {
+   "crate": "cfa4-testkit",
+   "fn": "fixture_encoders_or_skip",
+   "module": "oracle.rs"
+  },
+  {
+   "crate": "cfa4-testkit",
+   "fn": "missing_fixture_encoder",
    "module": "oracle.rs"
   },
   {

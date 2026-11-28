@@ -38,6 +38,9 @@ fn fixture(name: &str, size: &str, args: &[&str]) -> Option<PathBuf> {
         return None;
     }
     let ff = cfa4_testkit::oracle::ffmpeg_or_skip("cfa4-ffmpeg fixture")?;
+    if !cfa4_testkit::fixture_encoders_or_skip(&format!("cfa4-ffmpeg fixture {name}"), &ff, args) {
+        return None;
+    }
     let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("cfa4-ffmpeg-source");
     std::fs::create_dir_all(&dir).ok()?;
     let path = dir.join(name);
