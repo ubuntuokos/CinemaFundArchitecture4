@@ -125,7 +125,8 @@ fn a_volume_preview_is_a_plain_still_the_timeline_takes() {
     assert!(s.execute("vdb.render", json!({"item": vol, "width": 0})).is_err());
     assert!(s.execute("vdb.render", json!({"item": vol, "frame": 3})).is_err());
     let out = d.join("p.png");
-    let r = s.execute("vdb.render", json!({"item": vol, "width": 160, "height": 90, "quality": "preview", "out": out.to_string_lossy()})).unwrap();
+    let r =
+        s.execute("vdb.render", json!({"item": vol, "width": 160, "height": 90, "quality": "preview", "out": out.to_string_lossy(), "wait": true})).unwrap();
     let still = r["items"][0].as_u64().expect("the picture is imported as an item");
     let it = s.project.item(cfa4_project::ItemId(still)).unwrap();
     assert_eq!(it.type_label(), "Still Image");
@@ -133,4 +134,83 @@ fn a_volume_preview_is_a_plain_still_the_timeline_takes() {
     // placed as an ordinary clip: no new render path
     s.execute("timeline.place", json!({"item": still, "videoTrack": "V1", "seconds": 0.0})).unwrap();
     assert_eq!(r["info"]["grid"], "density");
+}
+
+/// A finished background preview job: the picture is imported by [`poll`](crate::vdb::poll), a cancelled or failed one imports nothing.
+/// No worker is needed: the test plays the part of the job's thread.
+mod background {
+    use super::*;
+    use std::sync::atomic::Ordering;
+
+    fn job(s: &mut Session, id: u64, out: &str) {
+        let j = crate::Job { id, label: "VDB preview".into(), progress: Default::default(), result: Default::default() };
+        s.jobs.push(j);
+        s.vdb_jobs.push(crate::vdb::PendingVdb::for_test(id, out));
+    }
+
+    fn finish(s: &Session, id: u64, ok: bool, cancel: bool) {
+        let j = s.jobs.iter().find(|j| j.id == id).unwrap();
+        j.progress.cancel.store(cancel, Ordering::Relaxed);
+        *j.result.lock().unwrap() = Some(if ok {
+            Ok(cfa4_export::Report { path: String::new(), frames: 1, seconds: 0.0, bytes: 0, render_fps: 0.0, extra_files: Vec::new() })
+        } else {
+            Err("worker failed".to_string())
+        });
+        j.progress.finished.store(true, Ordering::Relaxed);
+    }
+
+    fn png(name: &str) -> String {
+        let p = dir(name).join("p.png");
+        image::RgbaImage::from_pixel(8, 6, image::Rgba([10, 20, 30, 255])).save(&p).unwrap();
+        p.to_string_lossy().to_string()
+    }
+
+    fn stills(s: &Session) -> usize {
+        s.project.items.values().filter(|i| i.type_label() == "Still Image").count()
+    }
+
+    #[test]
+    fn nothing_is_imported_while_the_job_runs() {
+        let mut s = Session::default();
+        let out = png("bg-running");
+        job(&mut s, 1, &out);
+        crate::vdb::poll(&mut s);
+        assert_eq!(s.vdb_jobs.len(), 1);
+        assert_eq!(stills(&s), 0);
+    }
+
+    #[test]
+    fn a_finished_job_imports_its_picture_as_a_still() {
+        let mut s = Session::default();
+        let out = png("bg-done");
+        job(&mut s, 1, &out);
+        finish(&s, 1, true, false);
+        crate::vdb::poll(&mut s);
+        assert!(s.vdb_jobs.is_empty());
+        assert_eq!(stills(&s), 1);
+    }
+
+    #[test]
+    fn a_cancelled_job_imports_nothing() {
+        let mut s = Session::default();
+        let out = png("bg-cancel");
+        job(&mut s, 1, &out);
+        finish(&s, 1, false, true);
+        crate::vdb::poll(&mut s);
+        assert!(s.vdb_jobs.is_empty());
+        assert_eq!(stills(&s), 0);
+        assert!(s.drain_events().iter().all(|e| !matches!(e, Event::Toast { error: true, .. })));
+    }
+
+    #[test]
+    fn a_failed_job_imports_nothing_and_says_why() {
+        let mut s = Session::default();
+        let out = png("bg-fail");
+        job(&mut s, 1, &out);
+        finish(&s, 1, false, false);
+        crate::vdb::poll(&mut s);
+        assert!(s.vdb_jobs.is_empty());
+        assert_eq!(stills(&s), 0);
+        assert!(s.drain_events().iter().any(|e| matches!(e, Event::Toast { message, error: true } if message.contains("worker failed"))));
+    }
 }

@@ -543,6 +543,8 @@ pub struct Session {
     pub object_jobs: Vec<objects_track::PendingObjectTrack>,
     /// Scene Edit Detection jobs whose results are applied when they finish.
     pub scene_jobs: Vec<scene_detect::PendingScene>,
+    /// VDB preview renders whose pictures are imported when they finish.
+    pub vdb_jobs: Vec<vdb::PendingVdb>,
     /// Effect presets (built-in + the user's, persisted in the data directory).
     pub presets: presets::PresetLibrary,
     /// Export presets (built-in + the user's, persisted in the data directory) and favourites.
@@ -659,6 +661,7 @@ impl Session {
             mask_jobs: Vec::new(),
             object_jobs: Vec::new(),
             scene_jobs: Vec::new(),
+            vdb_jobs: Vec::new(),
             presets: Default::default(),
             export_presets: Default::default(),
             export_queue: Default::default(),
@@ -764,6 +767,7 @@ impl Session {
         masks::poll(self);
         objects_track::poll(self);
         scene_detect::poll(self);
+        vdb::poll(self);
         export_tools::pump_queue(self, false);
         qc::poll(self);
         dcp_validation::poll(self);
