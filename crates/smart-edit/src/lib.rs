@@ -14,6 +14,8 @@
 //!   open and closed GOPs, reference dependencies, timestamps and configuration changes, built
 //!   from the bitstream by [`mpeg2_index`], [`h264_index`], [`hevc_index`] and [`av1_index`].
 //!   [`timestamp`] holds the exact rational media time it uses.
+//! - [`audio_index`] (R2-01 of `CFA4-SMART-CUT-RENDER-R2`): where AC-3, E-AC-3, DTS and TrueHD
+//!   audio may start and how much pre-roll it needs, so a Smart Cut copies it without decoding.
 //! - [`plan`]: the common [`plan::ExportExecutionPlan`] (CFA4-SCE-001 v1.5 §8): segments that are
 //!   copied, re-encoded at a cut boundary or rendered.
 //! - [`copy_planner`] (WP-03): the Smart Cut planner, the plan for cutting one source range out of
@@ -23,6 +25,7 @@
 //!   rendered ranges.
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+pub mod audio_index;
 pub mod av1_index;
 pub mod capabilities;
 pub mod copy_planner;
@@ -35,6 +38,8 @@ pub mod plan;
 pub mod smart_render;
 pub mod timestamp;
 
+#[cfg(test)]
+mod audio_index_tests;
 #[cfg(test)]
 mod av1_index_tests;
 #[cfg(test)]
