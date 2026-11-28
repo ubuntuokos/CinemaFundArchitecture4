@@ -139,7 +139,9 @@ A meglévő szabályokkal való viszony:
 
 - Az `AGENTS.md` CFA4-szakaszában a „Non-Rust components” után ott a fenti pont, a Conda-kizárással
   együtt; a terv a `docs/plans/CFA4-RULE-PERF-GATE-001.md` fájlban.
-- Más fájl nem módosul; a szabály az `AGENTS.md`-n kívül sehol nincs megismételve.
+- Más fájl nem módosul. Az érvényes szabály csak az `AGENTS.md`-ben él; az e tervben álló magyar
+  és angol szöveg a jóváhagyás archív rögzítése, nem második szabályforrás. Eltérés esetén az
+  `AGENTS.md` az irányadó.
 - A PR leírása hivatkozik erre a tervre; a beolvasztás a gazdán keresztül megy. A PR a
   szabályfájlt érinti, ezért a CodeRabbit-szabály (D5) szerint kockázatosnak számít, hacsak nem
   adsz rá kivételt.
