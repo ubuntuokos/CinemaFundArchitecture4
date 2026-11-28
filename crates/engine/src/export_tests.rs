@@ -935,7 +935,7 @@ fn a_queued_export_waits_for_memory_and_starts_once_there_is_room() {
     }
     assert!(queue(&mut s)[0]["waitingFor"].as_array().unwrap().is_empty());
     assert_eq!(s.tasks.held(), 0);
-    assert!(s.tasks.queue().tasks().iter().all(|t| t.state == cfa4_tasks::State::Succeeded));
+    assert!(s.tasks.tasks().iter().all(|t| t.state == cfa4_tasks::State::Succeeded));
     let listed = s.execute("tasks.list", json!({})).unwrap();
     assert_eq!(listed[0]["state"], "succeeded", "{listed}");
     assert_eq!(listed[0]["class"], "finalRender", "{listed}");

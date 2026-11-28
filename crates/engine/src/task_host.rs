@@ -24,7 +24,9 @@ use std::sync::Arc;
 use cfa4_tasks::budget::{Budget, BudgetSettings};
 use cfa4_tasks::manager::{Class, Denied, Request, WaitReason};
 use cfa4_tasks::queue::class_rank;
-use cfa4_tasks::{Manager, MissedStart, Monitor, NewTask, Priority, Queue, QueueConfig, QueueEvent, Snapshot, StartMode, State, TaskJournal};
+use cfa4_tasks::{
+    Manager, MissedStart, Monitor, NewTask, Priority, Queue, QueueBackend, QueueConfig, QueueEvent, Snapshot, StartMode, State, Task, TaskJournal,
+};
 
 /// Reads the machine's resources (tests install a fixed one).
 pub type Sampler = Arc<dyn Fn() -> Snapshot + Send + Sync>;
@@ -56,7 +58,7 @@ pub enum Outcome {
 }
 
 pub struct TaskHost {
-    queue: Queue,
+    queue: Box<dyn QueueBackend>,
     manager: Manager,
     monitor: Monitor,
     snap: Snapshot,
@@ -130,8 +132,13 @@ pub fn describe(reason: &WaitReason) -> String {
 
 impl TaskHost {
     pub fn new(sampler: Sampler) -> Self {
+        Self::with_backend(sampler, Box::new(Queue::new(QueueConfig::default())))
+    }
+
+    /// A host over `queue` (the in-memory one by default; the application may pass another).
+    pub fn with_backend(sampler: Sampler, queue: Box<dyn QueueBackend>) -> Self {
         TaskHost {
-            queue: Queue::new(QueueConfig::default()),
+            queue,
             manager: Manager::default(),
             monitor: Monitor::default(),
             snap: Snapshot::default(),
@@ -156,10 +163,16 @@ impl TaskHost {
     /// Hand the journal the tasks that changed since it was last told.
     fn sync_journal(&mut self) {
         let Some(journal) = self.journal.as_mut() else { return };
-        let queue = &self.queue;
-        self.journaled.retain(|id, _| queue.get(id).is_some());
+        let tasks = match self.queue.tasks() {
+            Ok(t) => t,
+            Err(e) => {
+                log::warn!("task queue unreadable, journal skipped: {e:?}");
+                return;
+            }
+        };
+        self.journaled.retain(|id, _| tasks.iter().any(|t| &t.id == id));
         let mut broken = false;
-        for t in queue.tasks() {
+        for t in &tasks {
             let now = (t.version, t.state);
             if self.journaled.get(&t.id) == Some(&now) {
                 continue;
@@ -214,14 +227,14 @@ impl TaskHost {
 
     /// Whether `id` waits for the user's decision after a missed start.
     pub fn needs_decision(&self, id: &str) -> bool {
-        self.queue.get(id).is_some_and(needs_decision)
+        self.get(id).as_ref().is_some_and(needs_decision)
     }
 
     /// The user's decision on a task that has not started (ACS-5): `run_now`, `next_slot` (the
     /// same local time on the next day it is still ahead) or `cancel`. Returns the new state.
     pub fn decide(&mut self, id: &str, action: &str) -> Result<State, String> {
         let now = now_ms();
-        let t = self.queue.get(id).ok_or_else(|| format!("no task `{id}`"))?;
+        let t = self.get(id).ok_or_else(|| format!("no task `{id}`"))?;
         let (state, version, at, zone) = (t.state, t.version, t.start.at(), t.time_zone.clone());
         if !matches!(state, State::Scheduled | State::Paused | State::Queued | State::Waiting) {
             return Err(format!("task `{id}` has already started or ended ({state:?})"));
@@ -242,7 +255,7 @@ impl TaskHost {
         };
         r.map_err(|e| format!("{e:?}"))?;
         self.tick();
-        self.queue.get(id).map(|t| t.state).ok_or_else(|| format!("task `{id}` was dropped"))
+        self.get(id).map(|t| t.state).ok_or_else(|| format!("task `{id}` was dropped"))
     }
 
     /// Name task `id` for the user (shown by `tasks.list`).
@@ -256,8 +269,7 @@ impl TaskHost {
     pub fn preview(&mut self, class: Class, ram_bytes: u64, cpu_milli: u64) -> Preview {
         self.refresh(false);
         let request = self.fit(class, ram_bytes, cpu_milli);
-        let ahead =
-            self.queue.tasks().iter().filter(|t| matches!(t.state, State::Queued | State::Waiting) && class_rank(t.request.class) <= class_rank(class)).count();
+        let ahead = self.all().iter().filter(|t| matches!(t.state, State::Queued | State::Waiting) && class_rank(t.request.class) <= class_rank(class)).count();
         let queued = |ahead: usize| if ahead == 1 { "1 task is ahead in the queue".to_owned() } else { format!("{ahead} tasks are ahead in the queue") };
         match self.manager.check(&request, &self.snap, &self.monitor) {
             Ok(_) if ahead == 0 => Preview { verdict: "start", reasons: Vec::new(), ahead },
@@ -291,7 +303,7 @@ impl TaskHost {
 
     /// Submit `id` once (with `request`), run a scheduler step, and say whether it may start.
     pub fn admit(&mut self, id: &str, request: impl FnOnce(&mut Self) -> Request) -> Admission {
-        if self.queue.get(id).is_none() {
+        if self.get(id).is_none() {
             let request = request(self);
             let new = NewTask {
                 id: id.to_owned(),
@@ -307,7 +319,7 @@ impl TaskHost {
             }
         }
         self.tick();
-        match self.queue.get(id) {
+        match self.get(id) {
             Some(t) if t.state == State::Running => Admission::Start,
             Some(t) if t.state == State::Blocked => Admission::Refused(match &t.blocked_by {
                 Some(Denied::NeverFits { resource, .. }) => format!("not enough {resource:?} on this machine"),
@@ -327,14 +339,14 @@ impl TaskHost {
     }
 
     fn step(&mut self) -> Vec<QueueEvent> {
-        let busy = self.queue.tasks().iter().any(|t| matches!(t.state, State::Scheduled | State::Queued | State::Waiting | State::Running | State::Cancelling));
+        let busy = self.all().iter().any(|t| matches!(t.state, State::Scheduled | State::Queued | State::Waiting | State::Running | State::Cancelling));
         if !busy {
             return Vec::new();
         }
         self.refresh(false);
         let now = now_ms();
         // this process runs them: its leases lapse only when it stops
-        let running: Vec<String> = self.queue.tasks().iter().filter(|t| t.state == State::Running).map(|t| t.id.clone()).collect();
+        let running: Vec<String> = self.all().iter().filter(|t| t.state == State::Running).map(|t| t.id.clone()).collect();
         for id in running {
             let _ = self.queue.renew(&id, OWNER, now);
         }
@@ -345,16 +357,16 @@ impl TaskHost {
                 Vec::new()
             }
         };
-        self.queue.prune(now.saturating_sub(KEEP_FINISHED_MS));
-        let queue = &self.queue;
-        self.labels.retain(|id, _| queue.get(id).is_some());
+        let _ = self.queue.prune(now.saturating_sub(KEEP_FINISHED_MS));
+        let present: std::collections::HashSet<String> = self.all().into_iter().map(|t| t.id).collect();
+        self.labels.retain(|id, _| present.contains(id));
         events
     }
 
     /// The work of `id` ended: release its resources. Unknown ids are ignored.
     pub fn end(&mut self, id: &str, outcome: Outcome) {
         let now = now_ms();
-        let Some(t) = self.queue.get(id) else { return };
+        let Some(t) = self.get(id) else { return };
         let (state, version) = (t.state, t.version);
         let r = match (state, outcome) {
             (State::Running, Outcome::Succeeded) => self.queue.finish(id, OWNER, State::Succeeded, now, "done", &mut self.manager),
@@ -374,8 +386,7 @@ impl TaskHost {
     /// Withdraw every task under `prefix` that has not started, except `keep`.
     pub fn withdraw(&mut self, prefix: &str, keep: Option<&str>) {
         let ids: Vec<String> = self
-            .queue
-            .tasks()
+            .all()
             .iter()
             .filter(|t| {
                 t.id.starts_with(prefix)
@@ -390,7 +401,7 @@ impl TaskHost {
     }
 
     pub fn state(&self, id: &str) -> Option<State> {
-        self.queue.get(id).map(|t| t.state)
+        self.get(id).map(|t| t.state)
     }
 
     /// Reservations held now.
@@ -398,15 +409,34 @@ impl TaskHost {
         self.manager.held_count()
     }
 
-    pub fn queue(&self) -> &Queue {
-        &self.queue
+    /// Every task the queue holds now (empty, with a warning, when the backend is unreachable).
+    pub fn tasks(&self) -> Vec<Task> {
+        self.all()
+    }
+
+    /// One task by id.
+    pub fn task(&self, id: &str) -> Option<Task> {
+        self.get(id)
+    }
+
+    fn all(&self) -> Vec<Task> {
+        self.queue.tasks().unwrap_or_else(|e| {
+            log::warn!("task queue unreadable: {e:?}");
+            Vec::new()
+        })
+    }
+
+    fn get(&self, id: &str) -> Option<Task> {
+        self.queue.get(id).unwrap_or_else(|e| {
+            log::warn!("task queue unreadable: {e:?}");
+            None
+        })
     }
 
     /// The tasks, their states and wait reasons, for `tasks.list`.
     pub fn to_json(&self) -> serde_json::Value {
         serde_json::Value::Array(
-            self.queue
-                .tasks()
+            self.all()
                 .iter()
                 .map(|t| {
                     let started = t.log.iter().rev().find(|l| l.to == State::Running).map(|l| l.at);
@@ -554,7 +584,7 @@ mod tests {
         h.schedule("later", now - 10 * MIN, Some("Europe/Budapest".into()), MissedStart::AskUser).unwrap();
         h.tick();
         assert_eq!(h.decide("later", "nextSlot"), Ok(State::Scheduled));
-        let at = h.queue().get("later").and_then(|t| t.start.at()).unwrap_or(0);
+        let at = h.task("later").and_then(|t| t.start.at()).unwrap_or(0);
         assert!(at > now && at <= now + 24 * 60 * MIN, "the same local time within a day: {at}");
         assert_eq!(h.decide("later", "cancel"), Ok(State::Cancelled));
         assert!(h.decide("later", "runNow").is_err(), "ended");

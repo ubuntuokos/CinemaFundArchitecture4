@@ -246,6 +246,10 @@ pub enum QueueError {
     Invalid {
         reason: String,
     },
+    /// The backend that holds the queue cannot be reached (the database is down or too slow).
+    Unavailable {
+        reason: String,
+    },
 }
 
 /// What a [`Queue::tick`] did, for the UI, the notifications (ACS-5) and the outbox.
