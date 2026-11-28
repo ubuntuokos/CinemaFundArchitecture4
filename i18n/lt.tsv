@@ -4602,6 +4602,12 @@ export.summary	Low	žema
 	software backend: {reason}	programinė posistemė: {reason}
 	Start studio	Paleisti studiją
 	Stop studio	Sustabdyti studiją
+	Live Studio	Tiesioginė studija
+	Live Studio…	Tiesioginė studija…
+	Scenes	Scenos
+	Sources	Šaltiniai
+	Visible	Matomas
+	Add a scene, then a source to it.	Pridėkite sceną, tada šaltinį.
 	Add Studio Scene	Pridėti studijos sceną
 	Live	Tiesiogiai
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

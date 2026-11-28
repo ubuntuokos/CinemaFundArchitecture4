@@ -8,6 +8,7 @@
 //! | command | params | what |
 //! |---|---|---|
 //! | `live.studio.scenes` | – | every scene with its sources, and the current one |
+//! | `live.studio.window` | – | as `live.studio.scenes`; the Qt6 GUI opens the Live Studio workspace (`panels/live_studio_workspace.py`) |
 //! | `live.studio.scene.add` | `{name?}` | a new empty scene (the current one when there was none) |
 //! | `live.studio.scene.remove` | `{id}` | removes a scene and its sources |
 //! | `live.studio.scene.rename` | `{id, name}` | |
@@ -452,6 +453,16 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             menu: &[],
             shortcut: None,
             params: "{} → {current, scenes:[{id, name, current, sources:[{id, name, type, kind, transform, visible}]}]}",
+            enabled: always,
+            run: list,
+            journal: false,
+        },
+        CommandSpec {
+            id: "live.studio.window",
+            label: "Live Studio…",
+            menu: &["Graphics and Titles"],
+            shortcut: None,
+            params: "{} → as live.studio.scenes (the Qt GUI opens the Live Studio workspace)",
             enabled: always,
             run: list,
             journal: false,

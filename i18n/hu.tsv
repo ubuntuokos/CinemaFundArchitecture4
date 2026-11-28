@@ -4652,6 +4652,12 @@ export.summary	Low	alacsony
 	software backend: {reason}	szoftveres háttér: {reason}
 	Start studio	Stúdió indítása
 	Stop studio	Stúdió leállítása
+	Live Studio	Élő stúdió
+	Live Studio…	Élő stúdió…
+	Scenes	Jelenetek
+	Sources	Források
+	Visible	Látható
+	Add a scene, then a source to it.	Adj hozzá egy jelenetet, majd egy forrást.
 	Task Manager	Feladatkezelő
 	Background jobs	Háttérfeladatok
 	Exports	Exportálások

@@ -4586,6 +4586,12 @@
 	software backend: {reason}	програмний бекенд: {reason}
 	Start studio	Запустити студію
 	Stop studio	Зупинити студію
+	Live Studio	Жива студія
+	Live Studio…	Жива студія…
+	Scenes	Сцени
+	Sources	Джерела
+	Visible	Видиме
+	Add a scene, then a source to it.	Додайте сцену, а потім джерело.
 	Add Studio Scene	Додати сцену студії
 	Live	Наживо
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

@@ -4605,6 +4605,12 @@ export.summary	Low	తక్కువ
 	software backend: {reason}	సాఫ్ట్‌వేర్ బ్యాకెండ్: {reason}
 	Start studio	స్టూడియోను ప్రారంభించు
 	Stop studio	స్టూడియోను ఆపు
+	Live Studio	లైవ్ స్టూడియో
+	Live Studio…	లైవ్ స్టూడియో…
+	Scenes	సన్నివేశాలు
+	Sources	మూలాలు
+	Visible	కనిపిస్తుంది
+	Add a scene, then a source to it.	ఒక సన్నివేశాన్ని, ఆపై దానికి ఒక మూలాన్ని జోడించండి.
 	Add Studio Scene	స్టూడియో దృశ్యాన్ని జోడించు
 	Live	ప్రత్యక్షం
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

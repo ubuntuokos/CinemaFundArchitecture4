@@ -4604,6 +4604,12 @@
 	software backend: {reason}	moteur logiciel : {reason}
 	Start studio	Démarrer le studio
 	Stop studio	Arrêter le studio
+	Live Studio	Studio en direct
+	Live Studio…	Studio en direct…
+	Scenes	Scènes
+	Sources	Sources
+	Visible	Visible
+	Add a scene, then a source to it.	Ajoutez une scène, puis une source.
 	Add Studio Scene	Ajouter une scène de studio
 	Live	En direct
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

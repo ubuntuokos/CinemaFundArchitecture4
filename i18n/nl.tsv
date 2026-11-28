@@ -4599,6 +4599,12 @@ export.summary	Low	laag
 	software backend: {reason}	software-backend: {reason}
 	Start studio	Studio starten
 	Stop studio	Studio stoppen
+	Live Studio	Livestudio
+	Live Studio…	Livestudio…
+	Scenes	Scènes
+	Sources	Bronnen
+	Visible	Zichtbaar
+	Add a scene, then a source to it.	Voeg een scène toe en daarna een bron.
 	Add Studio Scene	Studioscène toevoegen
 	Live	Live
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)

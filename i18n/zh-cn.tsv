@@ -4597,6 +4597,12 @@
 	software backend: {reason}	软件后端：{reason}
 	Start studio	启动演播室
 	Stop studio	停止演播室
+	Live Studio	直播工作室
+	Live Studio…	直播工作室…
+	Scenes	场景
+	Sources	来源
+	Visible	可见
+	Add a scene, then a source to it.	先添加场景，再向其中添加来源。
 	Add Studio Scene	添加演播室场景
 	Live	直播
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
