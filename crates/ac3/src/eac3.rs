@@ -118,6 +118,12 @@ pub(crate) struct Bsi {
     pub numblkscod: usize,
     /// Custom channel map of a dependent substream (`chanmap`, when `chanmape` is set).
     pub chanmap: Option<u16>,
+    /// The fields the ISOBMFF `dec3` box carries (ETSI TS 102 366 Annex F): the coded `fscod`
+    /// (3 at the reduced rates), `bsmod` (0 without informational metadata) and the `addbsi`
+    /// bytes (where Dolby Atmos signals its joint object coding).
+    pub raw_fscod: u8,
+    pub bsmod: u8,
+    pub addbsi: Vec<u8>,
 }
 
 /// Read syncinfo and bsi (§E2.2.1-2), leaving `r` at the audio frame.
@@ -210,9 +216,11 @@ pub(crate) fn read_bsi(r: &mut Bits<'_>) -> Result<Bsi> {
             independent_only(at..r.pos);
         }
     }
+    let mut bsmod = 0;
     if r.bit() {
         // informational metadata
-        r.skip(5); // bsmod, copyrightb, origbs
+        bsmod = r.read(3) as u8;
+        r.skip(2); // copyrightb, origbs
         if acmod == 2 {
             r.skip(4); // dsurmod, dheadphonmod
         }
@@ -236,11 +244,12 @@ pub(crate) fn read_bsi(r: &mut Bits<'_>) -> Result<Bsi> {
     if strmtyp == 2 && (numblkscod == 3 || r.bit()) {
         r.skip(6); // blkid → frmsizecod
     }
+    let mut addbsi = Vec::new();
     if r.bit() {
         let l = r.read(6) as usize;
-        r.skip((l + 1) * 8); // addbsi
+        addbsi = (0..=l).map(|_| r.read(8) as u8).collect();
     }
-    Ok(Bsi { strmtyp, fscod: rate_code, numblkscod, chanmap })
+    Ok(Bsi { strmtyp, fscod: rate_code, numblkscod, chanmap, raw_fscod: fscod as u8, bsmod, addbsi })
 }
 
 /// The audio frame (§E2.2.3) and the state that runs from block to block within a syncframe.

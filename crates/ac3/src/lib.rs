@@ -130,6 +130,33 @@ pub fn program_locations(data: &[u8]) -> Result<Vec<Location>> {
     Ok(locs)
 }
 
+/// The bit stream information of an E-AC-3 syncframe that the ISOBMFF `dec3` box describes
+/// (ETSI TS 102 366 Annex F), beyond its [`Header`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Eac3Info {
+    pub header: Header,
+    /// The coded `fscod` (3 at the reduced sample rates).
+    pub fscod: u8,
+    /// `bsmod`, 0 when the syncframe has no informational metadata.
+    pub bsmod: u8,
+    /// `chanmap` of a dependent substream that sets `chanmape`.
+    pub chanmap: Option<u16>,
+    /// The `addbsi` bytes, empty without them. Dolby Atmos (joint object coding) flags itself in
+    /// the lowest bit of the first byte (`flag_ec3_extension_type_a`), followed by its complexity
+    /// index.
+    pub addbsi: Vec<u8>,
+}
+
+/// Read the [`Eac3Info`] of the E-AC-3 syncframe at the start of `b`.
+pub fn eac3_info(b: &[u8]) -> Result<Eac3Info> {
+    let header = parse_header(b)?;
+    if !header.is_eac3() {
+        return Err(Error::Unsupported("an AC-3 syncframe, not E-AC-3".into()));
+    }
+    let bsi = eac3::read_bsi(&mut Bits::new(b))?;
+    Ok(Eac3Info { header, fscod: bsi.raw_fscod, bsmod: bsi.bsmod, chanmap: bsi.chanmap, addbsi: bsi.addbsi })
+}
+
 /// Parse the frame header at the start of `b`.
 pub fn parse_header(b: &[u8]) -> Result<Header> {
     if b.len() < 7 || b[0] != 0x0B || b[1] != 0x77 {

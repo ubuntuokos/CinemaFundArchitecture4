@@ -11686,6 +11686,11 @@
   },
   {
    "from": "cfa4-export/smart_cut_cross.rs",
+   "item": "audio_index",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/smart_cut_cross.rs",
    "item": "av1_index",
    "to": "cfa4-smart-edit"
   },
