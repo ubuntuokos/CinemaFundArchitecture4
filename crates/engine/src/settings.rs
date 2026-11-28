@@ -198,6 +198,16 @@ pub struct AudioHardwarePrefs {
     /// Output Mapping: the device channels (0-based) the programme's left and right go to.
     pub map_left: u32,
     pub map_right: u32,
+    /// Monitoring: `speakers` (the mix folded to the output) or `headphones` (binaural, HRTF;
+    /// `docs/plans/CFA4-BINAURAL-MONITOR-001.md` §3.4).
+    pub monitoring: String,
+    /// The HRTF set heard on headphones: a `.sofa` or `.maudhrtf` file; empty = the built-in
+    /// SADIE II KU100 set.
+    pub hrtf_set: String,
+    /// The headphone room: `off`, `little` (Dolby's default, a small room) or `medium`.
+    pub headphone_room: String,
+    /// The LFE's level in both ears on headphones (dB).
+    pub headphone_lfe_db: f64,
 }
 
 impl Default for AudioHardwarePrefs {
@@ -211,6 +221,10 @@ impl Default for AudioHardwarePrefs {
             force_document_rate: false,
             map_left: 0,
             map_right: 1,
+            monitoring: "speakers".into(),
+            hrtf_set: String::new(),
+            headphone_room: "little".into(),
+            headphone_lfe_db: -10.0,
         }
     }
 }
@@ -856,6 +870,12 @@ pub enum Kind {
     Font,
     /// An audio device chosen from what the host reports.
     Device(DeviceList),
+    /// A file chosen with a file dialog (`filter`, as Qt writes it); empty = `empty`, which the
+    /// field shows as its placeholder.
+    File {
+        filter: &'static str,
+        empty: &'static str,
+    },
     /// One of the 16 labels.
     Label,
 }
@@ -926,6 +946,8 @@ const fn float(min: f64, max: f64, decimals: usize, unit: &'static str) -> Kind 
     Kind::Float { min, max, decimals, unit }
 }
 
+const MONITORING: &[(&str, &str)] = &[("speakers", "Speakers"), ("headphones", "Headphones (Binaural)")];
+const HEADPHONE_ROOMS: &[(&str, &str)] = &[("off", "Off"), ("little", "Little"), ("medium", "Medium")];
 const STARTUP: &[(&str, &str)] = &[("showHome", "Show Home"), ("openMostRecent", "Open Most Recent"), ("emptyProject", "Start with an Empty Project")];
 const OPENING: &[(&str, &str)] = &[("showOpenDialog", "Show Open Dialog"), ("showHome", "Show Home")];
 const BIN_OPEN: &[(&str, &str)] = &[("openInPlace", "Open in place"), ("openNewTab", "Open new tab"), ("openNewWindow", "Open in new window")];
@@ -1171,6 +1193,18 @@ static CATEGORIES: &[Category] = &[
                     f("audioHardware.mapLeft", "Left channel to device output", int(0.0, 63.0, ""), true),
                     f("audioHardware.mapRight", "Right channel to device output", int(0.0, 63.0, ""), true),
                     Row::Custom("outputMapping"),
+                ],
+            ),
+            Row::Group(
+                "Headphones",
+                &[
+                    f("audioHardware.monitoring", "Monitoring", Kind::Choice(MONITORING), true),
+                    f("audioHardware.hrtfSet", "HRTF set", Kind::File { filter: "HRTF sets (*.sofa *.maudhrtf)", empty: "Built-in (SADIE II KU100)" }, true),
+                    f("audioHardware.headphoneRoom", "Room", Kind::Choice(HEADPHONE_ROOMS), true),
+                    f("audioHardware.headphoneLfeDb", "LFE level", float(-30.0, 0.0, 1, "dB"), true),
+                    Row::Note(
+                        "Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.",
+                    ),
                 ],
             ),
         ],
@@ -1989,6 +2023,7 @@ fn kind_json(k: Kind) -> Value {
         Kind::Color => json!({"type": "color"}),
         Kind::Font => json!({"type": "font"}),
         Kind::Device(d) => json!({"type": "device", "list": format!("{d:?}").to_ascii_lowercase()}),
+        Kind::File { filter, empty } => json!({"type": "file", "filter": filter, "empty": empty}),
         Kind::Label => json!({"type": "label", "choices": Label::ALL.iter().map(|l| l.name()).collect::<Vec<_>>()}),
     }
 }

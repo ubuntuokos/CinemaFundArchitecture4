@@ -991,3 +991,24 @@ fn a_batch_applies_duration_units_before_their_values() {
 fn updated_category(s: &mut Session, id: &str) -> Value {
     s.execute("prefs.schema", json!({"category": id})).unwrap()["categories"][0].clone()
 }
+
+#[test]
+fn headphone_monitoring_is_a_setting_with_a_file_picker() {
+    // CFA4-BINAURAL-MONITOR-001 B-04: Settings ▸ Audio Hardware ▸ Headphones
+    let mut s = Session::default();
+    let h = &s.prefs.audio_hardware;
+    assert_eq!((h.monitoring.as_str(), h.hrtf_set.as_str(), h.headphone_room.as_str(), h.headphone_lfe_db), ("speakers", "", "little", -10.0));
+    set(&mut s, "audioHardware.monitoring", json!("headphones"));
+    set(&mut s, "audioHardware.hrtfSet", json!("/sets/mine.sofa"));
+    set(&mut s, "audioHardware.headphoneRoom", json!("medium"));
+    set(&mut s, "audioHardware.headphoneLfeDb", json!(-24.0));
+    let h = &s.prefs.audio_hardware;
+    assert_eq!((h.monitoring.as_str(), h.hrtf_set.as_str(), h.headphone_room.as_str(), h.headphone_lfe_db), ("headphones", "/sets/mine.sofa", "medium", -24.0));
+    for (key, value) in [("audioHardware.monitoring", json!("loud")), ("audioHardware.headphoneRoom", json!("hall"))] {
+        assert!(s.execute("prefs.set", json!({"key": key, "value": value})).is_err(), "{key} refuses {value}");
+    }
+    let schema = s.execute("prefs.schema", json!({"category": "audioHardware"})).unwrap();
+    let text = schema.to_string();
+    assert!(text.contains(r#""type":"file""#) && text.contains("*.sofa"), "{text}");
+    assert!(matches!(settings::field("audioHardware.hrtfSet").map(|f| f.kind), Some(Kind::File { .. })));
+}

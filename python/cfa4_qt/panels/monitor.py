@@ -67,6 +67,7 @@ from PySide6.QtWidgets import (
 
 from .. import theme
 from ..engine import EngineClient
+from ..headphones import heard_text
 from ..i18n import N_, fmt, tr
 from ..timecode import TICKS_PER_SECOND, drop_frame, format_timecode, frame_ticks
 from .guides import AddGuideDialog, GuideLayer, ManageGuidesDialog, SaveGuidesDialog
@@ -726,6 +727,7 @@ class Monitor(QWidget):
     command = Signal(str, dict)  # an engine command to execute as is
     run = Signal(str, dict)  # a command that may need the GUI first (Export Frame asks for a file)
     message = Signal(str)  # an error to show in Events
+    headphones_toggled = Signal(bool)  # the headphone button or menu entry: turn binaural on / off
     # ticks exceed 32 bits after 8.5 ms, and an int-typed signal is a 32-bit C int: use object
     playhead_moved = Signal(object)  # local playhead during playback, ticks
     playback_stopped = Signal()  # stop(): a voice-over take ends with playback
@@ -790,6 +792,12 @@ class Monitor(QWidget):
         controls.addStretch(1)
         controls.addWidget(self.res_button)
         controls.addWidget(self.wrench)
+        # what the headphones play ("Atmos · 16 objects · binaural"), shown while they do
+        self.heard_label = QLabel("", self)
+        self.heard_label.setObjectName(f"{self.target}.heard")
+        self.heard_label.setVisible(False)
+        controls.addSpacing(8)
+        controls.addWidget(self.heard_label)
         controls.addSpacing(8)
         controls.addWidget(self.duration_label)
 
@@ -797,6 +805,7 @@ class Monitor(QWidget):
         self.transport.triggered.connect(self.run_transport)
         self.transport.hidden_changed.connect(self._hidden_changed)
         self.transport.checked["playback.loop"] = lambda: self.mv.looping
+        self.transport.checked["monitor.headphones"] = lambda: self.headphones is not None
         self.buttons = self.transport.buttons
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -811,6 +820,9 @@ class Monitor(QWidget):
         self._automation_pass = False  # a mixer automation pass is running (mixer.recordStart)
         self.free_run = False  # a voice-over take: playback runs on past the end
         self.audio_output = ""  # Settings ▸ Audio Hardware ▸ Default Output ("" = the system's)
+        # Settings ▸ Audio Hardware ▸ Headphones: audio.render's ``monitor`` while binaural, else None
+        self.headphones: dict[str, Any] | None = None
+        self.heard: dict[str, Any] = {}  # the last reply's ``monitor``
         self.speed = 1.0
         self.stop_at: int | None = None  # Play In to Out: stop here…
         self.rest_at: int | None = None  # …and rest the playhead here
@@ -861,6 +873,7 @@ class Monitor(QWidget):
             self.duration_label.setStyleSheet(sheet)
         self.wrench.setIcon(transport_icon("wrench", icon_color(self)))
         self.transport.set_icon("loop", "loop", ACCENT if self.mv.looping else None)
+        self.transport.set_icon("headphones", "headphones", ACCENT if getattr(self, "headphones", None) is not None else None)
         self.transport.set_icon("toggle", "pause" if getattr(self, "playing", False) else "play")
 
     def changeEvent(self, e: QEvent) -> None:
@@ -1089,6 +1102,11 @@ class Monitor(QWidget):
         toggle("transparencyGrid", N_("Transparency Grid"), "transparency_grid")
         toggle("showTransport", N_("Show Transport Controls"), "show_transport")
         toggle("loop", N_("Loop") if self.target == "program" else N_("Loop marked range"), "looping")
+        hp = m.addAction(tr("Headphones (Binaural)"))
+        hp.setObjectName(f"{self.target}.settings.headphones")
+        hp.setCheckable(True)
+        hp.setChecked(self.headphones is not None)
+        hp.triggered.connect(lambda on: self.headphones_toggled.emit(bool(on)))
 
     # ----- shared model -----
     def _range_marks(self) -> tuple[int, int]:
@@ -1197,6 +1215,8 @@ class Monitor(QWidget):
             self.run.emit("file.exportFrame", {**target, "time": self.playhead})
         elif command == "playback.loop":
             self.set_view(looping=not self.mv.looping)
+        elif command == "monitor.headphones":
+            self.headphones_toggled.emit(self.headphones is None)
         else:  # sequence.lift / extract, source.insert / overwrite, media.toggleProxies
             self.command.emit(command, {})
 
@@ -1641,6 +1661,29 @@ class Monitor(QWidget):
             self._stop_audio()
             self._start_audio()
 
+    def set_headphones(self, monitor: dict[str, Any] | None) -> None:
+        """Play through headphones with ``monitor`` (audio.render's ``monitor``: binaural, the HRTF
+        set, room, LFE level), or through the speakers when None; the next block plays it."""
+        if monitor == self.headphones:
+            return
+        self.headphones = monitor
+        if monitor is None:
+            self._set_heard({})
+        self.transport.set_icon("headphones", "headphones", ACCENT if monitor is not None else None)
+
+    def _set_heard(self, heard: dict[str, Any]) -> None:
+        """Show what the headphones play: the source's objects or layout, or that the HRTF set is
+        loading or could not be (that once, in Events)."""
+        if heard == self.heard:
+            return
+        error = heard.get("error")
+        if isinstance(error, str) and error != self.heard.get("error"):
+            self.message.emit(fmt("Headphones: {error}. Playing through the speakers.", error=error))
+        self.heard = heard
+        text = heard_text(heard)
+        self.heard_label.setText(text)
+        self.heard_label.setVisible(bool(text))
+
     def _stop_audio(self) -> None:
         if self.audio_clock and self.playing:  # the wall clock takes over where the sound got to
             self.audio_clock = False
@@ -1682,7 +1725,9 @@ class Monitor(QWidget):
         start = self._audio_next
         self._audio_next += frames
         params = {**self.audio_params(start, frames), "meter": True}
-        if self.speed != 1.0:  # shuttling: no meters (egui's), the engine plays it faster
+        if self.headphones is not None:  # the meters then measure the ears
+            params["monitor"] = self.headphones
+        if self.speed != 1.0:  # shuttling: no meters (egui's), the engine plays it faster, in stereo
             params = {**self.audio_params(start, frames), "speed": self.speed}
         self.engine.call(
             "audio.render",
@@ -1695,6 +1740,8 @@ class Monitor(QWidget):
         self._audio_busy = False
         if not isinstance(result, dict):
             return
+        heard = result.get("monitor")
+        self._set_heard(heard if isinstance(heard, dict) and self.headphones is not None else {})
         meter = result.get("meter")
         if self.playing and isinstance(meter, dict) and isinstance(result.get("start"), int):
             self.meter_blocks.append(
