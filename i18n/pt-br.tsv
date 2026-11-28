@@ -4611,6 +4611,12 @@
 	software backend: {reason}	back-end de software: {reason}
 	Start studio	Iniciar estúdio
 	Stop studio	Parar estúdio
+	Live Studio	Estúdio ao vivo
+	Live Studio…	Estúdio ao vivo…
+	Scenes	Cenas
+	Sources	Fontes
+	Visible	Visível
+	Add a scene, then a source to it.	Adicione uma cena e depois uma fonte.
 	Add Studio Scene	Adicionar cena de estúdio
 	Live	Ao vivo
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
@@ -4987,3 +4993,27 @@
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Pasta DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamórfico, 6 Mbps, GOP 15, AC-3 192 kbps, capítulos a partir dos marcadores de capítulo da sequência
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Pasta DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamórfico, 6 Mbps, GOP 18, AC-3 192 kbps, capítulos a partir dos marcadores de capítulo da sequência
+
+# DCP package views (DCP-23)
+	Package	Pacote
+	Composition	Composição
+	Security	Segurança
+	Save HTML…	Salvar HTML…
+	Asset map	Mapa de ativos
+	Packing list	Lista de empacotamento
+	Track file	Arquivo de trilha
+	Not a file	Não é um arquivo
+	Unsafe path	Caminho inseguro
+	Reel {n}	Rolo {n}
+	Signed documents	Documentos assinados
+	Encrypted assets	Ativos criptografados
+	Key ID: {id}	ID da chave: {id}
+	Package structure unavailable: {error}	Estrutura do pacote indisponível: {error}
+	DNx decoding:	Decodificação DNx:
+	As detected from the file ({detected})	Conforme detectado no arquivo ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (padrão)
+	FFmpeg-compatible	Compatível com FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	O FFmpeg lê alguns arquivos DNx de forma diferente do padrão (cores 4:4:4, quantização inversa). O material codificado pelo FFmpeg é detectado; escolha aqui quando a detecção estiver errada.
+	DNx Coding	Codificação DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Compatível com FFmpeg (para ferramentas baseadas em FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Desligado: codificado conforme SMPTE ST 2019-1. Ligado: codificado como o FFmpeg grava DNx, para ferramentas baseadas em FFmpeg.

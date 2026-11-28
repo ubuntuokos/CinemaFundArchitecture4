@@ -22,6 +22,7 @@ pub const AM_UNIQUE_IDS: &str = "DCP.AM.003";
 pub const AM_PATH_SAFE: &str = "DCP.AM.004";
 pub const AM_FILE_EXISTS: &str = "DCP.AM.005";
 pub const AM_HAS_PKL: &str = "DCP.AM.006";
+pub const AM_UNLISTED: &str = "DCP.AM.007";
 pub const PKL_DOCUMENT: &str = "DCP.PKL.001";
 pub const PKL_IN_ASSETMAP: &str = "DCP.PKL.002";
 pub const PKL_SIZE: &str = "DCP.PKL.003";
@@ -54,6 +55,7 @@ pub const RULES: &[Rule] = &[
     r(AM_PATH_SAFE, "Every chunk path is relative and stays inside the package", "DCP-03"),
     r(AM_FILE_EXISTS, "Every chunk file exists and is a regular file", "DCP-03"),
     r(AM_HAS_PKL, "The asset map declares at least one packing list", "DCP-05"),
+    r(AM_UNLISTED, "Every packing list and composition playlist in the package folder is in the asset map", "DCP-22b"),
     r(PKL_DOCUMENT, "Every packing list is well-formed and complete", "DCP-03"),
     r(PKL_IN_ASSETMAP, "Every packing list asset is in the asset map", "DCP-05"),
     r(PKL_SIZE, "Every file has the size its packing list declares", "DCP-05"),

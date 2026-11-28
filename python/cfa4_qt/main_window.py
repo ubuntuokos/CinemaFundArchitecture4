@@ -64,6 +64,7 @@ from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
 from .panels.dcp_validation import DcpValidationDialog
 from .panels.kdm_dialog import KdmDialog
 from .panels.live import LiveDialog
+from .panels.live_studio_workspace import StudioWorkspace
 from .panels.lumetri import LumetriColorPanel
 from .panels.media_browser import MediaBrowserPanel
 from .panels.media_dialogs import (
@@ -304,6 +305,7 @@ class MainWindow(QMainWindow):
         self.mode = "Edit"
         self.credits_dialog: CreditsDialog | None = None
         self.live_dialog: LiveDialog | None = None
+        self.live_studio: StudioWorkspace | None = None
         self.credits_refresh: CreditsRefreshDialog | None = None
         self.credits_fit: CreditsFitDialog | None = None
         # the monitor that keyboard commands with a `target` act on (the focused panel, as egui)
@@ -2174,6 +2176,10 @@ class MainWindow(QMainWindow):
             # Graphics and Titles ▸ Live Graphics…: the Live window
             self.open_live()
             return True
+        if cid == "live.studio.window" and not params:
+            # Graphics and Titles ▸ Live Studio…: the Live Studio workspace (scenes, sources, program)
+            self.open_live_studio()
+            return True
         if cid == "graphics.credits.import" and not params:
             # from the menu or a key, the Credits window; an agent's parameters import directly
             self.open_credits()
@@ -2506,7 +2512,7 @@ class MainWindow(QMainWindow):
     def interpret_footage(self, cid: str, params: dict[str, Any]) -> bool:
         """Interpret Footage without settings opens its dialog (egui's), for the items given or
         the Project panel's selection. True when it did."""
-        if cid != "clip.interpretFootage" or "colorSpace" in params or "pixelAspect" in params:
+        if cid != "clip.interpretFootage" or any(k in params for k in ("colorSpace", "pixelAspect", "dnxConventions")):
             return False
         items = [i for i in params.get("items") or self.project_panel.selected_items() or self.selected_clip_items() if isinstance(i, int)]
         dialog = InterpretFootageDialog(self, self.engine, items, self.execute)
@@ -3239,6 +3245,17 @@ class MainWindow(QMainWindow):
         if self.live_dialog is None:
             self.live_dialog = LiveDialog(self.engine, self, selected_clips=lambda: [c for c in (self.sequence or {}).get("selection") or [] if isinstance(c, int)])
         self.live_dialog.open_window()
+
+    def open_live_studio(self) -> None:
+        """Graphics and Titles ▸ Live Studio…: scenes, sources and the program picture of the live
+        studio (CFA4-LIVE-STUDIO-001 S1c), in a window of its own."""
+        if self.live_studio is None:
+            self.live_studio = StudioWorkspace(self.engine, self)
+            self.live_studio.setWindowFlag(Qt.WindowType.Window, True)
+            self.live_studio.resize(1100, 720)
+        self.live_studio.show()
+        self.live_studio.raise_()
+        self.live_studio.activateWindow()
 
     def open_credits_file(self, path: str) -> None:
         """A credits file, template or spreadsheet opened from the file manager or the command

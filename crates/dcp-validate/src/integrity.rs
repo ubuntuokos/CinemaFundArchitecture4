@@ -63,6 +63,48 @@ pub(crate) fn has_pkl(name: &str, am: &AssetMap) -> (Vec<Finding>, String) {
     (Vec::new(), format!("{n} packing lists declared"))
 }
 
+/// `DCP.AM.007`: a packing list or composition playlist in the package folder that the asset map does
+/// not list (a left-over or a second version of a document). A warning: the package still plays what the
+/// asset map lists, but a reader of the folder cannot tell which document is the delivered one. Only the
+/// folder itself is read (DCP packages are flat), files over the document limit and files that are no PKL
+/// or CPL are ignored.
+pub(crate) fn unlisted_documents(root: &std::path::Path, am: &AssetMap, limits: cfa4_dcp::Limits, max_documents: usize) -> (Vec<Finding>, String) {
+    let listed: BTreeSet<String> =
+        am.assets.iter().flat_map(|a| a.chunks.iter()).filter_map(|c| c.path.as_deref()).map(|p| p.trim_start_matches("./").to_string()).collect();
+    let entries = match std::fs::read_dir(root) {
+        Ok(e) => e,
+        Err(e) => return (vec![Finding::new(AM_UNLISTED, Status::Unchecked, format!("the package folder cannot be listed: {e}"))], String::new()),
+    };
+    let mut names: Vec<String> = entries
+        .flatten()
+        .filter(|e| e.file_type().is_ok_and(|t| t.is_file()))
+        .filter_map(|e| e.file_name().into_string().ok())
+        .filter(|n| n.to_ascii_lowercase().ends_with(".xml") && !crate::package::ASSET_MAP_NAMES.contains(&n.as_str()) && !listed.contains(n))
+        .collect();
+    names.sort();
+    let mut out = Vec::new();
+    let mut opened = 0usize;
+    for name in names {
+        opened += 1;
+        if opened > max_documents {
+            out.push(Finding::new(AM_UNLISTED, Status::Unchecked, "too many unlisted XML files; the rest were not opened"));
+            break;
+        }
+        let what = match cfa4_dcp::read(&root.join(&name), limits) {
+            Ok(cfa4_dcp::Document::PackingList(p)) => ("packing list", p.id),
+            Ok(cfa4_dcp::Document::Composition(c)) => ("composition playlist", c.id),
+            _ => continue,
+        };
+        let id = what.1.map_or(String::new(), |i| format!(" {i}"));
+        out.push(
+            Finding::new(AM_UNLISTED, Status::Warning, format!("the {}{id} is in the package folder but not in the asset map", what.0))
+                .at(Location::file(name))
+                .evidence("the asset map lists no chunk with this path"),
+        );
+    }
+    (out, "every packing list and composition playlist in the folder is in the asset map".to_string())
+}
+
 /// What the packing lists declare about one asset (the first declaration; later different ones are
 /// reported).
 struct Declared<'a> {

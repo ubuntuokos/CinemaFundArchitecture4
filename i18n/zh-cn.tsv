@@ -4599,6 +4599,12 @@
 	software backend: {reason}	软件后端：{reason}
 	Start studio	启动演播室
 	Stop studio	停止演播室
+	Live Studio	直播工作室
+	Live Studio…	直播工作室…
+	Scenes	场景
+	Sources	来源
+	Visible	可见
+	Add a scene, then a source to it.	先添加场景，再向其中添加来源。
 	Add Studio Scene	添加演播室场景
 	Live	直播
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
@@ -4975,3 +4981,27 @@
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 文件夹 (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 变形宽银幕, 6 Mbps, GOP 15, AC-3 192 kbps, 章节来自序列的章节标记
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 文件夹 (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 变形宽银幕, 6 Mbps, GOP 18, AC-3 192 kbps, 章节来自序列的章节标记
+
+# DCP package views (DCP-23)
+	Package	包
+	Composition	合成
+	Security	安全
+	Save HTML…	保存 HTML…
+	Asset map	资产映射
+	Packing list	装箱清单
+	Track file	轨道文件
+	Not a file	不是文件
+	Unsafe path	不安全的路径
+	Reel {n}	卷 {n}
+	Signed documents	已签名的文档
+	Encrypted assets	已加密的资产
+	Key ID: {id}	密钥 ID：{id}
+	Package structure unavailable: {error}	无法获取包结构：{error}
+	DNx decoding:	DNx 解码：
+	As detected from the file ({detected})	按文件检测结果 ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1（标准）
+	FFmpeg-compatible	兼容 FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg 读取某些 DNx 文件的方式与标准不同（4:4:4 颜色、反量化）。由 FFmpeg 编码的素材会被检测到；如果检测有误，请在此选择。
+	DNx Coding	DNx 编码
+	FFmpeg-compatible (for FFmpeg-based tools)	兼容 FFmpeg（用于基于 FFmpeg 的工具）
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	关：按 SMPTE ST 2019-1 编码。开：按 FFmpeg 写入 DNx 的方式编码，供基于 FFmpeg 的工具使用。

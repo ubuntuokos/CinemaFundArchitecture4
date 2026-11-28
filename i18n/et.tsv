@@ -4603,6 +4603,12 @@ export.summary	Low	madal
 	software backend: {reason}	tarkvaraline taustasüsteem: {reason}
 	Start studio	Käivita stuudio
 	Stop studio	Peata stuudio
+	Live Studio	Otsestuudio
+	Live Studio…	Otsestuudio…
+	Scenes	Stseenid
+	Sources	Allikad
+	Visible	Nähtav
+	Add a scene, then a source to it.	Lisa stseen ja seejärel allikas.
 	Add Studio Scene	Lisa stuudiostseen
 	Live	Otse
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
@@ -4979,3 +4985,27 @@ export.summary	Low	madal
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video kaust (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfne, 6 Mbps, GOP 15, AC-3 192 kbps, peatükid järjestuse peatükimarkeritest
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video kaust (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfne, 6 Mbps, GOP 18, AC-3 192 kbps, peatükid järjestuse peatükimarkeritest
+
+# DCP package views (DCP-23)
+	Package	Pakett
+	Composition	Kompositsioon
+	Security	Turvalisus
+	Save HTML…	Salvesta HTML…
+	Asset map	Varade kaart
+	Packing list	Pakkimisnimekiri
+	Track file	Rajafail
+	Not a file	Pole fail
+	Unsafe path	Ebaturvaline tee
+	Reel {n}	Rull {n}
+	Signed documents	Allkirjastatud dokumendid
+	Encrypted assets	Krüpteeritud varad
+	Key ID: {id}	Võtme ID: {id}
+	Package structure unavailable: {error}	Paketi struktuur pole saadaval: {error}
+	DNx decoding:	DNx-i dekodeerimine:
+	As detected from the file ({detected})	Nagu failist tuvastatud ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	FFmpegiga ühilduv
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg loeb mõnda DNx-faili standardist erinevalt (4:4:4 värvid, pöördkvantimine). FFmpegiga kodeeritud materjal tuvastatakse; valige siin, kui tuvastus on vale.
+	DNx Coding	DNx-i kodeerimine
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpegiga ühilduv (FFmpegil põhinevatele tööriistadele)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Väljas: kodeeritud SMPTE ST 2019-1 järgi. Sees: kodeeritud nii, nagu FFmpeg DNx-i kirjutab, FFmpegil põhinevatele tööriistadele.

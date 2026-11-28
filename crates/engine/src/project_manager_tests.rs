@@ -122,3 +122,59 @@ fn nested_subclip_keeps_its_whole_parent_chain_used() {
     assert!(used.contains(&outer) && used.contains(&inner) && used.contains(&items[0]), "{used:?}");
     let _ = std::fs::remove_dir_all(&root);
 }
+
+#[test]
+fn collect_can_also_pack_the_folder_into_a_zip() {
+    // KDN-45: `archive: "zip"` writes <destination>.zip next to the folder with the same files
+    let root = tmp_dir("pm-archive");
+    let (mut s, _, _) = project(&root);
+    let dest = root.join("Collected");
+    let d = dest.to_string_lossy().into_owned();
+    let bad = |s: &mut Session, extra: serde_json::Value| {
+        let mut p = json!({"destination": d, "dryRun": true});
+        p.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
+        s.execute("file.projectManager", p).is_err()
+    };
+    assert!(bad(&mut s, json!({"archive": "rar"})), "an unknown format is rejected");
+    assert!(bad(&mut s, json!({"archive": "zip", "archivePath": dest.join("in.zip").to_string_lossy()})), "the archive may not sit inside the folder");
+    let dry = s.execute("file.projectManager", json!({"destination": d, "dryRun": true, "archive": "zip"})).unwrap();
+    let zip = root.join("Collected.zip");
+    assert_eq!(dry["archive"], json!(zip.to_string_lossy()));
+    assert!(!zip.exists(), "a dry run writes nothing");
+    s.execute("file.projectManager", json!({"destination": d, "archive": "zip", "wait": true})).unwrap();
+    let jobs = s.execute("jobs.list", json!({})).unwrap();
+    assert!(jobs[0]["result"].get("error").is_none(), "{jobs}");
+    // the central directory names exactly the files the folder holds
+    let b = std::fs::read(&zip).unwrap();
+    let u16at = |o: usize| u16::from_le_bytes([b[o], b[o + 1]]) as usize;
+    let u32at = |o: usize| u32::from_le_bytes([b[o], b[o + 1], b[o + 2], b[o + 3]]) as usize;
+    let eocd = b.len() - 22;
+    assert_eq!(u32at(eocd), 0x0605_4b50);
+    let mut at = u32at(eocd + 16);
+    let mut got = Vec::new();
+    for _ in 0..u16at(eocd + 10) {
+        let (nl, el, cl) = (u16at(at + 28), u16at(at + 30), u16at(at + 32));
+        got.push((String::from_utf8(b[at + 46..at + 46 + nl].to_vec()).unwrap(), u32at(at + 24) as u64));
+        at += 46 + nl + el + cl;
+    }
+    let mut want: Vec<(String, u64)> = std::fs::read_dir(&dest)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().is_file())
+        .map(|e| (e.file_name().to_string_lossy().into_owned(), e.metadata().unwrap().len()))
+        .collect();
+    want.sort();
+    got.sort();
+    assert_eq!(got, want);
+    assert!(got.iter().any(|(n, _)| n.ends_with(".fcproj")));
+    // packing again refuses to replace the archive unless asked
+    assert!(s.execute("file.projectManager", json!({"destination": d, "archive": "zip", "overwrite": true, "wait": true})).is_ok());
+    assert!(
+        s.execute(
+            "file.projectManager",
+            json!({"destination": root.join("Other").to_string_lossy(), "archive": "tar", "archivePath": zip.to_string_lossy(), "wait": true})
+        )
+        .is_err()
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}

@@ -256,9 +256,9 @@ pub fn cid_name(cid: u32) -> String {
 
 /// A decoded (or to-be-encoded) picture: planar `u16` samples, rows packed without padding.
 ///
-/// For RGB streams (`rgb == true`) the planes `y`, `cb`, `cr` hold G, B and R: the coded channel
-/// order Ch1/Ch2/Ch3 as written by ffmpeg and read by its decoder (the standard's text names Ch1
-/// red; see the README).
+/// For RGB pictures (`rgb == true`) the planes `y`, `cb`, `cr` hold G, B and R, in every mode: the
+/// decoder and the encoder map them to the coded channels (Ch1/Ch2/Ch3 = R, G, B by SMPTE ST
+/// 2019-1 §6.3; G, B, R with [`DecodeOptions::ffmpeg_compat`] / `EncoderConfig::ffmpeg_compat`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Frame {
     pub width: u32,
@@ -322,3 +322,5 @@ impl Frame {
 }
 #[cfg(test)]
 mod ffmpeg_probe;
+#[cfg(test)]
+mod spec_tests;

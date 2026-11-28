@@ -209,6 +209,11 @@ pub fn poll(s: &mut Session) {
     }
 }
 
+/// The JSON of the latest report of `root`, when there is one (its SHA-256 names it in the repair log).
+pub(crate) fn latest_report_json(s: &Session, root: &str) -> Option<String> {
+    s.dcp_validation.reports.iter().find(|(r, _)| r == root).map(|(_, rep)| rep.to_json())
+}
+
 fn find<'a>(s: &'a Session, cmd: &str, root: &str) -> Result<&'a ValidationReport> {
     s.dcp_validation
         .reports

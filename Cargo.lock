@@ -1283,8 +1283,10 @@ dependencies = [
  "cfa4-export",
  "cfa4-ffmpeg",
  "cfa4-format",
+ "cfa4-frame",
  "cfa4-gpu",
  "cfa4-gstreamer",
+ "cfa4-hrtf",
  "cfa4-media",
  "cfa4-mpegts",
  "cfa4-mxf",
@@ -1476,6 +1478,7 @@ dependencies = [
  "roxmltree",
  "serde",
  "serde_json",
+ "sha2 0.11.1",
  "thiserror 2.0.21",
 ]
 
@@ -1576,6 +1579,7 @@ dependencies = [
  "cfa4-dcp-validate",
  "cfa4-dcpomatic",
  "cfa4-dng",
+ "cfa4-dnx",
  "cfa4-docpath",
  "cfa4-edit",
  "cfa4-export",
@@ -1901,6 +1905,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-hrtf"
+version = "0.10.0"
+dependencies = [
+ "cfa4-audio-dsp",
+ "cfa4-iab",
+ "cfa4-truehd",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-huffyuv"
 version = "0.10.0"
 dependencies = [
@@ -2069,6 +2083,7 @@ dependencies = [
  "cfa4-realaudio",
  "cfa4-testkit",
  "cfa4-time",
+ "cfa4-truehd",
  "cfa4-truespeech",
  "cfa4-twinvq",
  "cfa4-yamaha-oki",
@@ -2085,6 +2100,17 @@ name = "cfa4-metrics"
 version = "0.10.0"
 dependencies = [
  "cfa4-color",
+]
+
+[[package]]
+name = "cfa4-mi"
+version = "0.10.0"
+dependencies = [
+ "cfa4-time",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

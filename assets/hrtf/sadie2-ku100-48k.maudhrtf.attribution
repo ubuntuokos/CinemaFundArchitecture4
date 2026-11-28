@@ -1,0 +1,8 @@
+asset:        sadie2-ku100-48k.maudhrtf
+title:        SADIE II HRTF set, subject D1 (Neumann KU100 dummy head), 48 kHz, ring-resampled minimum-phase responses
+author:       University of York, SADIE II project (C. Armstrong, L. Thresh, D. Murphy, G. Kearney); converted by Maul Audio (Sirac Ozmen)
+source:       SADIE II Database, https://www.york.ac.uk/sadie-project/ (Zenodo record 12092466); file taken unchanged from Maul Audio, https://github.com/Rawframe-Project/maul-audio commit aeb383458250759f92a3e724a5bd006505e45b4d, data/hrtf/sadie2-ku100-48k.maudhrtf (sha256 078fa52db8d39fd5bff5875ce888f9d3dcd24b06f9ecf3beaf6b7e7325784d41), written by its tools/sofa_to_maudhrtf.py (MIT)
+license:      Apache-2.0
+license-file: assets/hrtf/LICENSE-Apache-2.0-SADIE-II.txt
+added:        2026-11-27 by Claude (agent) for István (CFA4-BINAURAL-MONITOR-001 B-00)
+notes:        Modified from the SADIE II SOFA data by the Maul conversion: each response minimum-phase, cut to 128 taps with its onset kept as a delay, directions resampled onto 5-degree elevation rings (assets/hrtf/sadie2-ku100.notice.txt). The file embeds this notice in its `lics` field. Built-in default HRTF of the binaural monitor (decision 1 of the plan). Reference: Armstrong et al., "A Perceptual Evaluation of Individual and Non-Individual HRTFs: A Case Study of the SADIE II Database", Applied Sciences 8(11), 2029, 2018, doi:10.3390/app8112029.

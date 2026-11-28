@@ -40,7 +40,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             "clip.interpretFootage",
             "Interpret Footage…",
             &["Clip", "Modify"],
-            r#"{"items":[id]?,"colorSpace":"auto"|"<color space id>"?,"pixelAspect":[num,den]|"file"?,"auroDecoding":bool?}"#,
+            r#"{"items":[id]?,"colorSpace":"auto"|"<color space id>"?,"pixelAspect":[num,den]|"file"?,"auroDecoding":bool?,"dnxConventions":"auto"|"smpte"|"ffmpeg"?}"#,
             has_footage,
             interpret,
         ),
@@ -55,6 +55,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         ),
         query("media.colorInfo", "Media Colour Info", r#"{"item":id}"#, color_info),
         query("media.auroInfo", "Media Auro-3D Info", r#"{"item":id}"#, auro_info),
+        query("media.dnxInfo", "Media DNx Info", r#"{"item":id}"#, dnx_info),
         spec("lut.import", "Import LUT…", &[], r#"{"path":str,"name":str?}"#, always, import),
         query("lut.list", "List LUTs", "{}", list),
         spec("lut.remove", "Remove LUT", &[], r#"{"id":str}"#, always, remove),
@@ -320,8 +321,16 @@ fn interpret(s: &mut Session, p: &Value) -> Result<Value> {
     };
     // Auro-3D on / off (#323): the audio the item then plays, from the file opened afresh
     let auro = bool_p(p, "auroDecoding");
-    if cs.is_none() && par.is_none() && auro.is_none() {
-        return Err(bad(CMD, "need `colorSpace` (auto or a colour space id), `pixelAspect` or `auroDecoding`"));
+    // DNx by SMPTE ST 2019-1 or as FFmpeg reads it (CFA4-DNX-SPEC-001 R5, D2); `auto` = as detected
+    let dnx = match str_p(p, "dnxConventions") {
+        None => None,
+        Some("auto") => Some(None),
+        Some(c) => {
+            Some(Some(cfa4_project::DnxConventions::parse(c).ok_or_else(|| bad(CMD, format!("dnxConventions must be auto, smpte or ffmpeg, not `{c}`")))?))
+        }
+    };
+    if cs.is_none() && par.is_none() && auro.is_none() && dnx.is_none() {
+        return Err(bad(CMD, "need `colorSpace` (auto or a colour space id), `pixelAspect`, `auroDecoding` or `dnxConventions`"));
     }
     let mut audio: Vec<(ItemId, Vec<cfa4_media::AudioStreamInfo>)> = Vec::new();
     if let Some(on) = auro {
@@ -346,7 +355,9 @@ fn interpret(s: &mut Session, p: &Value) -> Result<Value> {
         }
     }
     // only the Auro-3D setting, and no selected item is a carrier it changes: no undo step
-    let unchanged = cs.is_none() && par.is_none() && audio.is_empty();
+    let dnx_changes =
+        dnx.is_some_and(|c| items.iter().any(|i| s.project.item(*i).and_then(|it| it.as_media()).is_some_and(|m| m.interpret.dnx_conventions != c)));
+    let unchanged = cs.is_none() && par.is_none() && audio.is_empty() && !dnx_changes;
     if !unchanged {
         s.edit("Interpret Footage", |pr, _| {
             for i in &items {
@@ -356,6 +367,9 @@ fn interpret(s: &mut Session, p: &Value) -> Result<Value> {
                     }
                     if let Some(par) = par {
                         m.interpret.par = par;
+                    }
+                    if let Some(c) = dnx {
+                        m.interpret.dnx_conventions = c;
                     }
                     if let Some((_, streams)) = audio.iter().find(|(id, _)| id == i) {
                         m.interpret.auro_as_carrier = auro == Some(false);
@@ -399,6 +413,7 @@ fn interpret(s: &mut Session, p: &Value) -> Result<Value> {
         "colorSpace": first.and_then(|m| m.interpret.color_space).map(|c| c.id()).unwrap_or("auto"),
         "pixelAspect": first.map(|m| m.pixel_aspect()),
         "auroDecoding": first.map(|m| !m.interpret.auro_as_carrier),
+        "dnxConventions": first.map(|m| m.interpret.dnx_conventions.map_or("auto", |c| c.id())),
     }))
 }
 
@@ -435,6 +450,24 @@ fn auro_info(s: &mut Session, p: &Value) -> Result<Value> {
     // as carrier the item's source is the plain file: only the setting says it is one
     let carrier = !decoding || s.media.full_res_source(&s.project, id, &*s.services).and_then(|src| src.carrier()).is_some();
     Ok(json!({"carrier": carrier, "decoding": decoding, "audio": m.info.audio().map(|a| a.codec.clone())}))
+}
+
+/// `media.dnxInfo`: whether the item's video is DNx (VC-3), the conventions Interpret Footage
+/// chose (`auto` = as detected), the ones detected from the container, and the ones it decodes
+/// with (CFA4-DNX-SPEC-001 R5).
+fn dnx_info(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "media.dnxInfo";
+    let id = item_p(p, "item").ok_or_else(|| bad(CMD, "need `item`"))?;
+    let Some(ItemKind::Media(m)) = s.project.item(id).map(|i| &i.kind) else { return Err(bad(CMD, "not a media item")) };
+    let setting = m.interpret.dnx_conventions;
+    let detected = s.media.full_res_source(&s.project, id, &*s.services).and_then(|src| src.dnx_ffmpeg_detected());
+    let id_of = |ffmpeg: bool| if ffmpeg { "ffmpeg" } else { "smpte" };
+    Ok(json!({
+        "dnx": detected.is_some(),
+        "setting": setting.map_or("auto", |c| c.id()),
+        "detected": detected.map(id_of),
+        "effective": detected.map(|d| setting.map_or(id_of(d), |c| c.id())),
+    }))
 }
 
 fn color_info(s: &mut Session, p: &Value) -> Result<Value> {

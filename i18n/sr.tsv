@@ -4601,6 +4601,12 @@ export.summary	Low	низак
 	software backend: {reason}	софтверска позадина: {reason}
 	Start studio	Покрени студио
 	Stop studio	Заустави студио
+	Live Studio	Студио уживо
+	Live Studio…	Студио уживо…
+	Scenes	Сцене
+	Sources	Извори
+	Visible	Видљиво
+	Add a scene, then a source to it.	Додајте сцену, а затим извор.
 	Add Studio Scene	Додај сцену студија
 	Live	Уживо
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
@@ -4977,3 +4983,27 @@ export.summary	Low	низак
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video фасцикла (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 анаморфно, 6 Mbps, GOP 15, AC-3 192 kbps, поглавља из маркера поглавља секвенце
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video фасцикла (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 анаморфно, 6 Mbps, GOP 18, AC-3 192 kbps, поглавља из маркера поглавља секвенце
+
+# DCP package views (DCP-23)
+	Package	Пакет
+	Composition	Композиција
+	Security	Безбедност
+	Save HTML…	Сачувај HTML…
+	Asset map	Мапа ресурса
+	Packing list	Списак пакета
+	Track file	Датотека записа
+	Not a file	Није датотека
+	Unsafe path	Небезбедна путања
+	Reel {n}	Колут {n}
+	Signed documents	Потписани документи
+	Encrypted assets	Шифровани ресурси
+	Key ID: {id}	ИД кључа: {id}
+	Package structure unavailable: {error}	Структура пакета није доступна: {error}
+	DNx decoding:	DNx декодирање:
+	As detected from the file ({detected})	Према препознавању из датотеке ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (стандард)
+	FFmpeg-compatible	Компатибилно са FFmpeg-ом
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg неке DNx датотеке чита другачије од стандарда (боје 4:4:4, инверзна квантизација). Снимак кодиран FFmpeg-ом се препознаје; изаберите овде ако је препознавање погрешно.
+	DNx Coding	DNx кодирање
+	FFmpeg-compatible (for FFmpeg-based tools)	Компатибилно са FFmpeg-ом (за алате засноване на FFmpeg-у)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Искључено: кодирано према SMPTE ST 2019-1. Укључено: кодирано онако како FFmpeg записује DNx, за алате засноване на FFmpeg-у.

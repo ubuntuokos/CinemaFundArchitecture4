@@ -28,6 +28,7 @@ pub mod credits;
 pub mod dcp_export;
 pub mod dcp_import;
 pub mod dcp_package;
+pub mod dcp_repair;
 pub mod dcp_validation;
 mod dcpomatic;
 pub mod delivery_check;
@@ -67,6 +68,7 @@ pub mod perf;
 pub mod presets;
 pub mod previews;
 pub mod program_overlay;
+pub mod project_archive;
 pub mod project_manager;
 pub mod project_panel;
 pub mod project_tools;
@@ -558,6 +560,8 @@ pub struct Session {
     pub qc: qc::QcSession,
     /// DCP validation jobs and the latest report of each package (`dcp.validate*` commands).
     pub dcp_validation: dcp_validation::DcpValidationSession,
+    /// Snapshot and verification jobs of DCP repairs (`dcp.snapshot`, `dcp.manifest.verify`).
+    pub dcp_repair: dcp_repair::DcpRepairSession,
     /// Exports run a batch at a time by [`Session::pump_jobs`] (hosts without threads: web).
     pub stepped: Vec<SteppedJob>,
     /// Speech recogniser for `transcript.generate` (None = the Whisper model named by the command,
@@ -666,6 +670,7 @@ impl Session {
             background: Default::default(),
             qc: Default::default(),
             dcp_validation: Default::default(),
+            dcp_repair: Default::default(),
             stepped: Vec::new(),
             transcriber: None,
             log: Default::default(),
@@ -1432,6 +1437,8 @@ mod contact_sheet_tests;
 #[cfg(test)]
 mod dcp_import_tests;
 #[cfg(test)]
+mod dnx_conventions_tests;
+#[cfg(test)]
 mod effect_toggle_tests;
 #[cfg(test)]
 mod effects_inspect_tests;
@@ -1505,6 +1512,8 @@ mod place_items_tests;
 mod presets_tests;
 #[cfg(test)]
 mod previews_tests;
+#[cfg(test)]
+mod project_archive_tests;
 #[cfg(test)]
 mod project_manager_tests;
 #[cfg(test)]
