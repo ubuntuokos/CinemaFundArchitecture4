@@ -135,6 +135,12 @@ fn write_report(cap: &Capture) {
 #[test]
 fn the_engine_render_of_the_flash_and_beep_fixture_stays_in_sync() {
     let Some(path) = fixture() else {
+        // The fixture is H.264 (libx264), which CFA4's FFmpeg never has: a plain skip, even in CI.
+        if let Some(ff) = cfa4_testkit::ffmpeg()
+            && !cfa4_testkit::encoders_or_skip("F0V sync render fixture", &ff, &["libx264"])
+        {
+            return;
+        }
         eprintln!("SKIPPED: sync_flash_beep.mkv could not be generated (ffmpeg missing?)");
         assert!(!require_oracles(), "CFA4_REQUIRE_ORACLES=1 and the sync fixture is missing");
         return;
