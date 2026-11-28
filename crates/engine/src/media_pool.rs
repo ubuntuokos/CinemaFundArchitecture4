@@ -87,17 +87,26 @@ pub const PROBE_WHOLE_FILE_MAX: u64 = 64 * 1024 * 1024;
 /// without a key). A generator's key holds its parameters, so a Color Matte whose color changes
 /// (or comes back with undo) is generated again.
 pub fn media_key(m: &MediaClip) -> String {
-    match &m.media {
+    let key = match &m.media {
         MediaRef::File { path } if m.offline => format!("offline:{path}"),
         MediaRef::File { path } if m.interpret.auro_as_carrier => format!("carrier:{path}"),
         MediaRef::File { path } => format!("file:{path}"),
         MediaRef::Generator(g) => format!("generator:{g:?}"),
+    };
+    // Interpret Footage ▸ DNx conventions: a source opened afresh decodes with the other ones
+    match m.interpret.dnx_conventions {
+        Some(c) => format!("{key}#dnx-{}", c.id()),
+        None => key,
     }
 }
 
 /// `src` as `m` interprets it: an Auro-3D carrier played as its own channels when Interpret
-/// Footage turned Auro-3D off (#323).
+/// Footage turned Auro-3D off (#323), and DNx video decoded with the conventions it chose
+/// (CFA4-DNX-SPEC-001 R5). `src` is freshly opened: no frame of it was decoded yet.
 pub fn interpreted(m: &MediaClip, src: SharedSource) -> SharedSource {
+    if let Some(c) = m.interpret.dnx_conventions {
+        src.set_dnx_conventions(Some(c == cfa4_project::DnxConventions::Ffmpeg));
+    }
     if m.interpret.auro_as_carrier { src.carrier().unwrap_or(src) } else { src }
 }
 
@@ -431,6 +440,10 @@ impl MediaPool {
     fn proxy_source(&self, item: ItemId, path: &str, m: &MediaClip, services: &dyn Services) -> Option<SharedSource> {
         // Interpret Footage > Auro-3D off plays a proxy's carrier too (#323), so the setting is in the key
         let key = if m.interpret.auro_as_carrier { format!("proxy-carrier:{path}") } else { format!("proxy:{path}") };
+        let key = match m.interpret.dnx_conventions {
+            Some(c) => format!("{key}#dnx-{}", c.id()),
+            None => key,
+        };
         if let Some((k, s)) = self.proxies.read().unwrap_or_else(|e| e.into_inner()).get(&item)
             && *k == key
         {
@@ -609,6 +622,15 @@ impl MediaSource for UnsupportedAsSlate {
     fn missing_keys(&self) -> Vec<String> {
         self.inner.missing_keys()
     }
+    fn object_audio(&self, start: i64, frames: usize) -> Option<cfa4_media::Result<cfa4_media::ObjectAudio>> {
+        self.inner.object_audio(start, frames)
+    }
+    fn set_dnx_conventions(&self, ffmpeg: Option<bool>) {
+        self.inner.set_dnx_conventions(ffmpeg);
+    }
+    fn dnx_ffmpeg_detected(&self) -> Option<bool> {
+        self.inner.dnx_ffmpeg_detected()
+    }
 }
 
 /// Consecutive failed video frames after which a monitor treats a source as damaged. A single
@@ -660,6 +682,15 @@ impl MediaSource for DamagedAsSlate {
     fn missing_keys(&self) -> Vec<String> {
         self.inner.missing_keys()
     }
+    fn object_audio(&self, start: i64, frames: usize) -> Option<cfa4_media::Result<cfa4_media::ObjectAudio>> {
+        self.inner.object_audio(start, frames)
+    }
+    fn set_dnx_conventions(&self, ffmpeg: Option<bool>) {
+        self.inner.set_dnx_conventions(ffmpeg);
+    }
+    fn dnx_ffmpeg_detected(&self) -> Option<bool> {
+        self.inner.dnx_ffmpeg_detected()
+    }
 }
 
 /// A proxy standing in for its full-resolution media: reports the full-resolution info and hands
@@ -702,6 +733,9 @@ impl MediaSource for ProxySource {
     }
     fn audio_stream(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> cfa4_media::Result<AudioBuffer> {
         self.audio_from.as_ref().unwrap_or(&self.proxy).audio_stream(stream, start, frames, sample_rate)
+    }
+    fn object_audio(&self, start: i64, frames: usize) -> Option<cfa4_media::Result<cfa4_media::ObjectAudio>> {
+        self.audio_from.as_ref().unwrap_or(&self.proxy).object_audio(start, frames)
     }
 }
 

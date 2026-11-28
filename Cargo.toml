@@ -89,6 +89,7 @@ cfa4-dnx = { path = "crates/dnx" }
 cfa4-cineform = { path = "crates/cineform" }
 cfa4-j2k = { path = "crates/j2k" }
 cfa4-iab = { path = "crates/iab" }
+cfa4-hrtf = { path = "crates/hrtf" }
 cfa4-dcp = { path = "crates/dcp" }
 cfa4-dcp-validate = { path = "crates/dcp-validate" }
 cfa4-dcp-inspect = { path = "crates/dcp-inspect" }
@@ -368,6 +369,10 @@ opt-level = 3
 
 # Audio effects: realtime-factor tests and long convolution / spectral runs.
 [profile.dev.package.cfa4-audio-dsp]
+opt-level = 3
+
+# Binaural rendering: realtime and long sweep tests.
+[profile.dev.package.cfa4-hrtf]
 opt-level = 3
 
 [profile.dev.package.cfa4-mxf]

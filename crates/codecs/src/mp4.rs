@@ -62,6 +62,8 @@ pub struct Mp4Source {
     audios: Vec<Mp4Audio>,
     /// LCEVC in the video track's T.35 SEI that is decoded on top of the base.
     lcevc: Option<(cfa4_lcevc::BaseCodec, cfa4_lcevc::Framing)>,
+    /// Interpret Footage ▸ DNx conventions.
+    dnx: crate::video::DnxChoice,
 }
 
 pub fn sniff(b: &[u8]) -> bool {
@@ -447,7 +449,17 @@ impl Mp4Source {
             let t = &file.tracks[i];
             crate::gop::snap_coarse_units(t.samples.iter().map(|s| s.pts.saturating_add(t.edit_offset)), 1, i64::from(t.timescale), v.frame_rate)
         });
-        Ok(Self { info, bytes, file, vtrack, video: GopCache::new(explicit_color).with_rotation(rotation).with_crop(aperture), snap, audios, lcevc })
+        Ok(Self {
+            info,
+            bytes,
+            file,
+            vtrack,
+            video: GopCache::new(explicit_color).with_rotation(rotation).with_crop(aperture),
+            snap,
+            audios,
+            lcevc,
+            dnx: Default::default(),
+        })
     }
 
     fn read(&self, track: usize, i: usize) -> crate::Result<Vec<u8>> {
@@ -530,6 +542,15 @@ impl Mp4Source {
 }
 
 /// The MP4 video track as a [`VideoSamples`] table.
+/// For a DNx sample entry: whether FFmpeg encoded it, so it follows FFmpeg's conventions
+/// (CFA4-DNX-SPEC-001 R5). The encoder's compressor name says so (`Lavc…`, kept on a stream
+/// copy); the muxer's `©too` does not, it is on rewrapped standard streams too. `None` for other
+/// codings.
+fn dnx_detected(entry: &cfa4_isobmff::SampleEntry) -> Option<bool> {
+    matches!(entry.codec, cfa4_isobmff::CodecConfig::Dnx { .. })
+        .then(|| crate::video::encoded_by_ffmpeg(entry.video.as_ref().map_or("", |v| v.compressor_name.as_str())))
+}
+
 struct Mp4Video<'a> {
     src: &'a Mp4Source,
     track: usize,
@@ -552,13 +573,26 @@ impl VideoSamples for Mp4Video<'_> {
         self.src.read(self.track, i)
     }
     fn make_decoder(&self) -> crate::Result<Box<dyn VideoDecoder>> {
-        Ok(crate::lcevc::LcevcDecoder::wrap(make_video_decoder(&self.src.file.tracks[self.track].entries[0])?, self.src.lcevc))
+        let entry = &self.src.file.tracks[self.track].entries[0];
+        if let Some(detected) = dnx_detected(entry) {
+            let dnx = Box::new(crate::video::DnxDecoder { ffmpeg_compat: self.src.dnx.ffmpeg(detected) });
+            return Ok(crate::lcevc::LcevcDecoder::wrap(dnx, self.src.lcevc));
+        }
+        Ok(crate::lcevc::LcevcDecoder::wrap(make_video_decoder(entry)?, self.src.lcevc))
     }
 }
 
 impl MediaSource for Mp4Source {
     fn info(&self) -> &MediaInfo {
         &self.info
+    }
+
+    fn set_dnx_conventions(&self, ffmpeg: Option<bool>) {
+        self.dnx.set(ffmpeg);
+    }
+
+    fn dnx_ffmpeg_detected(&self) -> Option<bool> {
+        dnx_detected(self.file.tracks.get(self.vtrack?)?.entries.first()?)
     }
 
     fn video_frame(&self, req: FrameRequest) -> Result<Arc<VideoFrame>, MediaError> {

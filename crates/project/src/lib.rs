@@ -188,6 +188,38 @@ pub struct Interpretation {
     /// layout (#323).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub auro_as_carrier: bool,
+    /// Interpret Footage ▸ DNx conventions (CFA4-DNX-SPEC-001 R5, D2): decode the item's DNx
+    /// (VC-3) video by SMPTE ST 2019-1 or as FFmpeg does. None = as detected from the container
+    /// (FFmpeg's conventions for video FFmpeg encoded).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dnx_conventions: Option<DnxConventions>,
+}
+
+/// How DNx (VC-3) video is decoded: SMPTE ST 2019-1 (inverse quantisation by equation 8.1, the
+/// standard's 4:4:4 signalling) or FFmpeg's reading of it (CFA4-DNX-SPEC-001).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum DnxConventions {
+    Smpte,
+    Ffmpeg,
+}
+
+impl DnxConventions {
+    /// The id the commands use: `smpte` or `ffmpeg`.
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Smpte => "smpte",
+            Self::Ffmpeg => "ffmpeg",
+        }
+    }
+
+    pub fn parse(id: &str) -> Option<Self> {
+        match id {
+            "smpte" => Some(Self::Smpte),
+            "ffmpeg" => Some(Self::Ffmpeg),
+            _ => None,
+        }
+    }
 }
 
 /// Modify ▸ Audio Channels: the clip channel format and, per audio clip, the source channels it
