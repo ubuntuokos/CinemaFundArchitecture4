@@ -4981,3 +4981,19 @@
 	DNx Coding	DNx 编码
 	FFmpeg-compatible (for FFmpeg-based tools)	兼容 FFmpeg（用于基于 FFmpeg 的工具）
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	关：按 SMPTE ST 2019-1 编码。开：按 FFmpeg 写入 DNx 的方式编码，供基于 FFmpeg 的工具使用。
+	Loading HRTF…	正在加载 HRTF…
+	Headphones (Binaural)	耳机（双耳）
+	Binaural	双耳
+	{layout} · binaural	{layout} · 双耳
+	{source} · {n} objects · binaural	{source} · {n} 个对象 · 双耳
+	Headphones: {error}. Playing through the speakers.	耳机：{error}。改由扬声器播放。
+	Headphones	耳机
+	Monitoring	监听
+	Speakers	扬声器
+	HRTF set	HRTF 集
+	Built-in (SADIE II KU100)	内置（SADIE II KU100）
+	HRTF sets (*.sofa *.maudhrtf)	HRTF 集 (*.sofa *.maudhrtf)
+	Room	房间
+	Little	少
+	LFE level	LFE 电平
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	耳机通过 HRTF 集，从你周围的原始位置播放混音，或剪辑的 Dolby Atmos / IAB 对象。导出不受影响。

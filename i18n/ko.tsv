@@ -4977,3 +4977,19 @@
 	DNx Coding	DNx 인코딩
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg 호환(FFmpeg 기반 도구용)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	끔: SMPTE ST 2019-1에 따라 인코딩합니다. 켬: FFmpeg가 DNx를 쓰는 방식으로 인코딩합니다(FFmpeg 기반 도구용).
+	Loading HRTF…	HRTF 불러오는 중…
+	Headphones (Binaural)	헤드폰(바이노럴)
+	Binaural	바이노럴
+	{layout} · binaural	{layout} · 바이노럴
+	{source} · {n} objects · binaural	{source} · 오브젝트 {n}개 · 바이노럴
+	Headphones: {error}. Playing through the speakers.	헤드폰: {error}. 스피커로 재생합니다.
+	Headphones	헤드폰
+	Monitoring	모니터링
+	Speakers	스피커
+	HRTF set	HRTF 세트
+	Built-in (SADIE II KU100)	내장 (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF 세트 (*.sofa *.maudhrtf)
+	Room	룸
+	Little	적게
+	LFE level	LFE 레벨
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	헤드폰은 HRTF 세트로 믹스 또는 클립의 Dolby Atmos·IAB 오브젝트를 주변의 원래 위치에서 재생합니다. 내보내기는 바뀌지 않습니다.

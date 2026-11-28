@@ -4985,3 +4985,19 @@ export.summary	Low	తక్కువ
 	DNx Coding	DNx ఎన్‌కోడింగ్
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg అనుకూలం (FFmpeg ఆధారిత సాధనాల కోసం)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	ఆఫ్: SMPTE ST 2019-1 ప్రకారం ఎన్‌కోడ్ అవుతుంది. ఆన్: FFmpeg DNx ను రాసే విధంగా ఎన్‌కోడ్ అవుతుంది, FFmpeg ఆధారిత సాధనాల కోసం.
+	Loading HRTF…	HRTF లోడ్ అవుతోంది…
+	Headphones (Binaural)	హెడ్‌ఫోన్లు (బైనారల్)
+	Binaural	బైనారల్
+	{layout} · binaural	{layout} · బైనారల్
+	{source} · {n} objects · binaural	{source} · {n} ఆబ్జెక్టులు · బైనారల్
+	Headphones: {error}. Playing through the speakers.	హెడ్‌ఫోన్లు: {error}. శబ్దం స్పీకర్లలో వస్తోంది.
+	Headphones	హెడ్‌ఫోన్లు
+	Monitoring	మానిటరింగ్
+	Speakers	స్పీకర్లు
+	HRTF set	HRTF సెట్
+	Built-in (SADIE II KU100)	అంతర్నిర్మిత (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF సెట్లు (*.sofa *.maudhrtf)
+	Room	గది
+	Little	కొంచెం
+	LFE level	LFE స్థాయి
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	హెడ్‌ఫోన్లు HRTF సెట్ ద్వారా మిక్స్‌ను లేదా క్లిప్ యొక్క Dolby Atmos లేదా IAB ఆబ్జెక్టులను మీ చుట్టూ వాటి స్థానాల నుండి వినిపిస్తాయి. ఎగుమతులు మారవు.

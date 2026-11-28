@@ -4986,3 +4986,19 @@ export.summary	Low	ниско
 	DNx Coding	Кодиране на DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Съвместимо с FFmpeg (за инструменти на базата на FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Изкл.: кодиране по SMPTE ST 2019-1. Вкл.: кодиране както FFmpeg записва DNx, за инструменти, изградени върху FFmpeg.
+	Loading HRTF…	Зареждане на HRTF…
+	Headphones (Binaural)	Слушалки (бинаурално)
+	Binaural	Бинаурално
+	{layout} · binaural	{layout} · бинаурално
+	{source} · {n} objects · binaural	{source} · {n} обекта · бинаурално
+	Headphones: {error}. Playing through the speakers.	Слушалки: {error}. Звукът е през високоговорителите.
+	Headphones	Слушалки
+	Monitoring	Мониторинг
+	Speakers	Високоговорители
+	HRTF set	HRTF набор
+	Built-in (SADIE II KU100)	Вграден (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF набори (*.sofa *.maudhrtf)
+	Room	Помещение
+	Little	Малко
+	LFE level	Ниво на LFE
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Слушалките възпроизвеждат миксa или Dolby Atmos/IAB обектите на клипа от техните места около вас чрез HRTF набора. Експортите не се променят.

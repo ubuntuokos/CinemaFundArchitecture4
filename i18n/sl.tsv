@@ -4986,3 +4986,19 @@ export.summary	Low	nizka
 	DNx Coding	Kodiranje DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Združljivo s FFmpeg (za orodja na osnovi FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Izklopljeno: kodirano po SMPTE ST 2019-1. Vklopljeno: kodirano tako, kot FFmpeg zapisuje DNx, za orodja na osnovi FFmpeg.
+	Loading HRTF…	Nalaganje HRTF…
+	Headphones (Binaural)	Slušalke (binavralno)
+	Binaural	Binavralno
+	{layout} · binaural	{layout} · binavralno
+	{source} · {n} objects · binaural	{source} · predmetov: {n} · binavralno
+	Headphones: {error}. Playing through the speakers.	Slušalke: {error}. Zvok se predvaja po zvočnikih.
+	Headphones	Slušalke
+	Monitoring	Poslušanje
+	Speakers	Zvočniki
+	HRTF set	Nabor HRTF
+	Built-in (SADIE II KU100)	Vgrajen (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	Nabori HRTF (*.sofa *.maudhrtf)
+	Room	Prostor
+	Little	Malo
+	LFE level	Raven LFE
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Slušalke prek nabora HRTF predvajajo miks ali predmete Dolby Atmos ali IAB posnetka z njihovih mest okoli vas. Izvozi se ne spremenijo.

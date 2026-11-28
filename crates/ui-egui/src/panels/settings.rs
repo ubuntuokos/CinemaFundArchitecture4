@@ -553,12 +553,13 @@ fn draw_field(app: &mut Cfa4App, ui: &mut Ui, d: &mut SettingsDraft, f: &Field) 
                         put(&mut d.values, f.key, json!(v));
                     }
                 }
-                Kind::Text | Kind::Font | Kind::Path => {
+                Kind::Text | Kind::Font | Kind::Path | Kind::File { .. } => {
                     field_label(ui, f.label);
                     let mut s = choice_text(&cur);
                     let hint = match f.kind {
                         Kind::Path => tl!("Default location"),
                         Kind::Font => tl!("Font family"),
+                        Kind::File { empty, .. } => empty,
                         _ => "",
                     };
                     let browse = tl!("Browse…");

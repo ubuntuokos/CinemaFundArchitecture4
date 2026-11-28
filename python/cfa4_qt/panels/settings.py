@@ -719,6 +719,26 @@ class PreferencesDialog(QDialog):
 
                 b.clicked.connect(browse)
                 h.addWidget(b)
+        elif t == "file":
+            h.addWidget(field_label(label, row, self.label_w))
+            w = QLineEdit(choice_text(cur), row)
+            w.setObjectName(f"settings.{key}")
+            w.setPlaceholderText(tr(str(k.get("empty") or "")))
+            w.setMaximumWidth(300)
+            w.setClearButtonEnabled(True)
+            w.textChanged.connect(lambda s, key=key: self.set_value(key, s))
+            h.addWidget(w)
+            b = QPushButton(tr("Browse…"), row)
+            b.setObjectName(f"settings.{key}.browse")
+            b.setAutoDefault(False)
+
+            def pick(_c: bool = False, edit: QLineEdit = w, flt: str = str(k.get("filter") or "")) -> None:
+                path, _f = QFileDialog.getOpenFileName(self, tr("Browse…"), edit.text(), tr(flt) if flt else "")
+                if path:
+                    edit.setText(path)
+
+            b.clicked.connect(pick)
+            h.addWidget(b)
         elif t == "color":
             h.addWidget(field_label(label, row, self.label_w))
             w = self._colour(row, key)

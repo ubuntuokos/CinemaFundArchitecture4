@@ -37,6 +37,7 @@ from PySide6.QtWidgets import (
 
 from . import __version__, crash, dock_commands, theme
 from .gesture_hud import GestureLayer
+from .headphones import monitor_param as headphone_monitor
 from .commands import Command, CommandRegistry, qt_shortcut
 from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
 from .dock_gutters import DockGutters
@@ -333,6 +334,7 @@ class MainWindow(QMainWindow):
             mon.run.connect(self.run_preset)
             mon.message.connect(lambda m: (self.events.log(m, error=True), self.statusBar().showMessage(m, 6000)))
             mon.status.connect(lambda m: self.statusBar().showMessage(m, 6000))
+            mon.headphones_toggled.connect(self.set_headphones)
             mon.program_peer = self.monitor
         self.meters = AudioMetersPanel(self)
         self.meters.watch(self.monitor, self.source_monitor)
@@ -1772,8 +1774,17 @@ class MainWindow(QMainWindow):
             self.monitor.set_audio_output(name)
             self.source_monitor.set_audio_output(name)
             self.tts.audio_output = name
+            phones = headphone_monitor(value if isinstance(value, dict) else {})
+            self.monitor.set_headphones(phones)
+            self.source_monitor.set_headphones(phones)
 
         self.engine.execute("prefs.get", {"key": "audioHardware"}, on_reply=got)
+
+    def set_headphones(self, on: bool) -> None:
+        """The monitors' headphone button: Settings ▸ Audio Hardware ▸ Monitoring, saved as any
+        setting (shared with egui), then played."""
+        value = "headphones" if on else "speakers"
+        self.engine.execute("prefs.set", {"key": "audioHardware.monitoring", "value": value}, on_reply=lambda _r, _d: self.load_audio_output())
 
     def _settings_applied(self, changes: dict[str, Any]) -> None:
         self.load_appearance()
