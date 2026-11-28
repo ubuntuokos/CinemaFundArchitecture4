@@ -2485,6 +2485,7 @@ dependencies = [
 name = "cfa4-store"
 version = "0.10.0"
 dependencies = [
+ "cfa4-mi",
  "cfa4-route",
  "cfa4-tasks",
  "deadpool-postgres",

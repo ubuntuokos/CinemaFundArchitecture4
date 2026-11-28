@@ -26,6 +26,7 @@ pub mod backend;
 pub mod cache;
 pub mod dbtoml;
 pub mod listen;
+pub mod mi;
 pub mod migrate;
 pub mod mirror;
 pub mod outbox;
@@ -360,6 +361,11 @@ impl Store {
     /// The AI job store, model registry and licence acceptances in the `ai` schema.
     pub fn ai(&self) -> ai::AiStore {
         ai::AiStore::new(self.clone())
+    }
+
+    /// The Media Intelligence index in the `mi` schema.
+    pub fn mi(&self) -> mi::MiStore {
+        mi::MiStore::new(self.clone())
     }
 
     /// The cache index in the `cache` schema.

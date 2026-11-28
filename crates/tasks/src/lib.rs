@@ -36,6 +36,7 @@
 pub mod budget;
 pub mod class;
 pub mod gpumem;
+pub mod index;
 pub mod journal;
 pub mod manager;
 pub mod monitor;
@@ -48,6 +49,7 @@ mod system;
 
 pub use budget::{Budget, BudgetSettings, GpuBudget, GpuExcluded};
 pub use class::{AiFloor, FloorReason, RamProfile, ai_floor, ram_profile};
+pub use index::{IndexJob, IndexStage};
 pub use journal::TaskJournal;
 pub use manager::{Class, Denied, GpuRequest, Grant, Manager, Request, ReservationId, Resource, WaitReason};
 pub use monitor::{Event, Level, Monitor, MonitorConfig, NominalChange, Signal};

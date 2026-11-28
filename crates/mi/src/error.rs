@@ -11,6 +11,9 @@ pub enum MiError {
     /// A hash text that is not `<alg>:<64 hex digits>` of a known algorithm.
     #[error("invalid content hash: {0}")]
     InvalidHash(&'static str),
+    /// A stored index state that is not one of the known ones.
+    #[error("invalid index state: {0}")]
+    InvalidState(&'static str),
     /// The reader's length did not match the size the caller declared, or it ended early.
     #[error("media changed while it was read: {0}")]
     SizeMismatch(&'static str),

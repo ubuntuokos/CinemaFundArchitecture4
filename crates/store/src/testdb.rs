@@ -169,6 +169,12 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_app_cache') THEN
     CREATE ROLE cfa4_app_cache NOLOGIN;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_owner_mi') THEN
+    CREATE ROLE cfa4_owner_mi NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cfa4_app_mi') THEN
+    CREATE ROLE cfa4_app_mi NOLOGIN;
+  END IF;
 END $$;
 GRANT cfa4_owner_tasks TO cfa4_login;
 GRANT cfa4_app_tasks TO cfa4_login;
@@ -182,6 +188,9 @@ GRANT CREATE ON DATABASE postgres TO cfa4_owner_ai;
 GRANT cfa4_owner_cache TO cfa4_login;
 GRANT cfa4_app_cache TO cfa4_login;
 GRANT CREATE ON DATABASE postgres TO cfa4_owner_cache;
+GRANT cfa4_owner_mi TO cfa4_login;
+GRANT cfa4_app_mi TO cfa4_login;
+GRANT CREATE ON DATABASE postgres TO cfa4_owner_mi;
 ";
 
 pub(crate) fn skip_or_fail(reason: impl std::fmt::Display) -> Option<(TestDb, Store)> {

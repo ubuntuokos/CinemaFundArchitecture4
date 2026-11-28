@@ -12,8 +12,10 @@ pub mod anchor;
 pub mod error;
 pub mod hash;
 pub mod provenance;
+pub mod state;
 
 pub use anchor::TimeAnchor;
 pub use error::MiError;
 pub use hash::{ContentHash, HashAlg};
 pub use provenance::Provenance;
+pub use state::IndexState;
