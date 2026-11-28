@@ -622,6 +622,9 @@ impl MediaSource for UnsupportedAsSlate {
     fn missing_keys(&self) -> Vec<String> {
         self.inner.missing_keys()
     }
+    fn object_audio(&self, start: i64, frames: usize) -> Option<cfa4_media::Result<cfa4_media::ObjectAudio>> {
+        self.inner.object_audio(start, frames)
+    }
     fn set_dnx_conventions(&self, ffmpeg: Option<bool>) {
         self.inner.set_dnx_conventions(ffmpeg);
     }
@@ -679,6 +682,9 @@ impl MediaSource for DamagedAsSlate {
     fn missing_keys(&self) -> Vec<String> {
         self.inner.missing_keys()
     }
+    fn object_audio(&self, start: i64, frames: usize) -> Option<cfa4_media::Result<cfa4_media::ObjectAudio>> {
+        self.inner.object_audio(start, frames)
+    }
     fn set_dnx_conventions(&self, ffmpeg: Option<bool>) {
         self.inner.set_dnx_conventions(ffmpeg);
     }
@@ -727,6 +733,9 @@ impl MediaSource for ProxySource {
     }
     fn audio_stream(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> cfa4_media::Result<AudioBuffer> {
         self.audio_from.as_ref().unwrap_or(&self.proxy).audio_stream(stream, start, frames, sample_rate)
+    }
+    fn object_audio(&self, start: i64, frames: usize) -> Option<cfa4_media::Result<cfa4_media::ObjectAudio>> {
+        self.audio_from.as_ref().unwrap_or(&self.proxy).object_audio(start, frames)
     }
 }
 
