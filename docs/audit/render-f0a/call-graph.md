@@ -453,6 +453,7 @@ graph LR
 | `cfa4-export/aac_out.rs` | `cfa4-time` | `TimeRange` |
 | `cfa4-export/as02_share.rs` | `cfa4-project` | `ItemId` |
 | `cfa4-export/as02_share.rs` | `cfa4-time` | `FrameRate` |
+| `cfa4-export/audio_copy.rs` | `cfa4-smart-edit` | `audio_index` |
 | `cfa4-export/audio_out.rs` | `cfa4-audio-dsp` | `AudioEffect`, `LoudnessMeter`, `channels`, `effects`, `normalize_gain_db` |
 | `cfa4-export/audio_out.rs` | `cfa4-project` | `ItemId` |
 | `cfa4-export/audio_out.rs` | `cfa4-render` | `SourceProvider`, `audio` |
