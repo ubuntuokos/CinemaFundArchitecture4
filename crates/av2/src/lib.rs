@@ -9,6 +9,7 @@
 #[rustfmt::skip]
 pub mod cdf_default;
 #[rustfmt::skip]
+pub mod block_flags;
 pub mod block_tables;
 pub mod cdf_set;
 pub mod frame;
