@@ -218,6 +218,23 @@ pub(crate) fn check_text(field: &str, value: &str, min: usize, max: usize) -> Re
     Ok(())
 }
 
+/// A task id of the PostgreSQL queue: a UUID in its canonical lowercase form (D-5). The database
+/// column is `uuid` and prints lowercase, so any other spelling would not round-trip.
+pub(crate) fn check_task_id(id: &str) -> Result<(), StoreError> {
+    let ok = id.len() == 36
+        && id.bytes().enumerate().all(|(i, b)| match i {
+            8 | 13 | 18 | 23 => b == b'-',
+            _ => b.is_ascii_digit() || (b'a'..=b'f').contains(&b),
+        });
+    if ok {
+        Ok(())
+    } else {
+        Err(StoreError::Queue {
+            error: cfa4_tasks::QueueError::Invalid { reason: format!("task id must be a lowercase UUID, got `{}`", id.chars().take(40).collect::<String>()) },
+        })
+    }
+}
+
 pub(crate) fn check_sha256(field: &str, value: &str) -> Result<(), StoreError> {
     if value.len() == 64 && value.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
         Ok(())

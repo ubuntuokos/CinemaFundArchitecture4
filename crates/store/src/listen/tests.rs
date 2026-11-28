@@ -24,8 +24,8 @@ async fn a_submit_wakes_the_listener_only_after_the_commit_and_quiet_means_timeo
     let mut listener = store.listen().await.expect("listen");
     assert_eq!(listener.wait(Duration::from_millis(100)).await, Wake::Timeout);
     let tasks = store.tasks(QueueConfig::default());
-    tasks.submit(new_task("t-wake-1"), 1_700_000_000_000).await.expect("submit");
-    tasks.submit(new_task("t-wake-2"), 1_700_000_000_000).await.expect("submit");
+    tasks.submit(new_task("00000000-0000-7000-8000-00000000012d"), 1_700_000_000_000).await.expect("submit");
+    tasks.submit(new_task("00000000-0000-7000-8000-00000000012e"), 1_700_000_000_000).await.expect("submit");
     // the two notifications may arrive in one wake-up or in two
     let mut seen = Vec::new();
     while seen.len() < 2 {
@@ -34,11 +34,11 @@ async fn a_submit_wakes_the_listener_only_after_the_commit_and_quiet_means_timeo
             other => panic!("expected a change, got {other:?}"),
         }
     }
-    assert_eq!(seen, ["t-wake-1", "t-wake-2"]);
+    assert_eq!(seen, ["00000000-0000-7000-8000-00000000012d", "00000000-0000-7000-8000-00000000012e"]);
     // a state change wakes it as well
-    let t = tasks.get("t-wake-1").await.expect("get").expect("there");
-    tasks.cancel("t-wake-1", t.version, 1_700_000_001_000).await.expect("cancel");
-    assert_eq!(listener.wait(Duration::from_secs(5)).await, Wake::Changed(vec!["t-wake-1".into()]));
+    let t = tasks.get("00000000-0000-7000-8000-00000000012d").await.expect("get").expect("there");
+    tasks.cancel("00000000-0000-7000-8000-00000000012d", t.version, 1_700_000_001_000).await.expect("cancel");
+    assert_eq!(listener.wait(Duration::from_secs(5)).await, Wake::Changed(vec!["00000000-0000-7000-8000-00000000012d".into()]));
     assert_eq!(listener.wait(Duration::from_millis(100)).await, Wake::Timeout);
 }
 

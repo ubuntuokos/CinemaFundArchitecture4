@@ -176,6 +176,54 @@ CREATE INDEX session_task_updated ON tasks.session_task (updated_at);
 "#,
         down: "DROP TABLE tasks.session_task;",
     },
+    Step {
+        version: 7,
+        // D-5: task ids are UUIDs (the engine's session-unique `export-1` ids cannot share one table
+        // across sessions). `tasks.session_task` keeps its text ids: it is a per-session record. The step
+        // refuses, with a clear message, to convert a table that still holds ids that are not UUIDs.
+        up: r#"
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM tasks.task WHERE id !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') THEN
+        RAISE EXCEPTION 'tasks.task holds ids that are not UUIDs; remove those tasks first';
+    END IF;
+END $$;
+ALTER TABLE tasks.transition DROP CONSTRAINT transition_task_id_fkey;
+ALTER TABLE tasks.schedule DROP CONSTRAINT schedule_task_id_fkey;
+ALTER TABLE tasks.checkpoint DROP CONSTRAINT checkpoint_task_id_fkey;
+ALTER TABLE tasks.estimate DROP CONSTRAINT estimate_task_id_fkey;
+ALTER TABLE tasks.task DROP CONSTRAINT task_id_check;
+ALTER TABLE tasks.task ALTER COLUMN id TYPE uuid USING id::uuid;
+ALTER TABLE tasks.transition ALTER COLUMN task_id TYPE uuid USING task_id::uuid;
+ALTER TABLE tasks.schedule ALTER COLUMN task_id TYPE uuid USING task_id::uuid;
+ALTER TABLE tasks.checkpoint ALTER COLUMN task_id TYPE uuid USING task_id::uuid;
+ALTER TABLE tasks.estimate ALTER COLUMN task_id TYPE uuid USING task_id::uuid;
+ALTER TABLE tasks.outbox ALTER COLUMN task_id TYPE uuid USING task_id::uuid;
+ALTER TABLE tasks.run_history ALTER COLUMN task_id TYPE uuid USING task_id::uuid;
+ALTER TABLE tasks.transition ADD CONSTRAINT transition_task_id_fkey FOREIGN KEY (task_id) REFERENCES tasks.task (id) ON DELETE CASCADE;
+ALTER TABLE tasks.schedule ADD CONSTRAINT schedule_task_id_fkey FOREIGN KEY (task_id) REFERENCES tasks.task (id) ON DELETE CASCADE;
+ALTER TABLE tasks.checkpoint ADD CONSTRAINT checkpoint_task_id_fkey FOREIGN KEY (task_id) REFERENCES tasks.task (id) ON DELETE CASCADE;
+ALTER TABLE tasks.estimate ADD CONSTRAINT estimate_task_id_fkey FOREIGN KEY (task_id) REFERENCES tasks.task (id) ON DELETE CASCADE;
+"#,
+        down: r#"
+ALTER TABLE tasks.transition DROP CONSTRAINT transition_task_id_fkey;
+ALTER TABLE tasks.schedule DROP CONSTRAINT schedule_task_id_fkey;
+ALTER TABLE tasks.checkpoint DROP CONSTRAINT checkpoint_task_id_fkey;
+ALTER TABLE tasks.estimate DROP CONSTRAINT estimate_task_id_fkey;
+ALTER TABLE tasks.task ALTER COLUMN id TYPE text USING id::text;
+ALTER TABLE tasks.task ADD CONSTRAINT task_id_check CHECK (length(id) BETWEEN 1 AND 256);
+ALTER TABLE tasks.transition ALTER COLUMN task_id TYPE text USING task_id::text;
+ALTER TABLE tasks.schedule ALTER COLUMN task_id TYPE text USING task_id::text;
+ALTER TABLE tasks.checkpoint ALTER COLUMN task_id TYPE text USING task_id::text;
+ALTER TABLE tasks.estimate ALTER COLUMN task_id TYPE text USING task_id::text;
+ALTER TABLE tasks.outbox ALTER COLUMN task_id TYPE text USING task_id::text;
+ALTER TABLE tasks.run_history ALTER COLUMN task_id TYPE text USING task_id::text;
+ALTER TABLE tasks.transition ADD CONSTRAINT transition_task_id_fkey FOREIGN KEY (task_id) REFERENCES tasks.task (id) ON DELETE CASCADE;
+ALTER TABLE tasks.schedule ADD CONSTRAINT schedule_task_id_fkey FOREIGN KEY (task_id) REFERENCES tasks.task (id) ON DELETE CASCADE;
+ALTER TABLE tasks.checkpoint ADD CONSTRAINT checkpoint_task_id_fkey FOREIGN KEY (task_id) REFERENCES tasks.task (id) ON DELETE CASCADE;
+ALTER TABLE tasks.estimate ADD CONSTRAINT estimate_task_id_fkey FOREIGN KEY (task_id) REFERENCES tasks.task (id) ON DELETE CASCADE;
+"#,
+    },
 ];
 
 const AI: &[Step] = &[Step {
