@@ -3484,6 +3484,8 @@
 	Broadcast	ప్రసారం
 	Cancel Dynamic Trim	డైనమిక్ ట్రిమ్‌ను రద్దు చేయి
 	Cancel Queued Export	క్యూలోని ఎగుమతిని రద్దు చేయి
+	Pause Queued Export	క్యూలోని ఎగుమతిని పాజ్ చేయి
+	Resume Queued Export	క్యూలోని ఎగుమతిని కొనసాగించు
 	Center align text	టెక్స్ట్‌ను మధ్యకు సమలేఖనం చేయి
 	Change Mask	మాస్క్‌ను మార్చు
 	Clear All Events	అన్ని ఈవెంట్‌లను తొలగించు

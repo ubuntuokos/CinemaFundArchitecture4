@@ -3107,6 +3107,8 @@
 	Broadcast	Emisja
 	Cancel Dynamic Trim	Anuluj dynamiczne przycinanie
 	Cancel Queued Export	Anuluj eksport w kolejce
+	Pause Queued Export	Wstrzymaj eksport w kolejce
+	Resume Queued Export	Wznów eksport w kolejce
 	Center align text	Wyśrodkuj tekst
 	Change Mask	Zmień maskę
 	Clear All Events	Wyczyść wszystkie zdarzenia

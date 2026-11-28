@@ -3116,6 +3116,8 @@
 	Broadcast	Phát sóng
 	Cancel Dynamic Trim	Hủy cắt tỉa động
 	Cancel Queued Export	Hủy bản xuất trong hàng đợi
+	Pause Queued Export	Tạm dừng bản xuất trong hàng đợi
+	Resume Queued Export	Tiếp tục bản xuất trong hàng đợi
 	Center align text	Căn giữa văn bản
 	Change Mask	Đổi mặt nạ
 	Clear All Events	Xóa mọi sự kiện

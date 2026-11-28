@@ -3327,6 +3327,8 @@
 	Broadcast	Broadcast
 	Cancel Dynamic Trim	Annuller dynamisk trim
 	Cancel Queued Export	Annuller eksport i kø
+	Pause Queued Export	Sæt eksport i kø på pause
+	Resume Queued Export	Genoptag eksport i kø
 	Center align text	Centrer tekst
 	Change Mask	Skift maske
 	Clear All Events	Ryd alle hændelser

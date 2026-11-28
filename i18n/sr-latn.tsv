@@ -3199,6 +3199,8 @@
 	Broadcast	Emitovanje
 	Cancel Dynamic Trim	Otkaži dinamičko skraćivanje
 	Cancel Queued Export	Otkaži izvoz u redu
+	Pause Queued Export	Pauziraj izvoz u redu
+	Resume Queued Export	Nastavi izvoz u redu
 	Center align text	Poravnaj tekst po sredini
 	Change Mask	Promeni masku
 	Clear All Events	Obriši sve događaje

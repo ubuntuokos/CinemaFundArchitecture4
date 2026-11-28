@@ -3027,6 +3027,8 @@
 	CBR	CBR
 	Cancel Dynamic Trim	Annulla rifinitura dinamica
 	Cancel Queued Export	Annulla esportazione in coda
+	Pause Queued Export	Sospendi esportazione in coda
+	Resume Queued Export	Riprendi esportazione in coda
 	Center Left	Al centro a sinistra
 	Center Right	Al centro a destra
 	Center align text	Centra il testo

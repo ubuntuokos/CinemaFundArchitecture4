@@ -3533,6 +3533,8 @@
 	Broadcast	Хабар тарату
 	Cancel Dynamic Trim	Динамикалық кесуден бас тарту
 	Cancel Queued Export	Кезектегі экспорттан бас тарту
+	Pause Queued Export	Кезектегі экспортты кідірту
+	Resume Queued Export	Кезектегі экспортты жалғастыру
 	Center align text	Мәтінді ортаға туралау
 	Change Mask	Масканы өзгерту
 	Clear All Events	Барлық оқиғаларды тазалау

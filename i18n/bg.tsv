@@ -3229,6 +3229,8 @@
 	Broadcast	Излъчване
 	Cancel Dynamic Trim	Отказ на динамичното подрязване
 	Cancel Queued Export	Отказ на експортирането в опашката
+	Pause Queued Export	Пауза на експортирането в опашката
+	Resume Queued Export	Продължаване на експортирането в опашката
 	Center align text	Центриране на текста
 	Change Mask	Промяна на маската
 	Clear All Events	Изчистване на всички събития

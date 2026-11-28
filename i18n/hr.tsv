@@ -3528,6 +3528,8 @@
 	Broadcast	Emitiranje
 	Cancel Dynamic Trim	Odustani od dinamičkog skraćivanja
 	Cancel Queued Export	Otkaži izvoz u redu
+	Pause Queued Export	Pauziraj izvoz u redu
+	Resume Queued Export	Nastavi izvoz u redu
 	Center align text	Centriraj tekst
 	Change Mask	Promijeni masku
 	Clear All Events	Očisti sve događaje

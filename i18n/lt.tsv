@@ -3520,6 +3520,8 @@
 	Broadcast	Transliavimas
 	Cancel Dynamic Trim	Atšaukti dinaminį kirpimą
 	Cancel Queued Export	Atšaukti eilėje esantį eksportą
+	Pause Queued Export	Pristabdyti eilėje esantį eksportą
+	Resume Queued Export	Tęsti eilėje esantį eksportą
 	Center align text	Lygiuoti tekstą centre
 	Change Mask	Keisti kaukę
 	Clear All Events	Išvalyti visus įvykius

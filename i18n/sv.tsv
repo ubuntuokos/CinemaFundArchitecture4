@@ -3255,6 +3255,8 @@
 	Broadcast	Sändning
 	Cancel Dynamic Trim	Avbryt dynamisk trimning
 	Cancel Queued Export	Avbryt köad export
+	Pause Queued Export	Pausa köad export
+	Resume Queued Export	Återuppta köad export
 	Center align text	Centrera text
 	Change Mask	Ändra mask
 	Clear All Events	Rensa alla händelser

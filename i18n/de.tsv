@@ -3045,6 +3045,8 @@
 	CBR	CBR
 	Cancel Dynamic Trim	Dynamisches Trimmen abbrechen
 	Cancel Queued Export	Export in Warteschlange abbrechen
+	Pause Queued Export	Export in Warteschlange pausieren
+	Resume Queued Export	Export in Warteschlange fortsetzen
 	Center Left	Mitte links
 	Center Right	Mitte rechts
 	Center align text	Text zentrieren

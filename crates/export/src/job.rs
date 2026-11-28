@@ -699,6 +699,7 @@ impl Exporter {
 
     /// Render, encode and mux the next batch (or finish the file).
     pub fn step(&mut self, sources: &dyn SourceProvider, progress: &Progress) -> Result<Step> {
+        progress.wait_while_paused();
         if progress.cancel.load(Ordering::Relaxed) {
             self.ahead = None;
             return Err(ExportError::Cancelled);

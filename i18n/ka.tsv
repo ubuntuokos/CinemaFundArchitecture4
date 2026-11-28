@@ -3272,6 +3272,8 @@
 	Broadcast	სამაუწყებლო
 	Cancel Dynamic Trim	დინამიკური შეკვეცის გაუქმება
 	Cancel Queued Export	რიგში მდგომი ექსპორტის გაუქმება
+	Pause Queued Export	რიგში მდგომი ექსპორტის პაუზა
+	Resume Queued Export	რიგში მდგომი ექსპორტის განახლება
 	Center align text	ტექსტის ცენტრში სწორება
 	Change Mask	ნიღბის შეცვლა
 	Clear All Events	ყველა მოვლენის გასუფთავება

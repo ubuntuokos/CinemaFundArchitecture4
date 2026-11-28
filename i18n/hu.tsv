@@ -3714,6 +3714,8 @@ export.summary	Low	alacsony
 	Broadcast	Műsorszórás
 	Cancel Dynamic Trim	Dinamikus vágáspont-igazítás megszakítása
 	Cancel Queued Export	Sorban álló exportálás megszakítása
+	Pause Queued Export	Sorban álló exportálás szüneteltetése
+	Resume Queued Export	Sorban álló exportálás folytatása
 	Center align text	Szöveg középre igazítása
 	Change Mask	Maszk módosítása
 	Clear All Events	Minden esemény törlése
