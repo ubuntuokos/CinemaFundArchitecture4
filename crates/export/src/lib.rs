@@ -3745,6 +3745,8 @@ mod settings_tests;
 mod surround_tests;
 
 #[cfg(test)]
+mod audio_copy_bitstream_tests;
+#[cfg(test)]
 mod audio_copy_tests;
 #[cfg(test)]
 mod boundary_reencode_tests;

@@ -15,7 +15,7 @@ use cfa4_time::Tick;
 
 use crate::smart_cut::{Mp4CopySource, SmartCutError, execute_mp4_copy, verify_mp4_copy};
 
-const FPS: u32 = 25;
+pub(crate) const FPS: u32 = 25;
 const STRICT: Policy = Policy { allow_experimental: false };
 
 /// An MP4 with one H.264 track (64×48, 25 fps, IDR every `keyint` pictures, `bframes` B-frames).
