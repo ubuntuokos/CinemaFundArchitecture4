@@ -1322,6 +1322,41 @@
   },
   {
    "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "enum",
+   "module": "audio_index.rs",
+   "name": "AudioCodec"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "struct",
+   "module": "audio_index.rs",
+   "name": "AudioConfig"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "struct",
+   "module": "audio_index.rs",
+   "name": "AudioIndex"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "enum",
+   "module": "audio_index.rs",
+   "name": "AudioIndexError"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "struct",
+   "module": "audio_index.rs",
+   "name": "AudioUnit"
+  },
+  {
+   "class": "audio",
    "crate": "cfa4-testkit",
    "kind": "enum",
    "module": "smk.rs",
