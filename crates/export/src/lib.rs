@@ -40,6 +40,7 @@ mod deflate;
 mod hls_out;
 mod imf_out;
 mod job;
+pub mod mkv_source;
 mod mpeg_out;
 mod mxf_out;
 mod opus_out;
@@ -3762,6 +3763,8 @@ mod smart_cut_av1_tests;
 mod smart_cut_edge_tests;
 #[cfg(test)]
 mod smart_cut_hevc_tests;
+#[cfg(test)]
+mod smart_cut_mkv_tests;
 #[cfg(test)]
 mod smart_cut_mpeg_tests;
 #[cfg(test)]

@@ -69,11 +69,16 @@ fn baseline_decode_and_demux() {
     }
     assert!(r.decide(Key::in_container(Operation::Demux, Codec::Mpeg2Video, Container::MpegPs), STRICT).allowed);
     assert!(r.decide(Key::in_container(Operation::Demux, Codec::H264, Container::Mp4), STRICT).allowed);
+    // R2-03: Matroska demux has its oracle test (crates/export/src/smart_cut_mkv_tests.rs)
+    for codec in [Codec::H264, Codec::Hevc, Codec::Av1] {
+        assert!(r.decide(Key::in_container(Operation::Demux, codec, Container::Matroska), STRICT).allowed, "{codec:?}");
+    }
+    assert!(r.decide(Key::in_container(Operation::Demux, Codec::Av1, Container::WebM), STRICT).allowed);
     // implemented but without an oracle test: only for a lax policy
-    let mkv = Key::in_container(Operation::Demux, Codec::H264, Container::Matroska);
-    assert!(!r.decide(mkv, STRICT).allowed);
-    assert_eq!(r.decide(mkv, STRICT).level, SupportLevel::Experimental);
-    assert!(r.decide(mkv, LAX).allowed);
+    let mov = Key::in_container(Operation::Demux, Codec::Hevc, Container::Mov);
+    assert!(!r.decide(mov, STRICT).allowed);
+    assert_eq!(r.decide(mov, STRICT).level, SupportLevel::Experimental);
+    assert!(r.decide(mov, LAX).allowed);
 }
 
 #[test]

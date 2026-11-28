@@ -473,6 +473,7 @@ graph LR
 | `cfa4-export/lib.rs` | `cfa4-project` | `ItemId`, `Marker`, `MarkerKind`, `validate_frame_size` |
 | `cfa4-export/lib.rs` | `cfa4-render` | `Image`, `RenderOptions`, `SourceProvider` |
 | `cfa4-export/lib.rs` | `cfa4-time` | `FrameRate`, `TICKS_PER_SECOND` |
+| `cfa4-export/mkv_source.rs` | `cfa4-smart-edit` | `av1_index`, `capabilities`, `h264_index`, `hevc_index`, `media_index`, `mpeg2_index`, `timestamp` |
 | `cfa4-export/mpeg_out.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-export/mxf_out.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-export/opus_out.rs` | `cfa4-project` | `ItemId` |
@@ -842,7 +843,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 658 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 659 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (32)
 
@@ -1008,7 +1009,7 @@ A többi 658 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-gpu` | `lut.rs` | struct | `GpuLut` |
 | `cfa4-project` | `lib.rs` | struct | `ProjectLut` |
 
-### Render, kompozíció, előnézet, proxy (64)
+### Render, kompozíció, előnézet, proxy (65)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -1027,6 +1028,7 @@ A többi 658 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-export` | `as02_share.rs` | struct | `VersionPlan` |
 | `cfa4-export` | `dcp_iab.rs` | struct | `IabSourceInfo` |
 | `cfa4-export` | `lib.rs` | struct | `GpuRenderStats` |
+| `cfa4-export` | `mkv_source.rs` | enum | `MkvSourceError` |
 | `cfa4-export` | `settings.rs` | struct | `ExportEffects` |
 | `cfa4-export` | `settings.rs` | enum | `GpuRendering` |
 | `cfa4-export` | `smart_cut.rs` | struct | `Mp4CopySource` |
