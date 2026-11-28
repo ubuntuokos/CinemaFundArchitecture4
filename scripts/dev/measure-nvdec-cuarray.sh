@@ -101,10 +101,13 @@ bench() { # mode file extra...
     rm -f "$log"
 }
 field() { sed -n "$1" <<<"$OUT" | head -n 1; }
-# At least every requested picture decoded in hardware (the decoder may run ahead), no fallback to
-# software, and the hardware pictures all from CUDA arrays (array mode) or none of them (pitch mode).
+# The NVDEC backend (not VA-API on another GPU), at least every requested picture decoded in
+# hardware (the decoder may run ahead), no fallback to software, and the hardware pictures all from
+# CUDA arrays (array mode) or none of them (pitch mode).
 check_counters() { # mode
-    local hw arrays fallbacks
+    local backend hw arrays fallbacks
+    backend="$(field 's/^hardware decoder: \([^ ]*\) (.*/\1/p')"
+    [[ "$backend" == NVDEC ]] || return 1
     hw="$(field 's/.*(\([0-9]*\) hardware pictures.*/\1/p')"
     fallbacks="$(field 's/.* \([0-9]*\) fallbacks to software.*/\1/p')"
     arrays="$(field 's/.*NVDEC CUDA-array output: [a-z]* (\([0-9]*\) pictures).*/\1/p')"
