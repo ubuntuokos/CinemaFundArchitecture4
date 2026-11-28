@@ -1177,6 +1177,20 @@
    "class": "audio",
    "crate": "cfa4-export",
    "kind": "struct",
+   "module": "smart_cut_mkv.rs",
+   "name": "MkvAudio"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "smart_cut_mkv.rs",
+   "name": "MkvAudioCopy"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-export",
+   "kind": "struct",
    "module": "smart_cut_mpeg.rs",
    "name": "MpegAudioDrop"
   },
@@ -4159,6 +4173,13 @@
    "class": "other",
    "crate": "cfa4-export",
    "kind": "struct",
+   "module": "smart_cut_mkv.rs",
+   "name": "MkvCopyReport"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
    "module": "smart_cut_mpeg.rs",
    "name": "MpegCopyReport"
   },
@@ -6660,6 +6681,13 @@
    "kind": "struct",
    "module": "smart_cut.rs",
    "name": "Mp4CopySource"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "smart_cut_mkv.rs",
+   "name": "MkvCopySource"
   },
   {
    "class": "render",
@@ -11646,6 +11674,36 @@
   },
   {
    "from": "cfa4-export/smart_cut.rs",
+   "item": "timestamp",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/smart_cut_mkv.rs",
+   "item": "audio_index",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/smart_cut_mkv.rs",
+   "item": "av1_index",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/smart_cut_mkv.rs",
+   "item": "capabilities",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/smart_cut_mkv.rs",
+   "item": "media_index",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/smart_cut_mkv.rs",
+   "item": "plan",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/smart_cut_mkv.rs",
    "item": "timestamp",
    "to": "cfa4-smart-edit"
   },
