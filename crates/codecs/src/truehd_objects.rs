@@ -193,6 +193,7 @@ impl TrueHdObjects {
             })
             .collect();
         Some(Ok(ObjectAudio {
+            format: "Dolby TrueHD Atmos",
             sample_rate: st.rate,
             start,
             objects,

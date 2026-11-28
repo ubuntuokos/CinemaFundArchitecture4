@@ -245,8 +245,8 @@ pub trait MediaSource: Send + Sync {
     }
     /// The object audio of the primary stream from sample `start` (at the stream's own rate,
     /// media time), unrendered, for the headphone monitor
-    /// (`docs/plans/CFA4-BINAURAL-MONITOR-001.md` B-03): `None` for a stream without objects (all
-    /// but Dolby TrueHD Atmos for now), an error when this block's objects cannot be decoded (the
+    /// (`docs/plans/CFA4-BINAURAL-MONITOR-001.md` B-03): `None` for a stream without objects (Dolby TrueHD
+    /// Atmos and IAB have them), an error when this block's objects cannot be decoded (the
     /// rendered channels of [`audio`](Self::audio) still play).
     fn object_audio(&self, _start: i64, _frames: usize) -> Option<Result<ObjectAudio>> {
         None
@@ -256,6 +256,8 @@ pub trait MediaSource: Send + Sync {
 /// Unrendered object audio of one block (see [`MediaSource::object_audio`]).
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ObjectAudio {
+    /// The format's name, as a monitor shows it ("Dolby TrueHD Atmos", "IAB").
+    pub format: &'static str,
     /// The stream's own rate.
     pub sample_rate: u32,
     /// The block's first sample.

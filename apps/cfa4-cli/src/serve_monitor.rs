@@ -197,7 +197,7 @@ thread_local! {
     static OBJECTS: std::cell::RefCell<Option<Objects>> = const { std::cell::RefCell::new(None) };
 }
 
-/// The two ears of the Source clip's object audio (Dolby TrueHD Atmos) from sample `start` at
+/// The two ears of the Source clip's object audio (Dolby TrueHD Atmos, IAB) from sample `start` at
 /// `rate`, and the reply's `monitor` object; `None` when the clip has no objects, when they are
 /// not at `rate`, when the set is not ready or when this block's objects cannot be decoded (the
 /// clip's channels then play through [`render`]).
@@ -227,7 +227,7 @@ pub fn render_objects(media: u64, rate: u32, start: i64, frames: usize, source: 
         monitor.process(start, &inputs, &block.current, &block.events, l, r);
         let meta = json!({
             "mode": "binaural", "hrtf": b.set.name(), "set": set.name(), "room": b.config.room, "lfe_db": b.config.lfe_db,
-            "objects": block.objects.len(), "format": "Dolby TrueHD Atmos",
+            "objects": block.objects.len(), "format": block.format,
         });
         Some((ears, meta))
     })
