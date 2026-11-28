@@ -16,9 +16,10 @@ use std::collections::{BTreeMap, HashMap};
 
 use cfa4_media::sequence::Numbered;
 use cfa4_media::{Generator, MediaInfo, MediaKind};
+use cfa4_project::effect::find_effect_by_name;
 use cfa4_project::{
-    ClipId, EffectInstance, ItemId, ItemKind, Label, Marker, MarkerId, MarkerKind, MediaRef, ParamValue, Project, Sequence, SequenceSettings, Track, TrackItem,
-    TrackKind, Transition, TransitionAlign, TransitionId,
+    ClipId, EffectInstance, EffectKind, ItemId, ItemKind, Label, Marker, MarkerId, MarkerKind, MediaRef, ParamValue, Project, Sequence, SequenceSettings,
+    Track, TrackItem, TrackKind, Transition, TransitionAlign, TransitionId,
 };
 use cfa4_time::{FrameRate, TICKS_PER_SECOND, Tick};
 use serde_json::{Value, json};
@@ -92,6 +93,20 @@ const MAX_FOREIGN_METADATA_BYTES: usize = 16 * 1024 * 1024;
 /// `DEFAULT_MEDIA`. Foreign metadata never has this key (`cfa4` is CFA4's own), and it is never
 /// written into `metadata`.
 const OWN: &str = "cfa4";
+
+/// CFA4 effects every item carries (they are not OTIO effects; see [`Exp::standard_effects`]).
+const INTRINSIC_EFFECTS: [&str; 6] = ["motion", "opacity", "time_remap", "volume", "channel_volume", "panner"];
+
+/// Put the other programs' effects an import kept into the clip's [`OWN`] `interchange` entry
+/// (OTIO-2.6), replacing any list already there (a CFA4 file re-lists them as standard effects).
+fn keep_effects(ti: &mut TrackItem, kept: Vec<Value>) {
+    if kept.is_empty() {
+        return;
+    }
+    if let Some(o) = ti.interchange.entry(OWN.to_string()).or_insert_with(|| json!({})).as_object_mut() {
+        o.insert("effects".into(), Value::Array(kept));
+    }
+}
 
 /// OTIO's default `active_media_reference_key`.
 const DEFAULT_MEDIA: &str = "DEFAULT_MEDIA";
@@ -324,6 +339,26 @@ impl Exp<'_, '_> {
         }
     }
 
+    /// The standard `Effect.1` entries of a clip (OTIO-2.6, H6): its CFA4 effects by display name
+    /// (the intrinsic ones every item carries are left out), then the other programs' effects kept
+    /// on import, unchanged. The `cfa4` key marks the first kind as CFA4's own, so an import reads
+    /// them back from `metadata.cfa4.effects` and not twice.
+    fn standard_effects(&self, it: &TrackItem) -> Vec<Value> {
+        let mut out: Vec<Value> = it
+            .effects
+            .iter()
+            .filter(|e| !INTRINSIC_EFFECTS.contains(&e.effect.as_str()))
+            .map(|e| {
+                let name = e.def().map(|d| d.name.to_string()).unwrap_or_else(|| e.effect.clone());
+                json!({"OTIO_SCHEMA": "Effect.1", "name": name, "effect_name": name, "enabled": e.enabled, "metadata": {"cfa4": {"id": e.effect}}})
+            })
+            .collect();
+        if let Some(kept) = it.interchange.get(OWN).and_then(|o| o.get("effects")).and_then(Value::as_array) {
+            out.extend(kept.iter().cloned());
+        }
+        out
+    }
+
     fn item_json(&mut self, it: &TrackItem, kind: TrackKind, rate: FrameRate) -> Value {
         if self.stack.len() > 1 {
             self.nested_items = self.nested_items.saturating_add(1);
@@ -337,6 +372,7 @@ impl Exp<'_, '_> {
             let s = if it.reverse { -it.speed } else { it.speed };
             effects.push(json!({"OTIO_SCHEMA": "LinearTimeWarp.1", "name": "", "effect_name": "LinearTimeWarp", "time_scalar": s, "metadata": {}}));
         }
+        effects.extend(self.standard_effects(it));
         let meta = json!({"cfa4": {
             "label": it.label, "link": it.link, "group": it.group, "effects": it.effects,
             "gain_db": it.gain_db, "scale_to_frame": it.scale_to_frame, "source_in_ticks": it.source_in.0,
@@ -766,7 +802,8 @@ impl Imp<'_, '_> {
         seq.tracks_mut(kind).push(track);
     }
 
-    fn apply_clip_meta(&mut self, ti: &mut TrackItem, c: &Value, meta: Option<&Value>) {
+    fn apply_clip_meta(&mut self, ti: &mut TrackItem, c: &Value, meta: Option<&Value>, kind: TrackKind) -> Vec<Value> {
+        let mut kept = Vec::new();
         ti.enabled = c.get("enabled").and_then(Value::as_bool).unwrap_or(true);
         for e in c.get("effects").and_then(Value::as_array).into_iter().flatten() {
             match schema_name(e) {
@@ -782,15 +819,12 @@ impl Imp<'_, '_> {
                 "FreezeFrame" => {
                     ti.frame_hold = Some(fc(e).and_then(|m| m.get("hold")).and_then(|h| h.as_i64()).map(Tick).unwrap_or(ti.source_in));
                 }
-                _ => {
-                    if meta.and_then(|m| m.get("effects")).is_none() {
-                        let n = e.get("effect_name").and_then(Value::as_str).unwrap_or("effect");
-                        self.report.warn(format!("OTIO effect \"{n}\" is not supported"));
-                    }
-                }
+                // an effect CFA4 wrote carries its `cfa4` key and comes back from `metadata.cfa4.effects`
+                _ if fc(e).is_some() => {}
+                _ => self.foreign_effect(ti, e, kind, &mut kept),
             }
         }
-        let Some(m) = meta else { return };
+        let Some(m) = meta else { return kept };
         if let Some(l) = m.get("label").and_then(|l| serde_json::from_value::<Label>(l.clone()).ok()) {
             ti.label = l;
         }
@@ -823,6 +857,25 @@ impl Imp<'_, '_> {
         {
             ti.duration = Tick(d);
         }
+        kept
+    }
+
+    /// An effect another program wrote (OTIO-2.6, H6): a CFA4 effect of the same name (video or
+    /// audio as the track is) is added to the clip, with its default settings; any other is kept
+    /// whole in `kept` (to be written back by [`keep_effects`]) and named in the report.
+    fn foreign_effect(&mut self, ti: &mut TrackItem, e: &Value, kind: TrackKind, kept: &mut Vec<Value>) {
+        let name = e.get("effect_name").and_then(Value::as_str).filter(|n| !n.is_empty()).or_else(|| e.get("name").and_then(Value::as_str)).unwrap_or("effect");
+        let want = if kind == TrackKind::Audio { EffectKind::Audio } else { EffectKind::Video };
+        if let Some(d) = find_effect_by_name(name).filter(|d| d.kind == want) {
+            if !ti.effects.iter().any(|x| x.effect == d.id) {
+                ti.effects.push(d.instance());
+            }
+            return;
+        }
+        if self.within_budget("effects", e, "OTIO effects from other programs") {
+            kept.push(e.clone());
+            self.report.warn(format!("OTIO effect \"{name}\" is not supported by CFA4; it is kept and written back unchanged"));
+        }
     }
 
     fn clip(&mut self, c: &Value, kind: TrackKind, pos: Tick) -> Option<TrackItem> {
@@ -853,13 +906,14 @@ impl Imp<'_, '_> {
             m.start -= origin;
         }
         let meta = fc(c).cloned();
-        self.apply_clip_meta(&mut ti, c, meta.as_ref());
+        let kept = self.apply_clip_meta(&mut ti, c, meta.as_ref(), kind);
         ti.interchange = self.foreign(c);
         if let (Some(refs), Some(active)) = (refs, active)
             && let Some(own) = self.other_references(refs, &active)
         {
             ti.interchange.insert(OWN.to_string(), own);
         }
+        keep_effects(&mut ti, kept);
         Some(ti)
     }
 
@@ -886,10 +940,11 @@ impl Imp<'_, '_> {
         if let Some(ref cm) = clip_meta {
             ti.markers = self.markers(cm);
         }
-        self.apply_clip_meta(&mut ti, c, clip_meta.as_ref());
+        let kept = self.apply_clip_meta(&mut ti, c, clip_meta.as_ref(), kind);
         if let Some(k) = clip_meta.as_ref().and_then(|m| m.get("interchange")).and_then(|k| serde_json::from_value(k.clone()).ok()) {
             ti.interchange = k;
         }
+        keep_effects(&mut ti, kept);
         Some(ti)
     }
 

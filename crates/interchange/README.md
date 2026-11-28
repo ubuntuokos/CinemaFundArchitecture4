@@ -70,6 +70,21 @@ against the same 16 MB budget. A clip with only its default reference keeps noth
 Not kept yet: metadata on markers, transitions, effects and the active media reference. CFA4's own work has
 no such keys, and an empty field is not written to the project file.
 
+## Effects and transitions (OTIO-2.6)
+
+| OTIO | CFA4 | Written as |
+|---|---|---|
+| `LinearTimeWarp` (`time_scalar`) | clip speed and direction; 0 is a frame hold | `LinearTimeWarp` |
+| `FreezeFrame` | frame hold | `FreezeFrame` |
+| `Effect` whose `effect_name` is a CFA4 effect's name or id (video effect on a video track, audio effect on an audio track) | that effect, with its default settings (the effect's own settings are not in OTIO) | `Effect` with the effect's display name and `metadata.cfa4.id`; the settings are in `metadata.cfa4.effects` |
+| any other effect (any schema) | kept whole in the clip's `interchange` under `cfa4.effects`, named in the report, counted in the 16 MB budget | written back unchanged, once, also after a second trip through CFA4 |
+| `Transition` `SMPTE_Dissolve` | cross dissolve (audio: constant power) | `SMPTE_Dissolve` for the dissolves, else `Custom_Transition` |
+| `Transition` by name (`Dissolve`, `Cross Fade (0dB)`, `Wipe`, `Dip to Color Dissolve`, a CFA4 transition's name) | the matching CFA4 transition | its display name, with `metadata.cfa4.effect` |
+| any other transition | a dissolve, with a report entry | not kept yet: a transition has no `interchange` field in the project model |
+
+The intrinsic effects every item carries (motion, opacity, time remapping, volume, channel volume,
+panner) are not written as OTIO effects. Effects on tracks are not mapped.
+
 ## Image sequences
 
 An OTIO `ImageSequenceReference` is CFA4 image-sequence media (OTIO-2.3). OTIO describes the frames
