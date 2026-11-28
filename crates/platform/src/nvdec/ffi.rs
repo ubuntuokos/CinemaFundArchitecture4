@@ -32,6 +32,11 @@ pub const cudaVideoCodec_HEVC: c_int = 8;
 pub const cudaVideoChromaFormat_420: c_int = 1;
 pub const cudaVideoSurfaceFormat_NV12: c_int = 0;
 pub const cudaVideoSurfaceFormat_P016: c_int = 1;
+/// Video Codec SDK 13.1: NV12 / P016 in an application-allocated CUDA array (opaque layout).
+pub const cudaVideoSurfaceFormat_NV12_Opaque: c_int = 6;
+pub const cudaVideoSurfaceFormat_P016_Opaque: c_int = 7;
+/// The most CUDA arrays `cuvidRegisterDecodeSurfaces` takes.
+pub const MAX_NUM_REGISTERED_DECODE_SURFACES: u32 = 32;
 pub const cudaVideoDeinterlaceMode_Weave: c_int = 0;
 pub const cudaVideoCreate_PreferCUVID: c_ulong = 4;
 pub const CUVID_PKT_ENDOFSTREAM: c_ulong = 1;
@@ -222,3 +227,53 @@ pub type UnmapVideoFrame = unsafe extern "C" fn(*mut c_void, u64) -> c_int;
 pub type CreateVideoParser = unsafe extern "C" fn(*mut *mut c_void, *mut CUVIDPARSERPARAMS) -> c_int;
 pub type ParseVideoData = unsafe extern "C" fn(*mut c_void, *mut CUVIDSOURCEDATAPACKET) -> c_int;
 pub type DestroyVideoParser = unsafe extern "C" fn(*mut c_void) -> c_int;
+/// `cuvidRegisterDecodeSurfaces` input (Video Codec SDK 13.1).
+#[repr(C)]
+pub struct CUVIDREGISTERDECODESURFACESINFO {
+    pub ulNumDecodeSurfaces: c_uint,
+    pub reserved: [c_uint; 31],
+    pub pDecodeSurfaces: *mut *mut c_void,
+    pub pDecodeStatsSurfaces: *mut u64,
+    pub pReserved: [*mut c_void; 30],
+}
+pub type RegisterDecodeSurfaces = unsafe extern "C" fn(*mut c_void, *mut CUVIDREGISTERDECODESURFACESINFO) -> c_int;
+pub type DecodePictureAsync = unsafe extern "C" fn(*mut c_void, *mut CUVIDPICPARAMS, *mut c_void) -> c_int;
+// CUDA driver API declarations for the CUDA-array output (`dynlink_cuda.h`).
+pub const CU_AD_FORMAT_NV12: c_uint = 0xb0;
+pub const CU_AD_FORMAT_P016: c_uint = 0xa1;
+pub const CUDA_ARRAY3D_SURFACE_LDST: c_uint = 0x02;
+pub const CUDA_ARRAY3D_VIDEO_ENCODE_DECODE: c_uint = 0x100;
+pub const CU_MEMORYTYPE_HOST: c_uint = 1;
+pub const CU_MEMORYTYPE_ARRAY: c_uint = 3;
+#[repr(C)]
+pub struct CUDA_ARRAY3D_DESCRIPTOR {
+    pub Width: usize,
+    pub Height: usize,
+    pub Depth: usize,
+    pub Format: c_uint,
+    pub NumChannels: c_uint,
+    pub Flags: c_uint,
+}
+#[repr(C)]
+pub struct CUDA_MEMCPY2D {
+    pub srcXInBytes: usize,
+    pub srcY: usize,
+    pub srcMemoryType: c_uint,
+    pub srcHost: *const c_void,
+    pub srcDevice: u64,
+    pub srcArray: *mut c_void,
+    pub srcPitch: usize,
+    pub dstXInBytes: usize,
+    pub dstY: usize,
+    pub dstMemoryType: c_uint,
+    pub dstHost: *mut c_void,
+    pub dstDevice: u64,
+    pub dstArray: *mut c_void,
+    pub dstPitch: usize,
+    pub WidthInBytes: usize,
+    pub Height: usize,
+}
+pub type Array3DCreate = unsafe extern "C" fn(*mut *mut c_void, *const CUDA_ARRAY3D_DESCRIPTOR) -> c_int;
+pub type ArrayDestroy = unsafe extern "C" fn(*mut c_void) -> c_int;
+pub type ArrayGetPlane = unsafe extern "C" fn(*mut *mut c_void, *mut c_void, c_uint) -> c_int;
+pub type Memcpy2D = unsafe extern "C" fn(*const CUDA_MEMCPY2D) -> c_int;

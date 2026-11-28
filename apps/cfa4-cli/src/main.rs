@@ -417,6 +417,17 @@ async fn cli() {
             }
             let dt = t0.elapsed().as_secs_f64();
             outln!("{n} frames in {dt:.2}s → {:.1} fps (sequential, via Mp4Source)", n as f64 / dt);
+            // which decoder ran: the measurement of CFA4-NVDEC-CUARRAY-001 compares the NVDEC outputs
+            let (on, used) = cfa4_platform::nvdec_cuda_array_output();
+            outln!(
+                "hardware decoder: {}; NVDEC CUDA-array output: {}",
+                cfa4_codecs::hw::hw_backend().unwrap_or("none"),
+                match (on, used) {
+                    (_, true) => "used",
+                    (true, false) => "on, not used",
+                    (false, _) => "off",
+                }
+            );
             let t1 = std::time::Instant::now();
             let f = src.video_frame(cfa4_media::FrameRequest::full(rate.tick_of(n / 2))).unwrap_or_else(|e| fail(e));
             let (w, h, _) = f.to_linear_f32_decimated(2);
