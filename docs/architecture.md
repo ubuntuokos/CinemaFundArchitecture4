@@ -24,7 +24,7 @@ Design principles:
 ## 1. Layers
 
 ```text
- L6  apps/cfa4 · apps/cfa4-cli · apps/cfa4-studio-host · apps/cfa4-fetch
+ L6  apps/cfa4 · apps/cfa4-cli · apps/cfa4-studio-host · apps/cfa4-fetch · apps/cfa4-system-helper
  L5  ui-egui · automation · store (cfa4-store) · tcsync-io · surface · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
  L4  engine
  L3  render · render-contracts (cfa4-render-contracts) · gpu · export · smart-edit · qc · golden (test-only)
@@ -175,6 +175,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `cfa4-cli` | L6 | headless CLI: `exec`, `run`, `inspect`, `describe`, `commands`, `import`, `export`, `render`, `probe`, `mcp`; `--bridge` targets the running app |
 | `cfa4-studio-host` | L6 | the live studio's own process: runs libobs (or the software backend), shows the scene the engine sends (S1: the project's current studio scene, `live.studio.scene.*` / `live.studio.source.*`), writes program frames into the frame ring; started, watched and restarted by the engine (`live.studio.host.*`), so a libobs crash never ends the editor (plan D2) |
 | `cfa4-fetch` | L6 | the downloader process (D5): reads one request on stdin, confines itself with the `fetch` profile of `cfa4-sandbox` (writes only the target directory, TCP out only to port 443 or the configured HTTPS proxy, no program start; refuses to run without the protections, plan D4), downloads over HTTPS (ureq + rustls, HTTPS-only redirects), checks size and SHA-256, reports JSON lines |
+| `cfa4-system-helper` | L6 | the only program CFA4 runs as root, through `pkexec` after the user approved the plan ([ADR 0017](adr/ADR-0017-rendszerszintu-komponensek.md)): closed verbs (`status`, `check`, `plan`, `apply`, `disable`, `uninstall`) and components (`gpu-access`, `vaapi-drivers`, `npu-check`), the user from `PKEXEC_UID`, a SHA-256 plan digest rechecked as root, roll-back of a half-finished apply, an undo record in `/var/lib/cfa4/system-helper/state.json`; `--root` fake trees for tests; shipped in the `.deb` only |
 
 ### What `cargo xtask layers` enforces
 

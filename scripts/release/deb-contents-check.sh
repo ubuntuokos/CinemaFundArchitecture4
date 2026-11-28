@@ -27,7 +27,8 @@ HERE="$ROOT/packaging/linux"
 APP_ID=io.github.ubuntuokos.cfa4
 STAGE="$work/root"
 FFMPEG_DEB="$work/deb-ffmpeg"
-rm -rf "$STAGE" "$FFMPEG_DEB"
+DEB_ONLY="$work/deb-only"
+rm -rf "$STAGE" "$FFMPEG_DEB" "$DEB_ONLY"
 
 # stand-in for what needs the release build (bin/cfa4 is the Qt GUI's launcher, staged below)
 install -d "$STAGE/usr/bin"
@@ -60,13 +61,19 @@ CFA4_THIRD_PARTY_LICENSES_FILE="$work/THIRD-PARTY-LICENSES.txt" CFA4_SBOM_FILE="
   copy_docs "$STAGE/usr/share/doc/cfa4"
 install -Dm644 "$HERE/copyright" "$STAGE/usr/share/doc/cfa4/copyright"
 install -Dm644 "$HERE/70-cfa4-surfaces.rules" "$STAGE/usr/lib/udev/rules.d/70-cfa4-surfaces.rules"
+# the system helper (stand-in) and its real polkit rule, staged outside the shared tree (ADR 0017)
+install -d "$DEB_ONLY/usr/libexec/cfa4"
+printf '#!/bin/sh\necho "cfa4-system-helper (deb-contents-check stand-in)"\n' >"$DEB_ONLY/usr/libexec/cfa4/cfa4-system-helper"
+chmod 755 "$DEB_ONLY/usr/libexec/cfa4/cfa4-system-helper"
+install -Dm644 "$HERE/io.github.ubuntuokos.cfa4.system-helper.policy" \
+  "$DEB_ONLY/usr/share/polkit-1/actions/io.github.ubuntuokos.cfa4.system-helper.policy"
 bash "$ROOT/scripts/ci/check-package-docs.sh" "$STAGE/usr/share/doc/cfa4"
 
 deb="$DIST/cfa4-$VERSION-linux-x86_64.deb"
 rm -f "$deb"
 export CFA4_MAINTAINER="${CFA4_MAINTAINER:-CFA4 contributors}"
 bash "$HERE/nfpm-package.sh" "$HERE/nfpm.yaml" "$work/ffmpeg-depends.txt" "$deb" \
-  STAGE="$STAGE" FFMPEG_DEB="$FFMPEG_DEB"
+  STAGE="$STAGE" FFMPEG_DEB="$FFMPEG_DEB" DEB_ONLY="$DEB_ONLY"
 python3 -I -c '
 import sys
 sys.path.insert(0, sys.argv[3])

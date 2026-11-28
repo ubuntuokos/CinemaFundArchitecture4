@@ -184,6 +184,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("cli", 6),
     ("studio-host", 6),
     ("fetch", 6),
+    ("system-helper", 6),
 ];
 
 /// L0 crates that are not codecs/containers (no `bitstream`-only restriction).

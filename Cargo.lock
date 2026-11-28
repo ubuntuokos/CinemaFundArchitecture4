@@ -2523,6 +2523,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-system-helper"
+version = "0.10.0"
+dependencies = [
+ "cfa4-route",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "tempfile",
+]
+
+[[package]]
 name = "cfa4-tak"
 version = "0.10.0"
 dependencies = [

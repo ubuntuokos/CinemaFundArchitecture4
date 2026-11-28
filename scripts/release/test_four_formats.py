@@ -169,6 +169,8 @@ class FourFormatArtifactTests(unittest.TestCase):
                 f"usr/share/mime/packages/{audit.APP_ID}.xml": 9,
                 f"usr/share/metainfo/{audit.APP_ID}.metainfo.xml": 9,
                 f"usr/share/icons/hicolor/scalable/apps/{audit.APP_ID}.svg": 9,
+                "usr/libexec/cfa4/cfa4-system-helper": 9,
+                f"usr/share/polkit-1/actions/{audit.APP_ID}.system-helper.policy": 9,
                 f"{audit.FFMPEG_DEB_DIR}/lib/libavcodec.so.62": 9,
                 f"{audit.FFMPEG_DEB_DIR}/lib/libavformat.so.62": 9,
                 f"{audit.FFMPEG_DEB_DIR}/lib/libavutil.so.60": 9,
@@ -192,6 +194,12 @@ class FourFormatArtifactTests(unittest.TestCase):
 
         deb = self.dist / self.names[0]
         with patch.object(audit.subprocess, "check_output", side_effect=fake_dpkg(listing())):
+            audit.verify_deb(deb, VERSION)
+        with (
+            patch.object(audit.subprocess, "check_output",
+                         side_effect=fake_dpkg(listing({"usr/libexec/cfa4/cfa4-system-helper"}))),
+            self.assertRaisesRegex(audit.AuditError, "cfa4-system-helper"),
+        ):
             audit.verify_deb(deb, VERSION)
         with (
             patch.object(audit.subprocess, "check_output", side_effect=fake_dpkg(listing({f"usr/{DOC}/copyright"}))),

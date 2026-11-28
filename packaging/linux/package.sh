@@ -105,6 +105,10 @@ if [ "$SKIP_BUILD" = 0 ]; then
   else
     (cd "$ROOT" && cargo build --release --locked -p cfa4-cli --features "$features")
   fi
+  # The root helper goes into the .deb only (ADR 0017 §8).
+  if has deb; then
+    (cd "$ROOT" && cargo build --release --locked -p cfa4-system-helper)
+  fi
 fi
 BIN="$CARGO_TARGET_DIR/release"
 WORK="$CARGO_TARGET_DIR/linux-package"
@@ -165,6 +169,15 @@ copy_docs "$STAGE/usr/share/doc/cfa4"
 # Debian-style copyright summary (the full texts sit next to it).
 install -Dm644 "$HERE/copyright" "$STAGE/usr/share/doc/cfa4/copyright"
 install -Dm644 "$HERE/70-cfa4-surfaces.rules" "$STAGE/usr/lib/udev/rules.d/70-cfa4-surfaces.rules"
+# The system helper and its polkit rule (ADR 0017): only the .deb carries them, so they are staged
+# outside the tree the tarball and the AppImage share. pkexec runs nothing else of CFA4's.
+DEB_ONLY="$WORK/deb-only"
+if has deb; then
+  install -Dm755 "$BIN/cfa4-system-helper" "$DEB_ONLY/usr/libexec/cfa4/cfa4-system-helper"
+  strip "$DEB_ONLY/usr/libexec/cfa4/cfa4-system-helper" 2>/dev/null || true
+  install -Dm644 "$HERE/io.github.ubuntuokos.cfa4.system-helper.policy" \
+    "$DEB_ONLY/usr/share/polkit-1/actions/io.github.ubuntuokos.cfa4.system-helper.policy"
+fi
 bash "$ROOT/scripts/ci/check-package-docs.sh" "$STAGE/usr/share/doc/cfa4"
 
 if command -v desktop-file-validate >/dev/null; then
@@ -190,7 +203,7 @@ if has deb; then
   # nfpm.yaml pins arch=amd64; only VERSION is read from the environment. The FFmpeg libraries'
   # Ubuntu packages replace the @FFMPEG_DEPENDS@ line. Only the pinned nfpm runs (check-nfpm.sh).
   bash "$HERE/nfpm-package.sh" "$HERE/nfpm.yaml" "$WORK/ffmpeg-depends.txt" "$DIST/$BASENAME.deb" \
-    STAGE="$STAGE" FFMPEG_DEB="$FFMPEG_DEB"
+    STAGE="$STAGE" FFMPEG_DEB="$FFMPEG_DEB" DEB_ONLY="$DEB_ONLY"
 fi
 
 # ---- cfa4-restricted-extras .deb (only on request: --formats "... restricted") ---------------------

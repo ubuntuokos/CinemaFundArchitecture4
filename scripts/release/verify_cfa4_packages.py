@@ -246,6 +246,9 @@ def verify_deb(path: Path, version: str) -> None:
         f"usr/share/mime/packages/{APP_ID}.xml",
         f"usr/share/metainfo/{APP_ID}.metainfo.xml",
         f"usr/share/icons/hicolor/scalable/apps/{APP_ID}.svg",
+        # the system helper and its polkit rule: .deb only (ADR 0017)
+        "usr/libexec/cfa4/cfa4-system-helper",
+        f"usr/share/polkit-1/actions/{APP_ID}.system-helper.policy",
     ):
         if sizes.get(entry, 0) <= 0:
             raise AuditError(f".deb missing ./{entry}")
