@@ -970,6 +970,33 @@ pub fn cinepak(data: &[u8]) {
     }
 }
 
+/// `cfa4_dvd::author` reads a VOB (2048-byte packs) written by our muxer and rewrites its navigation
+/// packs in place; the first bytes of the input pick the title set so every audio kind, both video
+/// systems and chapter lists are reached.
+pub fn dvd(data: &[u8]) {
+    use cfa4_dvd::{Audio, AudioKind, TitleSetSpec, Timing};
+    let mut i = Input::new(data);
+    let (a, b) = (i.byte(), i.byte());
+    let audio = (0..usize::from(a & 3))
+        .map(|n| Audio {
+            kind: [AudioKind::Ac3, AudioKind::Lpcm, AudioKind::Mpeg][(usize::from(b) + n) % 3],
+            channels: 1 + (b >> 4) % 8,
+            language: if b & 1 == 0 { Some(*b"en") } else { None },
+            lpcm_bits: [16, 20, 24][usize::from(b >> 2) % 3],
+            lpcm_rate: [48_000, 96_000][usize::from(b >> 3) & 1],
+        })
+        .collect();
+    let spec = TitleSetSpec {
+        timing: if a & 4 == 0 { Timing::Pal } else { Timing::Ntsc },
+        widescreen: a & 8 != 0,
+        width: [720, 704, 352][usize::from(a >> 4) % 3],
+        audio,
+        chapters: vec![0, u64::from(b) * 90_000, u64::from(a) * 900_000],
+    };
+    let mut vob = std::io::Cursor::new(i.rest().to_vec());
+    let _ = cfa4_dvd::author(&mut vob, &spec);
+}
+
 pub fn flic(data: &[u8]) {
     let _ = cfa4_flic::probe(data);
     let Ok(h) = cfa4_flic::Header::parse(data) else { return };
@@ -1110,6 +1137,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("avs2", "cfa4-avs2", avs2),
     ("avs3", "cfa4-avs3", avs3),
     ("cinepak", "cfa4-cinepak", cinepak),
+    ("dvd", "cfa4-dvd", dvd),
     ("flic", "cfa4-flic", flic),
     ("indeo", "cfa4-indeo", indeo),
     ("project", "cfa4-project", project),
