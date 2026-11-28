@@ -4991,3 +4991,13 @@ export.summary	Low	matala
 	{layout} · binaural	{layout} · binauraalinen
 	{source} · {n} objects · binaural	{source} · {n} objektia · binauraalinen
 	Headphones: {error}. Playing through the speakers.	Kuulokkeet: {error}. Ääni kuuluu kaiuttimista.
+	Headphones	Kuulokkeet
+	Monitoring	Tarkkailu
+	Speakers	Kaiuttimet
+	HRTF set	HRTF-sarja
+	Built-in (SADIE II KU100)	Sisäänrakennettu (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF-sarjat (*.sofa *.maudhrtf)
+	Room	Huone
+	Little	Vähän
+	LFE level	LFE-taso
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Kuulokkeet toistavat miksauksen tai leikkeen Dolby Atmos- tai IAB-objektit niiden paikoilta ympäriltäsi HRTF-sarjan avulla. Vienteihin tämä ei vaikuta.

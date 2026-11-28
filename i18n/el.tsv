@@ -4991,3 +4991,13 @@ export.summary	Low	χαμηλή
 	{layout} · binaural	{layout} · binaural
 	{source} · {n} objects · binaural	{source} · {n} αντικείμενα · binaural
 	Headphones: {error}. Playing through the speakers.	Ακουστικά: {error}. Ο ήχος παίζει από τα ηχεία.
+	Headphones	Ακουστικά
+	Monitoring	Παρακολούθηση
+	Speakers	Ηχεία
+	HRTF set	Σύνολο HRTF
+	Built-in (SADIE II KU100)	Ενσωματωμένο (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	Σύνολα HRTF (*.sofa *.maudhrtf)
+	Room	Χώρος
+	Little	Λίγο
+	LFE level	Στάθμη LFE
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Τα ακουστικά αναπαράγουν τη μίξη ή τα αντικείμενα Dolby Atmos ή IAB ενός κλιπ από τις θέσεις τους γύρω σας μέσω του συνόλου HRTF. Οι εξαγωγές δεν αλλάζουν.

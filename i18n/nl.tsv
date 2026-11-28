@@ -4989,3 +4989,13 @@ export.summary	Low	laag
 	{layout} · binaural	{layout} · binauraal
 	{source} · {n} objects · binaural	{source} · {n} objecten · binauraal
 	Headphones: {error}. Playing through the speakers.	Koptelefoon: {error}. Het geluid speelt via de luidsprekers.
+	Headphones	Koptelefoon
+	Monitoring	Meeluisteren
+	Speakers	Luidsprekers
+	HRTF set	HRTF-set
+	Built-in (SADIE II KU100)	Ingebouwd (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF-sets (*.sofa *.maudhrtf)
+	Room	Ruimte
+	Little	Weinig
+	LFE level	LFE-niveau
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	De koptelefoon speelt de mix, of de Dolby Atmos- of IAB-objecten van een clip, vanaf hun plek om je heen via de HRTF-set. Exports veranderen niet.

@@ -4996,3 +4996,13 @@
 	{layout} · binaural	{layout} · binaural
 	{source} · {n} objects · binaural	{source} · {n} objetos · binaural
 	Headphones: {error}. Playing through the speakers.	Auriculares: {error}. El sonido sale por los altavoces.
+	Headphones	Auriculares
+	Monitoring	Monitorización
+	Speakers	Altavoces
+	HRTF set	Conjunto HRTF
+	Built-in (SADIE II KU100)	Integrado (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	Conjuntos HRTF (*.sofa *.maudhrtf)
+	Room	Sala
+	Little	Poca
+	LFE level	Nivel de LFE
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Los auriculares reproducen la mezcla, o los objetos Dolby Atmos o IAB de un clip, desde su lugar a tu alrededor mediante el conjunto HRTF. Las exportaciones no cambian.

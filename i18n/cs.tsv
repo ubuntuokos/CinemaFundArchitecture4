@@ -4989,3 +4989,13 @@ export.summary	Low	nízká
 	{layout} · binaural	{layout} · binaurálně
 	{source} · {n} objects · binaural	{source} · {n} objektů · binaurálně
 	Headphones: {error}. Playing through the speakers.	Sluchátka: {error}. Zvuk hraje z reproduktorů.
+	Headphones	Sluchátka
+	Monitoring	Příposlech
+	Speakers	Reproduktory
+	HRTF set	Sada HRTF
+	Built-in (SADIE II KU100)	Vestavěná (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	Sady HRTF (*.sofa *.maudhrtf)
+	Room	Místnost
+	Little	Málo
+	LFE level	Úroveň LFE
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Sluchátka přehrají mix nebo objekty Dolby Atmos či IAB klipu z jejich míst kolem vás pomocí sady HRTF. Exporty se nemění.

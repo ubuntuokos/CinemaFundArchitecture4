@@ -4972,3 +4972,13 @@
 	{layout} · binaural	{layout} · бінаурально
 	{source} · {n} objects · binaural	{source} · об'єктів: {n} · бінаурально
 	Headphones: {error}. Playing through the speakers.	Навушники: {error}. Звук іде через динаміки.
+	Headphones	Навушники
+	Monitoring	Прослуховування
+	Speakers	Динаміки
+	HRTF set	Набір HRTF
+	Built-in (SADIE II KU100)	Вбудований (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	Набори HRTF (*.sofa *.maudhrtf)
+	Room	Кімната
+	Little	Трохи
+	LFE level	Рівень LFE
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Навушники відтворюють мікс або об'єкти Dolby Atmos чи IAB кліпу з їхніх місць навколо вас через набір HRTF. Експорт не змінюється.

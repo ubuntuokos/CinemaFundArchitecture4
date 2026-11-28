@@ -4988,3 +4988,13 @@ export.summary	Low	低
 	{layout} · binaural	{layout} · 雙耳
 	{source} · {n} objects · binaural	{source} · {n} 個物件 · 雙耳
 	Headphones: {error}. Playing through the speakers.	耳機：{error}。改由喇叭播放。
+	Headphones	耳機
+	Monitoring	監聽
+	Speakers	喇叭
+	HRTF set	HRTF 集
+	Built-in (SADIE II KU100)	內建（SADIE II KU100）
+	HRTF sets (*.sofa *.maudhrtf)	HRTF 集 (*.sofa *.maudhrtf)
+	Room	房間
+	Little	少
+	LFE level	LFE 電平
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	耳機透過 HRTF 集，從你周圍的原始位置播放混音，或剪輯的 Dolby Atmos / IAB 物件。輸出不受影響。

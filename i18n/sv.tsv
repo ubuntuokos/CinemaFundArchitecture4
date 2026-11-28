@@ -4991,3 +4991,13 @@ export.summary	Low	låg
 	{layout} · binaural	{layout} · binauralt
 	{source} · {n} objects · binaural	{source} · {n} objekt · binauralt
 	Headphones: {error}. Playing through the speakers.	Hörlurar: {error}. Ljudet spelas i högtalarna.
+	Headphones	Hörlurar
+	Monitoring	Medhörning
+	Speakers	Högtalare
+	HRTF set	HRTF-uppsättning
+	Built-in (SADIE II KU100)	Inbyggd (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF-uppsättningar (*.sofa *.maudhrtf)
+	Room	Rum
+	Little	Lite
+	LFE level	LFE-nivå
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Hörlurarna spelar mixen, eller ett klipps Dolby Atmos- eller IAB-objekt, från sina platser runt dig via HRTF-uppsättningen. Exporter ändras inte.

@@ -4997,3 +4997,13 @@
 	{layout} · binaural	{layout} · binaural
 	{source} · {n} objects · binaural	{source} · {n} objek · binaural
 	Headphones: {error}. Playing through the speakers.	Headphone: {error}. Suara diputar lewat speaker.
+	Headphones	Headphone
+	Monitoring	Pemantauan
+	Speakers	Speaker
+	HRTF set	Set HRTF
+	Built-in (SADIE II KU100)	Bawaan (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	Set HRTF (*.sofa *.maudhrtf)
+	Room	Ruangan
+	Little	Sedikit
+	LFE level	Level LFE
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Headphone memutar mix, atau objek Dolby Atmos atau IAB dari klip, dari posisinya di sekitar Anda melalui set HRTF. Ekspor tidak berubah.

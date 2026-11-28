@@ -4994,3 +4994,13 @@
 	{layout} · binaural	{layout} · binaural
 	{source} · {n} objects · binaural	{source} · {n} objets · binaural
 	Headphones: {error}. Playing through the speakers.	Casque : {error}. Le son passe par les haut-parleurs.
+	Headphones	Casque
+	Monitoring	Écoute
+	Speakers	Haut-parleurs
+	HRTF set	Jeu HRTF
+	Built-in (SADIE II KU100)	Intégré (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	Jeux HRTF (*.sofa *.maudhrtf)
+	Room	Pièce
+	Little	Peu
+	LFE level	Niveau LFE
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Le casque restitue le mixage, ou les objets Dolby Atmos ou IAB d'un clip, depuis leur place autour de vous grâce au jeu HRTF. Les exports ne changent pas.

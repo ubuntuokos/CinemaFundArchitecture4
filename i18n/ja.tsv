@@ -4998,3 +4998,13 @@
 	{layout} · binaural	{layout} · バイノーラル
 	{source} · {n} objects · binaural	{source} · {n} オブジェクト · バイノーラル
 	Headphones: {error}. Playing through the speakers.	ヘッドホン: {error}。スピーカーで再生します。
+	Headphones	ヘッドホン
+	Monitoring	モニタリング
+	Speakers	スピーカー
+	HRTF set	HRTF セット
+	Built-in (SADIE II KU100)	内蔵（SADIE II KU100）
+	HRTF sets (*.sofa *.maudhrtf)	HRTF セット (*.sofa *.maudhrtf)
+	Room	ルーム
+	Little	少なめ
+	LFE level	LFE レベル
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	ヘッドホンでは、ミックスまたはクリップの Dolby Atmos / IAB オブジェクトを、HRTF セットを使ってあなたの周りの本来の位置から再生します。書き出しは変わりません。

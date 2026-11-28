@@ -4992,3 +4992,13 @@ export.summary	Low	დაბალი
 	{layout} · binaural	{layout} · ბინაურალური
 	{source} · {n} objects · binaural	{source} · {n} ობიექტი · ბინაურალური
 	Headphones: {error}. Playing through the speakers.	ყურსასმენები: {error}. ხმა დინამიკებით ისმის.
+	Headphones	ყურსასმენები
+	Monitoring	მონიტორინგი
+	Speakers	დინამიკები
+	HRTF set	HRTF ნაკრები
+	Built-in (SADIE II KU100)	ჩაშენებული (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF ნაკრებები (*.sofa *.maudhrtf)
+	Room	ოთახი
+	Little	ცოტა
+	LFE level	LFE დონე
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	ყურსასმენები HRTF ნაკრებით უკრავს მიქსს ან კლიპის Dolby Atmos ან IAB ობიექტებს მათი ადგილებიდან თქვენ გარშემო. ექსპორტი არ იცვლება.

@@ -4991,3 +4991,13 @@ export.summary	Low	madal
 	{layout} · binaural	{layout} · binauraalne
 	{source} · {n} objects · binaural	{source} · {n} objekti · binauraalne
 	Headphones: {error}. Playing through the speakers.	Kõrvaklapid: {error}. Heli kostab kõlaritest.
+	Headphones	Kõrvaklapid
+	Monitoring	Jälgimine
+	Speakers	Kõlarid
+	HRTF set	HRTF-komplekt
+	Built-in (SADIE II KU100)	Sisseehitatud (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF-komplektid (*.sofa *.maudhrtf)
+	Room	Ruum
+	Little	Vähe
+	LFE level	LFE tase
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Kõrvaklapid esitavad miksi või klipi Dolby Atmose või IAB objektid nende kohtadelt sinu ümber HRTF-komplekti abil. Eksporte see ei muuda.

@@ -4989,3 +4989,13 @@ export.summary	Low	thấp
 	{layout} · binaural	{layout} · binaural
 	{source} · {n} objects · binaural	{source} · {n} đối tượng · binaural
 	Headphones: {error}. Playing through the speakers.	Tai nghe: {error}. Âm thanh phát qua loa.
+	Headphones	Tai nghe
+	Monitoring	Giám sát
+	Speakers	Loa
+	HRTF set	Bộ HRTF
+	Built-in (SADIE II KU100)	Tích hợp (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	Bộ HRTF (*.sofa *.maudhrtf)
+	Room	Phòng
+	Little	Ít
+	LFE level	Mức LFE
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Tai nghe phát bản mix, hoặc các đối tượng Dolby Atmos hay IAB của clip, từ vị trí của chúng quanh bạn qua bộ HRTF. Bản xuất không thay đổi.

@@ -4991,3 +4991,13 @@ export.summary	Low	తక్కువ
 	{layout} · binaural	{layout} · బైనారల్
 	{source} · {n} objects · binaural	{source} · {n} ఆబ్జెక్టులు · బైనారల్
 	Headphones: {error}. Playing through the speakers.	హెడ్‌ఫోన్లు: {error}. శబ్దం స్పీకర్లలో వస్తోంది.
+	Headphones	హెడ్‌ఫోన్లు
+	Monitoring	మానిటరింగ్
+	Speakers	స్పీకర్లు
+	HRTF set	HRTF సెట్
+	Built-in (SADIE II KU100)	అంతర్నిర్మిత (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF సెట్లు (*.sofa *.maudhrtf)
+	Room	గది
+	Little	కొంచెం
+	LFE level	LFE స్థాయి
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	హెడ్‌ఫోన్లు HRTF సెట్ ద్వారా మిక్స్‌ను లేదా క్లిప్ యొక్క Dolby Atmos లేదా IAB ఆబ్జెక్టులను మీ చుట్టూ వాటి స్థానాల నుండి వినిపిస్తాయి. ఎగుమతులు మారవు.

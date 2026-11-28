@@ -4992,3 +4992,13 @@ export.summary	Low	žema
 	{layout} · binaural	{layout} · binauralinis
 	{source} · {n} objects · binaural	{source} · objektų: {n} · binauralinis
 	Headphones: {error}. Playing through the speakers.	Ausinės: {error}. Garsas groja per garsiakalbius.
+	Headphones	Ausinės
+	Monitoring	Klausymas
+	Speakers	Garsiakalbiai
+	HRTF set	HRTF rinkinys
+	Built-in (SADIE II KU100)	Įtaisytas (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF rinkiniai (*.sofa *.maudhrtf)
+	Room	Kambarys
+	Little	Mažai
+	LFE level	LFE lygis
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Ausinės per HRTF rinkinį groja miksą arba klipo Dolby Atmos ar IAB objektus iš jų vietų aplink jus. Eksportai nesikeičia.
