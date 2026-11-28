@@ -107,6 +107,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `mace` | L0 | Apple MACE 3:1 and 6:1 audio decoders (QuickTime), ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/mace/README.md)) |
 | `truespeech` | L0 | DSP Group TrueSpeech speech decoder (WAV, AVI, Matroska), ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/truespeech/README.md)) |
 | `ilbc` | L0 | iLBC (RFC 3951) speech decoder, ported from WebRTC's fixed-point libilbc (BSD-3-Clause) ([README](../crates/ilbc/README.md)) |
+| `qcelp` | L0 | QCELP-13K (IS-733) speech decoder and QCP file reader, ported from FFmpeg (LGPL-2.1-or-later) ([README](../crates/qcelp/README.md)) |
 | `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
 | `twinvq` | L0 | NTT TwinVQ (VQF) and Voxware MetaSound audio decoder, all nine VQF modes and the MetaSound modes, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/twinvq/README.md)) |
 | `twinvq` | L0 | NTT TwinVQ (VQF) audio decoder, all nine VQF modes, ported from FFmpeg (LGPL-2.1-or-later, owner-approved exception) ([README](../crates/twinvq/README.md)) |

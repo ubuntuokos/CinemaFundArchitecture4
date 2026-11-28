@@ -1173,6 +1173,22 @@ impl AudioFileSource {
             };
             return Ok(Self { info, rate, samples });
         }
+        if ext == "qcp" {
+            let pcm = cfa4_qcelp::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let rate = cfa4_qcelp::SAMPLE_RATE;
+            let frames = pcm.len();
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo { sample_rate: rate, channels: 1, codec: "QCELP".into(), ..AudioStreamInfo::default() }],
+                container: "QCP".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate, samples: vec![pcm] });
+        }
         if ext == "shn" {
             let (shn, planes) = cfa4_shorten::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
             let samples: Vec<Vec<f32>> = planes.into_iter().map(|p| p.into_iter().map(|v| shn.to_f32(v)).collect()).collect();
@@ -1689,6 +1705,7 @@ pub fn opener(name: &str, bytes: Arc<[u8]>) -> Option<std::result::Result<Shared
             | "acm"
             | "g729"
             | "lbc"
+            | "qcp"
             | "mpc"
             | "shn"
             | "adx"

@@ -121,6 +121,7 @@ szabadalommal védett formátumot.
 | Apple MACE 3:1 és 6:1 | dekódolás | `crates/mace` (az FFmpeg portja) | alap | függőben | | |
 | DSP Group TrueSpeech | dekódolás | `crates/truespeech` (az FFmpeg portja) | alap | függőben | | |
 | iLBC | dekódolás; `.lbc` fájlok olvasása | `crates/ilbc` (a WebRTC libilbc portja) | alap | függőben | | |
+| QCELP (QCELP-13K) | dekódolás; `.qcp` fájlok olvasása | `crates/qcelp` (az FFmpeg portja) | alap | függőben | | |
 | TTA (True Audio) | dekódolás; `.tta` és Matroska olvasása | `crates/tta` (a libtta portja) | alap | függőben | | |
 | NTT TwinVQ (VQF) | dekódolás; `.vqf`, `.vql`, `.vqe` fájlok olvasása | `crates/twinvq` (az FFmpeg vqf-demuxerének és TwinVQ-dekóderének portja) | alap | függőben | | |
 | Voxware MetaSound | dekódolás; WAV (0x0075) fájlok olvasása | `crates/twinvq` (az FFmpeg MetaSound-dekóderének portja) | alap | függőben | | |

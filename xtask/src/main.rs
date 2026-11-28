@@ -81,6 +81,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("mace", 0),
     ("truespeech", 0),
     ("ilbc", 0),
+    ("qcelp", 0),
     ("tta", 0),
     ("twinvq", 0),
     ("yamaha-oki", 0),

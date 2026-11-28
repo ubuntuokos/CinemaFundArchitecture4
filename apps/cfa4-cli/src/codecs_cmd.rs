@@ -182,6 +182,7 @@ static ROWS: &[Row] = &[
     audio("Apple MACE 3:1 and 6:1", &["mace"], Ported, Sw("in QuickTime"), NoEnc),
     audio("DSP Group TrueSpeech", &["truespeech"], Ported, Sw("in WAV, AVI and Matroska"), NoEnc),
     audio("iLBC", &["ilbc"], Ported, Sw(""), NoEnc),
+    audio("QCELP (QCP files)", &["qcelp"], Ported, Sw(""), NoEnc),
     audio("Musepack SV7 / SV8", &["musepack"], Ported, Sw(""), NoEnc),
     audio("ADPCM, G.711, G.722", &["adpcm"], Own, Sw(""), NoEnc),
     audio("Yamaha ADPCM / Dialogic OKI ADPCM", &["yamaha-oki"], Ported, Sw("in WAV files (tags 0x0020, 0x0010)"), NoEnc),

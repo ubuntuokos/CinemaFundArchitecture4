@@ -290,7 +290,7 @@ pub const STILL_EXTENSIONS: &[&str] =
 pub const AUDIO_EXTENSIONS: &[&str] = &[
     "wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "dts", "dtshd", "flac", "ogg", "opus", "spx", "amr", "awb", "tta", "at3", "at9", "oma",
     "omg", "aa3", "aea", "tak", "acm", "g729", "lbc", "mpc", "shn", "adx", "hca", "vqf", "vql", "vqe", "omg", "aa3", "aea", "tak", "acm", "g729", "lbc", "mpc",
-    "shn", "adx", "hca", "brstm", "bfstm", "bcstm",
+    "shn", "adx", "hca", "qcp", "brstm", "bfstm", "bcstm",
 ];
 pub const VIDEO_EXTENSIONS: &[&str] = &[
     "mp4", "m4v", "mov", "mkv", "webm", "avi", "mxf", "mts", "m2ts", "m2t", "ts", "mpg", "mpeg", "vob", "mod", "tod", "m2v", "m1v", "mpv", "3gp", "y4m", "apv",

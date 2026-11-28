@@ -100,6 +100,7 @@ cfa4-g729 = { path = "crates/g729" }
 cfa4-mace = { path = "crates/mace" }
 cfa4-truespeech = { path = "crates/truespeech" }
 cfa4-ilbc = { path = "crates/ilbc" }
+cfa4-qcelp = { path = "crates/qcelp" }
 cfa4-thp = { path = "crates/thp" }
 cfa4-mobiclip = { path = "crates/mobiclip" }
 cfa4-tta = { path = "crates/tta" }
@@ -232,6 +233,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-mobiclip]
+opt-level = 3
+
+[profile.dev.package.cfa4-qcelp]
 opt-level = 3
 
 [profile.dev.package.cfa4-tta]

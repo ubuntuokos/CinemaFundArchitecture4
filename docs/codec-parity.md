@@ -109,6 +109,7 @@ fidelity and the remaining work.
 | Apple MACE 3:1 and 6:1 | audio | `crates/mace` | ported | yes: in QuickTime | no |
 | DSP Group TrueSpeech | audio | `crates/truespeech` | ported | yes: in WAV, AVI and Matroska | no |
 | iLBC | audio | `crates/ilbc` | ported | yes | no |
+| QCELP (QCP files) | audio | `crates/qcelp` | ported | yes | no |
 | Musepack SV7 / SV8 | audio | `crates/musepack` | ported | yes | no |
 | ADPCM, G.711, G.722 | audio | `crates/adpcm` | own | yes | no |
 | Yamaha ADPCM / Dialogic OKI ADPCM | audio | `crates/yamaha-oki` | ported | yes: in WAV files (tags 0x0020, 0x0010) | no |
@@ -217,6 +218,7 @@ fidelity and the remaining work.
 | id RoQ DPCM | not checked | own decoder ([`cfa4-roq`](../crates/roq/README.md), backlog CB-25.1, ported from FFmpeg n7.1.1): mono and stereo, 22.05 kHz; `.roq` files | none | same samples as ffmpeg's `roq_dpcm` on random chunks and on files its own encoder writes; through the media source also from the middle | — | — |
 | Interplay MVE DPCM | not checked | own decoder ([`cfa4-mve`](../crates/mve/README.md), backlog CB-25.2, ported from FFmpeg n7.1.1): Interplay DPCM and 8 / 16-bit PCM, mono and stereo; `.mve` files | none | same samples as ffmpeg on random sound packets; through the media source also from the middle | — | — |
 | iLBC | not checked | own decoder ([`cfa4-ilbc`](../crates/ilbc/README.md), backlog CB-12.1, ported from WebRTC libilbc 3.0.4 without the enhancer, as ffmpeg decodes): 20 ms and 30 ms frames, lost-frame concealment; RFC 3952 `.lbc` files | none | bit-exact vs ffmpeg's `ilbc` decoder on synthetic 20 ms and 30 ms streams (from ffmpeg's initial state; ffmpeg zeroes the LSF history where RFC 3951 starts from the mean); read through the media source also from the middle | — | — |
+| QCELP (QCELP-13K) | not checked | own decoder ([`cfa4-qcelp`](../crates/qcelp/README.md), backlog CB-38.2, ported from FFmpeg n7.1.1 `qcelpdec.c` and its CELP helpers): full, half, quarter and eighth rate, blank frames, erasure concealment, postfilter; QCP (RFC 3625) files with FFmpeg's demuxer rules | none | bit-exact (float bits) vs ffmpeg's `qcelp` decoder and `qcp` demuxer on synthetic streams: valid frames of every rate, erasures, packets without the rate byte, packets of an unknown size, fixed-size files; read through the media source also from the middle | — | — |
 | AMR-NB, AMR-WB | not checked | own decoders (`cfa4-amr`, CB-6.2), ported from opencore-amr: every mode, DTX comfort noise, lost frames; `.amr` / `.awb`, 3GP / MP4 / MOV (`samr`, `sawb`), Matroska | none | bit-exact vs opencore-amr in every container, also after a seek (decoder checkpoints) | 90% | — |
 | QDesign Music 2 | not checked | own decoder ([`cfa4-qdm2`](../crates/qdm2/README.md), backlog CB-36.2, ported from FFmpeg n7.1.1): mono and stereo, FFT sizes 128 / 256 / 512; QuickTime and MP4 `QDM2` tracks, read from the middle after one packet of pre-roll | none | sample for sample the FATE reference PCM (`qdm2/subpacket12.mov`, mono, 8 blocks), also through the media source; damaged blocks without a panic; no encoder exists, so stereo and the other FFT sizes have no oracle | — | — |
 | Musepack SV7, SV8 | not checked | own decoder (`cfa4-musepack`, CB-10.2), ported from libmpcdec r475 (float build): SV7 and SV8 streams, mid/side, noise substitution, gapless length, ID3v2-tagged files (`.mpc`) | none | exactly libmpcdec's float samples (reference r475 built from source in CI) on SV8 streams from the reference encoder (qualities 0–10, 32–48 kHz, mono and stereo) and on the 2 FATE samples (SV7 and SV8, local); within 1 LSB of ffmpeg (fixed-point) at 16 bits on the FATE samples; through the media source also from the middle; 2000 damaged files without a panic | — | — |
@@ -235,6 +237,7 @@ fidelity and the remaining work.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-21 | minor | QCELP decode and QCP files (`cfa4-qcelp`, codec backlog CB-38.2) |
 | 2026-11-21 | minor | Autodesk FLIC decode (`cfa4-flic`, codec backlog CB-35.2) |
 | 2026-11-21 | minor | Bink 1 video and audio decode in Bink files (`cfa4-bink`, codec backlog CB-23.1, CB-24.1) |
 | 2026-11-23 | minor | Huffyuv MT (`HYMT`) sliced packets in AVI and Matroska (`cfa4-huffyuv`, codec backlog CB-36.1) |
