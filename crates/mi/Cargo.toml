@@ -1,0 +1,19 @@
+[package]
+name = "cfa4-mi"
+description = "CFA4 Media Intelligence core (layer L2): content hashes, time anchors and provenance classes; pure logic, no database"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfa4-time = { workspace = true }
+serde = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

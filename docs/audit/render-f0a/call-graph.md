@@ -231,6 +231,7 @@ graph LR
 | `cfa4-engine/dcp_export.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/dcp_import.rs` | `cfa4-project` | `BinId` |
 | `cfa4-engine/dcp_import.rs` | `cfa4-time` | `Tick` |
+| `cfa4-engine/dcp_repair.rs` | `cfa4-export` | `Progress`, `Report` |
 | `cfa4-engine/dcp_validation.rs` | `cfa4-export` | `Report` |
 | `cfa4-engine/dcpomatic.rs` | `cfa4-export` | `Report` |
 | `cfa4-engine/delivery_check.rs` | `cfa4-geom` | `Rect` |
@@ -844,7 +845,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 658 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 659 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (32)
 

@@ -307,6 +307,27 @@ impl Renderer {
         self.pending.clear();
     }
 
+    /// Whether any object has had, or has queued, a state since the start (or the last reset).
+    pub fn has_states(&self) -> bool {
+        !self.pending.is_empty() || self.placed.iter().any(|&b| b)
+    }
+
+    /// Moves the first queued state of every object that has none yet back to sample `at`, if it
+    /// is later. For a caller that held the audio back until the first metadata arrived: the
+    /// objects then sound from `at` on, with the position their first state gives them.
+    pub fn backdate_first_states(&mut self, at: u64) {
+        let mut seen: Vec<usize> = Vec::new();
+        for p in &mut self.pending {
+            if self.placed.get(p.object).copied().unwrap_or(false) || seen.contains(&p.object) {
+                continue;
+            }
+            seen.push(p.object);
+            p.at = p.at.min(at);
+        }
+        // stable: states of one sample keep their order
+        self.pending.sort_by_key(|p| p.at);
+    }
+
     /// Sets `object` to `state` from sample `at` on, ramping over `ramp` samples.
     pub fn schedule(&mut self, at: u64, object: usize, state: &ObjectState, ramp: u64) {
         if object >= MAX_OBJECTS {

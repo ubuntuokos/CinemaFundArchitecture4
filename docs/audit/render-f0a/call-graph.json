@@ -2759,6 +2759,13 @@
    "class": "other",
    "crate": "cfa4-engine",
    "kind": "struct",
+   "module": "dcp_repair.rs",
+   "name": "DcpRepairSession"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
    "module": "dcp_validation.rs",
    "name": "DcpValidationSession"
   },
@@ -8507,6 +8514,16 @@
    "from": "cfa4-engine/dcp_import.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/dcp_repair.rs",
+   "item": "Progress",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/dcp_repair.rs",
+   "item": "Report",
+   "to": "cfa4-export"
   },
   {
    "from": "cfa4-engine/dcp_validation.rs",
