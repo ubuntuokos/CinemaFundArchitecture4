@@ -874,7 +874,7 @@ impl Imp<'_, '_> {
         }
         if self.within_budget("effects", e, "OTIO effects from other programs") {
             kept.push(e.clone());
-            self.report.warn(format!("OTIO effect \"{name}\" has no CFA4 equivalent; it is kept and written back unchanged"));
+            self.report.warn(format!("OTIO effect \"{name}\" is not supported by CFA4; it is kept and written back unchanged"));
         }
     }
 
