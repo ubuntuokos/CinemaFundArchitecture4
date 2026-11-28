@@ -25,7 +25,7 @@ use crate::smart_cut::SmartCutError;
 use crate::smart_cut_mkv::{MkvAudio, MkvCopyReport, MkvCopySource, execute_mkv_copy, mkv_cut_interval, plan_mkv_audio, verify_mkv_copy};
 
 const STRICT: Policy = Policy { allow_experimental: false };
-const RATE: u32 = 48_000;
+pub(crate) const RATE: u32 = 48_000;
 
 fn dir(name: &str) -> PathBuf {
     let d = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/fixtures/smart-cut-mkv-copy").join(name);
@@ -34,14 +34,14 @@ fn dir(name: &str) -> PathBuf {
 }
 
 /// One audio track of a source: FFmpeg encoder, channel layout and extra options.
-struct Audio<'a> {
-    encoder: &'a str,
-    layout: &'a str,
+pub(crate) struct Audio<'a> {
+    pub(crate) encoder: &'a str,
+    pub(crate) layout: &'a str,
 }
 
 /// The source `name/source.<ext>`: the clip in `video` (FFmpeg encoder and options) with a 2 s
 /// tone in each of `audio`.
-fn source(name: &str, video: &[&str], audio: &[Audio<'_>], ext: &str) -> Option<PathBuf> {
+pub(crate) fn source(name: &str, video: &[&str], audio: &[Audio<'_>], ext: &str) -> Option<PathBuf> {
     let context = format!("Smart Cut into Matroska {name}");
     let ff = ffmpeg_or_skip(&context)?;
     for e in std::iter::once(video[0]).chain(audio.iter().map(|a| a.encoder)) {
@@ -72,7 +72,7 @@ fn source(name: &str, video: &[&str], audio: &[Audio<'_>], ext: &str) -> Option<
 
 /// A GOP-boundary plan of the pictures from presentation position `from` to `to`, moved to the
 /// nearest safe points.
-fn plan(stream: &StreamIndex, source: Container, output: Container, from: u64, to: u64) -> SmartCutPlan {
+pub(crate) fn plan(stream: &StreamIndex, source: Container, output: Container, from: u64, to: u64) -> SmartCutPlan {
     let pts = |p: u64| {
         let f = stream.frames.iter().find(|f| f.presentation_index == Some(p)).unwrap();
         MediaTime::new(f.pts.unwrap(), stream.timebase).to_tick().unwrap()
@@ -125,7 +125,7 @@ fn cut_bytes(bytes: Vec<u8>, output: Container, from: u64, to: u64) -> Result<Cu
 }
 
 /// FFmpeg's framemd5 hashes of the video, in presentation order.
-fn framemd5(ff: &Path, file: &Path) -> Vec<String> {
+pub(crate) fn framemd5(ff: &Path, file: &Path) -> Vec<String> {
     let o = Command::new(ff).args(["-v", "error", "-i"]).arg(file).args(["-map", "0:v:0", "-f", "framemd5", "-"]).output().unwrap();
     assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
     String::from_utf8_lossy(&o.stdout).lines().filter(|l| !l.starts_with('#')).filter_map(|l| l.rsplit(',').next().map(|h| h.trim().to_string())).collect()
@@ -133,7 +133,7 @@ fn framemd5(ff: &Path, file: &Path) -> Vec<String> {
 
 /// FFmpeg's decode of audio stream `k` as interleaved 32-bit float samples, from the stream's
 /// first timestamp (no padding to the file start).
-fn decode(ff: &Path, file: &Path, k: usize) -> Vec<f32> {
+pub(crate) fn decode(ff: &Path, file: &Path, k: usize) -> Vec<f32> {
     let o = Command::new(ff).args(["-v", "error", "-copyts", "-i"]).arg(file).args(["-map", &format!("0:a:{k}"), "-f", "f32le", "-"]).output().unwrap();
     assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
     o.stdout.chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect()
@@ -177,7 +177,7 @@ fn check(name: &str, video: &[&str], audio: &[Audio<'_>], ext: &str, output: Con
     Some(c)
 }
 
-const H264: [&str; 7] = ["libx264", "-bf", "2", "-pix_fmt", "yuv420p", "-x264-params", "keyint=12:min-keyint=12:scenecut=0:log-level=error"];
+pub(crate) const H264: [&str; 7] = ["libx264", "-bf", "2", "-pix_fmt", "yuv420p", "-x264-params", "keyint=12:min-keyint=12:scenecut=0:log-level=error"];
 
 #[test]
 fn h264_with_ac3_and_aac_is_cut_into_matroska() {
