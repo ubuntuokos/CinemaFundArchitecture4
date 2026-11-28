@@ -6,15 +6,22 @@
 //!
 //! | `vdb.import` | adds a `.vdb` file, or a numbered sequence (`name.0001.vdb`), to the Project panel as a volume item (N1-5); no timeline is created |
 //! | `vdb.check` | the files of a volume item that are missing on disk (the relink report, N1-7) |
+//! | `vdb.render` | a density preview of a volume item (one frame of a sequence) rendered by the worker to an RGBA PNG and imported as an ordinary still: the compositor and the renderer are unchanged (N2) |
 //! | `vdb.relink` | points a volume item at another first file; frames are found again; one undo step |
 //!
+//! `vdb.render` runs in the background through the task queue (N2-5): it returns `{job, png, ...}` at once and the picture is imported
+//! when the job finishes (`jobs.list`, `jobs.cancel`; cancelling kills the worker and imports nothing). `wait: true` renders now and
+//! returns the imported `items` like before.
+//!
 //! A missing or failing worker is an ordinary error message; the engine never depends on it to cut, play or save.
+
+use std::sync::{Arc, Mutex};
 
 use serde_json::{Value, json};
 
 use cfa4_project::{ItemId, ItemKind, Label, VolumeAsset};
 
-use crate::commands::{CommandSpec, always, bad, item_p, str_p, u64_p};
+use crate::commands::{CommandSpec, always, bad, bool_p, item_p, str_p, u64_p};
 use crate::{EngineError, Result, Session};
 
 const EXTENSIONS: &[&str] = &["vdb"];
@@ -117,6 +124,181 @@ fn inspect(_: &mut Session, p: &Value) -> Result<Value> {
     serde_json::to_value(&info).map(|v| json!({"path": path, "inspection": v})).map_err(|e| EngineError::Other(e.to_string()))
 }
 
+/// Where a preview goes when the caller names no file: the temp folder, one file per item, frame, size and quality.
+fn default_preview_path(item: ItemId, frame: usize, w: u32, h: u32, q: cfa4_vdb::Quality) -> std::path::PathBuf {
+    crate::temp_dir().join("CFA4 Volume Previews").join(format!("volume-{}-f{frame}-{w}x{h}-{}.png", item.0, q.id()))
+}
+
+fn render(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "vdb.render";
+    let (id, v) = volume_p(s, p, CMD)?;
+    let frame = u64_p(p, "frame").unwrap_or(0) as usize;
+    let input = if v.is_sequence() {
+        match v.frames.get(frame) {
+            Some(Some(f)) => f.clone(),
+            Some(None) => return Err(EngineError::Other(format!("frame {frame} of {} is missing", v.path))),
+            None => return Err(bad(CMD, format!("frame {frame} is outside the sequence of {} frames", v.frames.len()))),
+        }
+    } else if frame == 0 {
+        v.path.clone()
+    } else {
+        return Err(bad(CMD, "a single file has only frame 0"));
+    };
+    let dim = |k: &str, default: u32| -> Result<u32> {
+        match u64_p(p, k) {
+            None => Ok(default),
+            Some(n) if (1..=8192).contains(&n) => Ok(n as u32),
+            Some(_) => Err(bad(CMD, format!("`{k}` must be 1..8192"))),
+        }
+    };
+    let (w, h) = (dim("width", 640)?, dim("height", 360)?);
+    // the level is the user's: it is never lowered automatically (N2-1)
+    let quality = match str_p(p, "quality") {
+        None => cfa4_vdb::Quality::Standard,
+        Some(q) => cfa4_vdb::Quality::from_id(q).ok_or_else(|| bad(CMD, "`quality` must be preview, standard or high"))?,
+    };
+    let mut req = cfa4_vdb::RenderRequest::new(w, h, quality);
+    req.grid = str_p(p, "grid").map(str::to_string);
+    if let Some(a) = p.get("azimuth").and_then(Value::as_f64) {
+        req.azimuth_deg = a;
+    }
+    if let Some(e) = p.get("elevation").and_then(Value::as_f64) {
+        req.elevation_deg = e;
+    }
+    let out = match str_p(p, "out") {
+        Some(o) => std::path::PathBuf::from(o),
+        None => default_preview_path(id, frame, w, h, quality),
+    };
+    if let Some(dir) = out.parent() {
+        std::fs::create_dir_all(dir).map_err(|e| EngineError::Other(format!("{}: {e}", dir.display())))?;
+    }
+    let worker = cfa4_vdb::Worker::discover().map_err(|e| EngineError::Other(e.to_string()))?;
+    let out_s = out.to_string_lossy().to_string();
+    let job_id = s.jobs.iter().map(|j| j.id).max().unwrap_or(0) + 1;
+    let label = format!("VDB preview ({}, frame {frame})", name_of(&v.path));
+    let job = crate::Job { id: job_id, label, progress: Default::default(), result: Default::default() };
+    job.progress.total.store(1, std::sync::atomic::Ordering::Relaxed);
+    let info: Arc<Mutex<Option<cfa4_vdb::RenderInfo>>> = Arc::default();
+    let (prog, res, slot, png) = (job.progress.clone(), job.result.clone(), info.clone(), out.clone());
+    let run = move || {
+        use std::sync::atomic::Ordering;
+        let t0 = web_time::Instant::now();
+        *lock(&prog.status) = "Rendering the volume preview".into();
+        let r = match worker.render(std::path::Path::new(&input), &png, &req, Some(&prog.cancel)) {
+            Ok(i) => {
+                *lock(&slot) = Some(i);
+                prog.done.store(1, Ordering::Relaxed);
+                *lock(&prog.status) = format!("Preview rendered ({:.1}s)", t0.elapsed().as_secs_f64());
+                let secs = t0.elapsed().as_secs_f64();
+                Ok(cfa4_export::Report {
+                    path: png.to_string_lossy().to_string(),
+                    frames: 1,
+                    seconds: secs,
+                    bytes: std::fs::metadata(&png).map(|m| m.len()).unwrap_or(0),
+                    render_fps: 1.0 / secs.max(1e-6),
+                    extra_files: Vec::new(),
+                })
+            }
+            Err(e) => {
+                let stopped = prog.cancel.load(Ordering::Relaxed);
+                let msg = if stopped { "stopped".to_string() } else { e.to_string() };
+                *lock(&prog.status) = if stopped { "Stopped: nothing was imported".into() } else { msg.clone() };
+                if !stopped {
+                    *lock(&prog.error) = Some(msg.clone());
+                }
+                Err(msg)
+            }
+        };
+        *lock(&res) = Some(r);
+        prog.finished.store(true, Ordering::Relaxed);
+    };
+    let run = crate::export_tools::guard_job(job.progress.clone(), job.result.clone(), run);
+    s.jobs.push(job);
+    s.vdb_jobs.push(PendingVdb { job: job_id, volume: id, frame, out: out_s.clone(), info });
+    let mut result = json!({"job": job_id, "volume": id.0, "frame": frame, "png": out_s});
+    if bool_p(p, "wait").unwrap_or(false) || cfg!(target_arch = "wasm32") {
+        run();
+        let failed = s.jobs.iter().find(|j| j.id == job_id).and_then(|j| lock(&j.result).clone());
+        let pending = take_pending(s, job_id);
+        if let Some(Err(e)) = failed {
+            return Err(EngineError::Other(e));
+        }
+        if let Some(pj) = pending {
+            let done = finish(s, &pj)?;
+            if let (Some(o), Some(d)) = (result.as_object_mut(), done.as_object()) {
+                o.extend(d.iter().map(|(k, v)| (k.clone(), v.clone())));
+            }
+        }
+    } else {
+        crate::background::start(s, job_id, crate::background::Need::background(1024, 2), "cfa4-vdb-render", run)?;
+    }
+    Ok(result)
+}
+
+/// A preview render whose picture is imported when its job finishes.
+pub struct PendingVdb {
+    job: u64,
+    volume: ItemId,
+    frame: usize,
+    out: String,
+    info: Arc<Mutex<Option<cfa4_vdb::RenderInfo>>>,
+}
+
+impl PendingVdb {
+    #[cfg(test)]
+    pub(crate) fn for_test(job: u64, out: &str) -> Self {
+        Self { job, volume: ItemId(0), frame: 0, out: out.to_string(), info: Arc::default() }
+    }
+}
+
+fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+    m.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+fn take_pending(s: &mut Session, job: u64) -> Option<PendingVdb> {
+    let i = s.vdb_jobs.iter().position(|j| j.job == job)?;
+    Some(s.vdb_jobs.remove(i))
+}
+
+/// The picture is ordinary media from here on: import it as a still.
+fn finish(s: &mut Session, pj: &PendingVdb) -> Result<Value> {
+    let imported = s.execute("file.import", json!({"paths": [pj.out]}))?;
+    let items = imported.get("items").cloned().unwrap_or(Value::Null);
+    let info = lock(&pj.info).take().and_then(|i| serde_json::to_value(&i).ok()).unwrap_or(Value::Null);
+    Ok(json!({"volume": pj.volume.0, "frame": pj.frame, "items": items, "info": info}))
+}
+
+/// Import the pictures of the jobs that finished, drop cancelled and failed ones. Called once per UI frame
+/// from [`Session::poll_persistence`].
+pub fn poll(s: &mut Session) {
+    use std::sync::atomic::Ordering;
+    let mut i = 0;
+    while i < s.vdb_jobs.len() {
+        let job = s.jobs.iter().find(|j| j.id == s.vdb_jobs[i].job);
+        let finished = job.is_none_or(|j| j.progress.finished.load(Ordering::Relaxed));
+        if !finished {
+            i += 1;
+            continue;
+        }
+        let cancelled = job.is_some_and(|j| j.progress.cancel.load(Ordering::Relaxed));
+        let failure = job.and_then(|j| match lock(&j.result).clone() {
+            Some(Err(e)) => Some(e),
+            _ => None,
+        });
+        let pj = s.vdb_jobs.remove(i);
+        if cancelled {
+            continue;
+        }
+        if let Some(e) = failure {
+            s.error_toast("vdb.render", format!("VDB preview: {e}"));
+            continue;
+        }
+        if let Err(e) = finish(s, &pj) {
+            s.error_toast("vdb.render", format!("VDB preview: {e}"));
+        }
+    }
+}
+
 fn spec(id: &'static str, label: &'static str, params: &'static str, run: crate::commands::Run, journal: bool) -> CommandSpec {
     CommandSpec { id, label, menu: &[], shortcut: None, params, enabled: always, run, journal }
 }
@@ -126,6 +308,13 @@ pub fn commands() -> Vec<CommandSpec> {
         spec("vdb.inspect", "Inspect VDB File", r#"{"path":"file.vdb"}"#, inspect, false),
         spec("vdb.import", "Import VDB Volume", r#"{"paths":[str],"sequence":bool?,"bin":binId?}"#, import, true),
         spec("vdb.check", "Check VDB Volume", r#"{"item":id?}"#, check, false),
+        spec(
+            "vdb.render",
+            "Render VDB Preview",
+            r#"{"item":id?,"frame":n?,"width":n?,"height":n?,"quality":"preview|standard|high"?,"grid":str?,"azimuth":deg?,"elevation":deg?,"out":path?,"wait":bool=false}"#,
+            render,
+            true,
+        ),
         spec("vdb.relink", "Relink VDB Volume", r#"{"item":id?,"path":str}"#, relink, true),
     ]
 }

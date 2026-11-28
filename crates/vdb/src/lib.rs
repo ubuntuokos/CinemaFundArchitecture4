@@ -8,6 +8,7 @@
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
@@ -40,6 +41,9 @@ pub enum Error {
     /// The worker ran past its time limit and was killed.
     #[error("the OpenVDB worker timed out")]
     Timeout,
+    /// The caller cancelled; the worker was killed.
+    #[error("the OpenVDB worker was cancelled")]
+    Cancelled,
     /// The worker printed more than [`MAX_OUTPUT`] bytes and was killed.
     #[error("the OpenVDB worker produced too much output")]
     OutputTooLarge,
@@ -92,6 +96,80 @@ pub struct Inspection {
     /// Number of file-level metadata entries.
     pub file_meta_count: u64,
     /// The worker's peak resident memory in KiB while reading (0 if unknown).
+    #[serde(default)]
+    pub peak_rss_kb: u64,
+}
+
+/// Preview quality: the ray-march step in voxels. A lower level is only ever chosen by the user (N2-1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Quality {
+    /// 2 voxels per step: fast.
+    Preview,
+    /// 1 voxel per step.
+    Standard,
+    /// Half a voxel per step.
+    High,
+}
+
+impl Quality {
+    /// The name the worker takes.
+    #[must_use]
+    pub fn id(self) -> &'static str {
+        match self {
+            Quality::Preview => "preview",
+            Quality::Standard => "standard",
+            Quality::High => "high",
+        }
+    }
+
+    /// Parses [`Quality::id`].
+    #[must_use]
+    pub fn from_id(id: &str) -> Option<Self> {
+        [Quality::Preview, Quality::Standard, Quality::High].into_iter().find(|q| q.id() == id)
+    }
+}
+
+/// What to render.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RenderRequest {
+    /// The grid (a float grid); `None` takes the first float grid.
+    pub grid: Option<String>,
+    /// Picture size in pixels (1..=8192).
+    pub width: u32,
+    /// Picture size in pixels (1..=8192).
+    pub height: u32,
+    /// Quality level; never lowered automatically.
+    pub quality: Quality,
+    /// Camera azimuth in degrees.
+    pub azimuth_deg: f64,
+    /// Camera elevation in degrees.
+    pub elevation_deg: f64,
+    /// Hard time limit.
+    pub timeout: Duration,
+}
+
+impl RenderRequest {
+    /// A request with the default view (azimuth 30, elevation 20) and a 10 minute limit.
+    #[must_use]
+    pub fn new(width: u32, height: u32, quality: Quality) -> Self {
+        Self { grid: None, width, height, quality, azimuth_deg: 30.0, elevation_deg: 20.0, timeout: Duration::from_secs(600) }
+    }
+}
+
+/// What a render reports.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RenderInfo {
+    /// Picture size.
+    pub width: u32,
+    /// Picture size.
+    pub height: u32,
+    /// The grid that was rendered.
+    pub grid: String,
+    /// Ray-march steps per ray.
+    pub steps: u32,
+    /// The worker's peak resident memory in KiB.
     #[serde(default)]
     pub peak_rss_kb: u64,
 }
@@ -182,6 +260,36 @@ impl Worker {
         }
     }
 
+    /// Renders a density preview of one float grid to an RGBA PNG (N2): an orthographic ray march whose result does
+    /// not depend on the thread count. `cancel` set to `true` kills the worker; the time limit is
+    /// [`RenderRequest::timeout`].
+    ///
+    /// # Errors
+    /// Any [`Error`], [`Error::Cancelled`] included.
+    pub fn render(&self, input: &Path, output: &Path, req: &RenderRequest, cancel: Option<&AtomicBool>) -> Result<RenderInfo, Error> {
+        let (w, h) = (req.width.to_string(), req.height.to_string());
+        let (az, el) = (req.azimuth_deg.to_string(), req.elevation_deg.to_string());
+        let grid = req.grid.as_deref().unwrap_or("-");
+        let out = self.run_with(
+            &[
+                "render".as_ref(),
+                input.as_os_str(),
+                grid.as_ref(),
+                output.as_os_str(),
+                w.as_ref(),
+                h.as_ref(),
+                req.quality.id().as_ref(),
+                az.as_ref(),
+                el.as_ref(),
+            ],
+            &[input],
+            &[output],
+            req.timeout,
+            cancel,
+        )?;
+        serde_json::from_str(&out).map_err(|e| Error::BadAnswer(e.to_string()))
+    }
+
     /// Writes a small synthetic `.vdb` (tests; the repository holds no binary fixture).
     ///
     /// # Errors
@@ -195,6 +303,10 @@ impl Worker {
     }
 
     fn run(&self, args: &[&std::ffi::OsStr], reads: &[&Path], outs: &[&Path]) -> Result<String, Error> {
+        self.run_with(args, reads, outs, self.timeout, None)
+    }
+
+    fn run_with(&self, args: &[&std::ffi::OsStr], reads: &[&Path], outs: &[&Path], timeout: Duration, cancel: Option<&AtomicBool>) -> Result<String, Error> {
         if !self.exe.is_file() {
             return Err(Error::Unavailable);
         }
@@ -236,7 +348,7 @@ impl Worker {
             let r = stdout.take(MAX_OUTPUT as u64 + 1).read_to_end(&mut buf);
             let _ = tx.send((r.map(|_| buf), ()));
         });
-        let deadline = Instant::now() + self.timeout;
+        let deadline = Instant::now() + timeout;
         let status = loop {
             match child.try_wait() {
                 Ok(Some(s)) => break s,
@@ -245,6 +357,11 @@ impl Worker {
                     let _ = child.kill();
                     return Err(Error::WorkerDied(e.to_string()));
                 }
+            }
+            if cancel.is_some_and(|c| c.load(Ordering::Relaxed)) {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(Error::Cancelled);
             }
             if Instant::now() >= deadline {
                 let _ = child.kill();
