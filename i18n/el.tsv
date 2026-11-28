@@ -4972,3 +4972,16 @@ export.summary	Low	χαμηλή
 	Thresholds	Κατώφλια
 	Trail	Ίχνος
 	Use gestures in the window	Χρήση κινήσεων στο παράθυρο
+	DVD-Video folder (VIDEO_TS)	Φάκελος DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Φάκελος DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 ανάμορφο, 6 Mbps, GOP 15, AC-3 192 kbps, κεφάλαια από τους δείκτες κεφαλαίων της ακολουθίας
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Φάκελος DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 ανάμορφο, 6 Mbps, GOP 18, AC-3 192 kbps, κεφάλαια από τους δείκτες κεφαλαίων της ακολουθίας
+	DNx decoding:	Αποκωδικοποίηση DNx:
+	As detected from the file ({detected})	Όπως ανιχνεύτηκε από το αρχείο ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (πρότυπο)
+	FFmpeg-compatible	Συμβατό με FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	Το FFmpeg διαβάζει ορισμένα αρχεία DNx διαφορετικά από το πρότυπο (χρώματα 4:4:4, αντίστροφος κβαντισμός). Το υλικό που κωδικοποίησε το FFmpeg ανιχνεύεται· επιλέξτε εδώ όταν η ανίχνευση είναι λανθασμένη.
+	DNx Coding	Κωδικοποίηση DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Συμβατό με FFmpeg (για εργαλεία βασισμένα στο FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Ανενεργό: κωδικοποίηση κατά SMPTE ST 2019-1. Ενεργό: κωδικοποίηση όπως γράφει το FFmpeg το DNx, για εργαλεία βασισμένα στο FFmpeg.

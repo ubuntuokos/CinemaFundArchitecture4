@@ -13,6 +13,9 @@ use super::ffi::*;
 /// The driver's entry points (loaded once).
 struct Api {
     list: NV_ENCODE_API_FUNCTION_LIST,
+    /// The API level this process speaks to the driver and its structure version tags.
+    level: ApiLevel,
+    ver: Versions,
     #[cfg(target_os = "linux")]
     _library: libloading::Library,
 }
@@ -40,17 +43,53 @@ fn load() -> Result<Api, String> {
         if version(&mut v) != NV_ENC_SUCCESS {
             return Err("cannot query the NVENC version".into());
         }
-        let ours = (NVENCAPI_VERSION & 0xf) << 4 | ((NVENCAPI_VERSION >> 24) & 0xf);
-        if v < ours {
-            return Err(format!("the NVIDIA driver's NVENC ({}.{}) is older than {}.{}", v >> 4, v & 0xf, ours >> 4, ours & 0xf));
-        }
+        let level = choose_level(v, std::env::var("CFA4_NVENC_API").ok().as_deref())?;
+        let ver = level.versions();
         let mut list: NV_ENCODE_API_FUNCTION_LIST = std::mem::zeroed();
-        list.version = NV_ENCODE_API_FUNCTION_LIST_VER;
+        list.version = ver.function_list;
         if create(&mut list) != NV_ENC_SUCCESS {
             return Err("NvEncodeAPICreateInstance failed".into());
         }
-        Ok(Api { list, _library: library })
+        Ok(Api { list, level, ver, _library: library })
     }
+}
+
+/// The API level for a driver reporting `max` (`NvEncodeAPIGetMaxSupportedVersion`), honouring
+/// `CFA4_NVENC_API` (`12.1` forces the older level on a newer driver, to test it there; `13.1` asks for
+/// the newer one and fails when the driver cannot do it).
+fn choose_level(max: u32, forced: Option<&str>) -> Result<ApiLevel, String> {
+    let best = ApiLevel::for_driver(max).ok_or_else(|| {
+        let ours = ApiLevel::V12_1.packed();
+        format!("the NVIDIA driver's NVENC ({}.{}) is older than {}.{}", max >> 4, max & 0xf, ours >> 4, ours & 0xf)
+    })?;
+    match forced.map(str::trim) {
+        None | Some("") | Some("auto") => Ok(best),
+        Some("12.1") => Ok(ApiLevel::V12_1),
+        Some("13.1") if best >= ApiLevel::V13_1 => Ok(ApiLevel::V13_1),
+        Some("13.1") => Err(format!("CFA4_NVENC_API=13.1, but the driver's NVENC is {}.{}", max >> 4, max & 0xf)),
+        Some(other) => Err(format!("CFA4_NVENC_API={other} is not auto, 12.1 or 13.1")),
+    }
+}
+
+/// HDR10 static metadata the 13.1 encoder writes itself: the ST 2086 mastering display colour volume
+/// and the content light level, read from the SEI payloads (H.265 D.2.28 / D.2.35: big-endian fields
+/// in the order the 13.1 structures declare them). Returns them and the SEI messages left over.
+fn native_hdr(sei: &[Sei]) -> (Option<MASTERING_DISPLAY_INFO>, Option<CONTENT_LIGHT_LEVEL>, Vec<Sei>) {
+    let (mut md, mut cll, mut rest) = (None, None, Vec::new());
+    let u16at = |b: &[u8], i: usize| u16::from_be_bytes([b[i], b[i + 1]]);
+    let u32at = |b: &[u8], i: usize| u32::from_be_bytes([b[i], b[i + 1], b[i + 2], b[i + 3]]);
+    for m in sei {
+        let b = m.payload.as_slice();
+        if m.payload_type == 137 && b.len() == 24 && md.is_none() {
+            let pt = |i| CHROMA_POINTS { x: u16at(b, i), y: u16at(b, i + 2) };
+            md = Some(MASTERING_DISPLAY_INFO { g: pt(0), b: pt(4), r: pt(8), whitePoint: pt(12), maxLuma: u32at(b, 16), minLuma: u32at(b, 20) });
+        } else if m.payload_type == 144 && b.len() == 4 && cll.is_none() {
+            cll = Some(CONTENT_LIGHT_LEVEL { maxContentLightLevel: u16at(b, 0), maxPicAverageLightLevel: u16at(b, 2) });
+        } else {
+            rest.push(m.clone());
+        }
+    }
+    (md, cll, rest)
 }
 
 /// The codec a session encodes.
@@ -175,6 +214,9 @@ pub struct Session {
     /// valid however the `Session` value is moved and however long the driver keeps a picture queued.
     sei_payloads: Vec<Box<[u8]>>,
     sei_array: Box<[NV_ENC_SEI_PAYLOAD]>,
+    /// API 13.1: the HDR10 metadata the encoder writes itself (boxed for the same pointer-stability reason).
+    hdr_md: Option<Box<MASTERING_DISPLAY_INFO>>,
+    hdr_cll: Option<Box<CONTENT_LIGHT_LEVEL>>,
     /// Pictures submitted, and the distance between IDR pictures (to know which pictures get the SEI).
     submitted: u64,
     gop: u64,
@@ -213,10 +255,10 @@ impl Session {
         // handle is the driver's and is destroyed exactly once, here, before returning.
         let enc = unsafe {
             let mut p: NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS = std::mem::zeroed();
-            p.version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER;
+            p.version = api.ver.open_session;
             p.deviceType = Device::KIND;
             p.device = device.as_raw();
-            p.apiVersion = NVENCAPI_VERSION;
+            p.apiVersion = api.level.api_version();
             let open = api.list.nvEncOpenEncodeSessionEx.ok_or("the driver has no nvEncOpenEncodeSessionEx")?;
             let mut enc: Handle = std::ptr::null_mut();
             let s = open(&mut p, &mut enc);
@@ -244,6 +286,8 @@ impl Session {
             bytes_per_sample: 1,
             sei_payloads: Vec::new(),
             sei_array: Box::new([]),
+            hdr_md: None,
+            hdr_cll: None,
             submitted: 0,
             gop: 1,
         })
@@ -256,7 +300,7 @@ impl Session {
             // SAFETY: a valid session, a zeroed parameter block with its version, one int out.
             unsafe {
                 let mut p: NV_ENC_CAPS_PARAM = std::mem::zeroed();
-                p.version = NV_ENC_CAPS_PARAM_VER;
+                p.version = self.api.ver.caps_param;
                 p.capsToQuery = cap;
                 let mut v = 0i32;
                 let s = f(self.enc, codec.guid(), &mut p, &mut v);
@@ -295,9 +339,13 @@ impl Session {
         self.gop = u64::from(p.gop.max(1));
         self.submitted = 0;
         // the SEI payloads: heap blocks that outlive every picture (see the field documentation)
-        self.sei_payloads = p.signal.sei.iter().map(|m| m.payload.clone().into_boxed_slice()).collect();
+        // at API 13.1 the encoder writes the HDR10 mastering display and content light level SEI itself
+        let (md, cll, sei) = if self.api.level >= ApiLevel::V13_1 { native_hdr(&p.signal.sei) } else { (None, None, p.signal.sei.clone()) };
+        self.hdr_md = md.map(Box::new);
+        self.hdr_cll = cll.map(Box::new);
+        self.sei_payloads = sei.iter().map(|m| m.payload.clone().into_boxed_slice()).collect();
         let mut array = Vec::with_capacity(self.sei_payloads.len());
-        for (m, bytes) in p.signal.sei.iter().zip(self.sei_payloads.iter_mut()) {
+        for (m, bytes) in sei.iter().zip(self.sei_payloads.iter_mut()) {
             let size = u32::try_from(bytes.len()).map_err(|_| "an SEI payload longer than 4 GiB".to_string())?;
             array.push(NV_ENC_SEI_PAYLOAD { payloadSize: size, payloadType: m.payload_type, payload: bytes.as_mut_ptr() });
         }
@@ -308,14 +356,14 @@ impl Session {
         // configuration lives in a box that outlives `nvEncInitializeEncoder`, which copies it.
         unsafe {
             let mut preset: Box<NV_ENC_PRESET_CONFIG> = Box::new(std::mem::zeroed());
-            preset.version = NV_ENC_PRESET_CONFIG_VER;
-            preset.presetCfg.version = NV_ENC_CONFIG_VER;
+            preset.version = self.api.ver.preset_config;
+            preset.presetCfg.version = self.api.ver.config;
             let s = preset_fn(self.enc, p.codec.guid(), NV_ENC_PRESET_P5_GUID, NV_ENC_TUNING_INFO_HIGH_QUALITY, &mut *preset);
             if s != NV_ENC_SUCCESS {
                 return Err(status("reading the encoder preset", s, self.enc, self.api));
             }
             let mut cfg: Box<NV_ENC_CONFIG> = Box::new(preset.presetCfg);
-            cfg.version = NV_ENC_CONFIG_VER;
+            cfg.version = self.api.ver.config;
             cfg.profileGUID = match (p.codec, p.profile) {
                 (Codec::Hevc, _) if p.ten_bit => NV_ENC_HEVC_PROFILE_MAIN10_GUID,
                 (Codec::Hevc, _) => NV_ENC_HEVC_PROFILE_MAIN_GUID,
@@ -326,7 +374,7 @@ impl Session {
             cfg.gopLength = p.gop.max(1);
             cfg.frameIntervalP = 1 + p.bframes as i32;
             let rc = &mut cfg.rcParams;
-            rc.version = NV_ENC_RC_PARAMS_VER;
+            rc.version = self.api.ver.rc_params;
             rc.rateControlMode = if p.cbr { NV_ENC_PARAMS_RC_CBR } else { NV_ENC_PARAMS_RC_VBR };
             rc.averageBitRate = p.bitrate.saturating_mul(1000);
             rc.maxBitRate = if p.cbr { rc.averageBitRate } else { p.max_bitrate.max(p.bitrate).saturating_mul(1000) };
@@ -369,7 +417,18 @@ impl Session {
                         | HEVC_CHROMA_FORMAT_MASK
                         | HEVC_PIXEL_BIT_DEPTH_MASK);
                     h.flags |= 1 << HEVC_CHROMA_FORMAT_SHIFT;
-                    if p.ten_bit {
+                    if self.api.level >= ApiLevel::V13_1 {
+                        // 13.1 replaced the `pixelBitDepthMinus8` flag bits by these fields
+                        let depth = if p.ten_bit { NV_ENC_BIT_DEPTH_10 } else { NV_ENC_BIT_DEPTH_8 };
+                        h.outputBitDepth = depth;
+                        h.inputBitDepth = depth;
+                        if self.hdr_md.is_some() {
+                            h.flags |= HEVC_OUTPUT_MASTERING_DISPLAY;
+                        }
+                        if self.hdr_cll.is_some() {
+                            h.flags |= HEVC_OUTPUT_MAX_CLL;
+                        }
+                    } else if p.ten_bit {
                         h.flags |= 2 << HEVC_PIXEL_BIT_DEPTH_SHIFT;
                     }
                     h.maxNumRefFramesInDPB = 0;
@@ -392,7 +451,7 @@ impl Session {
             }
 
             let mut init: Box<NV_ENC_INITIALIZE_PARAMS> = Box::new(std::mem::zeroed());
-            init.version = NV_ENC_INITIALIZE_PARAMS_VER;
+            init.version = self.api.ver.initialize_params;
             init.encodeGUID = p.codec.guid();
             init.presetGUID = NV_ENC_PRESET_P5_GUID;
             init.encodeWidth = p.width;
@@ -428,7 +487,7 @@ impl Session {
         // handles, which `Drop` destroys.
         unsafe {
             let mut i: NV_ENC_CREATE_INPUT_BUFFER = std::mem::zeroed();
-            i.version = NV_ENC_CREATE_INPUT_BUFFER_VER;
+            i.version = self.api.ver.create_input_buffer;
             i.width = self.size.0;
             i.height = self.size.1;
             i.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED;
@@ -438,7 +497,7 @@ impl Session {
                 return Err(status("creating an input buffer", s, self.enc, self.api));
             }
             let mut o: NV_ENC_CREATE_BITSTREAM_BUFFER = std::mem::zeroed();
-            o.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER;
+            o.version = self.api.ver.create_bitstream_buffer;
             o.size = self.out_size;
             o.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED;
             let s = create_out(self.enc, &mut o);
@@ -467,7 +526,7 @@ impl Session {
         // the driver writes at most `inBufferSize` bytes into `buf`.
         unsafe {
             let mut p: NV_ENC_SEQUENCE_PARAM_PAYLOAD = std::mem::zeroed();
-            p.version = NV_ENC_SEQUENCE_PARAM_PAYLOAD_VER;
+            p.version = self.api.ver.sequence_param_payload;
             p.inBufferSize = buf.len() as u32;
             p.spsppsBuffer = buf.as_mut_ptr().cast();
             p.outSPSPPSPayloadSize = &mut len;
@@ -497,7 +556,7 @@ impl Session {
         // `UnlockInputBuffer`; the slice borrows it only inside `fill`.
         let pitch = unsafe {
             let mut l: NV_ENC_LOCK_INPUT_BUFFER = std::mem::zeroed();
-            l.version = NV_ENC_LOCK_INPUT_BUFFER_VER;
+            l.version = self.api.ver.lock_input_buffer;
             l.inputBuffer = input;
             let st = lock(self.enc, &mut l);
             if st != NV_ENC_SUCCESS || l.bufferDataPtr.is_null() || l.pitch == 0 {
@@ -519,7 +578,8 @@ impl Session {
             l.pitch
         };
         // IDR pictures (every `gop` pictures from the first, in submission = display order) carry the SEI messages
-        let idr = !self.sei_array.is_empty() && self.submitted.is_multiple_of(self.gop);
+        let has_sei = !self.sei_array.is_empty() || self.hdr_md.is_some() || self.hdr_cll.is_some();
+        let idr = has_sei && self.submitted.is_multiple_of(self.gop);
         self.submitted = self.submitted.saturating_add(1);
         // SAFETY: a zeroed parameter block with its version; the buffers are this session's. The SEI
         // descriptor array and the payload bytes it points to are heap blocks owned by `self`, which
@@ -531,8 +591,14 @@ impl Session {
                 let h = &mut e.codecPicParams.hevcPicParams;
                 h.seiPayloadArrayCnt = u32::try_from(self.sei_array.len()).unwrap_or(0);
                 h.seiPayloadArray = self.sei_array.as_mut_ptr();
+                if let Some(md) = self.hdr_md.as_mut() {
+                    h.pMasteringDisplay = std::ptr::from_mut(&mut **md);
+                }
+                if let Some(cll) = self.hdr_cll.as_mut() {
+                    h.pMaxCll = std::ptr::from_mut(&mut **cll);
+                }
             }
-            e.version = NV_ENC_PIC_PARAMS_VER;
+            e.version = self.api.ver.pic_params;
             e.inputWidth = w;
             e.inputHeight = h;
             e.inputPitch = pitch;
@@ -557,7 +623,7 @@ impl Session {
         // SAFETY: a zeroed parameter block with its version and the EOS flag (no input buffer).
         let st = unsafe {
             let mut e: NV_ENC_PIC_PARAMS = std::mem::zeroed();
-            e.version = NV_ENC_PIC_PARAMS_VER;
+            e.version = self.api.ver.pic_params;
             e.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
             encode(self.enc, &mut e)
         };
@@ -577,7 +643,7 @@ impl Session {
         // `UnlockBitstream`, and they are copied before it.
         unsafe {
             let mut l: NV_ENC_LOCK_BITSTREAM = std::mem::zeroed();
-            l.version = NV_ENC_LOCK_BITSTREAM_VER;
+            l.version = self.api.ver.lock_bitstream;
             l.outputBitstream = output;
             let st = lock(self.enc, &mut l);
             if st != NV_ENC_SUCCESS {
@@ -612,5 +678,43 @@ impl Drop for Session {
                 d(self.enc);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod level_tests {
+    use super::*;
+
+    #[test]
+    fn level_follows_the_driver_and_the_override() {
+        assert_eq!(choose_level(0xd1, None), Ok(ApiLevel::V13_1));
+        assert_eq!(choose_level(0xd1, Some("auto")), Ok(ApiLevel::V13_1));
+        assert_eq!(choose_level(0xd1, Some("12.1")), Ok(ApiLevel::V12_1));
+        assert_eq!(choose_level(0xc1, None), Ok(ApiLevel::V12_1));
+        assert!(choose_level(0xc1, Some("13.1")).is_err());
+        assert!(choose_level(0xc1, Some("14.0")).is_err());
+        assert!(choose_level(0xb1, None).unwrap_err().contains("older than 12.1"));
+    }
+
+    #[test]
+    fn hdr_sei_payloads_become_the_native_structures() {
+        let mut md = Vec::new();
+        for v in [34000u16, 16000, 13250, 34500, 7500, 3000, 15635, 16450] {
+            md.extend(v.to_be_bytes());
+        }
+        md.extend(10_000_000u32.to_be_bytes());
+        md.extend(50u32.to_be_bytes());
+        let other = Sei { payload_type: 5, payload: vec![1, 2, 3] };
+        let sei = [Sei { payload_type: 137, payload: md }, Sei { payload_type: 144, payload: vec![0x03, 0xe8, 0x00, 0xc8] }, other.clone()];
+        let (m, c, rest) = native_hdr(&sei);
+        let m = m.unwrap();
+        assert_eq!((m.g.x, m.g.y, m.b.x, m.b.y, m.r.x, m.r.y), (34000, 16000, 13250, 34500, 7500, 3000));
+        assert_eq!((m.whitePoint.x, m.whitePoint.y, m.maxLuma, m.minLuma), (15635, 16450, 10_000_000, 50));
+        let c = c.unwrap();
+        assert_eq!((c.maxContentLightLevel, c.maxPicAverageLightLevel), (1000, 200));
+        assert_eq!(rest, vec![other]);
+        // a malformed payload is left to the SEI array instead of being guessed at
+        let (m, c, rest) = native_hdr(&[Sei { payload_type: 137, payload: vec![0; 5] }, Sei { payload_type: 144, payload: vec![0; 3] }]);
+        assert!(m.is_none() && c.is_none() && rest.len() == 2);
     }
 }

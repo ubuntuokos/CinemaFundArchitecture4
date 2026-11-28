@@ -216,19 +216,48 @@ fn sigkill_cycles_leave_no_partial_file_under_a_final_name() {
     let _ = std::fs::remove_dir_all(&root);
     let exe = std::env::current_exe().unwrap();
     let (mut orphans, mut finals, mut packages_done, mut mid_write) = (0usize, 0usize, 0usize, 0usize);
+    let spawn = |dir: &std::path::Path| {
+        std::process::Command::new(&exe)
+            .args(["--exact", "cancel_latency_tests::child_dcp_export_loop", "--nocapture", "--test-threads=1"])
+            .env("CFA4_SIGKILL_ROOT", dir)
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .unwrap()
+    };
+    // The kill is timed from the moment the child starts its first package, in fractions of the
+    // time one package takes on this machine: a fixed wall-clock delay from the spawn found no
+    // write at all on a loaded CI runner, where starting the child and its first package alone
+    // took longer than the longest delay.
+    let wait_for = |path: &std::path::Path| {
+        let start = Instant::now();
+        while !path.exists() {
+            assert!(start.elapsed() < Duration::from_secs(300), "the child never reached {}", path.display());
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    };
+    let package = {
+        let dir = root.join("calibration");
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut child = spawn(&dir);
+        wait_for(&dir.join("pkg0"));
+        let start = Instant::now();
+        wait_for(&dir.join("pkg1"));
+        let package = start.elapsed();
+        child.kill().unwrap();
+        child.wait().unwrap();
+        package
+    };
     const CYCLES: u64 = 20;
     for cycle in 0..CYCLES {
         let dir = root.join(format!("cycle{cycle}"));
         std::fs::create_dir_all(&dir).unwrap();
-        let mut child = std::process::Command::new(&exe)
-            .args(["--exact", "cancel_latency_tests::child_dcp_export_loop", "--nocapture", "--test-threads=1"])
-            .env("CFA4_SIGKILL_ROOT", &dir)
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn()
-            .unwrap();
-        // 0.3 s .. 4.8 s: a package takes about 4 s, so the kill lands before, during and after the track files
-        std::thread::sleep(Duration::from_millis(300 + (cycle * 237) % 4500));
+        let mut child = spawn(&dir);
+        wait_for(&dir.join("pkg0"));
+        // 6 % .. 130 % of a package, so the kill lands before, during and after the track files,
+        // and some cycles in the next package
+        let permille = 60 + (cycle * 67) % 1240;
+        std::thread::sleep(package.mul_f64(permille as f64 / 1000.0));
         child.kill().unwrap(); // SIGKILL on unix
         child.wait().unwrap();
 

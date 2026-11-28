@@ -4972,3 +4972,16 @@ export.summary	Low	matala
 	Thresholds	Kynnykset
 	Trail	Jälki
 	Use gestures in the window	Käytä eleitä ikkunassa
+	DVD-Video folder (VIDEO_TS)	DVD-Video-kansio (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-kansio (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfinen, 6 Mbps, GOP 15, AC-3 192 kbps, luvut sekvenssin lukumerkeistä
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-kansio (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfinen, 6 Mbps, GOP 18, AC-3 192 kbps, luvut sekvenssin lukumerkeistä
+	DNx decoding:	DNx-purku:
+	As detected from the file ({detected})	Tiedostosta tunnistetun mukaan ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standardi)
+	FFmpeg-compatible	FFmpeg-yhteensopiva
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg lukee joitakin DNx-tiedostoja standardista poiketen (4:4:4-värit, käänteinen kvantisointi). FFmpegillä koodattu materiaali tunnistetaan; valitse tästä, jos tunnistus on väärä.
+	DNx Coding	DNx-koodaus
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-yhteensopiva (FFmpeg-pohjaisille työkaluille)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Pois: koodattu SMPTE ST 2019-1:n mukaan. Päällä: koodattu niin kuin FFmpeg kirjoittaa DNx:n, FFmpegiin perustuville työkaluille.

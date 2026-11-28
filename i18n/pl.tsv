@@ -4970,3 +4970,16 @@ export.summary	Low	niska
 	Thresholds	Progi
 	Trail	Ślad
 	Use gestures in the window	Używaj gestów w oknie
+	DVD-Video folder (VIDEO_TS)	Folder DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Folder DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorficzny, 6 Mbps, GOP 15, AC-3 192 kbps, rozdziały ze znaczników rozdziałów sekwencji
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Folder DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorficzny, 6 Mbps, GOP 18, AC-3 192 kbps, rozdziały ze znaczników rozdziałów sekwencji
+	DNx decoding:	Dekodowanie DNx:
+	As detected from the file ({detected})	Zgodnie z wykryciem z pliku ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	Zgodne z FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg odczytuje niektóre pliki DNx inaczej niż standard (kolory 4:4:4, kwantyzacja odwrotna). Materiał zakodowany przez FFmpeg jest wykrywany; wybierz tutaj, jeśli wykrycie jest błędne.
+	DNx Coding	Kodowanie DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Zgodne z FFmpeg (dla narzędzi opartych na FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Wyłączone: kodowanie zgodnie z SMPTE ST 2019-1. Włączone: kodowanie tak, jak FFmpeg zapisuje DNx, dla narzędzi opartych na FFmpeg.

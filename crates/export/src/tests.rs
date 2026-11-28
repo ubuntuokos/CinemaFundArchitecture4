@@ -245,6 +245,46 @@ fn dnxhr_export_roundtrip() {
     }
 }
 
+/// CFA4-DNX-SPEC-001 D3: `dnxFfmpegCompat` codes DNx as FFmpeg writes it (its reconstruction
+/// level), SMPTE ST 2019-1 otherwise; both decode to the picture.
+#[test]
+fn dnx_export_ffmpeg_compat_setting() {
+    let (p, seq, m) = project();
+    let mut coded = Vec::new();
+    for compat in [false, true] {
+        let path = tmp(&format!("dnx_compat_{compat}.mov"));
+        let s = ExportSettings { format: Format::DnxHr, path: path.clone(), dnx_profile: "hq".into(), dnx_ffmpeg_compat: compat, ..Default::default() };
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let bytes: Arc<[u8]> = std::fs::read(&path).unwrap().into();
+        let src = cfa4_codecs::open_bytes("dnx.mov", bytes.clone()).unwrap();
+        let px = src.video_frame(FrameRequest::full(Tick(TICKS_PER_SECOND / 3))).unwrap().to_rgba8();
+        assert!(px[0] > 240 && px[1] < 15 && px[2] < 15, "compat {compat}: {:?}", &px[..4]);
+        coded.push(bytes);
+    }
+    assert_eq!(coded.len(), 2);
+    // a textured picture: the two codings differ (a flat one codes DC only, the same in both)
+    let (w, h) = (256u32, 64u32);
+    let rgba: Vec<u8> = (0..w * h)
+        .flat_map(|i| {
+            let (x, y) = (i % w, i / w);
+            let v = ((x * 7 + y * 13) % 256) as u8;
+            [v, v.wrapping_mul(3), 255 - v, 255]
+        })
+        .collect();
+    let coded: Vec<Vec<u8>> = [false, true]
+        .iter()
+        .map(|&compat| {
+            let s = ExportSettings { dnx_profile: "hq".into(), dnx_ffmpeg_compat: compat, ..Default::default() };
+            let mut enc = crate::dnx_factory(Format::DnxHr, w, h, FrameRate::new(25, 1), &s).unwrap().unwrap();
+            let packets = enc.encode(&EncoderFrame { width: w, height: h, rgba: &rgba, hdr: None, index: 0 }).unwrap();
+            packets.into_iter().next().unwrap().data
+        })
+        .collect();
+    assert!(coded[0] != coded[1], "the two codings differ");
+    let s: ExportSettings = serde_json::from_value(serde_json::json!({"dnxFfmpegCompat": true})).unwrap();
+    assert!(s.dnx_ffmpeg_compat);
+}
+
 /// DNxHD (fixed-raster compression IDs): QuickTime `AVdn`, our decoder and ffprobe agree on the
 /// ID, and another output size is refused before encoding.
 #[test]

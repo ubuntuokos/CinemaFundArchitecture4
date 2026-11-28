@@ -27,6 +27,7 @@ pub mod control_surfaces;
 pub mod credits;
 pub mod dcp_export;
 pub mod dcp_import;
+pub mod dcp_package;
 pub mod dcp_validation;
 mod dcpomatic;
 pub mod delivery_check;
@@ -1434,6 +1435,8 @@ mod color_tests;
 mod contact_sheet_tests;
 #[cfg(test)]
 mod dcp_import_tests;
+#[cfg(test)]
+mod dnx_conventions_tests;
 #[cfg(test)]
 mod effect_toggle_tests;
 #[cfg(test)]

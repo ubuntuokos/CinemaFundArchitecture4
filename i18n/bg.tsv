@@ -4973,3 +4973,16 @@ export.summary	Low	ниско
 	Thresholds	Прагове
 	Trail	Следа
 	Use gestures in the window	Жестове в прозореца
+	DVD-Video folder (VIDEO_TS)	Папка DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 анаморфно, 6 Mbps, GOP 15, AC-3 192 kbps, глави от маркерите за глави на последователността
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 анаморфно, 6 Mbps, GOP 18, AC-3 192 kbps, глави от маркерите за глави на последователността
+	DNx decoding:	Декодиране на DNx:
+	As detected from the file ({detected})	Както е разпознато от файла ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (стандарт)
+	FFmpeg-compatible	Съвместимо с FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg чете някои DNx файлове различно от стандарта (цветове 4:4:4, обратно квантуване). Материал, кодиран с FFmpeg, се разпознава; изберете тук, ако разпознаването е грешно.
+	DNx Coding	Кодиране на DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Съвместимо с FFmpeg (за инструменти на базата на FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Изкл.: кодиране по SMPTE ST 2019-1. Вкл.: кодиране както FFmpeg записва DNx, за инструменти, изградени върху FFmpeg.

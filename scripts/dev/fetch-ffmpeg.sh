@@ -54,8 +54,9 @@ installed() {
 }
 # R12 (CFA4-FFMPEG-9.1-001): a build with Vulkan must have its glslc-built shaders, i.e. apv_vulkan.
 vulkan_shaders_ok() {
-  ! "$prefix/bin/ffmpeg" -hide_banner -buildconf 2>/dev/null | grep -q -- '--enable-vulkan' \
-    || "$prefix/bin/ffmpeg" -hide_banner -encoders 2>/dev/null | awk '{print $2}' | grep -qx apv_vulkan
+  # grep reads all of its input (no -q): an early exit could SIGPIPE ffmpeg under pipefail
+  ! "$prefix/bin/ffmpeg" -hide_banner -buildconf 2>/dev/null | grep -- '--enable-vulkan' >/dev/null \
+    || "$prefix/bin/ffmpeg" -hide_banner -encoders 2>/dev/null | awk '{print $2}' | grep -x apv_vulkan >/dev/null
 }
 if installed; then
   echo "FFmpeg ${version} is already installed in ${prefix}."

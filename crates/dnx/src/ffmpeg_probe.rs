@@ -12,7 +12,7 @@ use crate::header::{self, EOF_SIGNATURE, FieldCode, FrameHeader, SCAN_INDEX_OFFS
 use crate::tables::{ZIGZAG, cid_info, vlc};
 use crate::{ChromaFormat, ColorVolume};
 
-fn stream_cid(cid: u32, w: u32, h: u32, depth: u8, q: u32, pos: usize, amp: u32, neg: bool, blk: usize) -> Vec<u8> {
+pub(crate) fn stream_cid(cid: u32, w: u32, h: u32, depth: u8, q: u32, pos: usize, amp: u32, neg: bool, blk: usize) -> Vec<u8> {
     let info = cid_info(cid).unwrap();
     let v = vlc(info.vlc);
     let p_bits = if depth == 8 { 4 } else { 6 };
