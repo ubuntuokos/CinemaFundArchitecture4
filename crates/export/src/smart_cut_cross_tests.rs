@@ -166,7 +166,12 @@ fn dolby_sample_entries_match_ffmpeg() {
         let first = file.read_sample(bytes.as_slice(), i, 0).unwrap();
         match &e.codec {
             cfa4_isobmff::CodecConfig::Ac3 { dac3 } => assert_eq!(&dac3_from_frame(&first).unwrap(), dac3, "dac3"),
-            cfa4_isobmff::CodecConfig::Eac3 { dec3 } => assert_eq!(&dec3_from_access_unit(&first).unwrap(), dec3, "dec3"),
+            cfa4_isobmff::CodecConfig::Eac3 { dec3 } => {
+                // FFmpeg 6 always writes the optional extension byte, FFmpeg 9 only for Atmos
+                let built = dec3_from_access_unit(&first).unwrap();
+                let padded = [built.as_slice(), &[0]].concat();
+                assert!(&built == dec3 || &padded == dec3, "dec3: built {built:?}, FFmpeg {dec3:?}");
+            }
             cfa4_isobmff::CodecConfig::TrueHd { dmlp } => assert_eq!(&dmlp_from_access_unit(&first).unwrap(), dmlp, "dmlp"),
             _ => continue,
         }

@@ -127,10 +127,12 @@ pub fn dec3_from_access_unit(au: &[u8]) -> Result<Vec<u8>, String> {
         (0, 4), // num_dep_sub
         (0, 1), // reserved
     ];
-    // reserved(7) flag_ec3_extension_type_a(1) [complexity_index_type_a(8)]
-    match info.addbsi.as_slice() {
-        [flags, complexity, ..] if flags & 1 == 1 => bits.extend([(0, 7), (1, 1), (u32::from(*complexity), 8)]),
-        _ => bits.extend([(0, 7), (0, 1)]),
+    // reserved(7) flag_ec3_extension_type_a(1) complexity_index_type_a(8), only for joint object
+    // coding: without it the optional trailing byte is left out, as FFmpeg 9 and Dolby write it
+    if let [flags, complexity, ..] = info.addbsi.as_slice()
+        && flags & 1 == 1
+    {
+        bits.extend([(0, 7), (1, 1), (u32::from(*complexity), 8)]);
     }
     let mut out = Vec::new();
     let (mut acc, mut n) = (0u64, 0u32);
