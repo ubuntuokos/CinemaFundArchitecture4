@@ -93,12 +93,19 @@ fn check_mkv_to_mp4(name: &str, video: &[&str], audio: &[Audio<'_>], ext: &str, 
     for (k, (t, &(codec, exact))) in c.audio.tracks.iter().zip(expect).enumerate() {
         let channels = c.file.tracks[t.track].audio.as_ref().unwrap().channels as usize;
         let (src, out) = (decode(&ff, &path, k), decode(&ff, &cut, k));
-        // FFmpeg decodes a Matroska track from its first frame, without dropping the CodecDelay
-        // (AAC priming): the source sample at a time lies that much further on
+        // FFmpeg 6 decodes a Matroska track from its first frame, keeping the CodecDelay (AAC
+        // priming), so the source sample at a time lies that much further on; FFmpeg 9 drops it.
+        // Both are tried: the placement must be right against one of them
         let delay = c.file.tracks[t.track].codec_delay_ns;
-        let from = ((i128::from(start_ns) + i128::from(delay)) * i128::from(RATE) / 1_000_000_000) as i64 * channels as i64;
         let skip = if exact { 0 } else { 2048 * channels };
-        let (shift, worst) = best_match(&out, &src, from, skip, (RATE as usize / 4) * channels, channels);
+        let (shift, worst) = [0, delay]
+            .into_iter()
+            .map(|d| {
+                let from = ((i128::from(start_ns) + i128::from(d)) * i128::from(RATE) / 1_000_000_000) as i64 * channels as i64;
+                best_match(&out, &src, from, skip, (RATE as usize / 4) * channels, channels)
+            })
+            .min_by(|a, b| a.1.total_cmp(&b.1))
+            .unwrap();
         assert!(shift.abs() <= 24, "{name}: {codec} is placed {shift} samples off (more than half a millisecond)");
         if exact {
             assert_eq!(worst, 0.0, "{name}: {codec} decodes bit for bit");
