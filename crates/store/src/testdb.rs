@@ -142,13 +142,15 @@ fn server_major(bin: &Path) -> Result<u32, String> {
         return Err(format!("postgres --version failed: {}", String::from_utf8_lossy(&out.stderr)));
     }
     let text = String::from_utf8_lossy(&out.stdout);
-    let Some(version) = text.split_whitespace().last() else {
-        return Err(format!("cannot parse postgres version from {text}"));
-    };
-    let Some(major) = version.split('.').next() else {
-        return Err(format!("cannot parse postgres version from {text}"));
-    };
-    major.parse::<u32>().map_err(|_| format!("cannot parse postgres version from {text}"))
+    major_from_version(&text).ok_or_else(|| format!("cannot parse postgres version from {text}"))
+}
+
+/// The major version from a `postgres --version` line. Ubuntu's build ends with its own package
+/// version (`postgres (PostgreSQL) 18.7 (Ubuntu 18.7-1.pgdg26.04+5)`), so the PostgreSQL version is
+/// the first token that starts with a digit, not the last one.
+fn major_from_version(text: &str) -> Option<u32> {
+    let token = text.split_whitespace().find(|token| token.starts_with(|c: char| c.is_ascii_digit()))?;
+    token.split('.').next().and_then(|major| major.parse().ok())
 }
 
 impl Drop for TestDb {
@@ -242,4 +244,17 @@ pub(crate) async fn setup() -> Option<(TestDb, Store)> {
 pub(crate) async fn count(store: &Store, sql: &str) -> i64 {
     let Ok(client) = store.client().await else { return -1 };
     client.query_one(sql, &[]).await.and_then(|r| r.try_get(0)).unwrap_or(-1)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::major_from_version;
+
+    #[test]
+    fn the_major_version_is_read_from_the_ubuntu_build_line_too() {
+        assert_eq!(major_from_version("postgres (PostgreSQL) 18.7 (Ubuntu 18.7-1.pgdg26.04+5)\n"), Some(18));
+        assert_eq!(major_from_version("postgres (PostgreSQL) 16.4\n"), Some(16));
+        assert_eq!(major_from_version("postgres (PostgreSQL) 19.0 (Ubuntu 19.0-2.pgdg26.04+1)\n"), Some(19));
+        assert_eq!(major_from_version("no version here"), None);
+    }
 }

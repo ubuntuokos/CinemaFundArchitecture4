@@ -1,0 +1,21 @@
+SADIE II Database, subject D1 (Neumann KU100 dummy head), 48 kHz.
+Copyright 2018 University of York.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License. You may
+obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing
+permissions and limitations under the License.
+
+Reference: C. Armstrong, L. Thresh, D. Murphy and G. Kearney, "A
+Perceptual Evaluation of Individual and Non-Individual HRTFs: A Case
+Study of the SADIE II Database", Applied Sciences 8(11), 2029, 2018,
+doi:10.3390/app8112029. https://www.york.ac.uk/sadie-project/
+
+Modified by Maul Audio's tools/sofa_to_maudhrtf.py: each response made
+minimum-phase and cut to 128 taps with its onset kept as a delay, and
+the measured directions resampled onto 5-degree elevation rings.
