@@ -146,6 +146,8 @@ proxies (`media.createProxies`, `media.attachProxies`, `media.findCameraProxies`
 
 **Import the render**: `export.queue.add … "import": true` (default `false`) adds the finished output file to the Project panel (`file.import`) when its queue item is done. Only a single file is imported; a folder output (image sequence, DCP, IMF) or a missing file is left alone and a toast says so. A failed import never changes the item's render state. The queue list shows `import` and the project item ids in `imported`.
 
+**Project archive** (KDN-45): `file.projectManager … "archive": "zip"|"tar"` also packs the finished folder into one archive, `<destination>.zip|.tar` next to it or at `archivePath` (which may not lie inside the destination; an existing archive needs `overwrite`). Zip entries are stored, not deflated (project media is already compressed), UTF-8 named, and use ZIP64 wherever a size, offset or the entry count needs it; tar is POSIX ustar (GNU base-256 sizes past 8 GiB). Symbolic links are skipped, never followed. The archive is written as `<name>.part` and renamed when complete, so a cancel or error leaves no half archive. A dry run reports the archive path and writes nothing.
+
 **Moving clips**: `timeline.move {moves: [{clip, track, time}], insert?, linked?}` → `{moved: [clip ids]}`.
 With Linked Selection on (the default; `linked` overrides the toggle for one call) the linked
 partners of a listed clip that are not listed themselves move by the same time offset and stay on

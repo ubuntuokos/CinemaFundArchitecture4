@@ -106,6 +106,21 @@ pub fn run(s: &mut Session, p: &Value) -> Result<Value> {
         .or_else(|| s.path.as_deref().and_then(|x| Path::new(x).file_stem()).map(|n| n.to_string_lossy().into_owned()))
         .unwrap_or_else(|| s.project.name.clone());
     let dest_dir = PathBuf::from(&dest);
+    // KDN-45: also pack the finished folder into one archive next to it (or at `archivePath`)
+    let archive: Option<(crate::project_archive::Format, PathBuf)> = match str_p(p, "archive") {
+        None => None,
+        Some(f) => {
+            let fmt =
+                crate::project_archive::Format::parse(f).ok_or_else(|| bad("file.projectManager", format!("unknown archive format `{f}` (zip | tar)")))?;
+            let path = str_p(p, "archivePath")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| PathBuf::from(format!("{}.{}", dest.trim_end_matches(['/', '\\']), fmt.extension())));
+            if path.starts_with(&dest_dir) {
+                return Err(bad("file.projectManager", "`archivePath` must be outside the destination folder"));
+            }
+            Some((fmt, path))
+        }
+    };
     let project_path = dest_dir.join(format!("{name}.fcproj")).to_string_lossy().into_owned();
 
     // ---- the new project
@@ -196,12 +211,19 @@ pub fn run(s: &mut Session, p: &Value) -> Result<Value> {
         "resultBytes": result_bytes,
         "files": files,
         "excluded": s.project.items.len() - proj.items.len(),
+        "archive": archive.as_ref().map(|(_, a)| a.to_string_lossy().into_owned()),
     });
     if bool_p(p, "dryRun").unwrap_or(false) {
         return Ok(summary);
     }
     if Path::new(&project_path).exists() && !bool_p(p, "overwrite").unwrap_or(false) {
         return Err(EngineError::Other(format!("{project_path} already exists")));
+    }
+    if let Some((_, a)) = &archive
+        && a.exists()
+        && !bool_p(p, "overwrite").unwrap_or(false)
+    {
+        return Err(EngineError::Other(format!("{} already exists", a.display())));
     }
     std::fs::create_dir_all(&dest_dir).map_err(|e| EngineError::Other(format!("{dest}: {e}")))?;
 
@@ -215,16 +237,18 @@ pub fn run(s: &mut Session, p: &Value) -> Result<Value> {
         .iter()
         .map(|w| w.range.map_or(1, |r| proj.item(w.item).and_then(|i| i.as_media()).map_or(1, |m| crate::proxies::frame_count(m, Some(r)))))
         .sum::<u64>()
-        + 1;
+        + 1
+        + u64::from(archive.is_some());
     let id = s.jobs.iter().map(|j| j.id).max().unwrap_or(0) + 1;
     let job = crate::Job { id, label: format!("Project Manager: {name}"), progress: Default::default(), result: Default::default() };
     job.progress.total.store(total, Ordering::Relaxed);
     let (prog, res) = (job.progress.clone(), job.result.clone());
     let prev_dst = crate::previews::dir_for_project(&project_path);
     let services = s.services.clone();
+    let archive = archive.map(|(f, a)| (f, a, dest_dir.clone()));
     let run = move || {
         let t0 = web_time::Instant::now();
-        let r = execute(proj, work, sources, previews.map(|d| (d, prev_dst)), &project_path, pr, &prog, &*services);
+        let r = execute(proj, work, sources, previews.map(|d| (d, prev_dst)), archive, &project_path, pr, &prog, &*services);
         let secs = t0.elapsed().as_secs_f64();
         let r = r.map(|bytes| cfa4_export::Report {
             path: project_path.clone(),
@@ -262,6 +286,7 @@ fn execute(
     work: Vec<Work>,
     sources: BTreeMap<ItemId, cfa4_media::SharedSource>,
     previews: Option<(PathBuf, PathBuf)>,
+    archive: Option<(crate::project_archive::Format, PathBuf, PathBuf)>,
     project_path: &str,
     pr: &Preset,
     prog: &cfa4_export::Progress,
@@ -323,7 +348,16 @@ fn execute(
     let data = cfa4_format::encode(&proj, false);
     cfa4_format::atomic_write(Path::new(project_path), &data).map_err(|e| format!("{project_path}: {e}"))?;
     prog.done.fetch_add(1, Ordering::Relaxed);
-    Ok(bytes + data.len() as u64)
+    bytes += data.len() as u64;
+    if let Some((format, out, folder)) = archive {
+        *prog.status.lock().unwrap_or_else(|e| e.into_inner()) = format!("Packing {}", out.file_name().map(|n| n.to_string_lossy()).unwrap_or_default());
+        if let Some(d) = out.parent().filter(|d| !d.as_os_str().is_empty()) {
+            std::fs::create_dir_all(d).map_err(|e| format!("{}: {e}", d.display()))?;
+        }
+        bytes += crate::project_archive::pack(&folder, &out, format, &|| prog.cancel.load(Ordering::Relaxed), &|_| {})?;
+        prog.done.fetch_add(1, Ordering::Relaxed);
+    }
+    Ok(bytes)
 }
 
 fn estimate_bytes(m: &cfa4_project::MediaClip, dur: Tick, pr: &Preset) -> u64 {
@@ -366,7 +400,7 @@ pub fn commands() -> Vec<CommandSpec> {
         label: "Project Manager…",
         menu: &["File"],
         shortcut: None,
-        params: r#"{"destination":str,"mode":"collect|consolidate","sequences":[id]?,"excludeUnused":bool=true,"handles":frames=30,"preset":"prores_lt|prores_hq|h264|…","includeProxies":bool,"includePreviews":bool=false,"projectName":str?,"dryRun":bool=false,"overwrite":bool=false,"wait":bool=false}"#,
+        params: r#"{"destination":str,"mode":"collect|consolidate","sequences":[id]?,"excludeUnused":bool=true,"handles":frames=30,"preset":"prores_lt|prores_hq|h264|…","includeProxies":bool,"includePreviews":bool=false,"projectName":str?,"archive":"zip|tar"?,"archivePath":str?,"dryRun":bool=false,"overwrite":bool=false,"wait":bool=false}"#,
         enabled: |s| if s.project.sequences().next().is_some() { Ok(()) } else { Err("the project has no sequences".into()) },
         run,
         journal: false,
