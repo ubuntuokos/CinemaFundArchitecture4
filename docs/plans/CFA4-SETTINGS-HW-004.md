@@ -1,8 +1,9 @@
 # CFA4-SETTINGS-HW-004 – Kijelzők és Tárolóeszközök oldal a Hardver és eszközök csoportban
 
-**Állapot:** TERVEZET 0.1 – jóváhagyásra vár. Fejlesztés csak a tulajdonos jóváhagyása után indul
+**Állapot:** FINAL 1.0 – a tulajdonos 2026-11-28-án jóváhagyta; a D1–D4 a javaslat szerint. A terv minden
+további módosítása után a munka a tulajdonos újabb jóváhagyásáig áll
 ([`docs/coordination.md`](../coordination.md) §2.10).
-**Dátum:** 2026-11-28 · **Tulajdonos:** ubuntuokos
+**Dátum:** 2026-11-28 (véglegesítve 2026-11-28) · **Tulajdonos:** ubuntuokos
 **Projekt:** „CFA4 hardver beállítása”.
 **Előzmény:** [`CFA4-SETTINGS-HW-003.md`](CFA4-SETTINGS-HW-003.md) (Áttekintés és eszközoldal-minta, R4);
 menüterv: [`CFA4-SETTINGS-MENU-001.md`](CFA4-SETTINGS-MENU-001.md) „Hardver és eszközök” és „Ütemezés”
@@ -103,9 +104,9 @@ nyelvre lefordítva kerülnek be (a fordítási lefedettség-ellenőrzés miatt)
   valódi kijelzőlista és lemezlista ellenőrzése a deferred listába kerül
   ([`docs/development/deferred-physical-tests.md`](../development/deferred-physical-tests.md)).
 
-## 9. Döntések (jóváhagyásra)
+## 9. Döntések (eldöntve 2026-11-28, a javaslat szerint)
 
-| # | Kérdés | Javaslat |
+| # | Kérdés | Döntés |
 |---|---|---|
 | D1 | Ez a két oldal (Kijelzők, Tárolóeszközök) jöjjön először a „később” oldalak közül? | Igen; a Kamerák és kártyaolvasók, Rajztáblák, MIDI külön tervben, ebben a sorrendben. |
 | D2 | Kerüljön-e be már most a két új beállítás (teljes képernyős lejátszás kijelzője, szabadhely-küszöb)? | Igen, külön PR-ban (F), hogy az E csak olvasó maradjon. |
