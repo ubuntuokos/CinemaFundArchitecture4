@@ -1,0 +1,7 @@
+asset:        assets/lumas/PAL/linear_x.pgm
+title:        Luma transition mask linear_x.pgm (PAL set, 720 pixels wide, 8-bit greyscale PGM)
+author:       Massimo Stella
+source:       Kdenlive, https://invent.kde.org/multimedia/kdenlive, file data/lumas/PAL/linear_x.pgm at commit abfef9bc035ad6cd643f491d3d755083d347d69f, taken unchanged
+license:      CC0-1.0
+added:        2026-11-28 by Claude (agent) for István (KDN-21)
+notes:        Licence per the upstream REUSE.toml annotation. Shipped as data for the gradient wipe luma list and the Lumetri creative look list; embedded into the binary, no change to the bytes.

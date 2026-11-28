@@ -22,6 +22,28 @@ iconography, images or other Adobe assets; open licences only; every asset attri
 | `assets/cfa4/hicolor/512x512/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
 | `assets/cfa4/hicolor/scalable/apps/io.github.ubuntuokos.cfa4.svg` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
 | `assets/hrtf/sadie2-ku100-48k.maudhrtf` | University of York, SADIE II project (Armstrong, Thresh, Murphy, Kearney); converted by Maul Audio (Sirac Ozmen) | SADIE II Database subject D1 (Neumann KU100), 48 kHz, via Maul Audio commit `aeb3834` `data/hrtf/` (minimum-phase, 128 taps, 5° rings) | Apache-2.0 (changed: converted; `assets/hrtf/LICENSE-Apache-2.0-SADIE-II.txt`, `assets/hrtf/sadie2-ku100.notice.txt`) |
+| `assets/lumas/PAL/bi-linear_x.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/bi-linear_x.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/bi-linear_y.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/bi-linear_y.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/burst.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/burst.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/checkerboard_small.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/checkerboard_small.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/clock.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/clock.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/cloud.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/cloud.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/curtain.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/curtain.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/horizontal_blinds.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/horizontal_blinds.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/linear_x.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/linear_x.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/linear_y.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/linear_y.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/radial-bars.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/radial-bars.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/radial.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/radial.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/spiral.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/spiral.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/spiral2.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/spiral2.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/square.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/square.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/square2-bars.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/square2-bars.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/square2.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/square2.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/lumas/PAL/symmetric_clock.pgm` | Massimo Stella | Kdenlive `data/lumas/PAL/symmetric_clock.pgm` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/luts/BLUE_TINT.cube` | Kdenlive project (no copyright holder stated; REUSE annotation "None") | Kdenlive `data/luts/BLUE_TINT.cube` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/luts/CINEMATIC.cube` | Kdenlive project (no copyright holder stated; REUSE annotation "None") | Kdenlive `data/luts/CINEMATIC.cube` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/luts/GREEN_TINT.cube` | Kdenlive project (no copyright holder stated; REUSE annotation "None") | Kdenlive `data/luts/GREEN_TINT.cube` at commit `abfef9bc`, unchanged | CC0-1.0 |
+| `assets/luts/TEAL_ORANGE.cube` | Kdenlive project (no copyright holder stated; REUSE annotation "None") | Kdenlive `data/luts/TEAL_ORANGE.cube` at commit `abfef9bc`, unchanged | CC0-1.0 |
 | `crates/cinema-pkg/data/isdcf-registry.json` | InterSociety Digital Cinema Forum (ISDCF) | ISDCF metadata registries, <https://github.com/ISDCF/registries> commit `497d40ed`, reduced to the codes the naming convention uses (CINECERT WP09) | CC BY 4.0 (changed: reduced, contact details removed) |
 | `i18n/it.tsv` | Upstream contributors (see NOTICE); CFA4 contributors for the Qt GUI section | Original work: clean-room Italian interface translations | MIT OR Apache-2.0; the Qt GUI section GPL-3.0-or-later |
 | `i18n/id.tsv` | Upstream contributors (see NOTICE); CFA4 contributors for the Qt GUI section | Original work: clean-room Indonesian interface translations | MIT OR Apache-2.0; the Qt GUI section GPL-3.0-or-later |

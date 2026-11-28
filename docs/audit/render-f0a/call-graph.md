@@ -659,6 +659,7 @@ graph LR
 | `cfa4-render/lib.rs` | `cfa4-media` | `FrameRequest`, `MediaSource`, `cancel` |
 | `cfa4-render/lib.rs` | `cfa4-project` | `ClipId`, `ItemId`, `TimeInterpolation`, `graphic`, `par_ratio`, `sane_par` |
 | `cfa4-render/lib.rs` | `cfa4-time` | `FrameRate`, `Tick` |
+| `cfa4-render/lumas.rs` | `cfa4-project` | `vtransition` |
 | `cfa4-render/lumetri_presets.rs` | `cfa4-color` | `WorkingSpace`, `srgb_to_linear` |
 | `cfa4-render/lumetri_presets.rs` | `cfa4-geom` | `Vec2` |
 | `cfa4-render/lumetri_presets.rs` | `cfa4-project` | `EffectInstance` |
@@ -842,7 +843,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 658 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 659 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (32)
 

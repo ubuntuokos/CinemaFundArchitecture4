@@ -140,8 +140,16 @@ fn legacy(id: &str, e: &EffectInstance, a: &Image, b: &Image, p: f32) -> Image {
         }),
         "gradient_wipe" => {
             let soft = e.f64_at("softness", cfa4_time::Tick::ZERO) as f32 / 100.0 + 0.02;
+            // KDN-21: "Luma Mask" picks one of the shipped greyscale masks; 0 is the diagonal gradient
+            let luma = match e.param("luma").map(|p| &p.value) {
+                Some(ParamValue::Choice(c)) => crate::lumas::mask(*c),
+                _ => None,
+            };
             masked(a, b, move |u, v| {
-                let g = (u * 0.7 + v * 0.3).clamp(0.0, 1.0);
+                let g = match &luma {
+                    Some(l) => l.sample(u, v),
+                    None => (u * 0.7 + v * 0.3).clamp(0.0, 1.0),
+                };
                 ((p * (1.0 + soft) - g) / soft).clamp(0.0, 1.0)
             })
         }
