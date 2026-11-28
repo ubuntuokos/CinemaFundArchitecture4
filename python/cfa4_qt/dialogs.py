@@ -312,6 +312,11 @@ class InterpretFootageDialog(QDialog):
         # each selected DNx item's setting; mixed settings select nothing and stay as they are
         # unless the user picks one value for all
         self._dnx_settings: list[str] = []
+        # and what each was detected as; a choice the user clicked is kept over later replies
+        self._dnx_detected: list[str] = []
+        self._dnx_user_chose = False
+        for button in self.dnx_choices.values():
+            button.clicked.connect(lambda _c=False: setattr(self, "_dnx_user_chose", True))
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self)
         buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("interpretFootage.ok")
         buttons.button(QDialogButtonBox.StandardButton.Cancel).setObjectName("interpretFootage.cancel")
@@ -367,13 +372,17 @@ class InterpretFootageDialog(QDialog):
             return
         setting = result.get("setting") if result.get("setting") in self.dnx_choices else "auto"
         self._dnx_settings.append(str(setting))
-        detected = tr("FFmpeg-compatible") if result.get("detected") == "ffmpeg" else tr("SMPTE ST 2019-1 (standard)")
+        self._dnx_detected.append("ffmpeg" if result.get("detected") == "ffmpeg" else "smpte")
+        names = {"smpte": tr("SMPTE ST 2019-1 (standard)"), "ffmpeg": tr("FFmpeg-compatible")}
+        # items detected differently name both
+        detected = " / ".join(names[d] for d in ("smpte", "ffmpeg") if d in self._dnx_detected)
         self.dnx_choices["auto"].setText(fmt("As detected from the file ({detected})", detected=detected))
-        mixed = len(set(self._dnx_settings)) > 1
-        self.dnx_group.setExclusive(False)  # lets every choice be cleared for mixed settings
-        for cid, b in self.dnx_choices.items():
-            b.setChecked(not mixed and cid == self._dnx_settings[0])
-        self.dnx_group.setExclusive(True)
+        if not self._dnx_user_chose:
+            mixed = len(set(self._dnx_settings)) > 1
+            self.dnx_group.setExclusive(False)  # lets every choice be cleared for mixed settings
+            for cid, b in self.dnx_choices.items():
+                b.setChecked(not mixed and cid == self._dnx_settings[0])
+            self.dnx_group.setExclusive(True)
         for w in (self.dnx_label, self.dnx_hint, *self.dnx_choices.values()):
             w.setVisible(True)
 

@@ -4454,8 +4454,18 @@ def test_interpret_footage_chooses_dnx_conventions(app):
     d._dnx_info({"dnx": True, "setting": "smpte", "detected": "smpte", "effective": "smpte"})
     d._dnx_info({"dnx": True, "setting": "ffmpeg", "detected": "smpte", "effective": "ffmpeg"})
     assert d.chosen_dnx() is None
+    assert "SMPTE" in d.dnx_choices["auto"].text() and "FFmpeg" not in d.dnx_choices["auto"].text()
     d.accept()
     assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7, 8]})
+    # items detected differently name both; a later reply keeps the user's pick
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    d._dnx_info({"dnx": True, "setting": "auto", "detected": "smpte", "effective": "smpte"})
+    d.dnx_choices["ffmpeg"].click()
+    d._dnx_info({"dnx": True, "setting": "auto", "detected": "ffmpeg", "effective": "ffmpeg"})
+    assert "SMPTE" in d.dnx_choices["auto"].text() and "FFmpeg-compatible" in d.dnx_choices["auto"].text()
+    assert d.chosen_dnx() == "ffmpeg"
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "dnxConventions": "ffmpeg", "items": [7, 8]})
 
 
 def test_export_dnx_ffmpeg_compat_switch_only_for_dnx(app):
