@@ -19,6 +19,7 @@ ffmpeg = ["dep:rsmedia", "dep:rsmpeg"]
 
 [dependencies]
 cfa4-color = { workspace = true }
+cfa4-dng = { workspace = true }
 cfa4-frame = { workspace = true }
 cfa4-media = { workspace = true }
 cfa4-route = { workspace = true }
@@ -35,5 +36,7 @@ rsmedia = { workspace = true, optional = true }
 rsmpeg = { workspace = true, optional = true }
 
 [dev-dependencies]
+cfa4-dng = { workspace = true, features = ["writer"] }
+cfa4-metrics = { workspace = true }
 cfa4-testkit = { workspace = true }
 serde_json = { workspace = true }

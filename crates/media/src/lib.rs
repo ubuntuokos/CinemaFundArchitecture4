@@ -286,7 +286,7 @@ pub type SharedSource = Arc<dyn MediaSource>;
 
 /// File extensions we recognise at import (the media browser filters on these).
 pub const STILL_EXTENSIONS: &[&str] =
-    &["png", "jpg", "jpeg", "gif", "webp", "heic", "heif", "hif", "tif", "tiff", "bmp", "tga", "dpx", "exr", "hdr", "jxl", "dng"];
+    &["png", "jpg", "jpeg", "gif", "webp", "heic", "heif", "hif", "tif", "tiff", "bmp", "tga", "dpx", "exr", "hdr", "jxl", "dng", "rw2"];
 pub const AUDIO_EXTENSIONS: &[&str] = &[
     "wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "dts", "dtshd", "flac", "ogg", "opus", "spx", "amr", "awb", "tta", "at3", "at9", "oma",
     "omg", "aa3", "aea", "tak", "acm", "g729", "lbc", "mpc", "shn", "adx", "hca", "vqf", "vql", "vqe", "omg", "aa3", "aea", "tak", "acm", "g729", "lbc", "mpc",
@@ -356,6 +356,9 @@ pub(crate) fn open_bytes_plain(name: &str, bytes: Arc<[u8]>, extra: &[Opener]) -
     }
     if still::sniff(name, &bytes) {
         return Ok(Arc::new(still::StillSource::decode(name, &bytes)?));
+    }
+    if still::rw2::sniff(&bytes) {
+        return Err(still::rw2::needs_ffmpeg(name));
     }
     Err(MediaError::Unsupported(format!("{name}: unrecognised format")))
 }

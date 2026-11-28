@@ -18,7 +18,8 @@ when it is installed, never linked.
 | ITU-T T.81 \| ISO/IEC 10918-1 | 09/1992 | lossless JPEG (process 14, SOF3): Annex B syntax, Annex C Huffman tables, F.2.2.3 decoding, Annex H prediction and point transform |
 | CinemaDNG Image Data Format Specification | 1.1.0.0 (2009) | frames as numbered DNG files, FrameRate, TimeCodes, ReelName tags |
 | SMPTE ST 12-1 | 2014 | time code BCD packing (via the CinemaDNG TimeCodes tag) |
-| CIPA DC-008 (Exif) | 2.3 | LightSource codes → illuminant temperatures |
+| Adobe DNG Specification, "Camera Profile File Format" | 1.4.0.0 | DNG camera profiles (`.dcp`, `dcp`): magic 0x4352, the matrix tags of IFD 0, ProfileName, BaselineExposureOffset |
+| CIPA DC-008 (Exif) | 2.3 | LightSource codes → illuminant temperatures; Make, Model and Orientation of a bare Exif block (`exif`) |
 | Malvar, He, Cutler, "High-quality linear interpolation for demosaicing of Bayer-patterned color images", IEEE ICASSP | 2004 | the Bayer demosaic filters |
 | McCamy, "Correlated color temperature as an explicit function of chromaticity coordinates", Color Res. Appl. 17(2) | 1992 | white xy → temperature for the calibration interpolation |
 | IEC 61966-2-1 (sRGB) | 1999 | Rec. 709 / sRGB primaries and D65 white |
@@ -33,7 +34,16 @@ if cfa4_dng::sniff(&bytes) {
     let img = dng.develop()?;   // linear Rec. 709 RGBA f32 (alpha 1), info.width × info.height
 }
 let img = cfa4_dng::decode(&bytes)?; // parse + develop
+
+// a Bayer mosaic another decoder read (Panasonic RW2 through FFmpeg), developed like a DNG
+let m = cfa4_dng::Mosaic { width, height, data: &samples, bits: 16, pattern, black, white };
+let profile = cfa4_dng::dcp::parse(&dcp_bytes)?;          // a user-installed DNG camera profile
+let img = cfa4_dng::develop_mosaic(&m, neutral, Some(&profile.calibration))?;
+let camera = cfa4_dng::exif::camera(&exif_bytes)?;         // Make, Model, Orientation
 ```
+
+`develop_mosaic` runs the same pipeline as `Dng::develop` (it gives a DNG with the same samples and
+tags bit for bit the same picture); without a profile the camera values are only white balanced.
 
 `writer` (feature `writer`, tests only) writes synthetic DNGs: uncompressed at any depth or
 lossless JPEG with any predictor, strips or tiles, either byte order, an optional preview IFD with
@@ -80,6 +90,10 @@ restart intervals that split a line, and MXF-wrapped CinemaDNG.
   white balance, ForwardMatrix, BaselineExposure, ActiveArea, DefaultCrop, LinearRaw); CinemaDNG
   FrameRate / TimeCodes / ReelName; hostile files (every truncation, 12 000 mutations under
   `catch_unwind`, cyclic IFDs, huge sizes, bad offsets, zero denominators).
+- `tests/mosaic.rs`: `develop_mosaic` bit-exact against the DNG with the same samples and colour
+  tags for three Bayer phases, with and without a ForwardMatrix; white balance only without a
+  profile; hostile mosaics are errors. `dcp` and `exif` have unit tests (both byte orders,
+  hostile input).
 - `tests/oracle_libraw.rs`: LibRaw's `unprocessed_raw` reads the same samples from our synthetic
   files (uncompressed 8–16-bit in both byte orders, lossless JPEG predictors 1–7 with one and two
   components). Skipped when it is not installed.

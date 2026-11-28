@@ -14,6 +14,13 @@ Decision and rules: [ADR 0005](../../docs/adr/ADR-0005-media-backends.md).
 - `open(path)`: an engine `MediaSource` decoded by FFmpeg at the stream's **native** layout and
   bit depth (8-bit and 9–16-bit planar Y'CbCr go to the engine as `Yuv8` / `Yuv16`, other layouts
   as RGBA 8-bit), audio as 32-bit float at the rate the engine asks for.
+- Panasonic RW2 stills (`open` routes a file that starts with `IIU\0` to `src/rw2.rs`): FFmpeg's
+  `rw2` decoder gives the 16-bit Bayer mosaic with the RAW colour parameters and EXIF side data;
+  `cfa4-dng` develops it (`develop_mosaic`) with the user's DNG camera profile when one is
+  installed ([`docs/camera-raw.md`](../../docs/camera-raw.md)). Tests: the mosaic is bit-exact
+  with the ffmpeg CLI's, the levels and white balance agree with the file's own tags, and the
+  developed picture is compared with the embedded JPEG preview (a printed ΔE00 table, no
+  threshold), against the CC0 samples of `scripts/dev/fetch-rw2-samples.sh`.
 - `register()`: makes FFmpeg the engine's first fallback backend, before GStreamer. The built-in
   openers stay first; FFmpeg takes only what they reject. `set_enabled()` switches it at run time.
 - `register_status()` / `report()`: the entry of Settings ▸ Media & Playback ▸ Media Backends
@@ -32,7 +39,9 @@ Decision and rules: [ADR 0005](../../docs/adr/ADR-0005-media-backends.md).
   `catch_unwind`. A panic becomes an `Error::Internal`.
 - **Pinned sources.** rsmedia is not on crates.io: it is pinned to a reviewed commit, its rsmpeg
   fork by `Cargo.lock`; `deny.toml` allows exactly these two git sources.
-- **No `unsafe`** in this crate.
+- **No `unsafe`** in this crate. Side data that rsmedia hands over as bytes (`AVRawColorParams`)
+  is read field by field at the bound struct's `offset_of!` offsets.
+- **Still images are declined**, except Panasonic RW2 (the engine has no decoder for it).
 
 ## Building
 
@@ -45,6 +54,7 @@ sudo apt install build-essential nasm pkg-config libva-dev libdrm-dev libdav1d-d
 scripts/dev/build-ffmpeg.sh                 # → /opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION (base; on Ubuntu 24.04/26.04 it downloads the prebuilt one, scripts/dev/fetch-ffmpeg.sh)
 . packaging/ffmpeg-version.env                # CFA4_FFMPEG_VERSION, the pinned version
 export PKG_CONFIG_PATH=/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION/lib/pkgconfig
+scripts/dev/fetch-rw2-samples.sh             # RW2 test samples → target/fixtures/rw2 (CC0, SHA-256 pinned)
 cargo test -p cfa4-ffmpeg --features ffmpeg
 cargo build --release -p cfa4 -p cfa4-cli --features cfa4/ffmpeg,cfa4-cli/ffmpeg
 ```

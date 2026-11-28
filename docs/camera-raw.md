@@ -22,7 +22,21 @@ supported**.
 | ARRIRAW, ARRIRAW HDE, ARRICORE (ALEXA 35, Mini LF, LF, 65) | no | ARRI Reference Tool CMD (`art-cmd`), minimum 1.1.1 | `art-cmd` as an external process: linear EXR, WAV and JSON metadata; real-time playback would need an ARRI Image SDK partner licence | not supported | external tool (11.2) |
 | Sony X-OCN (XT / ST / LT), Sony RAW (VENICE, VENICE 2, BURANO, FX5) | no (decoding algorithm not published) | none for Linux; SDK only through Sony's licence programme | read the MXF and the NonRealTimeMeta XML for timecode, camera and lens metadata; show the camera proxy or a transcode | not supported | metadata / proxy only (11.2), SDK adapter only if Sony offers a Linux SDK |
 | Canon Cinema RAW Light (`.crm`) | no | Canon SDK not obtainable (developer registration not working, 2026-11-11) | metadata and the camera's proxy | not supported | metadata / proxy only until the SDK can be evaluated |
+| Panasonic RW2 stills (Lumix; RawFormat 7 and 8 bodies such as DC-GH6, DC-S5M2, DC-G9M2) | no Panasonic specification; FFmpeg's `rw2` decoder | — | the optional FFmpeg backend gives the Bayer mosaic, its black and white points and the as-shot white balance; `crates/dng` develops it like a DNG, with the user's DNG camera profile (`.dcp`) for the camera when one is installed (`crates/ffmpeg/src/rw2.rs`). FFmpeg does not decode the RawFormat 4 of older bodies (GH2, GF2, GX9, LX7…): CFA4 says so | native through FFmpeg (stills, F2d of [`plans/CFA4-FFMPEG-9.1-001.md`](plans/CFA4-FFMPEG-9.1-001.md)) | own decoder later (D3 of that plan) |
 | Nikon N-RAW (`.nev`, Z8 / Z9) | no public specification found | no Linux SDK found | none yet; the same cameras can record ProRes RAW | not supported | not supported (revisit if Nikon publishes an SDK) |
+
+## Panasonic RW2: camera profiles
+
+An RW2 file carries no colour matrix. Without a profile the picture is only white balanced, so its
+colours are approximate, and the clip's source description says so ("no camera profile:
+approximate colours"). For correct colours install a DNG camera profile for the camera, for example
+the ones that come with Adobe's free DNG Converter (CFA4 ships and downloads none). CFA4 looks for
+`*.dcp` files whose UniqueCameraModel is the camera ("Panasonic DC-GH6") in `$CFA4_CAMERA_PROFILES`
+(an absolute directory), then in `$XDG_DATA_HOME/cfa4/camera-profiles` (by default
+`~/.local/share/cfa4/camera-profiles`), up to four folders deep, and prefers the one named "Adobe
+Standard". Only the profile's matrices are applied, not its hue / saturation maps, look table or
+tone curve. The white balance is the camera's as-shot value; adjustable RAW settings come with the
+common Source Settings work below.
 
 ## Common requirements (11.1–11.3)
 
@@ -62,4 +76,5 @@ Whatever the route, each format must keep:
 
 | Date | Change |
 | --- | --- |
+| 2026-11-28 | Panasonic RW2 stills through the FFmpeg backend (F2d), camera profiles. |
 | 2026-11-12 | First version from the survey in the codec plan §11 and a check of FFmpeg 8.0 (ProRes RAW decoder). |

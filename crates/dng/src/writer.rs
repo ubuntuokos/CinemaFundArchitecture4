@@ -447,3 +447,21 @@ pub fn write(samples: &[u16], o: &Options) -> Vec<u8> {
     buf[4..8].copy_from_slice(&off);
     buf
 }
+
+/// A DNG camera profile (`.dcp`): the profile header (magic 0x4352) and IFD 0 with `entries`.
+pub fn write_profile(entries: &[(u16, Value)], big_endian: bool) -> Vec<u8> {
+    let mut buf = if big_endian { b"MMCR\0\0\0\0".to_vec() } else { b"IIRC\0\0\0\0".to_vec() };
+    let at = put_ifd(&mut buf, entries.to_vec(), big_endian);
+    let w = if big_endian { at.to_be_bytes() } else { at.to_le_bytes() };
+    buf[4..8].copy_from_slice(&w);
+    buf
+}
+
+/// A minimal EXIF-style TIFF (IFD 0 with `entries`), like the EXIF side data of a camera raw.
+pub fn write_tiff(entries: &[(u16, Value)], big_endian: bool) -> Vec<u8> {
+    let mut buf = if big_endian { b"MM\0*\0\0\0\0".to_vec() } else { b"II*\0\0\0\0\0".to_vec() };
+    let at = put_ifd(&mut buf, entries.to_vec(), big_endian);
+    let w = if big_endian { at.to_be_bytes() } else { at.to_le_bytes() };
+    buf[4..8].copy_from_slice(&w);
+    buf
+}

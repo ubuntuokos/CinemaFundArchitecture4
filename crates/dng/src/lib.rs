@@ -15,7 +15,9 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 pub mod color;
+pub mod dcp;
 pub mod demosaic;
+pub mod exif;
 pub mod ljpeg;
 pub mod process;
 pub mod raw;
@@ -355,4 +357,52 @@ pub fn decode(bytes: &[u8]) -> Result<Image> {
 /// Parse a DNG file's metadata.
 pub fn probe(bytes: &[u8]) -> Result<Info> {
     Dng::parse(bytes)?.info()
+}
+
+/// A Bayer (or other CFA) mosaic that another decoder produced from a camera raw file CFA4 does
+/// not parse itself (Panasonic RW2 through FFmpeg): `width` × `height` samples, row by row.
+pub struct Mosaic<'a> {
+    pub width: usize,
+    pub height: usize,
+    pub data: &'a [u16],
+    /// Significant bits of a sample (the white point may be lower).
+    pub bits: u32,
+    pub pattern: Pattern,
+    /// Sensor black and white points, in sample codes.
+    pub black: f64,
+    pub white: f64,
+}
+
+/// Largest mosaic [`develop_mosaic`] accepts (pixels).
+pub const MAX_MOSAIC_PIXELS: usize = 1 << 28;
+
+/// Develop `m` with the same steps as a DNG (black and white points, white balance, demosaic,
+/// colour matrix): `neutral` is the camera neutral (the reciprocal of the white balance
+/// multipliers), `profile` the camera's colour calibration, for example from a [`dcp`] profile.
+/// Without a profile the white-balanced camera values are taken as linear Rec. 709, which is only
+/// an approximation of the camera's colours.
+pub fn develop_mosaic(m: &Mosaic<'_>, neutral: V3, profile: Option<&Calibration>) -> Result<process::Developed> {
+    let pixels = m.width.checked_mul(m.height).ok_or(Error::TooLarge)?;
+    if m.width == 0 || m.height == 0 {
+        return Err(Error::Malformed("empty mosaic"));
+    }
+    if pixels > MAX_MOSAIC_PIXELS {
+        return Err(Error::TooLarge);
+    }
+    if m.data.len() != pixels {
+        return Err(Error::Malformed("mosaic size does not match its samples"));
+    }
+    if !(1..=16).contains(&m.bits) || m.pattern.rows == 0 || m.pattern.cols == 0 || m.pattern.colors.len() < m.pattern.rows * m.pattern.cols {
+        return Err(Error::Malformed("mosaic layout"));
+    }
+    if !(m.black.is_finite() && m.white.is_finite() && m.white > m.black) {
+        return Err(Error::Malformed("mosaic black and white points"));
+    }
+    let raw = RawImage { width: m.width, height: m.height, samples_per_pixel: 1, bits: m.bits, data: m.data.to_vec() };
+    let params = Params { black: vec![m.black], white: vec![m.white], cfa: Some(m.pattern.clone()), ..Params::default() };
+    let mut calibration = profile.cloned().unwrap_or_default();
+    calibration.as_shot_neutral = Some(neutral);
+    calibration.as_shot_white_xy = None;
+    let solved = calibration.solve()?;
+    process::develop(&raw, &params, &solved.neutral, &solved.matrix)
 }
