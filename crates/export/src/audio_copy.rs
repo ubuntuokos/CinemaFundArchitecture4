@@ -13,12 +13,21 @@
 //!   is the source audio at the first presented video picture, both with their edit lists
 //!   applied. The only error is rounding that instant to the audio timescale (at most half an
 //!   audio tick), and [`verify_audio_copy`] measures it in the written file.
-//! - **Other audio codecs** (MP3, Opus, AC-3, ALAC…), tracks with several sample entries in the
-//!   cut, and PCM whose timescale is not its sample rate are not copied: they are named in
+//! - **AC-3, E-AC-3 (Atmos JOC), DTS (DTS-HD MA, DTS:X, Auro-3D) and Dolby TrueHD (Atmos)**
+//!   (R2-02 of `CFA4-SMART-CUT-RENDER-R2`): copied as AAC is, whole packets unchanged, never
+//!   decoded. [`cfa4_smart_edit::audio_index`] says where they may start: AC-3, E-AC-3 and DTS get
+//!   one pre-roll packet (their transforms overlap like AAC's); TrueHD starts at the last major
+//!   sync (restart point, where Atmos also carries its object metadata) at or before the cut,
+//!   up to [`TRUEHD_MAX_RESTART_DISTANCE`] access units back. The edit list hides what is copied
+//!   before the cut. Every copied packet is indexed before anything is written: a torn frame, a
+//!   configuration change or a TrueHD copy that does not start at a major sync stops the export.
+//! - **Other audio codecs** (MP3, Opus, ALAC…), tracks with several sample entries in the cut,
+//!   and PCM whose timescale is not its sample rate are not copied: they are named in
 //!   [`AudioPlan::dropped`] with the reason, and the caller shows that before writing (nothing is
 //!   dropped silently).
 
 use cfa4_isobmff::{Brand, ByteSource, CodecConfig, Edit, Mp4File, Mp4Writer, SampleEntry, Track, TrackConfig, TrackKind, WriteSample, WriterOptions};
+use cfa4_smart_edit::audio_index::{AudioCodec, index_audio};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 
@@ -48,7 +57,7 @@ pub struct AudioTrackCopy {
     /// Index into the source's [`Mp4File::tracks`].
     pub track: usize,
     pub track_id: u32,
-    /// `aac` or `pcm`.
+    /// `aac`, `pcm`, `ac3`, `eac3`, `dts` or `truehd`.
     pub codec: String,
     /// The source samples read, in decode order (AAC: with the pre-roll packet).
     pub first: usize,
@@ -116,14 +125,31 @@ fn not_copied(track: &Track, reason: impl Into<String>) -> AudioDrop {
     AudioDrop { track_id: track.id, reason: reason.into() }
 }
 
-/// Plan the copy of every audio track of `file` for the cut `cut`.
-pub fn plan_audio_copy(file: &Mp4File, cut: CutInterval) -> AudioPlan {
+/// How far back from the cut a TrueHD copy looks for a major sync, in access units. Encoders put
+/// one at least every 128 access units (the project's Atmos samples: every 127, about 106 ms);
+/// this allows streams with sparser restart points without reading far into a long file.
+pub const TRUEHD_MAX_RESTART_DISTANCE: usize = 4096;
+
+/// The bitstream codec of a sample entry that is copied whole and indexed (R2-02).
+fn bitstream_codec(c: &CodecConfig) -> Option<AudioCodec> {
+    match c {
+        CodecConfig::Ac3 { .. } => Some(AudioCodec::Ac3),
+        CodecConfig::Eac3 { .. } => Some(AudioCodec::Eac3),
+        CodecConfig::Dts { .. } => Some(AudioCodec::Dts),
+        CodecConfig::TrueHd { .. } => Some(AudioCodec::TrueHd),
+        _ => None,
+    }
+}
+
+/// Plan the copy of every audio track of `file` for the cut `cut`. `bytes` is read only for
+/// TrueHD, around the cut, to find its restart point.
+pub fn plan_audio_copy<S: ByteSource + ?Sized>(file: &Mp4File, bytes: &S, cut: CutInterval) -> AudioPlan {
     let mut plan = AudioPlan::default();
     for (i, track) in file.tracks.iter().enumerate() {
         if track.kind != TrackKind::Audio {
             continue;
         }
-        match plan_track(i, track, cut) {
+        match plan_track(file, bytes, i, track, cut) {
             Ok(Some(t)) => plan.tracks.push(t),
             Ok(None) => plan.dropped.push(not_copied(track, "the audio does not overlap the cut")),
             Err(d) => plan.dropped.push(d),
@@ -132,7 +158,7 @@ pub fn plan_audio_copy(file: &Mp4File, cut: CutInterval) -> AudioPlan {
     plan
 }
 
-fn plan_track(index: usize, track: &Track, cut: CutInterval) -> Result<Option<AudioTrackCopy>, AudioDrop> {
+fn plan_track<S: ByteSource + ?Sized>(file: &Mp4File, bytes: &S, index: usize, track: &Track, cut: CutInterval) -> Result<Option<AudioTrackCopy>, AudioDrop> {
     let ats = i128::from(track.timescale);
     let vts = i128::from(cut.timescale);
     if ats == 0 || vts == 0 {
@@ -146,6 +172,7 @@ fn plan_track(index: usize, track: &Track, cut: CutInterval) -> Result<Option<Au
             }
             "pcm"
         }
+        Some(c) if bitstream_codec(c).is_some() => bitstream_codec(c).map_or("", AudioCodec::name),
         Some(other) => return Err(not_copied(track, format!("{} audio is not copied yet", codec_name(other)))),
         None => return Err(not_copied(track, "the track has no sample entry")),
     };
@@ -165,8 +192,13 @@ fn plan_track(index: usize, track: &Track, cut: CutInterval) -> Result<Option<Au
     let end_present = a1.min(end(last_kept));
     let lead_in = start_present - a0;
     let presented = end_present - start_present;
-    // AAC decodes a packet with the one before it; PCM frames stand alone
-    let first = if codec == "aac" { s.saturating_sub(1) } else { s };
+    // AAC, AC-3, E-AC-3 and DTS decode a packet with the one before it; PCM frames stand alone;
+    // TrueHD starts at its last restart point
+    let first = match codec {
+        "pcm" => s,
+        "truehd" => truehd_restart(file, bytes, index, track, s)?,
+        _ => s.saturating_sub(1),
+    };
     let entry = samples.get(first).map(|x| x.description_index);
     if samples.get(first..=e).is_none_or(|run| run.iter().any(|x| Some(x.description_index) != entry)) {
         return Err(not_copied(track, "the audio changes its codec configuration inside the cut"));
@@ -193,12 +225,33 @@ fn plan_track(index: usize, track: &Track, cut: CutInterval) -> Result<Option<Au
     }))
 }
 
+/// The last TrueHD major sync at or before sample `s`, at most [`TRUEHD_MAX_RESTART_DISTANCE`]
+/// access units back.
+fn truehd_restart<S: ByteSource + ?Sized>(file: &Mp4File, bytes: &S, index: usize, track: &Track, s: usize) -> Result<usize, AudioDrop> {
+    let from = s.saturating_sub(TRUEHD_MAX_RESTART_DISTANCE);
+    let mut packets = Vec::new();
+    for d in from..=s.min(track.samples.len().saturating_sub(1)) {
+        packets.push(file.read_sample(bytes, index, d).map_err(|e| not_copied(track, format!("the TrueHD audio cannot be read ({e})")))?);
+    }
+    // index from the first major sync in the window: packets before it have no configuration
+    let start = packets.iter().position(|p| index_audio(AudioCodec::TrueHd, [p.as_slice()]).is_ok()).ok_or_else(|| no_restart(track))?;
+    let ix = index_audio(AudioCodec::TrueHd, packets[start..].iter().map(Vec::as_slice))
+        .map_err(|e| not_copied(track, format!("the TrueHD audio is not copied ({e})")))?;
+    let last = ix.units.len().checked_sub(1).ok_or_else(|| no_restart(track))?;
+    let entry = ix.entry_at_or_before(last).ok_or_else(|| no_restart(track))?;
+    Ok(from + start + entry)
+}
+
+fn no_restart(track: &Track) -> AudioDrop {
+    not_copied(track, format!("no TrueHD restart point (major sync) within {TRUEHD_MAX_RESTART_DISTANCE} access units before the cut"))
+}
+
 fn codec_name(c: &CodecConfig) -> &'static str {
     match c {
         CodecConfig::Mp3 => "MP3 / MP2",
         CodecConfig::Pcm(_) => "PCM",
         CodecConfig::Aac(_) => "AAC",
-        _ => "This",
+        other => other.name(),
     }
 }
 
@@ -399,7 +452,7 @@ fn audio_samples<S: ByteSource + ?Sized>(source: &Mp4File, bytes: &S, t: &AudioT
                 return Err(stale(t.last));
             }
         }
-        (None, Some(CodecConfig::Aac(_))) => {
+        (None, Some(c)) if matches!(c, CodecConfig::Aac(_)) || bitstream_codec(c).is_some() => {
             for d in t.first..=t.last {
                 let s = track.samples.get(d).ok_or_else(|| stale(d))?;
                 let data = source.read_sample(bytes, t.track, d).map_err(io)?;
@@ -411,7 +464,24 @@ fn audio_samples<S: ByteSource + ?Sized>(source: &Mp4File, bytes: &S, t: &AudioT
         }
         _ => return Err(SmartCutError::StaleIndex { detail: format!("audio track {} changed its codec", t.track_id) }),
     }
+    if let Some(codec) = track.entries.first().and_then(|e| bitstream_codec(&e.codec)) {
+        check_bitstream(codec, t.track_id, &out)?;
+    }
     Ok(out)
+}
+
+/// Index the copied packets of a bitstream track before anything is written: every packet whole,
+/// one configuration, and a TrueHD copy starting at a major sync.
+fn check_bitstream(codec: AudioCodec, track_id: u32, packets: &[(Vec<u8>, i128, u32)]) -> Result<(), SmartCutError> {
+    let bad = |detail: String| SmartCutError::Incompatible { detail: format!("audio track {track_id} ({}): {detail}", codec.name()) };
+    let ix = index_audio(codec, packets.iter().map(|p| p.0.as_slice())).map_err(|e| bad(e.to_string()))?;
+    if ix.units.first().is_some_and(|u| !u.entry) {
+        return Err(bad("the copy does not start at a restart point".into()));
+    }
+    if !ix.units.is_empty() && !ix.one_config(0, ix.units.len() - 1) {
+        return Err(bad("the audio changes its configuration inside the cut".into()));
+    }
+    Ok(())
 }
 
 /// Read back a file written by [`mux_audio_tracks`]: the video track must be the one of

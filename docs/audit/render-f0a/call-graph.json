@@ -11198,6 +11198,11 @@
    "to": "cfa4-time"
   },
   {
+   "from": "cfa4-export/audio_copy.rs",
+   "item": "audio_index",
+   "to": "cfa4-smart-edit"
+  },
+  {
    "from": "cfa4-export/audio_out.rs",
    "item": "AudioEffect",
    "to": "cfa4-audio-dsp"
