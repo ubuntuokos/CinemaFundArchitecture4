@@ -1,7 +1,7 @@
 # cfa4-st2110
 
 Clean-room SMPTE ST 2110 essence formats for the CFA4 live studio, phase **T0** of the ST 2110
-addendum to CFA4-LIVE-STUDIO-001 (`docs/plans/CFA4-LIVE-STUDIO-001-ST2110.md`), and the clock part of phase **T1**. Layer L0:
+addendum to CFA4-LIVE-STUDIO-001 (`docs/plans/CFA4-LIVE-STUDIO-001-ST2110.md`), the clock part of phase **T1**, and the **T1b** refinements (traceable clock, `TSMODE`, SDP checker). Layer L0:
 depends only on `thiserror`. No `unsafe`, no sockets, clocks or threads; the network phases (T1+)
 build on it. Written from the public SMPTE and IETF documents (plan D8). GStreamer is used only
 as an external test oracle (`tests/gst_oracle.rs`).
@@ -59,6 +59,20 @@ if let Some(image) = rx.pop() { /* image.data, image.complete */ }
   `sender_clocks` signals the grandmaster and `mediaclk:direct=0` when locked (slave port,
   grandmaster present, offset within 1 µs), otherwise `ts-refclk:localmac` and `mediaclk:sender`.
   No clock is read in this crate: the studio host reads `CLOCK_TAI` and `pmc` and passes them in.
+- **T1b** (ST 2110-10:2022; plan V-03, V-04, V-05, V-07, V-10):
+  - `PtpStatus` also reads `slaveOnly`, `ptpTimescale`, `timeTraceable` and `gm.ClockAccuracy`;
+    `traceable()` is true only when all three conditions of §8.2 hold (PTP timescale, traceable,
+    accuracy 250 ns or better; an unanswered one counts as not met). `sender_clocks` still names the
+    grandmaster; `sender_clocks_with(.., RefClockForm::TraceableWhenAllowed)` gives the `traceable`
+    form only when the conditions hold. See [`docs/live-studio-ptp.md`](../../docs/live-studio-ptp.md)
+    for the `slaveOnly` configuration.
+  - `sender_ts_mode` returns `TSMODE=SAMP` for synthetic content when the frame clock is locked to PTP
+    and `ptp4l` is locked, otherwise `NEW`.
+  - `validate::check` / `validate` apply the network rules to a parsed SDP and name each broken rule:
+    reserved multicast ranges (224.0.0.0/24, 224.0.1.0/24), one payload type per `m=` section,
+    `MAXUDP` range, `ts-refclk` present (media or session level) and `mediaclk` in each media section with offset 0, one RTP endpoint per stream, ST 2022-7 pairs (two
+    existing legs, identical payload and clock lines, not the same source and destination).
+  - `RtpMap::parse` refuses `jxsv` (JPEG XS) with a reason (plan D10).
 - **Packing** (`pack`):
   - GPM fills each packet up to the UDP limit, joining short rows with the continuation bit (at
     most three SRD headers); BPM sends 1260 octets of sample data per packet and refuses

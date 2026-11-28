@@ -18,6 +18,7 @@ pub const PMC_TIMEOUT: Duration;                               // 2 s
 pub fn query() -> PtpReport;                                   // CFA4_PTP_DOMAIN or 127, PMC_TIMEOUT
 pub fn query_with(domain: u8, timeout: Duration) -> PtpReport;
 pub fn report_from(pmc: Result<String, String>, now: SystemTime, mac: [u8; 6]) -> PtpReport;
+pub fn report_from_with(pmc: Result<String, String>, now: SystemTime, mac: [u8; 6], policy: Policy) -> PtpReport;
 ```
 
 Nothing here is an error for the caller: without `pmc`, without an answer in time, or with an
@@ -25,7 +26,12 @@ unreadable answer, `PtpReport::available` is false, `reason` says why, and the s
 falls back to `localmac=…` / `sender`. `PtpReport` carries no studio state (no host, scene or
 source), so any process can report it.
 
-Environment: `CFA4_PTP_DOMAIN` (domain for `query()`), `CFA4_PTP_INTERFACE` (the interface whose
+T1b: the report also carries `slaveOnly`, `traceable` (the grandmaster's PTP timescale, `timeTraceable` and
+`clockAccuracy` ≤ 250 ns) and `warnings` (a `ptp4l` that may become the leader). `report_from_with(.., Policy)`
+and `CFA4_PTP_REQUIRE_SLAVE_ONLY=1` refuse such a `ptp4l`. `pmc` also gets `GET PARENT_DATA_SET`. See
+[`docs/live-studio-ptp.md`](../../docs/live-studio-ptp.md).
+
+Environment: `CFA4_PTP_REQUIRE_SLAVE_ONLY`, `CFA4_PTP_DOMAIN` (domain for `query()`), `CFA4_PTP_INTERFACE` (the interface whose
 MAC goes into `localmac`).
 
 ## `frame`

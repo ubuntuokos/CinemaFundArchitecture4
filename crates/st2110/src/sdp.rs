@@ -211,9 +211,14 @@ pub struct RtpMap {
 }
 
 impl RtpMap {
-    fn parse(v: &str) -> Result<Self, Error> {
+    /// Parse the value after the payload type (`raw/90000`). `jxsv` is refused (plan D10).
+    pub fn parse(v: &str) -> Result<Self, Error> {
         let mut f = v.trim().split('/');
         let encoding = f.next().filter(|e| !e.is_empty()).ok_or(Error::Invalid("rtpmap encoding"))?.to_string();
+        if encoding.eq_ignore_ascii_case("jxsv") {
+            // Plan D10: no JPEG XS in any CFA4 package, so a `jxsv` stream is refused with a reason.
+            return Err(Error::Unsupported("rtpmap jxsv: JPEG XS is not supported by CFA4 (plan D10); use raw, VC-2 or another listed format".into()));
+        }
         let clock_rate = f.next().and_then(|c| c.parse().ok()).ok_or(Error::Invalid("rtpmap clock rate"))?;
         let channels = match f.next() {
             Some(c) => Some(c.parse().map_err(|_| Error::Invalid("rtpmap channels"))?),
@@ -439,6 +444,16 @@ a=mid:blue\r\n";
         assert_eq!((r.encoding.as_str(), r.clock_rate, r.channels), ("L24", 48000, Some(8)));
         assert_eq!(r.to_value(97), "97 L24/48000/8");
         assert_eq!(m.attribute("ptime"), Some("1"));
+    }
+
+    #[test]
+    fn jxsv_is_refused_with_a_reason() {
+        let text = PAIR.replace("raw/90000", "jxsv/90000");
+        let s = Session::parse(&text).unwrap();
+        let e = s.media[0].rtpmap(98).unwrap_err().to_string();
+        assert!(e.contains("jxsv") && e.contains("JPEG XS") && e.contains("D10"), "{e}");
+        assert!(RtpMap::parse("JXSV/90000").is_err());
+        assert!(RtpMap::parse("raw/90000").is_ok());
     }
 
     #[test]
