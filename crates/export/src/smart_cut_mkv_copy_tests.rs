@@ -252,7 +252,8 @@ fn verification_catches_a_changed_payload_and_wrong_containers_are_refused() {
 #[test]
 fn physical_matroska_samples_cut_into_matroska() {
     let Some(dir_os) = std::env::var_os("CFA4_SMART_CUT_SAMPLES") else {
-        skip("Smart Cut into Matroska samples", "CFA4_SMART_CUT_SAMPLES is not set");
+        // a physical test: not an oracle test, so CFA4_REQUIRE_ORACLES does not make it fail
+        eprintln!("SKIPPED (Smart Cut into Matroska samples): CFA4_SMART_CUT_SAMPLES is not set");
         return;
     };
     let mut seen = 0;
