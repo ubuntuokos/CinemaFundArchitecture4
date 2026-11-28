@@ -4993,3 +4993,11 @@ export.summary	Low	matala
 	Encrypted assets	Salatut resurssit
 	Key ID: {id}	Avaimen tunnus: {id}
 	Package structure unavailable: {error}	Paketin rakenne ei ole saatavilla: {error}
+	DNx decoding:	DNx-purku:
+	As detected from the file ({detected})	Tiedostosta tunnistetun mukaan ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standardi)
+	FFmpeg-compatible	FFmpeg-yhteensopiva
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg lukee joitakin DNx-tiedostoja standardista poiketen (4:4:4-värit, käänteinen kvantisointi). FFmpegillä koodattu materiaali tunnistetaan; valitse tästä, jos tunnistus on väärä.
+	DNx Coding	DNx-koodaus
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-yhteensopiva (FFmpeg-pohjaisille työkaluille)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Pois: koodattu SMPTE ST 2019-1:n mukaan. Päällä: koodattu niin kuin FFmpeg kirjoittaa DNx:n, FFmpegiin perustuville työkaluille.

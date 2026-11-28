@@ -4989,3 +4989,11 @@
 	Encrypted assets	已加密的资产
 	Key ID: {id}	密钥 ID：{id}
 	Package structure unavailable: {error}	无法获取包结构：{error}
+	DNx decoding:	DNx 解码：
+	As detected from the file ({detected})	按文件检测结果 ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1（标准）
+	FFmpeg-compatible	兼容 FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg 读取某些 DNx 文件的方式与标准不同（4:4:4 颜色、反量化）。由 FFmpeg 编码的素材会被检测到；如果检测有误，请在此选择。
+	DNx Coding	DNx 编码
+	FFmpeg-compatible (for FFmpeg-based tools)	兼容 FFmpeg（用于基于 FFmpeg 的工具）
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	关：按 SMPTE ST 2019-1 编码。开：按 FFmpeg 写入 DNx 的方式编码，供基于 FFmpeg 的工具使用。

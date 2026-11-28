@@ -2506,7 +2506,7 @@ class MainWindow(QMainWindow):
     def interpret_footage(self, cid: str, params: dict[str, Any]) -> bool:
         """Interpret Footage without settings opens its dialog (egui's), for the items given or
         the Project panel's selection. True when it did."""
-        if cid != "clip.interpretFootage" or "colorSpace" in params or "pixelAspect" in params:
+        if cid != "clip.interpretFootage" or any(k in params for k in ("colorSpace", "pixelAspect", "dnxConventions")):
             return False
         items = [i for i in params.get("items") or self.project_panel.selected_items() or self.selected_clip_items() if isinstance(i, int)]
         dialog = InterpretFootageDialog(self, self.engine, items, self.execute)

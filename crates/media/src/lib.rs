@@ -237,6 +237,17 @@ pub trait MediaSource: Send + Sync {
     fn carrier(&self) -> Option<SharedSource> {
         None
     }
+    /// Interpret Footage ▸ DNx conventions (CFA4-DNX-SPEC-001 R5, D2): decode DNx (VC-3) video
+    /// with FFmpeg's conventions (`Some(true)`), by SMPTE ST 2019-1 (`Some(false)`), or as the
+    /// source detects from its container (`None`). Decoders made afterwards use it: call it on a
+    /// freshly opened source, before its first frame. Sources without DNx video ignore it.
+    fn set_dnx_conventions(&self, _ffmpeg: Option<bool>) {}
+    /// What the source detects from its container for its DNx video, whatever
+    /// [`set_dnx_conventions`](Self::set_dnx_conventions) chose: `Some(true)` when FFmpeg encoded
+    /// it (FFmpeg's conventions), `Some(false)` for the standard's. `None` without DNx video.
+    fn dnx_ffmpeg_detected(&self) -> Option<bool> {
+        None
+    }
     /// The Key IDs (UUID text) of encrypted essence (ST 429-6) whose content key is not loaded:
     /// its picture is black and its sound silent until a KDM brings them (#1053). Read when
     /// asked, so it is empty once the keys are there. Empty for sources that are not encrypted.

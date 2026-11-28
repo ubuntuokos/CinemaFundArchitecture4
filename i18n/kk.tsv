@@ -4993,3 +4993,11 @@ export.summary	Low	төмен
 	Encrypted assets	Шифрланған ресурстар
 	Key ID: {id}	Кілт идентификаторы: {id}
 	Package structure unavailable: {error}	Пакет құрылымы қолжетімсіз: {error}
+	DNx decoding:	DNx декодтау:
+	As detected from the file ({detected})	Файлдан анықталғандай ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (стандарт)
+	FFmpeg-compatible	FFmpeg-пен үйлесімді
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg кейбір DNx файлдарын стандарттан өзгеше оқиды (4:4:4 түстері, кері кванттау). FFmpeg кодтаған материал анықталады; анықтау қате болса, осында таңдаңыз.
+	DNx Coding	DNx кодтау
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-пен үйлесімді (FFmpeg негізіндегі құралдар үшін)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Өшірулі: SMPTE ST 2019-1 бойынша кодталады. Қосулы: FFmpeg DNx-ті қалай жазса, солай кодталады, FFmpeg негізіндегі құралдар үшін.

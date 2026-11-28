@@ -4994,3 +4994,11 @@ export.summary	Low	nizka
 	Encrypted assets	Šifrirani viri
 	Key ID: {id}	ID ključa: {id}
 	Package structure unavailable: {error}	Struktura paketa ni na voljo: {error}
+	DNx decoding:	Dekodiranje DNx:
+	As detected from the file ({detected})	Kot je zaznano iz datoteke ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	Združljivo s FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg nekatere datoteke DNx bere drugače od standarda (barve 4:4:4, inverzna kvantizacija). Posnetki, ki jih je kodiral FFmpeg, se zaznajo; izberite tukaj, če je zaznava napačna.
+	DNx Coding	Kodiranje DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Združljivo s FFmpeg (za orodja na osnovi FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Izklopljeno: kodirano po SMPTE ST 2019-1. Vklopljeno: kodirano tako, kot FFmpeg zapisuje DNx, za orodja na osnovi FFmpeg.

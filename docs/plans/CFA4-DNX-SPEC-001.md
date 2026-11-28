@@ -54,3 +54,9 @@ megvan a crate-ben.
 |----|----------|------------|
 | P1+P2+P4 | `cfa4-dnx`: E1, E2, `ffmpeg_compat` (R1–R4), README (R6), ez a terv; és R5-ből az FFmpeg által írt fájlok automatikus felismerése a `cfa4-codecs`-ben (enélkül az FFmpeg-gel készült tesztfájlok eltérnének) | igen (kodek) |
 | P3 | motor: kézi kapcsoló (Qt6 GUI: menü + panel), exportbeállítás, RGB 4:4:4 figyelmeztetés (R5, D2–D4) | igen (kodek/konténer) |
+
+**P3 megvalósítása (2026-11-25).**
+- Kézi kapcsoló (D2): a projektelem *Interpret Footage* beállítása, `cfa4_project::Interpretation::dnx_conventions` (`None` = a tárolóból felismert, `smpte`, `ffmpeg`), visszavonható. Parancs: `clip.interpretFootage {"dnxConventions":"auto"|"smpte"|"ffmpeg"}` (menü: Clip ▸ Modify ▸ Interpret Footage, és a Project panel helyi menüje); lekérdezés: `media.dnxInfo {"item"}` (`dnx`, `setting`, `detected`, `effective`). Qt6 GUI: az Interpret Footage párbeszédablak DNx-szakasza, csak DNx-felvételnél (automation id-k `interpretFootage.dnx.auto|smpte|ffmpeg`). A forrás (`MediaSource::set_dnx_conventions`, `dnx_ffmpeg_detected`) a frissen megnyitott forráson kapja meg a választást; a forráskulcs része, így váltáskor újranyílik.
+- Exportbeállítás (D3): `dnxFfmpegCompat` (`ExportSettings::dnx_ffmpeg_compat`, alapból ki = szabvány), DNxHR/DNxHD-nél és DNx-et író MXF-nél; Qt6 GUI: „DNx Coding” jelölőnégyzet (`export.video.dnxFfmpegCompat`).
+- Figyelmeztetés (D4): a DNx-export ma csak 4:2:2 profilokat kínál, RGB 4:4:4 exportja nincs, így a figyelmeztetésnek nincs helye; a 4:4:4 export bevezetésekor kell (ez a terv nyitott pontja).
+- Korlát: a CFA4 FFmpeg-kompatibilis exportja nem kap `Lavc…` kompresszornevet (nem az FFmpeg kódolta), ezért visszaolvasáskor a CFA4 szabvány szerint dekódolja; az eltérés 4:2:2-nél csak a rekonstrukciós szint (≈ ¼ kvantálási lépés), az Interpret Footage kapcsolóval FFmpeg-módra állítható.

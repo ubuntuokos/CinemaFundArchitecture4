@@ -4993,3 +4993,11 @@ export.summary	Low	madal
 	Encrypted assets	Krüpteeritud varad
 	Key ID: {id}	Võtme ID: {id}
 	Package structure unavailable: {error}	Paketi struktuur pole saadaval: {error}
+	DNx decoding:	DNx-i dekodeerimine:
+	As detected from the file ({detected})	Nagu failist tuvastatud ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	FFmpegiga ühilduv
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg loeb mõnda DNx-faili standardist erinevalt (4:4:4 värvid, pöördkvantimine). FFmpegiga kodeeritud materjal tuvastatakse; valige siin, kui tuvastus on vale.
+	DNx Coding	DNx-i kodeerimine
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpegiga ühilduv (FFmpegil põhinevatele tööriistadele)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Väljas: kodeeritud SMPTE ST 2019-1 järgi. Sees: kodeeritud nii, nagu FFmpeg DNx-i kirjutab, FFmpegil põhinevatele tööriistadele.

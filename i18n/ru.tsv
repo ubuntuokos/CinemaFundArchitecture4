@@ -4974,3 +4974,11 @@
 	Encrypted assets	Зашифрованные ресурсы
 	Key ID: {id}	ID ключа: {id}
 	Package structure unavailable: {error}	Структура пакета недоступна: {error}
+	DNx decoding:	Декодирование DNx:
+	As detected from the file ({detected})	Как определено по файлу ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (стандарт)
+	FFmpeg-compatible	Совместимо с FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg читает некоторые файлы DNx не так, как предписывает стандарт (цвета 4:4:4, обратное квантование). Материал, закодированный FFmpeg, определяется автоматически; выберите здесь, если определение неверно.
+	DNx Coding	Кодирование DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Совместимо с FFmpeg (для инструментов на основе FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Выкл.: кодирование по SMPTE ST 2019-1. Вкл.: кодирование так, как FFmpeg записывает DNx, для инструментов на основе FFmpeg.

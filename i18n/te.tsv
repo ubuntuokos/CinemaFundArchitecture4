@@ -4993,3 +4993,11 @@ export.summary	Low	తక్కువ
 	Encrypted assets	ఎన్‌క్రిప్ట్ చేసిన ఆస్తులు
 	Key ID: {id}	కీ ID: {id}
 	Package structure unavailable: {error}	ప్యాకేజీ నిర్మాణం అందుబాటులో లేదు: {error}
+	DNx decoding:	DNx డీకోడింగ్:
+	As detected from the file ({detected})	ఫైల్ నుండి గుర్తించినట్లు ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (ప్రమాణం)
+	FFmpeg-compatible	FFmpeg అనుకూలం
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg కొన్ని DNx ఫైళ్లను ప్రమాణానికి భిన్నంగా చదువుతుంది (4:4:4 రంగులు, విలోమ క్వాంటైజేషన్). FFmpeg ఎన్‌కోడ్ చేసిన ఫుటేజ్ గుర్తించబడుతుంది; గుర్తింపు తప్పైతే ఇక్కడ ఎంచుకోండి.
+	DNx Coding	DNx ఎన్‌కోడింగ్
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg అనుకూలం (FFmpeg ఆధారిత సాధనాల కోసం)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	ఆఫ్: SMPTE ST 2019-1 ప్రకారం ఎన్‌కోడ్ అవుతుంది. ఆన్: FFmpeg DNx ను రాసే విధంగా ఎన్‌కోడ్ అవుతుంది, FFmpeg ఆధారిత సాధనాల కోసం.
