@@ -181,3 +181,46 @@ fn volume_effect_becomes_the_audio_clips_volume_level() {
     assert!(warnings.contains("+15 dB"), "{warnings}");
     assert_eq!(warnings.matches("is not imported yet").count(), 1, "{warnings}");
 }
+
+/// KDN-20: effects the table maps become CFA4 effects with default settings, reported as stand-ins;
+/// an effect the table lists as having no equivalent, or one it lacks, is reported as not imported.
+#[test]
+fn table_effects_become_default_cfa4_effects() {
+    let filter = |id: &str| format!(r#"<filter><property name="mlt_service">{id}</property><property name="kdenlive_id">{id}</property></filter>"#);
+    let doc = format!(
+        r#"<mlt><profile frame_rate_num="25" frame_rate_den="1" width="1280" height="720"/>
+<producer id="c" in="0" out="249"><property name="mlt_service">avformat-novalidate</property><property name="resource">/m/a.mp4</property></producer>
+<producer id="black" in="0" out="9999"><property name="mlt_service">color</property><property name="resource">black</property></producer>
+<playlist id="pv">
+<entry producer="c" in="0" out="24">{invert}</entry>
+<entry producer="c" in="25" out="49">{boxblur}</entry>
+<entry producer="c" in="50" out="74">{shape}{nothing}</entry>
+<entry producer="c" in="75" out="99">{highpass}</entry>
+</playlist>
+<playlist id="pa"><entry producer="c" in="0" out="24">{highpass}</entry></playlist>
+<tractor id="ta"><property name="kdenlive:audio_track">1</property><track producer="pa"/></tractor>
+<tractor id="tv"><track producer="pv"/></tractor>
+<tractor id="main"><track producer="black"/><track producer="ta"/><track producer="tv"/></tractor></mlt>"#,
+        invert = filter("invert"),
+        boxblur = filter("boxblur"),
+        shape = filter("shape"),
+        nothing = filter("no-such-effect"),
+        highpass = filter("avfilter.highpass"),
+    );
+    let (imp, rep) = import(doc.as_bytes(), Format::Mlt, Some(BASE)).unwrap_or_else(|e| panic!("{e}"));
+    let s = seq(&imp);
+    let v = &s.video_tracks[0].items;
+    assert_eq!(v.len(), 4);
+    assert!(v[0].effect("invert").is_some_and(|e| e.enabled), "{:?}", v[0].effects);
+    assert!(v[1].effect("gaussian_blur").is_some());
+    assert!(v[2].effects.iter().all(|e| e.effect != "gaussian_blur" && e.effect != "invert"));
+    // an audio effect on a video clip is not attached; on the audio clip it is
+    assert!(v[3].effect("highpass").is_none());
+    assert!(s.audio_tracks[0].items[0].effect("highpass").is_some());
+    let text = format!("{rep}");
+    assert!(text.contains("\"invert\" was imported as CFA4's"), "{text}");
+    assert!(text.contains("a similar effect"), "{text}");
+    assert!(text.contains("\"shape\" has no CFA4 equivalent"), "{text}");
+    assert!(text.contains("\"no-such-effect\" is not imported yet"), "{text}");
+    assert!(text.contains("\"avfilter.highpass\" is not imported yet"), "{text}");
+}
