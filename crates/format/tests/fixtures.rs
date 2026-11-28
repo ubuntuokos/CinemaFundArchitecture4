@@ -338,6 +338,7 @@ fn next_id_is_raised_past_every_id_in_the_file() {
                     to: Some(clip.id),
                     align: Default::default(),
                     reverse: false,
+                    interchange: Default::default(),
                 });
             }),
         ),
@@ -405,6 +406,7 @@ fn next_id_is_raised_past_every_id_in_the_file() {
                     to: Some(ClipId(BIG)),
                     align: Default::default(),
                     reverse: false,
+                    interchange: Default::default(),
                 });
             }),
         ),

@@ -400,6 +400,7 @@ fn ripple_trim_group_takes_a_split_edit_along() {
         to: Some(sound),
         align: Default::default(),
         reverse: false,
+        interchange: Default::default(),
     }];
     let mut n = fx.next;
     ripple_trim_group(&mut fx.seq, &[a], Edge::Out, f(3), &mut Fx::ctx(&mut n)).unwrap();
@@ -460,6 +461,7 @@ fn transitions_stay_on_their_cuts() {
         to,
         align: Default::default(),
         reverse: false,
+        interchange: Default::default(),
     };
     let t = fx.seq.track_mut(v1).unwrap();
     t.transitions = vec![cross(1, 8, Some(a), Some(b)), cross(2, 18, Some(b), Some(c)), cross(3, 26, Some(c), None)];
@@ -505,6 +507,7 @@ fn fades_follow_a_regular_trim() {
         to,
         align: Default::default(),
         reverse: false,
+        interchange: Default::default(),
     };
     fx.seq.track_mut(v1).unwrap().transitions = vec![fade(1, 10, None, Some(a)), fade(2, 24, Some(a), None)];
     let spans = |fx: &Fx| fx.seq.track(v1).unwrap().transitions.iter().map(|t| (t.start, t.duration)).collect::<Vec<_>>();
@@ -534,6 +537,7 @@ fn fades_follow_a_non_ripple_speed_change() {
         to: None,
         align: Default::default(),
         reverse: false,
+        interchange: Default::default(),
     }];
     let mut n = fx.next;
     set_speed(&mut fx.seq, a, 2.0, false, false, &mut Fx::ctx(&mut n)).unwrap();
@@ -561,6 +565,7 @@ fn a_transition_stays_within_its_clips_after_a_regular_trim_or_speed_change() {
             to: Some(b),
             align: cfa4_project::TransitionAlign::EndAtCut,
             reverse: false,
+            interchange: Default::default(),
         }];
         let mut n = fx.next;
         match case {
@@ -596,6 +601,7 @@ fn a_regular_trim_shortens_a_transition_longer_than_its_clips() {
         to: Some(b),
         align: cfa4_project::TransitionAlign::StartAtCut,
         reverse: false,
+        interchange: Default::default(),
     }];
     let mut n = fx.next;
     trim(&mut fx.seq, b, Edge::Out, TrimMode::Regular, -f(9), &mut Fx::ctx(&mut n)).unwrap();
@@ -623,6 +629,7 @@ fn transitions_travel_with_moved_clips() {
         to,
         align: Default::default(),
         reverse: false,
+        interchange: Default::default(),
     };
     fx.seq.track_mut(v1).unwrap().transitions = vec![tr(1, 0, None, Some(a)), tr(2, 18, Some(b), Some(c)), tr(3, 26, Some(c), None)];
     let at = |fx: &Fx, track: TrackId| -> Vec<(u64, i64)> { fx.seq.track(track).unwrap().transitions.iter().map(|t| (t.id.0, R.frame_at(t.start))).collect() };
@@ -965,6 +972,7 @@ fn roll_keeps_the_transition_on_its_clips() {
         to: Some(b),
         align: Default::default(),
         reverse: false,
+        interchange: Default::default(),
     }];
     let mut n = fx.next;
     // left: the transition reaches the sequence start after 8 frames, not the 9 the clips allow
@@ -1000,6 +1008,7 @@ fn edits_that_move_a_cut_keep_its_transition_on_its_clips() {
             to: Some(b),
             align: TransitionAlign::EndAtCut,
             reverse: false,
+            interchange: Default::default(),
         }];
         let mut n = fx.next;
         if slide_it {
@@ -1034,6 +1043,7 @@ fn a_ripple_trim_of_the_second_clips_end_keeps_the_transition_within_it() {
         to: Some(b),
         align: TransitionAlign::CenterAtCut,
         reverse: false,
+        interchange: Default::default(),
     }];
     let mut n = fx.next;
     trim(&mut fx.seq, b, Edge::Out, TrimMode::Ripple, -f(9), &mut Fx::ctx(&mut n)).unwrap();

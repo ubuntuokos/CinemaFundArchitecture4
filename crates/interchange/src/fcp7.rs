@@ -678,7 +678,17 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
             _ => TransitionAlign::CenterAtCut,
         };
         let id = TransitionId(self.b.alloc());
-        track.transitions.push(Transition { id, effect, start: s, duration: e - s, from: from.map(|f| f.0), to: to.map(|t| t.0), align, reverse: false });
+        track.transitions.push(Transition {
+            id,
+            effect,
+            start: s,
+            duration: e - s,
+            from: from.map(|f| f.0),
+            to: to.map(|t| t.0),
+            align,
+            reverse: false,
+            interchange: Default::default(),
+        });
         track.sort();
     }
 

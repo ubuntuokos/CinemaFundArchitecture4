@@ -373,7 +373,17 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
             // The clips may have been moved to another track by placement; find the track holding them.
             let clip = from.or(to).map(|c| c.0);
             if let Some(t) = seq.video_tracks.iter_mut().find(|t| clip.is_some_and(|c| t.item(c).is_some())) {
-                t.transitions.push(Transition { id, effect, start, duration: dur, from: from.map(|f| f.0), to: to.map(|t| t.0), align, reverse: false });
+                t.transitions.push(Transition {
+                    id,
+                    effect,
+                    start,
+                    duration: dur,
+                    from: from.map(|f| f.0),
+                    to: to.map(|t| t.0),
+                    align,
+                    reverse: false,
+                    interchange: Default::default(),
+                });
                 t.sort();
             }
         }

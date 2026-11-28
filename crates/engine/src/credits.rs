@@ -719,6 +719,7 @@ fn add_cut_transition(s: &mut Session, label: &str, from: ClipId, to: ClipId, id
         to: Some(to),
         align: Default::default(),
         reverse: false,
+        interchange: Default::default(),
     };
     s.edit_sequence(label, move |q, ctx, _| Ok(cfa4_edit::add_transition(q, track, tr, ctx)?))?;
     Ok(true)
