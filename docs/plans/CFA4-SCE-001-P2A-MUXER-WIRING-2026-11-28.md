@@ -1,7 +1,7 @@
 # CFA4-SCE-001 P2a, 2. szelet: a profil bekötése a TS-muxerbe (CBR, periódusok, SDT, időbélyeg-mód)
 
 **Dátum:** 2026-11-28
-**Státusz:** tervezet, tulajdonosi jóváhagyásra vár (a fejlesztés csak jóváhagyás után indul, coordination.md §2.10)
+**Státusz:** végleges, a tulajdonos jóváhagyta (2026-11-28); a fejlesztés a #1857 és a #1927 beolvasztása után indul
 **Szülőterv:** [CFA4-SCE-001 v1.5](CFA4-SCE-001-STREAM-COPY-EXPORT-2026-10-27.md), 12.6/4–5 és 12.7 4–6. lépés · **Előző szelet:** [P2a.1](CFA4-SCE-001-P2A-PROFILE-SDT-2026-11-27.md) (`TsParams`, SDT, `MpegTsProfile`) · **Audit:** [SCE-001-P0-AUDIT-2026-11-08](../audit/SCE-001-P0-AUDIT-2026-11-08.md), 4.2/3, 6, 7, 8, 10
 
 ## 1. Előfeltétel
