@@ -5089,3 +5089,25 @@ export.summary	Low	alacsony
 	{method} {component} failed: {error}	{method} {component} nem sikerült: {error}
 	{method} {component}: done	{method} {component}: kész
 	{method} {component}: waiting for the password…	{method} {component}: várakozás a jelszóra…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	Egy GPU vagy NPU nem nyitható meg: hiányzik egy csoporttagság (Rendszerszintű beállítások (root)).
+	Access not checked (System Settings (root) checks it).	A hozzáférés nincs ellenőrizve (a Rendszerszintű beállítások (root) ellenőrzi).
+	Decoded pictures: {used} MB	Dekódolt képek: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Dekódolt képek: {used} MB / {budget} MB
+	Diagnostics	Diagnosztika
+	Drivers	Meghajtók
+	Hardware Overview…	Hardver áttekintése…
+	Kernel driver: {driver}	Kernelmeghajtó: {driver}
+	No access	Nincs hozzáférés
+	No audio output found: playback is silent.	Nincs hangkimenet: a lejátszás néma.
+	No hardware decoder ({reason}).	Nincs hardveres dekóder ({reason}).
+	No hardware decoder in use.	Nincs használatban hardveres dekóder.
+	No system helper in this installation.	Ebben a telepítésben nincs rendszer-segéd.
+	None connected	Nincs csatlakoztatva
+	Open…	Megnyitás…
+	Overview	Áttekintés
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Csak olvasható: a gép hardverének állapota egy pillantásra. Minden sor a saját oldalát nyitja meg.
+	Software decoding only	Csak szoftveres dekódolás
+	The picture cache is full.	A képgyorsítótár megtelt.
+	{count} connected	{count} csatlakoztatva
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	{outputs} kimenet, {inputs} bemenet

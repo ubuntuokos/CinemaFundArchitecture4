@@ -5057,3 +5057,25 @@ export.summary	Low	lav
 	{method} {component} failed: {error}	{method} {component} mislykkedes: {error}
 	{method} {component}: done	{method} {component}: færdig
 	{method} {component}: waiting for the password…	{method} {component}: venter på adgangskoden…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	En GPU eller NPU kan ikke åbnes: et gruppemedlemskab mangler (Systemindstillinger (root)).
+	Access not checked (System Settings (root) checks it).	Adgang ikke kontrolleret (Systemindstillinger (root) kontrollerer den).
+	Decoded pictures: {used} MB	Afkodede billeder: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Afkodede billeder: {used} MB af {budget} MB
+	Diagnostics	Diagnosticering
+	Drivers	Drivere
+	Hardware Overview…	Hardwareoversigt…
+	Kernel driver: {driver}	Kernedriver: {driver}
+	No access	Ingen adgang
+	No audio output found: playback is silent.	Ingen lydudgang fundet: afspilningen er lydløs.
+	No hardware decoder ({reason}).	Ingen hardwaredekoder ({reason}).
+	No hardware decoder in use.	Ingen hardwaredekoder i brug.
+	No system helper in this installation.	Ingen systemhjælper i denne installation.
+	None connected	Ingen tilsluttet
+	Open…	Åbn…
+	Overview	Oversigt
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Skrivebeskyttet: tilstanden af denne maskines hardware med et blik. Hver række åbner sin egen side.
+	Software decoding only	Kun softwareafkodning
+	The picture cache is full.	Billedcachen er fuld.
+	{count} connected	{count} tilsluttet
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	{outputs} udgange, {inputs} indgange

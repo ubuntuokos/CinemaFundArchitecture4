@@ -5053,3 +5053,25 @@
 	{method} {component} failed: {error}	{method} {component} 失败：{error}
 	{method} {component}: done	{method} {component}：完成
 	{method} {component}: waiting for the password…	{method} {component}：正在等待密码…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	无法打开 GPU 或 NPU：缺少组成员身份（系统设置（root））。
+	Access not checked (System Settings (root) checks it).	尚未检查访问权限（由系统设置（root）检查）。
+	Decoded pictures: {used} MB	已解码画面：{used} MB
+	Decoded pictures: {used} MB of {budget} MB	已解码画面：{used} MB / {budget} MB
+	Diagnostics	诊断
+	Drivers	驱动程序
+	Hardware Overview…	硬件概览…
+	Kernel driver: {driver}	内核驱动：{driver}
+	No access	无访问权限
+	No audio output found: playback is silent.	未找到音频输出：播放无声。
+	No hardware decoder ({reason}).	没有硬件解码器（{reason}）。
+	No hardware decoder in use.	未使用硬件解码器。
+	No system helper in this installation.	此安装中没有系统助手。
+	None connected	未连接
+	Open…	打开…
+	Overview	概览
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	只读：一眼看清本机硬件的状态。每一行都会打开相应的页面。
+	Software decoding only	仅软件解码
+	The picture cache is full.	画面缓存已满。
+	{count} connected	已连接 {count} 个
+	{gpus} GPU, {npus} NPU	{gpus} 个 GPU，{npus} 个 NPU
+	{outputs} outputs, {inputs} inputs	{outputs} 个输出，{inputs} 个输入

@@ -5058,3 +5058,25 @@ export.summary	Low	დაბალი
 	{method} {component} failed: {error}	{method} {component} ვერ მოხერხდა: {error}
 	{method} {component}: done	{method} {component}: მზადაა
 	{method} {component}: waiting for the password…	{method} {component}: პაროლის მოლოდინი…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	GPU ან NPU ვერ იხსნება: აკლია ჯგუფის წევრობა (სისტემის პარამეტრები (root)).
+	Access not checked (System Settings (root) checks it).	წვდომა არ არის შემოწმებული (ამოწმებს სისტემის პარამეტრები (root)).
+	Decoded pictures: {used} MB	დეკოდირებული კადრები: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	დეკოდირებული კადრები: {used} MB / {budget} MB
+	Diagnostics	დიაგნოსტიკა
+	Drivers	დრაივერები
+	Hardware Overview…	აპარატურის მიმოხილვა…
+	Kernel driver: {driver}	ბირთვის დრაივერი: {driver}
+	No access	წვდომა არ არის
+	No audio output found: playback is silent.	აუდიოგამოსავალი ვერ მოიძებნა: დაკვრა უხმოა.
+	No hardware decoder ({reason}).	აპარატურული დეკოდერი არ არის ({reason}).
+	No hardware decoder in use.	აპარატურული დეკოდერი არ გამოიყენება.
+	No system helper in this installation.	ამ ინსტალაციაში სისტემური დამხმარე არ არის.
+	None connected	არაფერია დაკავშირებული
+	Open…	გახსნა…
+	Overview	მიმოხილვა
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	მხოლოდ წასაკითხი: ამ მანქანის აპარატურის მდგომარეობა ერთი შეხედვით. თითოეული მწკრივი თავის გვერდს ხსნის.
+	Software decoding only	მხოლოდ პროგრამული დეკოდირება
+	The picture cache is full.	კადრების ქეში სავსეა.
+	{count} connected	დაკავშირებულია: {count}
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	გამოსავლები: {outputs}, შესავლები: {inputs}

@@ -5057,3 +5057,25 @@ export.summary	Low	తక్కువ
 	{method} {component} failed: {error}	{method} {component} విఫలమైంది: {error}
 	{method} {component}: done	{method} {component}: పూర్తయింది
 	{method} {component}: waiting for the password…	{method} {component}: పాస్‌వర్డ్ కోసం వేచి ఉంది…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	GPU లేదా NPU తెరవలేము: సమూహ సభ్యత్వం లేదు (సిస్టమ్ సెట్టింగ్‌లు (root)).
+	Access not checked (System Settings (root) checks it).	యాక్సెస్ తనిఖీ చేయలేదు (సిస్టమ్ సెట్టింగ్‌లు (root) దాన్ని తనిఖీ చేస్తుంది).
+	Decoded pictures: {used} MB	డీకోడ్ చేసిన చిత్రాలు: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	డీకోడ్ చేసిన చిత్రాలు: {used} MB / {budget} MB
+	Diagnostics	డయాగ్నస్టిక్స్
+	Drivers	డ్రైవర్లు
+	Hardware Overview…	హార్డ్‌వేర్ అవలోకనం…
+	Kernel driver: {driver}	కెర్నల్ డ్రైవర్: {driver}
+	No access	యాక్సెస్ లేదు
+	No audio output found: playback is silent.	ఆడియో అవుట్‌పుట్ కనబడలేదు: ప్లేబ్యాక్ నిశ్శబ్దంగా ఉంటుంది.
+	No hardware decoder ({reason}).	హార్డ్‌వేర్ డీకోడర్ లేదు ({reason}).
+	No hardware decoder in use.	హార్డ్‌వేర్ డీకోడర్ ఉపయోగంలో లేదు.
+	No system helper in this installation.	ఈ ఇన్‌స్టాలేషన్‌లో సిస్టమ్ సహాయకం లేదు.
+	None connected	ఏదీ కనెక్ట్ కాలేదు
+	Open…	తెరువు…
+	Overview	అవలోకనం
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	చదవడానికి మాత్రమే: ఈ యంత్రం హార్డ్‌వేర్ స్థితి ఒక్క చూపులో. ప్రతి వరుస దాని స్వంత పేజీని తెరుస్తుంది.
+	Software decoding only	సాఫ్ట్‌వేర్ డీకోడింగ్ మాత్రమే
+	The picture cache is full.	చిత్ర కాష్ నిండింది.
+	{count} connected	{count} కనెక్ట్ అయ్యాయి
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	{outputs} అవుట్‌పుట్‌లు, {inputs} ఇన్‌పుట్‌లు

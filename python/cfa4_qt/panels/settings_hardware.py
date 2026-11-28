@@ -2,7 +2,8 @@
 
 ``arrange`` lays the engine's categories out under the groups of ``prefs.schema``
 (``crates/engine/src/settings.rs`` ``groups()``) and adds two pages the engine schema does not
-carry: Hardware & Devices ▸ **Accelerators (GPU / NPU)**, first in its group, Hardware & Devices ▸
+carry: Hardware & Devices ▸ **Overview** first in its group (``settings_overview``), then
+**Accelerators (GPU / NPU)** (on the shared device page, ``device_page``), Hardware & Devices ▸
 **System Settings (root)**, last in it (``settings_system``, CFA4-SETTINGS-HW-003 R3), and Media &
 Playback ▸ **Decoding & Encoding**, after Media. An engine that sends no ``groups`` keeps the flat list.
 
@@ -35,14 +36,16 @@ from PySide6.QtWidgets import (
 )
 
 from .. import theme
-from ..hardware_report import WORKLOAD_TITLES, Codecs, Hardware, ReportError, pci_name
+from ..hardware_report import WORKLOAD_TITLES, Codecs, Device, Hardware, ReportError, pci_name
 from ..i18n import N_, fmt, tr
+from .device_page import DeviceEntry, DevicePage
+from .settings_overview import OVERVIEW_PAGE, OVERVIEW_TITLE
 from .settings_system import SYSTEM_PAGE, SYSTEM_TITLE, SystemPage, open_link
 
 ACCELERATORS_PAGE = "accelerators"
 DECODING_PAGE = "decoding"
 REPORT_PAGES = frozenset({ACCELERATORS_PAGE, DECODING_PAGE})
-QT_ONLY_PAGES = frozenset({ACCELERATORS_PAGE, DECODING_PAGE, SYSTEM_PAGE})
+QT_ONLY_PAGES = frozenset({OVERVIEW_PAGE, ACCELERATORS_PAGE, DECODING_PAGE, SYSTEM_PAGE})
 DECODING_FIELDS = ("playback.hardwareDecoding", "playback.draftDecode")
 ACCELERATORS_TITLE = N_("Accelerators (GPU / NPU)")
 DECODING_TITLE = N_("Decoding & Encoding")
@@ -81,6 +84,11 @@ def _accelerators_page() -> dict[str, Any]:
             "rows": [{"type": "custom", "id": "accelerators"}]}
 
 
+def _overview_page() -> dict[str, Any]:
+    return {"id": OVERVIEW_PAGE, "title": OVERVIEW_TITLE, "group": "hardware", "qtOnly": True,
+            "rows": [{"type": "custom", "id": OVERVIEW_PAGE}]}
+
+
 def _system_page() -> dict[str, Any]:
     return {"id": SYSTEM_PAGE, "title": SYSTEM_TITLE, "group": "hardware", "qtOnly": True,
             "rows": [{"type": "custom", "id": SYSTEM_PAGE}]}
@@ -106,7 +114,7 @@ def arrange(schema: Any) -> list[tuple[dict[str, Any] | None, list[dict[str, Any
     for g in groups:
         members = [c for c in cats if group_of(c) == g["id"]]
         if g["id"] == "hardware":
-            members.insert(0, _accelerators_page())
+            members[:0] = [_overview_page(), _accelerators_page()]
             members.append(_system_page())
         if g["id"] == "media" and playback is not None:
             after = next((i + 1 for i, c in enumerate(members) if c.get("id") == "media"), len(members))
@@ -156,6 +164,9 @@ class HardwarePages:
         self.changed = changed
         self.system = system
         self.open_page = open_page
+        # the Accelerators device page's selection, kept across rebuilds
+        self.selected_device = ""
+        self.selected_tab = ""
         self.hardware: Hardware | None = None
         self.hardware_error = ""
         self.codecs: Codecs | None = None
@@ -210,7 +221,26 @@ class HardwarePages:
         b.clicked.connect(lambda _c=False: self.load(page, refresh=True))
         return b
 
-    # ----- Hardware & Devices ▸ Accelerators -----
+    # ----- Hardware & Devices ▸ Accelerators (on the shared device page, HW-003 R4) -----
+    @staticmethod
+    def dev_path(node: str) -> str:
+        """``drm:renderD128`` → ``/dev/dri/renderD128``; ``accel:accel0`` → ``/dev/accel/accel0``."""
+        kind, _sep, name = node.partition(":")
+        return {"drm": f"/dev/dri/{name}", "accel": f"/dev/accel/{name}"}.get(kind, node)
+
+    def _access_line(self, d: Device) -> str:
+        """The system helper's GPU-access fact for this device's node, when it was checked."""
+        report = self.system.report if self.system is not None else None
+        comp = next((c for c in report.components if c.id == "gpu-access"), None) if report else None
+        path = self.dev_path(d.node)
+        return next((line for line in comp.details if line.startswith(path + ":")), "") if comp else ""
+
+    def _status(self, d: Device) -> str:
+        line = self._access_line(d)
+        if line.endswith(": accessible"):
+            return tr("OK")
+        return tr("No access") if line else ""
+
     def accelerators(self, parent: QWidget) -> QWidget:
         box = QWidget(parent)
         col = QVBoxLayout(box)
@@ -225,9 +255,81 @@ class HardwarePages:
             return box
         col.addWidget(_label(box, tr("Devices") if hw.devices else tr("No GPU or NPU found: everything runs on the CPU."),
                              "settings.accelerators.status", bold=bool(hw.devices)))
-        if hw.devices:
-            col.addWidget(self._devices(box, hw))
-        col.addWidget(_label(box, tr("Acceleration per job"), bold=True))
+        by_key = {d.node: d for d in hw.devices}
+        entries = [DeviceEntry(d.node, pci_name(d.pci_vendor, d.pci_device) or d.name or tr("Unknown device"), self._status(d)) for d in hw.devices]
+
+        def details(p: QWidget, e: DeviceEntry | None) -> QWidget:
+            w = QWidget(p)
+            v = QVBoxLayout(w)
+            d = by_key.get(e.key) if e else None
+            if d is None:
+                v.addWidget(_label(w, tr("No GPU or NPU found: everything runs on the CPU.")))
+            else:
+                for title, value in ((tr("Type"), d.kind.upper()), (tr("Device"), e.title if e else ""), (tr("PCI ID"), d.pci_id),
+                                     (tr("Vendor"), d.vendor), (tr("Node"), f"{d.node} ({self.dev_path(d.node)})")):
+                    v.addWidget(_label(w, f"{title}: {value}"))
+            v.addStretch(1)
+            return w
+
+        def capabilities(p: QWidget, _e: DeviceEntry | None) -> QWidget:
+            w = QWidget(p)
+            v = QVBoxLayout(w)
+            if hw.devices:
+                v.addWidget(self._devices(w, hw))
+            v.addWidget(_label(w, tr("Acceleration per job"), bold=True))
+            v.addWidget(self._plans(w, hw))
+            v.addStretch(1)
+            return w
+
+        def drivers(p: QWidget, e: DeviceEntry | None) -> QWidget:
+            w = QWidget(p)
+            v = QVBoxLayout(w)
+            d = by_key.get(e.key) if e else None
+            if d is not None:
+                v.addWidget(_label(w, fmt("Kernel driver: {driver}", driver=d.driver or "—")))
+            report = self.system.report if self.system is not None else None
+            vaapi = next((c for c in report.components if c.id == "vaapi-drivers"), None) if report else None
+            for line in vaapi.details if vaapi else []:
+                if d is None or not d.name or d.name in line or "NVDEC" in line:
+                    v.addWidget(_label(w, line, dim=True))
+            if self.codecs is not None:
+                name = self.codecs.hardware_decoder.name
+                v.addWidget(_label(w, fmt("Hardware decoder: {name}", name=name) if name else tr("No hardware decoder in use.")))
+            v.addStretch(1)
+            return w
+
+        def diagnostics(p: QWidget, e: DeviceEntry | None) -> QWidget:
+            w = QWidget(p)
+            v = QVBoxLayout(w)
+            d = by_key.get(e.key) if e else None
+            line = self._access_line(d) if d is not None else ""
+            v.addWidget(_label(w, line or tr("Access not checked (System Settings (root) checks it).")))
+            for note in hw.notes:
+                v.addWidget(_label(w, note, dim=True))
+            v.addStretch(1)
+            return w
+
+        def remember(key: str) -> None:
+            self.selected_device = key
+
+        def remember_tab(key: str) -> None:
+            self.selected_tab = key
+
+        page = DevicePage(box, "settings.accelerators.page", entries,
+                          {"details": details, "capabilities": capabilities, "drivers": drivers, "diagnostics": diagnostics},
+                          self.selected_device, remember, self.selected_tab or ("details" if entries else "capabilities"), remember_tab)
+        page.setMinimumHeight(420)
+        col.addWidget(page)
+        self._link(box, col, False)
+        return box
+
+    def _link(self, box: QWidget, col: QVBoxLayout, missing: bool) -> None:
+        """The link to System Settings (root) when access or a driver is missing."""
+        if self.open_page is not None and (missing or (self.system is not None and self.system.needs_attention())):
+            col.addWidget(open_link(box, self.open_page), 0, Qt.AlignmentFlag.AlignLeft)
+
+    @staticmethod
+    def _plans(box: QWidget, hw: Hardware) -> QTableWidget:
         plans = QTableWidget(len(hw.plans), 3, box)
         plans.setObjectName("settings.accelerators.plans")
         plans.setHorizontalHeaderLabels([tr("Job"), tr("Tried in this order"), tr("Not used")])
@@ -239,16 +341,7 @@ class HardwarePages:
             plans.setItem(row, 2, skipped)
         _read_only(plans)
         _fit(plans)
-        col.addWidget(plans)
-        for note in hw.notes:
-            col.addWidget(_label(box, note, dim=True))
-        self._link(box, col, False)
-        return box
-
-    def _link(self, box: QWidget, col: QVBoxLayout, missing: bool) -> None:
-        """The link to System Settings (root) when access or a driver is missing."""
-        if self.open_page is not None and (missing or (self.system is not None and self.system.needs_attention())):
-            col.addWidget(open_link(box, self.open_page), 0, Qt.AlignmentFlag.AlignLeft)
+        return plans
 
     @staticmethod
     def _devices(box: QWidget, hw: Hardware) -> QTableWidget:

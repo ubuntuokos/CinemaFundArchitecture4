@@ -5055,3 +5055,25 @@ export.summary	Low	nízká
 	{method} {component} failed: {error}	{method} {component} selhalo: {error}
 	{method} {component}: done	{method} {component}: hotovo
 	{method} {component}: waiting for the password…	{method} {component}: čeká se na heslo…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	GPU nebo NPU nelze otevřít: chybí členství ve skupině (Systémová nastavení (root)).
+	Access not checked (System Settings (root) checks it).	Přístup nezkontrolován (kontroluje ho Systémová nastavení (root)).
+	Decoded pictures: {used} MB	Dekódované snímky: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Dekódované snímky: {used} MB z {budget} MB
+	Diagnostics	Diagnostika
+	Drivers	Ovladače
+	Hardware Overview…	Přehled hardwaru…
+	Kernel driver: {driver}	Ovladač jádra: {driver}
+	No access	Bez přístupu
+	No audio output found: playback is silent.	Nenalezen žádný zvukový výstup: přehrávání je bez zvuku.
+	No hardware decoder ({reason}).	Žádný hardwarový dekodér ({reason}).
+	No hardware decoder in use.	Žádný hardwarový dekodér se nepoužívá.
+	No system helper in this installation.	V této instalaci není systémový pomocník.
+	None connected	Žádné připojené
+	Open…	Otevřít…
+	Overview	Přehled
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Jen pro čtení: stav hardwaru tohoto počítače na první pohled. Každý řádek otevře svou stránku.
+	Software decoding only	Pouze softwarové dekódování
+	The picture cache is full.	Mezipaměť snímků je plná.
+	{count} connected	Připojeno: {count}
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	Výstupy: {outputs}, vstupy: {inputs}

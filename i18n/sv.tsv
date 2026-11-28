@@ -5057,3 +5057,25 @@ export.summary	Low	låg
 	{method} {component} failed: {error}	{method} {component} misslyckades: {error}
 	{method} {component}: done	{method} {component}: klart
 	{method} {component}: waiting for the password…	{method} {component}: väntar på lösenordet…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	En GPU eller NPU kan inte öppnas: ett gruppmedlemskap saknas (Systeminställningar (root)).
+	Access not checked (System Settings (root) checks it).	Åtkomsten är inte kontrollerad (Systeminställningar (root) kontrollerar den).
+	Decoded pictures: {used} MB	Avkodade bilder: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Avkodade bilder: {used} MB av {budget} MB
+	Diagnostics	Diagnostik
+	Drivers	Drivrutiner
+	Hardware Overview…	Maskinvaruöversikt…
+	Kernel driver: {driver}	Kärndrivrutin: {driver}
+	No access	Ingen åtkomst
+	No audio output found: playback is silent.	Ingen ljudutgång hittades: uppspelningen är tyst.
+	No hardware decoder ({reason}).	Ingen maskinvaruavkodare ({reason}).
+	No hardware decoder in use.	Ingen maskinvaruavkodare används.
+	No system helper in this installation.	Ingen systemhjälp i den här installationen.
+	None connected	Inga anslutna
+	Open…	Öppna…
+	Overview	Översikt
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Skrivskyddat: maskinvarans tillstånd på den här datorn i en överblick. Varje rad öppnar sin egen sida.
+	Software decoding only	Endast programvaruavkodning
+	The picture cache is full.	Bildcachen är full.
+	{count} connected	{count} anslutna
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	{outputs} utgångar, {inputs} ingångar

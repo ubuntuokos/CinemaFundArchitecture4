@@ -5057,3 +5057,25 @@ export.summary	Low	matala
 	{method} {component} failed: {error}	{method} {component} epäonnistui: {error}
 	{method} {component}: done	{method} {component}: valmis
 	{method} {component}: waiting for the password…	{method} {component}: odottaa salasanaa…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	GPU:ta tai NPU:ta ei voi avata: ryhmän jäsenyys puuttuu (Järjestelmäasetukset (root)).
+	Access not checked (System Settings (root) checks it).	Käyttöoikeutta ei ole tarkistettu (Järjestelmäasetukset (root) tarkistaa sen).
+	Decoded pictures: {used} MB	Puretut kuvat: {used} Mt
+	Decoded pictures: {used} MB of {budget} MB	Puretut kuvat: {used} / {budget} Mt
+	Diagnostics	Vianmääritys
+	Drivers	Ajurit
+	Hardware Overview…	Laitteiston yleiskatsaus…
+	Kernel driver: {driver}	Ydinajuri: {driver}
+	No access	Ei käyttöoikeutta
+	No audio output found: playback is silent.	Äänilähtöä ei löytynyt: toisto on äänetön.
+	No hardware decoder ({reason}).	Ei laitteistodekooderia ({reason}).
+	No hardware decoder in use.	Laitteistodekooderia ei käytetä.
+	No system helper in this installation.	Tässä asennuksessa ei ole järjestelmäapuria.
+	None connected	Ei yhdistettyjä
+	Open…	Avaa…
+	Overview	Yleiskatsaus
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Vain luku: tämän koneen laitteiston tila yhdellä silmäyksellä. Jokainen rivi avaa oman sivunsa.
+	Software decoding only	Vain ohjelmistopurku
+	The picture cache is full.	Kuvavälimuisti on täynnä.
+	{count} connected	{count} yhdistetty
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	{outputs} lähtöä, {inputs} tuloa

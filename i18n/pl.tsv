@@ -5055,3 +5055,25 @@ export.summary	Low	niska
 	{method} {component} failed: {error}	{method} {component} nie powiodło się: {error}
 	{method} {component}: done	{method} {component}: gotowe
 	{method} {component}: waiting for the password…	{method} {component}: oczekiwanie na hasło…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	Nie można otworzyć GPU lub NPU: brakuje członkostwa w grupie (Ustawienia systemowe (root)).
+	Access not checked (System Settings (root) checks it).	Dostęp niesprawdzony (sprawdza go Ustawienia systemowe (root)).
+	Decoded pictures: {used} MB	Zdekodowane obrazy: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Zdekodowane obrazy: {used} MB z {budget} MB
+	Diagnostics	Diagnostyka
+	Drivers	Sterowniki
+	Hardware Overview…	Przegląd sprzętu…
+	Kernel driver: {driver}	Sterownik jądra: {driver}
+	No access	Brak dostępu
+	No audio output found: playback is silent.	Nie znaleziono wyjścia audio: odtwarzanie jest bezgłośne.
+	No hardware decoder ({reason}).	Brak dekodera sprzętowego ({reason}).
+	No hardware decoder in use.	Dekoder sprzętowy nie jest używany.
+	No system helper in this installation.	Brak pomocnika systemowego w tej instalacji.
+	None connected	Brak podłączonych
+	Open…	Otwórz…
+	Overview	Przegląd
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Tylko do odczytu: stan sprzętu tego komputera w skrócie. Każdy wiersz otwiera własną stronę.
+	Software decoding only	Tylko dekodowanie programowe
+	The picture cache is full.	Pamięć podręczna obrazów jest pełna.
+	{count} connected	Podłączone: {count}
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	Wyjścia: {outputs}, wejścia: {inputs}

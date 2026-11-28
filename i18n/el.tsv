@@ -5057,3 +5057,25 @@ export.summary	Low	χαμηλή
 	{method} {component} failed: {error}	{method} {component} απέτυχε: {error}
 	{method} {component}: done	{method} {component}: έγινε
 	{method} {component}: waiting for the password…	{method} {component}: αναμονή για τον κωδικό…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	Δεν είναι δυνατό να ανοιχτεί μια GPU ή NPU: λείπει συμμετοχή σε ομάδα (Ρυθμίσεις συστήματος (root)).
+	Access not checked (System Settings (root) checks it).	Η πρόσβαση δεν ελέγχθηκε (την ελέγχουν οι Ρυθμίσεις συστήματος (root)).
+	Decoded pictures: {used} MB	Αποκωδικοποιημένες εικόνες: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Αποκωδικοποιημένες εικόνες: {used} MB από {budget} MB
+	Diagnostics	Διαγνωστικά
+	Drivers	Προγράμματα οδήγησης
+	Hardware Overview…	Επισκόπηση υλικού…
+	Kernel driver: {driver}	Πρόγραμμα οδήγησης πυρήνα: {driver}
+	No access	Χωρίς πρόσβαση
+	No audio output found: playback is silent.	Δεν βρέθηκε έξοδος ήχου: η αναπαραγωγή είναι σιωπηλή.
+	No hardware decoder ({reason}).	Χωρίς αποκωδικοποιητή υλικού ({reason}).
+	No hardware decoder in use.	Δεν χρησιμοποιείται αποκωδικοποιητής υλικού.
+	No system helper in this installation.	Δεν υπάρχει βοηθός συστήματος σε αυτή την εγκατάσταση.
+	None connected	Καμία συνδεδεμένη
+	Open…	Άνοιγμα…
+	Overview	Επισκόπηση
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Μόνο ανάγνωση: η κατάσταση του υλικού αυτού του υπολογιστή με μια ματιά. Κάθε γραμμή ανοίγει τη δική της σελίδα.
+	Software decoding only	Μόνο αποκωδικοποίηση λογισμικού
+	The picture cache is full.	Η κρυφή μνήμη εικόνων είναι γεμάτη.
+	{count} connected	Συνδεδεμένες: {count}
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	Έξοδοι: {outputs}, είσοδοι: {inputs}

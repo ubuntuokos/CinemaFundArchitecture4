@@ -5056,3 +5056,25 @@ export.summary	Low	düşük
 	{method} {component} failed: {error}	{method} {component} başarısız: {error}
 	{method} {component}: done	{method} {component}: tamam
 	{method} {component}: waiting for the password…	{method} {component}: parola bekleniyor…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	Bir GPU veya NPU açılamıyor: bir grup üyeliği eksik (Sistem Ayarları (root)).
+	Access not checked (System Settings (root) checks it).	Erişim denetlenmedi (Sistem Ayarları (root) denetler).
+	Decoded pictures: {used} MB	Çözülmüş kareler: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Çözülmüş kareler: {used} MB / {budget} MB
+	Diagnostics	Tanılama
+	Drivers	Sürücüler
+	Hardware Overview…	Donanıma genel bakış…
+	Kernel driver: {driver}	Çekirdek sürücüsü: {driver}
+	No access	Erişim yok
+	No audio output found: playback is silent.	Ses çıkışı bulunamadı: oynatma sessiz.
+	No hardware decoder ({reason}).	Donanım kod çözücü yok ({reason}).
+	No hardware decoder in use.	Kullanımda donanım kod çözücü yok.
+	No system helper in this installation.	Bu kurulumda sistem yardımcısı yok.
+	None connected	Bağlı yok
+	Open…	Aç…
+	Overview	Genel bakış
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Salt okunur: bu makinenin donanım durumu bir bakışta. Her satır kendi sayfasını açar.
+	Software decoding only	Yalnızca yazılımla kod çözme
+	The picture cache is full.	Kare önbelleği dolu.
+	{count} connected	{count} bağlı
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	{outputs} çıkış, {inputs} giriş

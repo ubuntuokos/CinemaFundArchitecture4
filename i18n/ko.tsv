@@ -5049,3 +5049,25 @@
 	{method} {component} failed: {error}	{method} {component} 실패: {error}
 	{method} {component}: done	{method} {component}: 완료
 	{method} {component}: waiting for the password…	{method} {component}: 암호를 기다리는 중…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	GPU 또는 NPU를 열 수 없습니다: 그룹 멤버십이 없습니다(시스템 설정 (root)).
+	Access not checked (System Settings (root) checks it).	접근 권한을 확인하지 않았습니다(시스템 설정 (root)에서 확인).
+	Decoded pictures: {used} MB	디코딩된 이미지: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	디코딩된 이미지: {used} MB / {budget} MB
+	Diagnostics	진단
+	Drivers	드라이버
+	Hardware Overview…	하드웨어 개요…
+	Kernel driver: {driver}	커널 드라이버: {driver}
+	No access	접근 불가
+	No audio output found: playback is silent.	오디오 출력을 찾지 못했습니다: 재생 시 소리가 나지 않습니다.
+	No hardware decoder ({reason}).	하드웨어 디코더 없음({reason}).
+	No hardware decoder in use.	사용 중인 하드웨어 디코더가 없습니다.
+	No system helper in this installation.	이 설치에는 시스템 도우미가 없습니다.
+	None connected	연결된 장치 없음
+	Open…	열기…
+	Overview	개요
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	읽기 전용: 이 컴퓨터 하드웨어의 상태를 한눈에 봅니다. 각 행은 해당 페이지를 엽니다.
+	Software decoding only	소프트웨어 디코딩만
+	The picture cache is full.	이미지 캐시가 가득 찼습니다.
+	{count} connected	{count}개 연결됨
+	{gpus} GPU, {npus} NPU	GPU {gpus}개, NPU {npus}개
+	{outputs} outputs, {inputs} inputs	출력 {outputs}개, 입력 {inputs}개
