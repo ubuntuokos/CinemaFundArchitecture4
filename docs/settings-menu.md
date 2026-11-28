@@ -47,9 +47,25 @@ Next step (approved 2026-11-27): [plans/CFA4-SETTINGS-HW-002.md](plans/CFA4-SETT
   `cfa4-cli codecs` ([qt-gui.md](qt-gui.md)), probed once per session and again on Detect Again.
 - Decoding & Encoding shows `playback.hardwareDecoding` and `playback.draftDecode`; they stay on
   the Playback page too, and Reset… is off on both Qt-only pages.
-- Edit ▸ Preferences ▸ Accelerators (GPU / NPU)…, Decoding & Encoding… and System Settings (root)… open them.
+- Edit ▸ Preferences ▸ Hardware Overview…, Accelerators (GPU / NPU)…, Decoding & Encoding… and System Settings (root)… open them.
 - Tests: `python/tests/test_qt_settings_hardware.py` (stub engine; the built engine when there is
   one), `cargo test -p cfa4-cli --bin cfa4-cli serve::`.
+
+## Overview and the device page (`cfa4-qt`, CFA4-SETTINGS-HW-003 R4)
+
+- Hardware & Devices ▸ **Overview** is the group's first page (`settings_overview.py`): one
+  read-only row each for the accelerators, decoding, the system components, the control surfaces,
+  the audio devices and the memory, with warnings (for example "a group membership is missing")
+  and an Open… button to the row's own page. It asks nothing new of the engine: it reads
+  `hardware.inventory`, `codecs.capabilities`, `system.components`, `surface.devices`, Qt's audio
+  devices and the window's picture memory. Rows of pages the schema lacks are left out.
+- **The device page** (`device_page.py`): a device list with each device's status on the left, tabs
+  on the right (Details, Capabilities, Drivers, Diagnostics). Accelerators is built on it: the
+  status and the Diagnostics tab come from the system helper's GPU-access check, the Capabilities
+  tab keeps the device and per-job tables. Later device pages (displays, storage, cameras, tablets)
+  reuse it under their own plans.
+- Object names: `settings.overview.<page>`, `.summary`, `.open`; `settings.accelerators.page.list`,
+  `.tabs`, `.tab.<details|capabilities|drivers|diagnostics>`.
 
 ## System Settings (root) (`cfa4-qt`, CFA4-SETTINGS-HW-003)
 

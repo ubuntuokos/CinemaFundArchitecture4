@@ -5062,3 +5062,25 @@
 	{method} {component} failed: {error}	{method} {component} falló: {error}
 	{method} {component}: done	{method} {component}: hecho
 	{method} {component}: waiting for the password…	{method} {component}: esperando la contraseña…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	No se puede abrir una GPU o NPU: falta la pertenencia a un grupo (Configuración del sistema (root)).
+	Access not checked (System Settings (root) checks it).	Acceso sin comprobar (lo comprueba Configuración del sistema (root)).
+	Decoded pictures: {used} MB	Imágenes decodificadas: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Imágenes decodificadas: {used} MB de {budget} MB
+	Diagnostics	Diagnóstico
+	Drivers	Controladores
+	Hardware Overview…	Resumen del hardware…
+	Kernel driver: {driver}	Controlador del kernel: {driver}
+	No access	Sin acceso
+	No audio output found: playback is silent.	No se encontró ninguna salida de audio: la reproducción está en silencio.
+	No hardware decoder ({reason}).	Sin decodificador por hardware ({reason}).
+	No hardware decoder in use.	No se usa ningún decodificador por hardware.
+	No system helper in this installation.	No hay asistente del sistema en esta instalación.
+	None connected	Ninguno conectado
+	Open…	Abrir…
+	Overview	Resumen
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Solo lectura: el estado del hardware de esta máquina de un vistazo. Cada fila abre su propia página.
+	Software decoding only	Solo decodificación por software
+	The picture cache is full.	La caché de imágenes está llena.
+	{count} connected	{count} conectados
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	{outputs} salidas, {inputs} entradas

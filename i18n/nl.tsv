@@ -5055,3 +5055,25 @@ export.summary	Low	laag
 	{method} {component} failed: {error}	{method} {component} mislukt: {error}
 	{method} {component}: done	{method} {component}: klaar
 	{method} {component}: waiting for the password…	{method} {component}: wacht op het wachtwoord…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	Een GPU of NPU kan niet worden geopend: een groepslidmaatschap ontbreekt (Systeeminstellingen (root)).
+	Access not checked (System Settings (root) checks it).	Toegang niet gecontroleerd (Systeeminstellingen (root) controleert die).
+	Decoded pictures: {used} MB	Gedecodeerde beelden: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Gedecodeerde beelden: {used} MB van {budget} MB
+	Diagnostics	Diagnose
+	Drivers	Stuurprogramma's
+	Hardware Overview…	Hardwareoverzicht…
+	Kernel driver: {driver}	Kernelstuurprogramma: {driver}
+	No access	Geen toegang
+	No audio output found: playback is silent.	Geen audio-uitvoer gevonden: afspelen is stil.
+	No hardware decoder ({reason}).	Geen hardwaredecoder ({reason}).
+	No hardware decoder in use.	Geen hardwaredecoder in gebruik.
+	No system helper in this installation.	Geen systeemhulp in deze installatie.
+	None connected	Geen verbonden
+	Open…	Openen…
+	Overview	Overzicht
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Alleen-lezen: de toestand van de hardware van deze machine in één oogopslag. Elke rij opent zijn eigen pagina.
+	Software decoding only	Alleen softwaredecodering
+	The picture cache is full.	De beeldcache is vol.
+	{count} connected	{count} verbonden
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	{outputs} uitgangen, {inputs} ingangen

@@ -5055,3 +5055,25 @@ export.summary	Low	низак
 	{method} {component} failed: {error}	{method} {component} није успело: {error}
 	{method} {component}: done	{method} {component}: готово
 	{method} {component}: waiting for the password…	{method} {component}: чека се лозинка…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	GPU или NPU не може да се отвори: недостаје чланство у групи (Системска подешавања (root)).
+	Access not checked (System Settings (root) checks it).	Приступ није проверен (проверава га Системска подешавања (root)).
+	Decoded pictures: {used} MB	Декодиране слике: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Декодиране слике: {used} MB од {budget} MB
+	Diagnostics	Дијагностика
+	Drivers	Управљачки програми
+	Hardware Overview…	Преглед хардвера…
+	Kernel driver: {driver}	Управљачки програм језгра: {driver}
+	No access	Нема приступа
+	No audio output found: playback is silent.	Није пронађен аудио излаз: репродукција је без звука.
+	No hardware decoder ({reason}).	Нема хардверског декодера ({reason}).
+	No hardware decoder in use.	Хардверски декодер се не користи.
+	No system helper in this installation.	У овој инсталацији нема системског помоћника.
+	None connected	Ниједан није повезан
+	Open…	Отвори…
+	Overview	Преглед
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Само за читање: стање хардвера овог рачунара на први поглед. Сваки ред отвара своју страницу.
+	Software decoding only	Само софтверско декодирање
+	The picture cache is full.	Кеш слика је пун.
+	{count} connected	Повезано: {count}
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	Излаза: {outputs}, улаза: {inputs}

@@ -168,7 +168,7 @@ def test_arrange_orders_the_groups_and_adds_the_qt_only_pages() -> None:
     assert [(g["id"] if g else None, [c["id"] for c in pages]) for g, pages in sections] == [
         ("general", ["general", "orphan"]),  # a page of an unknown group goes under General
         ("media", ["media", "decoding", "playback"]),
-        ("hardware", ["accelerators", "memory", "systemComponents"]),
+        ("hardware", ["hardwareOverview", "accelerators", "memory", "systemComponents"]),
     ]
     decoding = sections[1][1][1]
     keys = [r["field"]["key"] for r in decoding["rows"] if r["type"] == "field"]
@@ -209,7 +209,7 @@ def test_pci_names_come_from_the_system_list(tmp_path: Path) -> None:
 
 def test_the_list_shows_group_headings_with_their_pages(app: Any) -> None:
     d = PreferencesDialog(None, StubEngine(), "general")
-    assert listed(d) == ["#general", "general", "orphan", "#media", "media", "decoding", "playback", "#hardware", "accelerators", "memory", "systemComponents"]
+    assert listed(d) == ["#general", "general", "orphan", "#media", "media", "decoding", "playback", "#hardware", "hardwareOverview", "accelerators", "memory", "systemComponents"]
     assert find(d, QtWidgets.QLabel, "settings.group.hardware").text() == "Hardware & Devices"
     # the reports are asked for only when their page opens
     assert not [m for m, _p in d.engine.sent if m in ("hardware.inventory", "codecs.capabilities")]
@@ -350,6 +350,53 @@ def test_report_pages_link_to_the_system_page_when_something_is_missing(app: Any
     # no hardware decoder: the decoding page links there too
     d = PreferencesDialog(None, engine, "decoding")
     assert d.findChild(QtWidgets.QPushButton, "settings.system.open") is not None
+    d.close()
+
+
+def test_accelerators_device_page_shows_one_device_per_entry(app: Any) -> None:
+    engine = StubEngine()
+    d = PreferencesDialog(None, engine, "accelerators")
+    devices = find(d, QtWidgets.QListWidget, "settings.accelerators.page.list")
+    assert devices.count() == 2
+    # the system helper's check decides the status: renderD128 needs the render group
+    assert devices.item(0).text().endswith("No access")
+    tabs = find(d, QtWidgets.QTabWidget, "settings.accelerators.page.tabs")
+    assert [tabs.tabText(i) for i in range(tabs.count())] == ["Details", "Capabilities", "Drivers", "Diagnostics"]
+    diagnostics = find(d, QtWidgets.QWidget, "settings.accelerators.page.tab.diagnostics")
+    assert any("needs group render" in w.text() for w in diagnostics.findChildren(QtWidgets.QLabel))
+    # the selection and the tab survive a rebuild (a report arriving)
+    devices.setCurrentRow(1)
+    tabs.setCurrentIndex(2)
+    find(d, QtWidgets.QPushButton, "settings.accelerators.refresh").click()
+    assert find(d, QtWidgets.QListWidget, "settings.accelerators.page.list").currentRow() == 1
+    assert find(d, QtWidgets.QTabWidget, "settings.accelerators.page.tabs").currentIndex() == 2
+    drivers = find(d, QtWidgets.QWidget, "settings.accelerators.page.tab.drivers")
+    assert any("intel_vpu" in w.text() for w in drivers.findChildren(QtWidgets.QLabel))
+    d.close()
+
+
+def test_overview_sums_up_every_hardware_page(app: Any) -> None:
+    engine = StubEngine()
+    d = PreferencesDialog(None, engine, "hardwareOverview", devices=lambda: {"outputs": ["Speakers"], "inputs": []},
+                          memory=lambda: 300 << 20)
+    assert not find(d, QtWidgets.QPushButton, "settings.reset").isEnabled()
+    for method in ("hardware.inventory", "codecs.capabilities", "system.components", "surface.devices"):
+        assert method in [m for m, _p in engine.sent], method
+    assert find(d, QtWidgets.QLabel, "settings.overview.accelerators.summary").text() == "1 GPU, 1 NPU"
+    row = find(d, QtWidgets.QFrame, "settings.overview.accelerators")
+    assert any("group membership" in w.text() for w in row.findChildren(QtWidgets.QLabel))
+    assert find(d, QtWidgets.QLabel, "settings.overview.decoding.summary").text() == "Software decoding only"
+    assert "GPU access: Missing" in find(d, QtWidgets.QLabel, "settings.overview.systemComponents.summary").text()
+    # every row, also those of pages this schema lacks
+    rows = {r[0]: r for r in type(d.overview)(engine, d.hardware, d.system, lambda: None, lambda: {"outputs": []}, lambda: 0,
+                                                lambda: 0, lambda _p: True, lambda _p: None).rows()}
+    assert rows["audioHardware"][2] == "0 outputs, 0 inputs" and "silent" in rows["audioHardware"][3][0]
+    assert rows["controlSurfaces"][2] == "Checking…"
+    assert find(d, QtWidgets.QLabel, "settings.overview.memory.summary").text().startswith("Decoded pictures: 300 MB")
+    # the schema has no Control Surfaces page here, so the dialog shows no row for it
+    assert d.findChild(QtWidgets.QFrame, "settings.overview.controlSurfaces") is None
+    find(d, QtWidgets.QPushButton, "settings.overview.systemComponents.open").click()
+    assert d.page == "systemComponents"
     d.close()
 
 

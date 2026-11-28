@@ -5064,3 +5064,25 @@
 	{method} {component} failed: {error}	{method} {component} に失敗しました: {error}
 	{method} {component}: done	{method} {component}: 完了
 	{method} {component}: waiting for the password…	{method} {component}: パスワードを待っています…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	GPU または NPU を開けません: グループへの所属がありません (システム設定 (root))。
+	Access not checked (System Settings (root) checks it).	アクセスは未確認です (システム設定 (root) で確認します)。
+	Decoded pictures: {used} MB	デコード済みの画像: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	デコード済みの画像: {used} MB / {budget} MB
+	Diagnostics	診断
+	Drivers	ドライバー
+	Hardware Overview…	ハードウェアの概要…
+	Kernel driver: {driver}	カーネルドライバー: {driver}
+	No access	アクセスなし
+	No audio output found: playback is silent.	オーディオ出力が見つかりません: 再生は無音です。
+	No hardware decoder ({reason}).	ハードウェアデコーダーなし ({reason})。
+	No hardware decoder in use.	ハードウェアデコーダーは使用されていません。
+	No system helper in this installation.	このインストールにはシステムヘルパーがありません。
+	None connected	接続なし
+	Open…	開く…
+	Overview	概要
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	読み取り専用: このマシンのハードウェアの状態をひと目で確認できます。各行からそれぞれのページを開きます。
+	Software decoding only	ソフトウェアデコードのみ
+	The picture cache is full.	画像キャッシュがいっぱいです。
+	{count} connected	{count} 台接続
+	{gpus} GPU, {npus} NPU	{gpus} GPU、{npus} NPU
+	{outputs} outputs, {inputs} inputs	出力 {outputs}、入力 {inputs}

@@ -5054,3 +5054,25 @@ export.summary	Low	低
 	{method} {component} failed: {error}	{method} {component} 失敗：{error}
 	{method} {component}: done	{method} {component}：完成
 	{method} {component}: waiting for the password…	{method} {component}：正在等待密碼…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	無法開啟 GPU 或 NPU：缺少群組成員資格（系統設定（root））。
+	Access not checked (System Settings (root) checks it).	尚未檢查存取權（由系統設定（root）檢查）。
+	Decoded pictures: {used} MB	已解碼畫面：{used} MB
+	Decoded pictures: {used} MB of {budget} MB	已解碼畫面：{used} MB / {budget} MB
+	Diagnostics	診斷
+	Drivers	驅動程式
+	Hardware Overview…	硬體概覽…
+	Kernel driver: {driver}	核心驅動程式：{driver}
+	No access	無存取權
+	No audio output found: playback is silent.	找不到音訊輸出：播放無聲。
+	No hardware decoder ({reason}).	沒有硬體解碼器（{reason}）。
+	No hardware decoder in use.	未使用硬體解碼器。
+	No system helper in this installation.	此安裝中沒有系統輔助程式。
+	None connected	未連接
+	Open…	開啟…
+	Overview	概覽
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	唯讀：一眼看出本機硬體的狀態。每一列都會開啟對應的頁面。
+	Software decoding only	僅軟體解碼
+	The picture cache is full.	畫面快取已滿。
+	{count} connected	已連接 {count} 個
+	{gpus} GPU, {npus} NPU	{gpus} 個 GPU，{npus} 個 NPU
+	{outputs} outputs, {inputs} inputs	{outputs} 個輸出，{inputs} 個輸入

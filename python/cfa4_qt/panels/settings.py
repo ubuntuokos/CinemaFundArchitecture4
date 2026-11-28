@@ -52,6 +52,7 @@ from .. import theme
 from ..i18n import N_, fmt, tr
 from .gesture_settings import gesture_page
 from .settings_hardware import ACCELERATORS_PAGE, DECODING_PAGE, QT_ONLY_PAGES, HardwarePages, arrange
+from .settings_overview import OVERVIEW_PAGE, OverviewPage
 from .settings_system import SYSTEM_PAGE, SystemPage
 
 LIST_W = 216
@@ -83,7 +84,8 @@ MENU = (
     ("timeline", "Timeline…"),
     ("trim", "Trim…"),
     ("controlSurfaces", N_("Control Surfaces…")),
-    # the Qt-only pages (CFA4-SETTINGS-HW-002)
+    # the Qt-only pages (CFA4-SETTINGS-HW-002, HW-003)
+    (OVERVIEW_PAGE, N_("Hardware Overview…")),
     (ACCELERATORS_PAGE, N_("Accelerators (GPU / NPU)…")),
     (DECODING_PAGE, N_("Decoding & Encoding…")),
     # CFA4-SETTINGS-HW-003 R3
@@ -382,6 +384,11 @@ class PreferencesDialog(QDialog):
         # System Settings (root): system.* (cfa4-system-helper, ADR 0017)
         self.system = SystemPage(engine, lambda: self._hardware_changed(SYSTEM_PAGE))
         self.hardware = HardwarePages(engine, self._hardware_changed, self.system, self.select_page)
+        # Hardware & Devices ▸ Overview (HW-003 R4): reads what the other pages load
+        self.overview = OverviewPage(engine, self.hardware, self.system, lambda: self._hardware_changed(OVERVIEW_PAGE),
+                                     lambda: self.devices(), lambda: self.memory(),
+                                     lambda: int(number(get(self.values, "memory.frameCacheMb"), 0)),
+                                     lambda p: any(c.get("id") == p for c in self.categories), self.select_page)
         self.surface_profiles: list[dict[str, Any]] | None = None  # controlSurfaces.profiles
         self._surfaces_pending = self._surfaces_building = False
         self.monitor_lines: list[str] = []  # the MIDI Monitor's lines, kept across page rebuilds
@@ -527,7 +534,7 @@ class PreferencesDialog(QDialog):
     def _hardware_changed(self, page: str) -> None:
         """A report for ``page`` arrived (or failed): redraw it if it is the one shown. The
         system report also decides the links on the two report pages."""
-        shown = self.page == page or (page == SYSTEM_PAGE and self.page in (ACCELERATORS_PAGE, DECODING_PAGE))
+        shown = self.page == page or self.page == OVERVIEW_PAGE or (page == SYSTEM_PAGE and self.page in (ACCELERATORS_PAGE, DECODING_PAGE))
         if shown and self.ready:
             self._build_page()
 
@@ -544,6 +551,8 @@ class PreferencesDialog(QDialog):
         self.hardware.load(page)
         if page == SYSTEM_PAGE:
             self.system.load()
+        if page == OVERVIEW_PAGE:
+            self.overview.load()
         self._build_page()
 
     def patch(self, p: Any) -> None:
@@ -886,6 +895,8 @@ class PreferencesDialog(QDialog):
             return self.hardware.codecs_section(parent)
         if name == SYSTEM_PAGE:
             return self.system.page(parent)
+        if name == OVERVIEW_PAGE:
+            return self.overview.page(parent)
         if name == "labelPresets":
             return self._label_presets(parent)
         if name == "memoryInfo":

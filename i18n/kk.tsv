@@ -5057,3 +5057,25 @@ export.summary	Low	төмен
 	{method} {component} failed: {error}	{method} {component} сәтсіз: {error}
 	{method} {component}: done	{method} {component}: дайын
 	{method} {component}: waiting for the password…	{method} {component}: құпиясөз күтілуде…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	GPU немесе NPU ашылмайды: топ мүшелігі жоқ (Жүйе баптаулары (root)).
+	Access not checked (System Settings (root) checks it).	Қолжетімділік тексерілмеген (оны Жүйе баптаулары (root) тексереді).
+	Decoded pictures: {used} MB	Декодталған кадрлар: {used} МБ
+	Decoded pictures: {used} MB of {budget} MB	Декодталған кадрлар: {used} МБ / {budget} МБ
+	Diagnostics	Диагностика
+	Drivers	Драйверлер
+	Hardware Overview…	Жабдыққа шолу…
+	Kernel driver: {driver}	Ядро драйвері: {driver}
+	No access	Қолжетімділік жоқ
+	No audio output found: playback is silent.	Дыбыс шығысы табылмады: ойнату дыбыссыз.
+	No hardware decoder ({reason}).	Аппараттық декодер жоқ ({reason}).
+	No hardware decoder in use.	Аппараттық декодер қолданылмайды.
+	No system helper in this installation.	Бұл орнатуда жүйе көмекшісі жоқ.
+	None connected	Ештеңе қосылмаған
+	Open…	Ашу…
+	Overview	Шолу
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Тек оқу: осы компьютер жабдығының күйі бір қарағанда. Әр жол өз бетін ашады.
+	Software decoding only	Тек бағдарламалық декодтау
+	The picture cache is full.	Кадр кэші толы.
+	{count} connected	Қосылған: {count}
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	Шығыстар: {outputs}, кірістер: {inputs}

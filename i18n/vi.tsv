@@ -5055,3 +5055,25 @@ export.summary	Low	thấp
 	{method} {component} failed: {error}	{method} {component} thất bại: {error}
 	{method} {component}: done	{method} {component}: xong
 	{method} {component}: waiting for the password…	{method} {component}: đang chờ mật khẩu…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	Không mở được GPU hoặc NPU: thiếu tư cách thành viên nhóm (Cài đặt hệ thống (root)).
+	Access not checked (System Settings (root) checks it).	Chưa kiểm tra quyền truy cập (Cài đặt hệ thống (root) kiểm tra).
+	Decoded pictures: {used} MB	Ảnh đã giải mã: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Ảnh đã giải mã: {used} MB / {budget} MB
+	Diagnostics	Chẩn đoán
+	Drivers	Trình điều khiển
+	Hardware Overview…	Tổng quan phần cứng…
+	Kernel driver: {driver}	Trình điều khiển nhân: {driver}
+	No access	Không có quyền
+	No audio output found: playback is silent.	Không tìm thấy đầu ra âm thanh: phát lại không có tiếng.
+	No hardware decoder ({reason}).	Không có bộ giải mã phần cứng ({reason}).
+	No hardware decoder in use.	Không dùng bộ giải mã phần cứng.
+	No system helper in this installation.	Bản cài đặt này không có trình trợ giúp hệ thống.
+	None connected	Không có thiết bị kết nối
+	Open…	Mở…
+	Overview	Tổng quan
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Chỉ đọc: trạng thái phần cứng của máy này trong một cái nhìn. Mỗi hàng mở trang riêng.
+	Software decoding only	Chỉ giải mã bằng phần mềm
+	The picture cache is full.	Bộ nhớ đệm ảnh đã đầy.
+	{count} connected	{count} đã kết nối
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	{outputs} đầu ra, {inputs} đầu vào

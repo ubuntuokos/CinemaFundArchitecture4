@@ -5063,3 +5063,25 @@
 	{method} {component} failed: {error}	{method} {component} gagal: {error}
 	{method} {component}: done	{method} {component}: selesai
 	{method} {component}: waiting for the password…	{method} {component}: menunggu kata sandi…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	GPU atau NPU tidak dapat dibuka: keanggotaan grup tidak ada (Pengaturan Sistem (root)).
+	Access not checked (System Settings (root) checks it).	Akses belum diperiksa (Pengaturan Sistem (root) memeriksanya).
+	Decoded pictures: {used} MB	Gambar terdekode: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Gambar terdekode: {used} MB dari {budget} MB
+	Diagnostics	Diagnostik
+	Drivers	Driver
+	Hardware Overview…	Ringkasan perangkat keras…
+	Kernel driver: {driver}	Driver kernel: {driver}
+	No access	Tanpa akses
+	No audio output found: playback is silent.	Tidak ada keluaran audio: pemutaran tanpa suara.
+	No hardware decoder ({reason}).	Tidak ada dekoder perangkat keras ({reason}).
+	No hardware decoder in use.	Tidak ada dekoder perangkat keras yang dipakai.
+	No system helper in this installation.	Tidak ada pembantu sistem di instalasi ini.
+	None connected	Tidak ada yang terhubung
+	Open…	Buka…
+	Overview	Ringkasan
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Hanya baca: keadaan perangkat keras mesin ini sekilas. Setiap baris membuka halamannya sendiri.
+	Software decoding only	Hanya dekode perangkat lunak
+	The picture cache is full.	Cache gambar penuh.
+	{count} connected	{count} terhubung
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	{outputs} keluaran, {inputs} masukan

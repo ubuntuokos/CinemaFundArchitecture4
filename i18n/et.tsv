@@ -5057,3 +5057,25 @@ export.summary	Low	madal
 	{method} {component} failed: {error}	{method} {component} ebaõnnestus: {error}
 	{method} {component}: done	{method} {component}: valmis
 	{method} {component}: waiting for the password…	{method} {component}: ootab parooli…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	GPU-d või NPU-d ei saa avada: rühmaliikmesus puudub (Süsteemi sätted (root)).
+	Access not checked (System Settings (root) checks it).	Juurdepääsu pole kontrollitud (Süsteemi sätted (root) kontrollib seda).
+	Decoded pictures: {used} MB	Dekodeeritud pildid: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Dekodeeritud pildid: {used} MB / {budget} MB
+	Diagnostics	Diagnostika
+	Drivers	Draiverid
+	Hardware Overview…	Riistvara ülevaade…
+	Kernel driver: {driver}	Tuumadraiver: {driver}
+	No access	Juurdepääs puudub
+	No audio output found: playback is silent.	Heliväljundit ei leitud: taasesitus on vaikne.
+	No hardware decoder ({reason}).	Riistvaralist dekoodrit pole ({reason}).
+	No hardware decoder in use.	Riistvaralist dekoodrit ei kasutata.
+	No system helper in this installation.	Selles paigalduses pole süsteemiabilist.
+	None connected	Ühtegi pole ühendatud
+	Open…	Ava…
+	Overview	Ülevaade
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Ainult lugemiseks: selle masina riistvara olek ühe pilguga. Iga rida avab oma lehe.
+	Software decoding only	Ainult tarkvaraline dekodeerimine
+	The picture cache is full.	Pildivahemälu on täis.
+	{count} connected	{count} ühendatud
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	{outputs} väljundit, {inputs} sisendit

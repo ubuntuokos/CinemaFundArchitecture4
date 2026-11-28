@@ -5058,3 +5058,25 @@ export.summary	Low	žema
 	{method} {component} failed: {error}	{method} {component} nepavyko: {error}
 	{method} {component}: done	{method} {component}: atlikta
 	{method} {component}: waiting for the password…	{method} {component}: laukiama slaptažodžio…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	Nepavyksta atverti GPU ar NPU: trūksta narystės grupėje (Sistemos nustatymai (root)).
+	Access not checked (System Settings (root) checks it).	Prieiga nepatikrinta (ją tikrina Sistemos nustatymai (root)).
+	Decoded pictures: {used} MB	Iškoduoti kadrai: {used} MB
+	Decoded pictures: {used} MB of {budget} MB	Iškoduoti kadrai: {used} MB iš {budget} MB
+	Diagnostics	Diagnostika
+	Drivers	Tvarkyklės
+	Hardware Overview…	Aparatinės įrangos apžvalga…
+	Kernel driver: {driver}	Branduolio tvarkyklė: {driver}
+	No access	Nėra prieigos
+	No audio output found: playback is silent.	Garso išvesties nerasta: atkūrimas tylus.
+	No hardware decoder ({reason}).	Nėra aparatinio dekoderio ({reason}).
+	No hardware decoder in use.	Aparatinis dekoderis nenaudojamas.
+	No system helper in this installation.	Šiame diegime nėra sistemos pagalbinės programos.
+	None connected	Nė vienas neprijungtas
+	Open…	Atverti…
+	Overview	Apžvalga
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Tik skaityti: šio kompiuterio aparatinės įrangos būsena vienu žvilgsniu. Kiekviena eilutė atveria savo puslapį.
+	Software decoding only	Tik programinis iškodavimas
+	The picture cache is full.	Kadrų podėlis pilnas.
+	{count} connected	Prijungta: {count}
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	Išvesčių: {outputs}, įvesčių: {inputs}

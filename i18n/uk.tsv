@@ -5038,3 +5038,25 @@
 	{method} {component} failed: {error}	{method} {component} не вдалося: {error}
 	{method} {component}: done	{method} {component}: готово
 	{method} {component}: waiting for the password…	{method} {component}: очікування пароля…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	Не вдається відкрити GPU або NPU: бракує членства в групі (Системні налаштування (root)).
+	Access not checked (System Settings (root) checks it).	Доступ не перевірено (перевіряють Системні налаштування (root)).
+	Decoded pictures: {used} MB	Декодовані кадри: {used} МБ
+	Decoded pictures: {used} MB of {budget} MB	Декодовані кадри: {used} МБ з {budget} МБ
+	Diagnostics	Діагностика
+	Drivers	Драйвери
+	Hardware Overview…	Огляд обладнання…
+	Kernel driver: {driver}	Драйвер ядра: {driver}
+	No access	Немає доступу
+	No audio output found: playback is silent.	Аудіовихід не знайдено: відтворення без звуку.
+	No hardware decoder ({reason}).	Немає апаратного декодера ({reason}).
+	No hardware decoder in use.	Апаратний декодер не використовується.
+	No system helper in this installation.	У цьому встановленні немає системного помічника.
+	None connected	Нічого не під'єднано
+	Open…	Відкрити…
+	Overview	Огляд
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Лише читання: стан обладнання цього комп'ютера з першого погляду. Кожен рядок відкриває свою сторінку.
+	Software decoding only	Лише програмне декодування
+	The picture cache is full.	Кеш кадрів заповнений.
+	{count} connected	Під'єднано: {count}
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	Виходів: {outputs}, входів: {inputs}

@@ -5038,3 +5038,25 @@
 	{method} {component} failed: {error}	{method} {component} не удалось: {error}
 	{method} {component}: done	{method} {component}: готово
 	{method} {component}: waiting for the password…	{method} {component}: ожидание пароля…
+	A GPU or NPU cannot be opened: a group membership is missing (System Settings (root)).	Не удаётся открыть GPU или NPU: нет членства в группе (Системные настройки (root)).
+	Access not checked (System Settings (root) checks it).	Доступ не проверен (проверяют Системные настройки (root)).
+	Decoded pictures: {used} MB	Декодированные кадры: {used} МБ
+	Decoded pictures: {used} MB of {budget} MB	Декодированные кадры: {used} МБ из {budget} МБ
+	Diagnostics	Диагностика
+	Drivers	Драйверы
+	Hardware Overview…	Обзор оборудования…
+	Kernel driver: {driver}	Драйвер ядра: {driver}
+	No access	Нет доступа
+	No audio output found: playback is silent.	Аудиовыход не найден: воспроизведение без звука.
+	No hardware decoder ({reason}).	Нет аппаратного декодера ({reason}).
+	No hardware decoder in use.	Аппаратный декодер не используется.
+	No system helper in this installation.	В этой установке нет системного помощника.
+	None connected	Ничего не подключено
+	Open…	Открыть…
+	Overview	Обзор
+	Read-only: the state of this machine's hardware at a glance. Each row opens its own page.	Только чтение: состояние оборудования этого компьютера с первого взгляда. Каждая строка открывает свою страницу.
+	Software decoding only	Только программное декодирование
+	The picture cache is full.	Кэш кадров заполнен.
+	{count} connected	Подключено: {count}
+	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
+	{outputs} outputs, {inputs} inputs	Выходов: {outputs}, входов: {inputs}
