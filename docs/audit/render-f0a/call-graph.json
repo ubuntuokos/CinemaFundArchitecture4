@@ -7040,6 +7040,16 @@
   },
   {
    "from": "cfa4-cli/main.rs",
+   "item": "PixelData",
+   "to": "cfa4-frame"
+  },
+  {
+   "from": "cfa4-cli/main.rs",
+   "item": "VideoFrame",
+   "to": "cfa4-frame"
+  },
+  {
+   "from": "cfa4-cli/main.rs",
    "item": "ExportRenderer",
    "to": "cfa4-gpu"
   },

@@ -25,6 +25,7 @@ ffmpeg = ["cfa4-ffmpeg/ffmpeg"]
 whisper = ["cfa4-engine/whisper", "cfa4-engine/speech-download"]
 
 [dependencies]
+sha2 = { workspace = true }
 cfa4-route = { workspace = true }
 cfa4-engine = { workspace = true }
 cfa4-store = { workspace = true }

@@ -1,6 +1,6 @@
 //! Synchronous NVDEC parser callbacks and CUDA readback. All driver handles stay here.
 use std::cell::Cell;
-use std::ffi::c_void;
+use std::ffi::{c_uint, c_void};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::ptr;
 
@@ -8,7 +8,7 @@ use cfa4_codecs::hw::NalCodec;
 use cfa4_frame::VideoFrame;
 
 use super::ffi::*;
-use super::opaque::{self, Arrays, OpaqueApi};
+use super::opaque;
 use crate::biplanar::{Biplanar, Geometry, to_frame};
 use crate::nvenc::device::Device;
 
@@ -96,6 +96,135 @@ fn check_caps(caps: &CUVIDDECODECAPS, coded: (u32, u32), bits: u32) -> Result<()
         return Err(format!("GPU does not support NVDEC codec {} at {w}x{h}, {bits}-bit 4:2:0", caps.eCodecType));
     }
     Ok(())
+}
+
+// CUDA-array output (CFA4-NVDEC-CUARRAY-001): the driver calls; the switch and the checks are in `opaque`.
+/// The SDK 13.1 NVDEC functions and the CUDA array functions the opaque path calls.
+#[derive(Clone, Copy)]
+pub(super) struct OpaqueApi {
+    register: RegisterDecodeSurfaces,
+    decode_async: DecodePictureAsync,
+    create: Array3DCreate,
+    destroy: ArrayDestroy,
+    plane: ArrayGetPlane,
+    copy: Memcpy2D,
+}
+
+impl OpaqueApi {
+    /// The functions from the already loaded `libnvcuvid` and from `libcuda`, which the caller keeps
+    /// loaded (the returned library) as long as any of them may be called.
+    fn load(nvcuvid: &libloading::Library) -> Result<(Self, libloading::Library), String> {
+        // SAFETY: the symbols have the signatures of NVIDIA's public headers (`super::ffi`). The
+        // caller retains both libraries until every handle using these pointers is destroyed.
+        unsafe {
+            let cuda = libloading::Library::new("libcuda.so.1").map_err(|e| format!("no CUDA driver library: {e}"))?;
+            let missing = |e: libloading::Error| format!("the driver lacks a Video Codec SDK 13.1 function: {e}");
+            let api = Self {
+                register: *nvcuvid.get(b"cuvidRegisterDecodeSurfaces\0").map_err(missing)?,
+                decode_async: *nvcuvid.get(b"cuvidDecodePictureAsync\0").map_err(missing)?,
+                create: *cuda.get(b"cuArray3DCreate_v2\0").map_err(missing)?,
+                destroy: *cuda.get(b"cuArrayDestroy\0").map_err(missing)?,
+                plane: *cuda.get(b"cuArrayGetPlane\0").map_err(missing)?,
+                copy: *cuda.get(b"cuMemcpy2D_v2\0").map_err(missing)?,
+            };
+            Ok((api, cuda))
+        }
+    }
+}
+
+/// Decode surfaces as CUDA arrays, one per decoder picture index. Created, registered, read and
+/// destroyed with the CUDA context current on the calling thread.
+struct Arrays {
+    api: OpaqueApi,
+    list: Vec<*mut c_void>,
+    coded: (u32, u32),
+    bits: u32,
+}
+
+impl Arrays {
+    /// `count` arrays for `coded`-sized pictures of `bits` depth.
+    fn allocate(api: OpaqueApi, coded: (u32, u32), bits: u32, count: u32) -> Result<Self, String> {
+        if count == 0 || count > MAX_NUM_REGISTERED_DECODE_SURFACES {
+            return Err(format!("{count} decode surfaces cannot be registered (at most {MAX_NUM_REGISTERED_DECODE_SURFACES})"));
+        }
+        let mut arrays = Self { api, list: Vec::new(), coded, bits };
+        arrays.list.try_reserve_exact(count as usize).map_err(|e| format!("NVDEC array list allocation failed: {e}"))?;
+        let desc = CUDA_ARRAY3D_DESCRIPTOR {
+            Width: coded.0 as usize,
+            Height: coded.1 as usize,
+            Depth: 0,
+            Format: opaque::array_format(bits),
+            NumChannels: 3,
+            Flags: CUDA_ARRAY3D_SURFACE_LDST | CUDA_ARRAY3D_VIDEO_ENCODE_DECODE,
+        };
+        for _ in 0..count {
+            let mut array = ptr::null_mut();
+            // SAFETY: desc and the out-pointer are live; the context is current (caller). An array
+            // created here is owned by `arrays` and destroyed in its Drop, also on an early return.
+            status(unsafe { (api.create)(&mut array, &desc) }, "cuArray3DCreate")?;
+            if array.is_null() {
+                return Err("cuArray3DCreate returned a null array".into());
+            }
+            arrays.list.push(array);
+        }
+        Ok(arrays)
+    }
+
+    /// Hand the arrays to `decoder` as its decode surfaces.
+    fn register(&mut self, decoder: *mut c_void) -> Result<(), String> {
+        // SAFETY: plain C data (integers and nullable pointers) permits an all-zero value.
+        let mut info: CUVIDREGISTERDECODESURFACESINFO = unsafe { std::mem::zeroed() };
+        info.ulNumDecodeSurfaces = u32::try_from(self.list.len()).map_err(|_| "NVDEC surface count overflows")?;
+        info.pDecodeSurfaces = self.list.as_mut_ptr();
+        // SAFETY: the live decoder and the array list (owned by self, unchanged while registered)
+        // outlive the call; the context is current (caller).
+        status(unsafe { (self.api.register)(decoder, &mut info) }, "cuvidRegisterDecodeSurfaces")
+    }
+
+    /// Copy picture `index` into `host`: the luma rows, then the interleaved chroma rows, each
+    /// [`opaque::row_bytes`] long with no padding, the layout `Biplanar` reads with that stride.
+    fn read(&self, index: i32, host: &mut [u8]) -> Result<(), String> {
+        let array = usize::try_from(index).ok().and_then(|i| self.list.get(i)).copied().ok_or("NVDEC picture index has no CUDA array")?;
+        let row = opaque::row_bytes(self.coded.0, self.bits)?;
+        let rows = self.coded.1 as usize;
+        let luma = row.checked_mul(rows).ok_or("NVDEC luma size overflows")?;
+        let chroma = row.checked_mul(rows / 2).ok_or("NVDEC chroma size overflows")?;
+        if luma.checked_add(chroma) != Some(host.len()) {
+            return Err("NVDEC host buffer does not fit the picture".into());
+        }
+        let (luma_host, chroma_host) = host.split_at_mut(luma);
+        for (plane, (dst, rows)) in [(luma_host, rows), (chroma_host, rows / 2)].into_iter().enumerate() {
+            let mut source = ptr::null_mut();
+            // SAFETY: `array` is a live multi-planar array owned by self; the out-pointer is live.
+            status(unsafe { (self.api.plane)(&mut source, array, plane as c_uint) }, "cuArrayGetPlane")?;
+            // SAFETY: plain C data (integers and nullable pointers) permits an all-zero value.
+            let mut copy: CUDA_MEMCPY2D = unsafe { std::mem::zeroed() };
+            copy.srcMemoryType = CU_MEMORYTYPE_ARRAY;
+            copy.srcArray = source;
+            copy.dstMemoryType = CU_MEMORYTYPE_HOST;
+            copy.dstHost = dst.as_mut_ptr().cast();
+            copy.dstPitch = row;
+            copy.WidthInBytes = row;
+            copy.Height = rows;
+            // SAFETY: the synchronous copy writes `row * rows` bytes, exactly `dst`'s length, into
+            // the live slice; it is ordered after the asynchronous decode on the legacy default
+            // stream. The context is current (caller).
+            status(unsafe { (self.api.copy)(&copy) }, "cuMemcpy2D")?;
+        }
+        Ok(())
+    }
+}
+
+impl Drop for Arrays {
+    fn drop(&mut self) {
+        for array in self.list.drain(..) {
+            // SAFETY: each array was created by this object and is no longer used by a decoder: the
+            // owner drops the arrays only after destroying the decoder, with the context current.
+            if let Err(e) = status(unsafe { (self.api.destroy)(array) }, "cuArrayDestroy") {
+                log::warn!("{e}");
+            }
+        }
+    }
 }
 
 /// Slices per picture the driver's offset list is read for.
@@ -194,7 +323,6 @@ impl State {
         }
         self.decoder = decoder;
         self.arrays = Some(arrays);
-        opaque::note_used();
         log::info!("NVDEC decodes into CUDA arrays ({}x{}, {} surfaces)", self.coded.0, self.coded.1, surfaces);
         Ok(())
     }
@@ -250,6 +378,7 @@ impl State {
             let frame = self.read_array(info.picture_index)?;
             self.ready.try_reserve(1).map_err(|e| format!("NVDEC output allocation failed: {e}"))?;
             self.ready.push((info.timestamp, frame));
+            opaque::note_array_frame();
             return Ok(());
         }
         // SAFETY: this C struct contains integers and nullable pointers only.

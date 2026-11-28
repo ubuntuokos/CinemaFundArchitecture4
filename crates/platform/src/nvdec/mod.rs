@@ -11,7 +11,6 @@
 #[allow(unsafe_code)]
 pub mod cuvid;
 pub mod ffi;
-#[allow(unsafe_code)]
 pub mod opaque;
 
 #[cfg(test)]

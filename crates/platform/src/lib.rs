@@ -184,16 +184,16 @@ pub fn vaapi_factory(entry: &cfa4_isobmff::SampleEntry) -> Option<cfa4_codecs::R
 }
 
 /// NVDEC output into CUDA arrays (CFA4-NVDEC-CUARRAY-001): whether it is switched on for new
-/// decoders, and whether a decoder of this process has used it. `(false, false)` where NVDEC does
-/// not exist.
-pub fn nvdec_cuda_array_output() -> (bool, bool) {
+/// decoders, and how many pictures this process's decoders have read out of CUDA arrays so far.
+/// `(false, 0)` where NVDEC does not exist.
+pub fn nvdec_cuda_array_output() -> (bool, u64) {
     #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
     {
-        (nvdec::opaque::enabled(), nvdec::opaque::used())
+        (nvdec::opaque::enabled(), nvdec::opaque::array_frames())
     }
     #[cfg(not(all(target_os = "linux", target_pointer_width = "64")))]
     {
-        (false, false)
+        (false, 0)
     }
 }
 
