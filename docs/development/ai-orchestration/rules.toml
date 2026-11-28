@@ -28,11 +28,6 @@
 
 schema_version = 1
 
-# Non-negotiable CLAUDE.md bullets that are not conformance rules and so need no register row.
-[[claude_md_exempt]]
-point = "Usage budget"
-reason = "model and cost preference (opusplan, Haiku sub-agents, jq-filtered API output); nothing to conform to or check"
-
 # ---------------------------------------------------------------- AGENTS.md
 
 [[rule]]
@@ -437,3 +432,15 @@ level = "text"
 scope = ["claude-code"]
 pi = []
 status = "active"
+
+[[rule]]
+id = "CFA4-RULE-035"
+title = "Usage budget: plan mode for larger tasks, read-only Haiku sub-agents for gates and branch lists, jq-filtered GitHub API output"
+source = "CLAUDE.md"
+anchor = "**Usage budget**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+claude_md = ["Usage budget"]
+note = "Owner decision 2026-11-28 (Istvan): a separate rule, not an exemption. Nothing checks it; the model setting itself is in .claude/settings.json."
