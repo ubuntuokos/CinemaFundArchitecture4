@@ -5077,3 +5077,43 @@ export.summary	Low	laag
 	{count} connected	{count} verbonden
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	{outputs} uitgangen, {inputs} ingangen
+	CFA4 warns below {limit} free.	CFA4 waarschuwt onder {limit} vrij.
+	CFA4's own display settings are on the Color page.	De eigen weergave-instellingen van CFA4 staan op de pagina Kleur.
+	Displays	Beeldschermen
+	Displays…	Beeldschermen…
+	File system	Bestandssysteem
+	Free	Vrij
+	Full-screen playback: yes	Afspelen op volledig scherm: ja
+	HDR: not known (the system does not report it to CFA4).	HDR: onbekend (het systeem meldt het niet aan CFA4).
+	Low on space: {free} free on {root}.	Weinig ruimte: {free} vrij op {root}.
+	Mount point	Koppelpunt
+	No CFA4 location on this disk.	Geen CFA4-locatie op deze schijf.
+	No display found.	Geen beeldscherm gevonden.
+	No storage device found.	Geen opslagapparaat gevonden.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Eén pixel van de programmamonitor op 100% beslaat hier {n} apparaatpixel(s).
+	Physical size	Fysieke grootte
+	Pixel density	Pixeldichtheid
+	Primary	Primair
+	Read-only	Alleen-lezen
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Alleen-lezen: de beeldschermen die het systeem meldt. CFA4 wijzigt hier niets aan de weergave-instellingen.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Alleen-lezen: de gekoppelde opslag en waar CFA4 zijn bestanden bewaart. CFA4 wijzigt hier niets op de schijven.
+	Recovery copy	Herstelkopie
+	Refresh rate	Verversingsfrequentie
+	Resolution	Resolutie
+	Serial number	Serienummer
+	Storage Devices	Opslagapparaten
+	Storage Devices…	Opslagapparaten…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Waar CFA4 zijn cache bewaart, stel je in op de pagina Mediacache.
+	not known	onbekend
+	read-only	alleen-lezen
+	{count} display(s), primary: {name}	{count} beeldscherm(en), primair: {name}
+	{count} storage device(s)	{count} opslagapparaat/-apparaten
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} vrij
+	{free} free on the media cache's disk ({root})	{free} vrij op de schijf van de mediacache ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} is alleen-lezen: CFA4 kan daar niet schrijven.
+	{time} Detected {count} display(s).	{time} {count} beeldscherm(en) gevonden.
+	{time} Detected {count} storage device(s).	{time} {count} opslagapparaat/-apparaten gevonden.
+	{w} × {h} mm	{w} × {h} mm

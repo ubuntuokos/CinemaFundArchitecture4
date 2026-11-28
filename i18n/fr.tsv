@@ -5082,3 +5082,43 @@
 	{count} connected	{count} connecté(s)
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	{outputs} sorties, {inputs} entrées
+	CFA4 warns below {limit} free.	CFA4 avertit sous {limit} d'espace libre.
+	CFA4's own display settings are on the Color page.	Les réglages d'affichage propres à CFA4 se trouvent sur la page Couleur.
+	Displays	Écrans
+	Displays…	Écrans…
+	File system	Système de fichiers
+	Free	Libre
+	Full-screen playback: yes	Lecture plein écran : oui
+	HDR: not known (the system does not report it to CFA4).	HDR : inconnu (le système ne le communique pas à CFA4).
+	Low on space: {free} free on {root}.	Espace faible : {free} libre(s) sur {root}.
+	Mount point	Point de montage
+	No CFA4 location on this disk.	Aucun emplacement CFA4 sur ce disque.
+	No display found.	Aucun écran trouvé.
+	No storage device found.	Aucun périphérique de stockage trouvé.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Un pixel du moniteur de programme à 100 % couvre ici {n} pixel(s) de l'appareil.
+	Physical size	Taille physique
+	Pixel density	Densité de pixels
+	Primary	Principal
+	Read-only	Lecture seule
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Lecture seule : les écrans signalés par le système. CFA4 ne modifie ici aucun réglage d'affichage.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Lecture seule : les stockages montés et l'endroit où CFA4 range ses fichiers. CFA4 ne modifie rien sur les disques ici.
+	Recovery copy	Copie de récupération
+	Refresh rate	Fréquence de rafraîchissement
+	Resolution	Résolution
+	Serial number	Numéro de série
+	Storage Devices	Périphériques de stockage
+	Storage Devices…	Périphériques de stockage…
+	Where CFA4 keeps its cache is set on the Media Cache page.	L'emplacement du cache de CFA4 se règle sur la page Cache des médias.
+	not known	inconnu
+	read-only	lecture seule
+	{count} display(s), primary: {name}	{count} écran(s), principal : {name}
+	{count} storage device(s)	{count} périphérique(s) de stockage
+	{dpi} dpi	{dpi} ppp
+	{free} free	{free} libre(s)
+	{free} free on the media cache's disk ({root})	{free} libre(s) sur le disque du cache des médias ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} Go
+	{root} is read-only: CFA4 cannot write there.	{root} est en lecture seule : CFA4 ne peut pas y écrire.
+	{time} Detected {count} display(s).	{time} {count} écran(s) détecté(s).
+	{time} Detected {count} storage device(s).	{time} {count} périphérique(s) de stockage détecté(s).
+	{w} × {h} mm	{w} × {h} mm

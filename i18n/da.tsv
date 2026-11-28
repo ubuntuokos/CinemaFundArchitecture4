@@ -5079,3 +5079,43 @@ export.summary	Low	lav
 	{count} connected	{count} tilsluttet
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	{outputs} udgange, {inputs} indgange
+	CFA4 warns below {limit} free.	CFA4 advarer under {limit} ledigt.
+	CFA4's own display settings are on the Color page.	CFA4's egne skærmindstillinger findes på siden Farve.
+	Displays	Skærme
+	Displays…	Skærme…
+	File system	Filsystem
+	Free	Ledigt
+	Full-screen playback: yes	Afspilning i fuld skærm: ja
+	HDR: not known (the system does not report it to CFA4).	HDR: ukendt (systemet oplyser det ikke til CFA4).
+	Low on space: {free} free on {root}.	Lidt plads: {free} ledigt på {root}.
+	Mount point	Monteringspunkt
+	No CFA4 location on this disk.	Ingen CFA4-placering på denne disk.
+	No display found.	Ingen skærm fundet.
+	No storage device found.	Ingen lagerenhed fundet.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Én pixel i programmonitoren ved 100 % svarer her til {n} enhedspixel(s).
+	Physical size	Fysisk størrelse
+	Pixel density	Pixeltæthed
+	Primary	Primær
+	Read-only	Skrivebeskyttet
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Skrivebeskyttet: de skærme, systemet oplyser. CFA4 ændrer intet i skærmindstillingerne her.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Skrivebeskyttet: det monterede lager, og hvor CFA4 gemmer sine filer. CFA4 ændrer intet på diskene her.
+	Recovery copy	Gendannelseskopi
+	Refresh rate	Opdateringshastighed
+	Resolution	Opløsning
+	Serial number	Serienummer
+	Storage Devices	Lagerenheder
+	Storage Devices…	Lagerenheder…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Hvor CFA4 gemmer sin cache, indstilles på siden Mediecache.
+	not known	ukendt
+	read-only	skrivebeskyttet
+	{count} display(s), primary: {name}	{count} skærm(e), primær: {name}
+	{count} storage device(s)	{count} lagerenhed(er)
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} ledigt
+	{free} free on the media cache's disk ({root})	{free} ledigt på mediecachens disk ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} er skrivebeskyttet: CFA4 kan ikke skrive der.
+	{time} Detected {count} display(s).	{time} {count} skærm(e) fundet.
+	{time} Detected {count} storage device(s).	{time} {count} lagerenhed(er) fundet.
+	{w} × {h} mm	{w} × {h} mm

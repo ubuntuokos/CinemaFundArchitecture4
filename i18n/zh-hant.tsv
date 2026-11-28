@@ -5076,3 +5076,43 @@ export.summary	Low	低
 	{count} connected	已連接 {count} 個
 	{gpus} GPU, {npus} NPU	{gpus} 個 GPU，{npus} 個 NPU
 	{outputs} outputs, {inputs} inputs	{outputs} 個輸出，{inputs} 個輸入
+	CFA4 warns below {limit} free.	可用空間低於 {limit} 時 CFA4 會發出警告。
+	CFA4's own display settings are on the Color page.	CFA4 自己的顯示設定在「色彩」頁面。
+	Displays	顯示器
+	Displays…	顯示器…
+	File system	檔案系統
+	Free	可用
+	Full-screen playback: yes	全螢幕播放：可以
+	HDR: not known (the system does not report it to CFA4).	HDR：未知（系統未向 CFA4 回報）。
+	Low on space: {free} free on {root}.	空間不足：{root} 上僅剩 {free}。
+	Mount point	掛載點
+	No CFA4 location on this disk.	此磁碟上沒有 CFA4 位置。
+	No display found.	找不到顯示器。
+	No storage device found.	找不到儲存裝置。
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	節目監視器在 100% 時的一個像素在此對應 {n} 個裝置像素。
+	Physical size	實體尺寸
+	Pixel density	像素密度
+	Primary	主要
+	Read-only	唯讀
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	唯讀：系統回報的顯示器。CFA4 不會在此變更任何顯示設定。
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	唯讀：已掛載的儲存空間以及 CFA4 存放檔案的位置。CFA4 不會在此變更磁碟上的任何內容。
+	Recovery copy	復原副本
+	Refresh rate	更新率
+	Resolution	解析度
+	Serial number	序號
+	Storage Devices	儲存裝置
+	Storage Devices…	儲存裝置…
+	Where CFA4 keeps its cache is set on the Media Cache page.	CFA4 的快取位置在「媒體快取」頁面設定。
+	not known	未知
+	read-only	唯讀
+	{count} display(s), primary: {name}	{count} 個顯示器，主要：{name}
+	{count} storage device(s)	{count} 個儲存裝置
+	{dpi} dpi	{dpi} dpi
+	{free} free	可用 {free}
+	{free} free on the media cache's disk ({root})	媒體快取所在磁碟（{root}）可用 {free}
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} 為唯讀：CFA4 無法寫入。
+	{time} Detected {count} display(s).	{time} 偵測到 {count} 個顯示器。
+	{time} Detected {count} storage device(s).	{time} 偵測到 {count} 個儲存裝置。
+	{w} × {h} mm	{w} × {h} mm

@@ -5080,3 +5080,43 @@ export.summary	Low	დაბალი
 	{count} connected	დაკავშირებულია: {count}
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	გამოსავლები: {outputs}, შესავლები: {inputs}
+	CFA4 warns below {limit} free.	CFA4 გაფრთხილებს, როცა თავისუფალი ადგილი {limit}-ზე ნაკლებია.
+	CFA4's own display settings are on the Color page.	CFA4-ის საკუთარი ეკრანის პარამეტრები გვერდზეა „ფერი“.
+	Displays	ეკრანები
+	Displays…	ეკრანები…
+	File system	ფაილური სისტემა
+	Free	თავისუფალი
+	Full-screen playback: yes	სრულეკრანიანი დაკვრა: დიახ
+	HDR: not known (the system does not report it to CFA4).	HDR: უცნობია (სისტემა ამას CFA4-ს არ აწვდის).
+	Low on space: {free} free on {root}.	ადგილი ცოტაა: {root}-ზე თავისუფალია {free}.
+	Mount point	მიმაგრების წერტილი
+	No CFA4 location on this disk.	ამ დისკზე CFA4-ის ადგილი არ არის.
+	No display found.	ეკრანი ვერ მოიძებნა.
+	No storage device found.	შესანახი მოწყობილობა ვერ მოიძებნა.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	პროგრამის მონიტორის ერთი პიქსელი 100%-ზე აქ მოწყობილობის {n} პიქსელს იკავებს.
+	Physical size	ფიზიკური ზომა
+	Pixel density	პიქსელების სიმკვრივე
+	Primary	მთავარი
+	Read-only	მხოლოდ წასაკითხი
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	მხოლოდ წასაკითხი: სისტემის მიერ მოწოდებული ეკრანები. CFA4 აქ ეკრანის პარამეტრებს არ ცვლის.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	მხოლოდ წასაკითხი: მიმაგრებული საცავები და სად ინახავს CFA4 თავის ფაილებს. CFA4 აქ დისკებზე არაფერს ცვლის.
+	Recovery copy	აღდგენის ასლი
+	Refresh rate	განახლების სიხშირე
+	Resolution	გარჩევადობა
+	Serial number	სერიული ნომერი
+	Storage Devices	შესანახი მოწყობილობები
+	Storage Devices…	შესანახი მოწყობილობები…
+	Where CFA4 keeps its cache is set on the Media Cache page.	სად ინახავს CFA4 თავის ქეშს, ეს გვერდზე „მედიის ქეში“ ყენდება.
+	not known	უცნობია
+	read-only	მხოლოდ წასაკითხი
+	{count} display(s), primary: {name}	ეკრანები: {count}, მთავარი: {name}
+	{count} storage device(s)	შესანახი მოწყობილობები: {count}
+	{dpi} dpi	{dpi} dpi
+	{free} free	თავისუფალია {free}
+	{free} free on the media cache's disk ({root})	მედიის ქეშის დისკზე ({root}) თავისუფალია {free}
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} მხოლოდ წასაკითხია: CFA4 ვერ ჩაწერს იქ.
+	{time} Detected {count} display(s).	{time} ნაპოვნია ეკრანები: {count}.
+	{time} Detected {count} storage device(s).	{time} ნაპოვნია შესანახი მოწყობილობები: {count}.
+	{w} × {h} mm	{w} × {h} mm

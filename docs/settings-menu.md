@@ -1,6 +1,6 @@
 # Settings and Hardware menu (Qt 6)
 
-> **Last updated:** 2026-11-28 · **Change:** minor (the experimental shell's Settings window was removed; the Qt editor is the only Settings window)
+> **Last updated:** 2026-11-28 · **Change:** minor (Displays and Storage Devices pages, CFA4-SETTINGS-HW-004)
 
 The Settings window of the Qt 6 editor, `cfa4-qt` (`python/cfa4_qt/panels/settings.py` and
 `settings_hardware.py`, Edit ▸ Preferences ▸ <page>, Ctrl+,). Phases 1 and 2 were first built in
@@ -60,12 +60,28 @@ Next step (approved 2026-11-27): [plans/CFA4-SETTINGS-HW-002.md](plans/CFA4-SETT
   `hardware.inventory`, `codecs.capabilities`, `system.components`, `surface.devices`, Qt's audio
   devices and the window's picture memory. Rows of pages the schema lacks are left out.
 - **The device page** (`device_page.py`): a device list with each device's status on the left, tabs
-  on the right (Details, Capabilities, Drivers, Diagnostics). Accelerators is built on it: the
+  on the right (Details, Capabilities, Settings, Drivers, Diagnostics; a page shows the ones it fills). Accelerators is built on it: the
   status and the Diagnostics tab come from the system helper's GPU-access check, the Capabilities
   tab keeps the device and per-job tables. Later device pages (displays, storage, cameras, tablets)
   reuse it under their own plans.
 - Object names: `settings.overview.<page>`, `.summary`, `.open`; `settings.accelerators.page.list`,
   `.tabs`, `.tab.<details|capabilities|drivers|diagnostics>`.
+
+## Displays and Storage Devices (`cfa4-qt`, CFA4-SETTINGS-HW-004)
+
+- Hardware & Devices ▸ **Displays** and **Storage Devices** (`settings_devices.py`), both on the
+  device page and read-only. The lists come from Qt (`QGuiApplication.screens()`,
+  `QStorageInfo.mountedVolumes()` without kernel and memory file systems); a display plugged in or
+  out redraws the page. Displays: name, vendor, model, resolution, refresh rate, size, density,
+  scaling; Capabilities says how many device pixels one Program Monitor pixel covers and whether
+  Display Color Management is on. Storage: mount point, file system, size, free space, and which
+  CFA4 locations are on the disk (media cache from `mediaCache.info`, auto-saves and the recovery
+  copy from `file.autoSaveStatus`); a disk holding one warns below 10 GB or 5 % free, whichever is
+  larger, or when it is read-only. Their Settings tabs link to Color and Media Cache, where those
+  settings stay (plan decision D4). The Overview gets a row for each.
+- Object names: `settings.displays.page` and `settings.storage.page` (with `.list`, `.tabs`,
+  `.tab.<details|capabilities|settings|diagnostics>`), `settings.displays.open.color`,
+  `settings.storage.open.mediaCache`.
 
 ## System Settings (root) (`cfa4-qt`, CFA4-SETTINGS-HW-003)
 
@@ -126,7 +142,7 @@ maximum hardware resolution, and the default GPU rendering of exports.
 ## Later phases
 
 Devices
-(cameras, storage, monitors, drawing tablets), Local AI models, Publishing & providers, and the
+(cameras and card readers, drawing tablets, MIDI; displays and storage are done, HW-004), Local AI models, Publishing & providers, and the
 System (root) section with confirmation-gated helpers (GPU Unlock as an optional, separately
 installed component). Secret storage (tokens, passwords) is designed in a separate security
 project; no token value is ever written to settings files, logs or projects.

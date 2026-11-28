@@ -5077,3 +5077,43 @@ export.summary	Low	thấp
 	{count} connected	{count} đã kết nối
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	{outputs} đầu ra, {inputs} đầu vào
+	CFA4 warns below {limit} free.	CFA4 cảnh báo khi dung lượng trống dưới {limit}.
+	CFA4's own display settings are on the Color page.	Cài đặt hiển thị riêng của CFA4 nằm ở trang Màu.
+	Displays	Màn hình
+	Displays…	Màn hình…
+	File system	Hệ thống tệp
+	Free	Trống
+	Full-screen playback: yes	Phát toàn màn hình: có
+	HDR: not known (the system does not report it to CFA4).	HDR: không rõ (hệ thống không báo cho CFA4).
+	Low on space: {free} free on {root}.	Sắp hết chỗ: còn trống {free} trên {root}.
+	Mount point	Điểm gắn kết
+	No CFA4 location on this disk.	Không có vị trí nào của CFA4 trên ổ này.
+	No display found.	Không tìm thấy màn hình.
+	No storage device found.	Không tìm thấy thiết bị lưu trữ.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Một điểm ảnh của màn hình chương trình ở 100% chiếm {n} điểm ảnh thiết bị tại đây.
+	Physical size	Kích thước vật lý
+	Pixel density	Mật độ điểm ảnh
+	Primary	Chính
+	Read-only	Chỉ đọc
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Chỉ đọc: các màn hình hệ thống báo cáo. CFA4 không thay đổi cài đặt hiển thị nào ở đây.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Chỉ đọc: các bộ lưu trữ đã gắn và nơi CFA4 giữ tệp của mình. CFA4 không thay đổi gì trên ổ đĩa ở đây.
+	Recovery copy	Bản sao khôi phục
+	Refresh rate	Tần số làm mới
+	Resolution	Độ phân giải
+	Serial number	Số sê-ri
+	Storage Devices	Thiết bị lưu trữ
+	Storage Devices…	Thiết bị lưu trữ…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Nơi CFA4 giữ bộ nhớ đệm được đặt ở trang Bộ nhớ đệm phương tiện.
+	not known	không rõ
+	read-only	chỉ đọc
+	{count} display(s), primary: {name}	{count} màn hình, chính: {name}
+	{count} storage device(s)	{count} thiết bị lưu trữ
+	{dpi} dpi	{dpi} dpi
+	{free} free	Trống {free}
+	{free} free on the media cache's disk ({root})	Còn trống {free} trên ổ của bộ nhớ đệm phương tiện ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} chỉ đọc: CFA4 không thể ghi vào đó.
+	{time} Detected {count} display(s).	{time} Đã phát hiện {count} màn hình.
+	{time} Detected {count} storage device(s).	{time} Đã phát hiện {count} thiết bị lưu trữ.
+	{w} × {h} mm	{w} × {h} mm

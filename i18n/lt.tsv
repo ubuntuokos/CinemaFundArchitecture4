@@ -5080,3 +5080,43 @@ export.summary	Low	žema
 	{count} connected	Prijungta: {count}
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	Išvesčių: {outputs}, įvesčių: {inputs}
+	CFA4 warns below {limit} free.	CFA4 įspėja, kai laisvos vietos lieka mažiau nei {limit}.
+	CFA4's own display settings are on the Color page.	Pačios CFA4 ekrano nustatymai yra puslapyje Spalva.
+	Displays	Ekranai
+	Displays…	Ekranai…
+	File system	Failų sistema
+	Free	Laisva
+	Full-screen playback: yes	Viso ekrano atkūrimas: taip
+	HDR: not known (the system does not report it to CFA4).	HDR: nežinoma (sistema to nepraneša CFA4).
+	Low on space: {free} free on {root}.	Mažai vietos: {root} laisva {free}.
+	Mount point	Prijungimo taškas
+	No CFA4 location on this disk.	Šiame diske nėra CFA4 vietos.
+	No display found.	Ekranas nerastas.
+	No storage device found.	Saugojimo įrenginys nerastas.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Vienas programos monitoriaus taškas esant 100 % čia užima {n} įrenginio tšk.
+	Physical size	Fizinis dydis
+	Pixel density	Taškų tankis
+	Primary	Pagrindinis
+	Read-only	Tik skaityti
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Tik skaityti: sistemos pranešti ekranai. CFA4 čia nekeičia jokių ekrano nustatymų.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Tik skaityti: prijungtos saugyklos ir kur CFA4 laiko savo failus. CFA4 čia nieko nekeičia diskuose.
+	Recovery copy	Atkūrimo kopija
+	Refresh rate	Atnaujinimo dažnis
+	Resolution	Raiška
+	Serial number	Serijos numeris
+	Storage Devices	Saugojimo įrenginiai
+	Storage Devices…	Saugojimo įrenginiai…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Kur CFA4 laiko podėlį, nustatoma puslapyje Medijos podėlis.
+	not known	nežinoma
+	read-only	tik skaityti
+	{count} display(s), primary: {name}	Ekranų: {count}, pagrindinis: {name}
+	{count} storage device(s)	Saugojimo įrenginių: {count}
+	{dpi} dpi	{dpi} dpi
+	{free} free	Laisva {free}
+	{free} free on the media cache's disk ({root})	Medijos podėlio diske ({root}) laisva {free}
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} tik skaitomas: CFA4 negali ten rašyti.
+	{time} Detected {count} display(s).	{time} Rasta ekranų: {count}.
+	{time} Detected {count} storage device(s).	{time} Rasta saugojimo įrenginių: {count}.
+	{w} × {h} mm	{w} × {h} mm

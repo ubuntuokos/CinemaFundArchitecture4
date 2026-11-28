@@ -5077,3 +5077,43 @@ export.summary	Low	niska
 	{count} connected	Podłączone: {count}
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	Wyjścia: {outputs}, wejścia: {inputs}
+	CFA4 warns below {limit} free.	CFA4 ostrzega poniżej {limit} wolnego miejsca.
+	CFA4's own display settings are on the Color page.	Własne ustawienia ekranu CFA4 są na stronie Kolor.
+	Displays	Ekrany
+	Displays…	Ekrany…
+	File system	System plików
+	Free	Wolne
+	Full-screen playback: yes	Odtwarzanie pełnoekranowe: tak
+	HDR: not known (the system does not report it to CFA4).	HDR: nieznane (system nie przekazuje tego CFA4).
+	Low on space: {free} free on {root}.	Mało miejsca: {free} wolnego na {root}.
+	Mount point	Punkt montowania
+	No CFA4 location on this disk.	Na tym dysku nie ma lokalizacji CFA4.
+	No display found.	Nie znaleziono ekranu.
+	No storage device found.	Nie znaleziono urządzenia pamięci masowej.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Jeden piksel monitora programu przy 100% zajmuje tu {n} piks. urządzenia.
+	Physical size	Rozmiar fizyczny
+	Pixel density	Gęstość pikseli
+	Primary	Główny
+	Read-only	Tylko do odczytu
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Tylko do odczytu: ekrany zgłaszane przez system. CFA4 nie zmienia tu żadnych ustawień ekranu.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Tylko do odczytu: zamontowane nośniki i miejsce, w którym CFA4 trzyma swoje pliki. CFA4 nie zmienia tu niczego na dyskach.
+	Recovery copy	Kopia odzyskiwania
+	Refresh rate	Częstotliwość odświeżania
+	Resolution	Rozdzielczość
+	Serial number	Numer seryjny
+	Storage Devices	Urządzenia pamięci masowej
+	Storage Devices…	Urządzenia pamięci masowej…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Miejsce pamięci podręcznej CFA4 ustawia się na stronie Pamięć podręczna multimediów.
+	not known	nieznane
+	read-only	tylko do odczytu
+	{count} display(s), primary: {name}	Ekrany: {count}, główny: {name}
+	{count} storage device(s)	Urządzenia pamięci masowej: {count}
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} wolnego
+	{free} free on the media cache's disk ({root})	{free} wolnego na dysku pamięci podręcznej multimediów ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} jest tylko do odczytu: CFA4 nie może tam zapisywać.
+	{time} Detected {count} display(s).	{time} Wykryto ekrany: {count}.
+	{time} Detected {count} storage device(s).	{time} Wykryto urządzenia pamięci masowej: {count}.
+	{w} × {h} mm	{w} × {h} mm

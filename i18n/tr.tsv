@@ -5078,3 +5078,43 @@ export.summary	Low	düşük
 	{count} connected	{count} bağlı
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	{outputs} çıkış, {inputs} giriş
+	CFA4 warns below {limit} free.	CFA4, boş alan {limit} altına düşünce uyarır.
+	CFA4's own display settings are on the Color page.	CFA4'ün kendi ekran ayarları Renk sayfasındadır.
+	Displays	Ekranlar
+	Displays…	Ekranlar…
+	File system	Dosya sistemi
+	Free	Boş
+	Full-screen playback: yes	Tam ekran oynatma: evet
+	HDR: not known (the system does not report it to CFA4).	HDR: bilinmiyor (sistem bunu CFA4'e bildirmiyor).
+	Low on space: {free} free on {root}.	Alan az: {root} üzerinde {free} boş.
+	Mount point	Bağlama noktası
+	No CFA4 location on this disk.	Bu diskte CFA4 konumu yok.
+	No display found.	Ekran bulunamadı.
+	No storage device found.	Depolama aygıtı bulunamadı.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Program monitörünün bir pikseli %100'de burada {n} aygıt pikseli kaplar.
+	Physical size	Fiziksel boyut
+	Pixel density	Piksel yoğunluğu
+	Primary	Birincil
+	Read-only	Salt okunur
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Salt okunur: sistemin bildirdiği ekranlar. CFA4 burada ekran ayarlarında hiçbir şeyi değiştirmez.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Salt okunur: bağlı depolama ve CFA4'ün dosyalarını tuttuğu yer. CFA4 burada disklerde hiçbir şeyi değiştirmez.
+	Recovery copy	Kurtarma kopyası
+	Refresh rate	Yenileme hızı
+	Resolution	Çözünürlük
+	Serial number	Seri numarası
+	Storage Devices	Depolama aygıtları
+	Storage Devices…	Depolama aygıtları…
+	Where CFA4 keeps its cache is set on the Media Cache page.	CFA4'ün önbelleğini nerede tuttuğu Ortam Önbelleği sayfasında ayarlanır.
+	not known	bilinmiyor
+	read-only	salt okunur
+	{count} display(s), primary: {name}	{count} ekran, birincil: {name}
+	{count} storage device(s)	{count} depolama aygıtı
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} boş
+	{free} free on the media cache's disk ({root})	Ortam önbelleğinin diskinde ({root}) {free} boş
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} salt okunur: CFA4 oraya yazamaz.
+	{time} Detected {count} display(s).	{time} {count} ekran algılandı.
+	{time} Detected {count} storage device(s).	{time} {count} depolama aygıtı algılandı.
+	{w} × {h} mm	{w} × {h} mm

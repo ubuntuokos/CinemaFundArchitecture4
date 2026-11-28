@@ -5080,3 +5080,43 @@ export.summary	Low	ниско
 	{count} connected	Свързани: {count}
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	Изходи: {outputs}, входове: {inputs}
+	CFA4 warns below {limit} free.	CFA4 предупреждава под {limit} свободно място.
+	CFA4's own display settings are on the Color page.	Собствените настройки на дисплея на CFA4 са на страницата „Цвят“.
+	Displays	Дисплеи
+	Displays…	Дисплеи…
+	File system	Файлова система
+	Free	Свободно
+	Full-screen playback: yes	Възпроизвеждане на цял екран: да
+	HDR: not known (the system does not report it to CFA4).	HDR: неизвестно (системата не го съобщава на CFA4).
+	Low on space: {free} free on {root}.	Малко място: {free} свободно на {root}.
+	Mount point	Точка на монтиране
+	No CFA4 location on this disk.	На този диск няма местоположение на CFA4.
+	No display found.	Не е намерен дисплей.
+	No storage device found.	Не е намерено устройство за съхранение.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Един пиксел на програмния монитор при 100% заема тук {n} пиксела на устройството.
+	Physical size	Физически размер
+	Pixel density	Плътност на пикселите
+	Primary	Основен
+	Read-only	Само за четене
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Само за четене: дисплеите, които системата съобщава. CFA4 не променя тук настройките на дисплея.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Само за четене: монтираните хранилища и къде CFA4 държи файловете си. CFA4 не променя нищо по дисковете тук.
+	Recovery copy	Копие за възстановяване
+	Refresh rate	Честота на опресняване
+	Resolution	Разделителна способност
+	Serial number	Сериен номер
+	Storage Devices	Устройства за съхранение
+	Storage Devices…	Устройства за съхранение…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Къде CFA4 държи кеша си, се задава на страницата „Медиен кеш“.
+	not known	неизвестно
+	read-only	само за четене
+	{count} display(s), primary: {name}	Дисплеи: {count}, основен: {name}
+	{count} storage device(s)	Устройства за съхранение: {count}
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} свободно
+	{free} free on the media cache's disk ({root})	{free} свободно на диска на медийния кеш ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} е само за четене: CFA4 не може да пише там.
+	{time} Detected {count} display(s).	{time} Намерени дисплеи: {count}.
+	{time} Detected {count} storage device(s).	{time} Намерени устройства за съхранение: {count}.
+	{w} × {h} mm	{w} × {h} mm

@@ -1,6 +1,6 @@
 """Hardware & Devices ▸ **Overview** (``docs/plans/CFA4-SETTINGS-HW-003.md`` R4): the group's first
 page. One read-only list of the accelerators, hardware decoding, the system components, the control
-surfaces, the audio devices and the memory, each with its warnings and a button to its own page.
+surfaces, the audio devices, the memory, the displays and the storage, each with its warnings and a button to its own page.
 It asks nothing new of the engine: the data comes from ``hardware.inventory``,
 ``codecs.capabilities``, ``system.components``, ``surface.devices``, Qt's audio device list and the
 window's picture memory.
@@ -43,6 +43,8 @@ class OverviewPage:
         self.open_page = open_page
         self.surfaces: dict[str, Any] | None = None
         self._asked = False
+        # Displays and Storage Devices (HW-004 R3): ``(page, title, summary())`` added by the dialog
+        self.extra: list[tuple[str, str, Callable[[], tuple[str, list[str]]]]] = []
 
     def load(self) -> None:
         """Asks for every report the list shows (each once; the other pages share them)."""
@@ -117,6 +119,9 @@ class OverviewPage:
         budget = self.budget_mb()
         mem = fmt("Decoded pictures: {used} MB of {budget} MB", used=used, budget=budget) if budget else fmt("Decoded pictures: {used} MB", used=used)
         out.append(("memory", tr("Memory"), mem, [tr("The picture cache is full.")] if budget and used >= budget else []))
+        for page_id, title, summary in self.extra:
+            text, warnings = summary()
+            out.append((page_id, tr(title), text, warnings))
         return [r for r in out if self.has_page(r[0])]
 
     def page(self, parent: QWidget) -> QWidget:

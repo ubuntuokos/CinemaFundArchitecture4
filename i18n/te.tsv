@@ -5079,3 +5079,43 @@ export.summary	Low	తక్కువ
 	{count} connected	{count} కనెక్ట్ అయ్యాయి
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	{outputs} అవుట్‌పుట్‌లు, {inputs} ఇన్‌పుట్‌లు
+	CFA4 warns below {limit} free.	ఖాళీ స్థలం {limit} కంటే తక్కువైతే CFA4 హెచ్చరిస్తుంది.
+	CFA4's own display settings are on the Color page.	CFA4 స్వంత డిస్‌ప్లే సెట్టింగ్‌లు రంగు పేజీలో ఉన్నాయి.
+	Displays	డిస్‌ప్లేలు
+	Displays…	డిస్‌ప్లేలు…
+	File system	ఫైల్ సిస్టమ్
+	Free	ఖాళీ
+	Full-screen playback: yes	పూర్తి స్క్రీన్ ప్లేబ్యాక్: అవును
+	HDR: not known (the system does not report it to CFA4).	HDR: తెలియదు (సిస్టమ్ దీన్ని CFA4కి తెలపదు).
+	Low on space: {free} free on {root}.	స్థలం తక్కువ: {root}లో {free} ఖాళీ.
+	Mount point	మౌంట్ పాయింట్
+	No CFA4 location on this disk.	ఈ డిస్క్‌లో CFA4 స్థానం లేదు.
+	No display found.	డిస్‌ప్లే కనబడలేదు.
+	No storage device found.	నిల్వ పరికరం కనబడలేదు.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	100% వద్ద ప్రోగ్రామ్ మానిటర్ యొక్క ఒక పిక్సెల్ ఇక్కడ {n} పరికర పిక్సెల్‌లకు సమానం.
+	Physical size	భౌతిక పరిమాణం
+	Pixel density	పిక్సెల్ సాంద్రత
+	Primary	ప్రాథమిక
+	Read-only	చదవడానికి మాత్రమే
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	చదవడానికి మాత్రమే: సిస్టమ్ తెలిపే డిస్‌ప్లేలు. CFA4 ఇక్కడ డిస్‌ప్లే సెట్టింగ్‌లను మార్చదు.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	చదవడానికి మాత్రమే: మౌంట్ చేసిన నిల్వలు మరియు CFA4 తన ఫైల్‌లను ఉంచే స్థలం. CFA4 ఇక్కడ డిస్క్‌లలో ఏమీ మార్చదు.
+	Recovery copy	పునరుద్ధరణ కాపీ
+	Refresh rate	రిఫ్రెష్ రేట్
+	Resolution	రిజల్యూషన్
+	Serial number	సీరియల్ నంబర్
+	Storage Devices	నిల్వ పరికరాలు
+	Storage Devices…	నిల్వ పరికరాలు…
+	Where CFA4 keeps its cache is set on the Media Cache page.	CFA4 తన కాష్‌ను ఎక్కడ ఉంచాలో మీడియా కాష్ పేజీలో సెట్ చేస్తారు.
+	not known	తెలియదు
+	read-only	చదవడానికి మాత్రమే
+	{count} display(s), primary: {name}	{count} డిస్‌ప్లేలు, ప్రాథమికం: {name}
+	{count} storage device(s)	{count} నిల్వ పరికరాలు
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} ఖాళీ
+	{free} free on the media cache's disk ({root})	మీడియా కాష్ డిస్క్‌లో ({root}) {free} ఖాళీ
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} చదవడానికి మాత్రమే: CFA4 అక్కడ రాయలేదు.
+	{time} Detected {count} display(s).	{time} {count} డిస్‌ప్లేలు గుర్తించబడ్డాయి.
+	{time} Detected {count} storage device(s).	{time} {count} నిల్వ పరికరాలు గుర్తించబడ్డాయి.
+	{w} × {h} mm	{w} × {h} mm
