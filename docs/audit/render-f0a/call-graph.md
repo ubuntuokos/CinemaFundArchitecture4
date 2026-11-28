@@ -508,6 +508,10 @@ graph LR
 | `cfa4-ffmpeg/lib.rs` | `cfa4-media` | `BackendEntry`, `BackendReport`, `Fallback`, `MediaError`, `RestrictedItem`, `Result`, `SharedSource`, `backend_enabled`, `backend_reports`, `register_backend`, `register_fallback`, `set_backend_enabled` |
 | `cfa4-ffmpeg/lib.rs` | `cfa4-time` | `Tick` |
 | `cfa4-ffmpeg/route.rs` | `cfa4-route` | `Backend`, `Preferences` |
+| `cfa4-ffmpeg/rw2.rs` | `cfa4-media` | `FrameRequest`, `SharedSource`, `still` |
+| `cfa4-ffmpeg/rw2.rs` | `cfa4-metrics` | `delta_e_srgb8` |
+| `cfa4-ffmpeg/rw2.rs` | `cfa4-testkit` | `oracle` |
+| `cfa4-ffmpeg/rw2.rs` | `cfa4-time` | `Tick` |
 | `cfa4-ffmpeg/source.rs` | `cfa4-color` | `ColorInfo` |
 | `cfa4-ffmpeg/source.rs` | `cfa4-frame` | `AudioBuffer` |
 | `cfa4-ffmpeg/source.rs` | `cfa4-media` | `AudioStreamInfo`, `Result` |
@@ -580,6 +584,9 @@ graph LR
 | `cfa4-media/still/jxl.rs` | `cfa4-color` | `ColorInfo`, `to_linear` |
 | `cfa4-media/still/jxl.rs` | `cfa4-frame` | `VideoFrame` |
 | `cfa4-media/still/jxl.rs` | `cfa4-time` | `FrameRate` |
+| `cfa4-media/still/rw2.rs` | `cfa4-color` | `ColorInfo` |
+| `cfa4-media/still/rw2.rs` | `cfa4-frame` | `VideoFrame` |
+| `cfa4-media/still/rw2.rs` | `cfa4-time` | `FrameRate`, `Tick` |
 | `cfa4-media/wav.rs` | `cfa4-frame` | `AudioBuffer` |
 | `cfa4-media/wav.rs` | `cfa4-time` | `FrameRate`, `Tick` |
 | `cfa4-metrics/lab.rs` | `cfa4-color` | `Gamut` |
