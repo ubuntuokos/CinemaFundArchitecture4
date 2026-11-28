@@ -1,11 +1,11 @@
 # Settings and Hardware menu (Qt 6)
 
-> **Last updated:** 2026-11-27 · **Change:** minor (the groups and the Accelerators and Decoding & Encoding pages are in the Qt editor's Preferences dialog, `cfa4-qt`; the menu plan moved into the repo)
+> **Last updated:** 2026-11-28 · **Change:** minor (the experimental shell's Settings window was removed; the Qt editor is the only Settings window)
 
 The Settings window of the Qt 6 editor, `cfa4-qt` (`python/cfa4_qt/panels/settings.py` and
 `settings_hardware.py`, Edit ▸ Preferences ▸ <page>, Ctrl+,). Phases 1 and 2 were first built in
-the experimental Qt shell (`python/cfa4_devtools/qt_settings.py`, `cfa4-qt-shell`), which keeps its
-own copy for now; the editor is the one users see ([plans/CFA4-SETTINGS-HW-002.md](plans/CFA4-SETTINGS-HW-002.md)). It merges the CFA3 Control Center layout, the FA3 SystemSettingsPage draft and the
+the experimental Qt shell (`cfa4-qt-shell`); that copy was removed (CFA4-SETTINGS-HW-003 R5), so the
+editor is the only Settings window ([plans/CFA4-SETTINGS-HW-002.md](plans/CFA4-SETTINGS-HW-002.md)). It merges the CFA3 Control Center layout, the FA3 SystemSettingsPage draft and the
 current CFA4 preferences. New settings UI is Qt 6 / PySide6 only
 ([ADR F8](adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md)); the egui window is not extended.
 
@@ -133,19 +133,14 @@ project; no token value is ever written to settings files, logs or projects.
 
 ## Automation ids
 
-`settings.window`, `settings.categories`, `settings.page`, `settings.category.<page>`,
+`settings` (the window), `settings.categories`, `settings.page`, `settings.category.<page>`,
 `settings.<key>` (and `settings.<unitKey>` for a duration's unit), `settings.ok`,
 `settings.cancel`, `settings.reset`, `settings.accelerators.devices`,
 `settings.accelerators.plans`, `settings.accelerators.refresh`, `settings.codecs.table`,
-`settings.codecs.hardwareDecoder`, `settings.codecs.gstreamer`, `settings.codecs.refresh`,
-`settings.mediaBackends.status`, `settings.mediaBackends.list`, `settings.mediaBackends.refresh`,
-`settings.mediaBackends.restricted`, `settings.mediaBackends.restricted.list`,
-`settings.mediaBackends.restricted.install`, `settings.mediaBackends.restricted.copy`,
-`menu.edit.settings`, `menu.edit.mediaBackends`, `menu.help.restrictedCodecs`.
+`settings.codecs.hardwareDecoder`, `settings.codecs.gstreamer`, `settings.codecs.refresh`. The
+Media Backends dialog (`python/cfa4_qt/media_backends.py`) uses `dialog.mediaBackends` and
+`mediaBackends.*`.
 
 ## Tests
 
-`python3 -m unittest python/tests/test_settings_backend.py` (with `PYTHONPATH=python`): the CLI
-contract and the data model always; the window itself when PySide6 is installed
-(`QT_QPA_PLATFORM=offscreen`); a round trip through the real engine when `target/debug/cfa4-cli`
-(or `CFA4_CLI`) exists. Rust: `cargo test -p cfa4-engine settings`, `cargo test -p cfa4-cli`.
+`python/tests/test_qt_settings_hardware.py` (stub engine; the built engine when there is one). Rust: `cargo test -p cfa4-engine settings`, `cargo test -p cfa4-cli`.
