@@ -5006,3 +5006,5 @@
 	Little	Wenig
 	LFE level	LFE-Pegel
 	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Kopfhörer spielen den Mix oder die Dolby-Atmos- bzw. IAB-Objekte eines Clips über den HRTF-Satz von ihren Plätzen um dich herum. Exporte ändern sich nicht.
+	Binaural stereo (headphones)	Binaurales Stereo (Kopfhörer)
+	The mix as the headphones play it, through the HRTF set, room and LFE level of Settings ▸ Audio Hardware ▸ Headphones. The file is stereo.	Der Mix, wie ihn die Kopfhörer abspielen, über HRTF-Satz, Raum und LFE-Pegel aus Einstellungen ▸ Audiohardware ▸ Kopfhörer. Die Datei ist Stereo.

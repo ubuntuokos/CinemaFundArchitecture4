@@ -5031,3 +5031,5 @@ export.summary	Low	alacsony
 	Headphones: {error}. Playing through the speakers.	Fejhallgató: {error}. A hang a hangszórókon szól.
 	{source} · {n} objects · binaural	{source} · {n} objektum · binaurális
 	{layout} · binaural	{layout} · binaurális
+	Binaural stereo (headphones)	Binaurális sztereó (fejhallgató)
+	The mix as the headphones play it, through the HRTF set, room and LFE level of Settings ▸ Audio Hardware ▸ Headphones. The file is stereo.	A mix úgy, ahogy a fejhallgató játssza: a Beállítások ▸ Hanghardver ▸ Fejhallgató HRTF-készletével, szobájával és LFE-szintjével. A fájl sztereó.

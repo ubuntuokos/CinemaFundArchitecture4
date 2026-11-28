@@ -49,6 +49,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..engine import EngineClient
+from ..headphones import monitor_param
 from ..i18n import N_, decimal, fmt, tr
 from .export_effects import METADATA_FORMATS, SECTION_KEYS, CaptionsSection, EffectsSection, MetadataSection, Section
 from .export_preview import PreviewColumn
@@ -621,6 +622,11 @@ class ExportDialog(QDialog):
         self.audio = QCheckBox(tr("Export Audio"), self)
         self.audio.setObjectName("export.audio.include")
         self.audio.setChecked(True)  # sound is part of an export unless the user leaves it out
+        # B-05c: the Mix through the headphone monitor (Settings ▸ Audio Hardware ▸ Headphones) as a stereo file
+        self.audio_binaural = QCheckBox(tr("Binaural stereo (headphones)"), self)
+        self.audio_binaural.setObjectName("export.audio.binaural")
+        self.audio_binaural.setToolTip(tr("The mix as the headphones play it, through the HRTF set, room and LFE level of Settings ▸ Audio Hardware ▸ Headphones. The file is stereo."))
+        self.audio_prefs: dict[str, Any] = {}
         self.audio_codec = QComboBox(self)
         self.audio_codec.setObjectName("export.audio.codec")
         for key, label in AUDIO_CODECS:
@@ -688,6 +694,7 @@ class ExportDialog(QDialog):
         audio.setObjectName("export.audio")
         fa = QFormLayout(audio.body)
         fa.addRow(self.audio)
+        fa.addRow(self.audio_binaural)
         fa.addRow(tr("Audio Format"), self.audio_codec)
         fa.addRow(tr("Audio Bitrate"), self.audio_bitrate)
         fa.addRow(tr("Immersive audio"), self.dcp_immersive)
@@ -897,7 +904,7 @@ class ExportDialog(QDialog):
         self.imf_lossless.toggled.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
-        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc), ("mxfAs02", self.mxf_as02), ("dnxFfmpegCompat", self.dnx_ffmpeg)):
+        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("binaural", self.audio_binaural), ("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc), ("mxfAs02", self.mxf_as02), ("dnxFfmpegCompat", self.dnx_ffmpeg)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
         self.mxf_as02.toggled.connect(lambda _on: self._sync_format_rows())
         self.as02_versions.itemChanged.connect(lambda _i: self._touch("mxfAs02Versions"))
@@ -914,6 +921,7 @@ class ExportDialog(QDialog):
         self.bitrate_mode.currentIndexChanged.connect(lambda _i: self._sync_rows())
         self.audio_codec.currentIndexChanged.connect(lambda _i: self._sync_rows())
         self.audio.toggled.connect(lambda _on: self._sync_rows())
+        self.audio.toggled.connect(lambda _on: self._sync_binaural())
         self.multiplexer.currentIndexChanged.connect(lambda _i: (self._touch("multiplexer"), self._container_changed()))
         self.path.textChanged.connect(self._changed)
         self._range_changed()
@@ -959,6 +967,7 @@ class ExportDialog(QDialog):
         self.queue_button.setEnabled(sequence is not None)
         self.sequence_updated(sequence)
         self.smart.refresh()
+        self._load_audio_prefs()
         if sequence is not None:
             duration = int(sequence.get("duration") or 0) / 254_016_000_000
             self.end.setValue(duration)
@@ -1115,11 +1124,33 @@ class ExportDialog(QDialog):
         self._default_path()
         self._changed()
 
+    def _sync_binaural(self) -> None:
+        """The binaural option needs a format with audio and Export Audio on (the audio-less formats keep it off)."""
+        fmt = self.formats.get(str(self.format.currentData() or ""), {})
+        has_audio = bool(fmt.get("audio", True))
+        self.audio_binaural.setEnabled(has_audio and (self.audio.isChecked() or not fmt.get("video", True)))
+
+    def _load_audio_prefs(self) -> None:
+        """Settings ▸ Audio Hardware ▸ Headphones, as the binaural export takes them."""
+
+        def got(result: Any, _data: bytes | None) -> None:
+            value = result.get("value", result) if isinstance(result, dict) else None
+            self.audio_prefs = value if isinstance(value, dict) else {}
+            self._changed()
+
+        self.engine.execute("prefs.get", {"key": "audioHardware"}, on_reply=got)
+
+    def binaural_settings(self) -> dict[str, Any]:
+        """``settings.audio.binaural``: the headphone monitor's HRTF set, room and LFE level."""
+        param = monitor_param({**self.audio_prefs, "monitoring": "headphones"}) or {}
+        return {"hrtf": param.get("hrtf", "builtin"), "room": param.get("room", 0.35), "lfe_db": param.get("lfe_db", -10.0)}
+
     def _format_changed(self) -> None:
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
         self.audio.setEnabled(bool(fmt.get("audio", True)))
         self.audio_codec.setEnabled(bool(fmt.get("audio", True)))
         self.audio_bitrate.setEnabled(bool(fmt.get("audio", True)))
+        self._sync_binaural()
         self.bitrate_mode.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         self.bitrate_box.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         self._sync_format_rows()
@@ -1515,6 +1546,8 @@ class ExportDialog(QDialog):
         if "metadata" in self.touched and self.format.currentData() in METADATA_FORMATS:
             patch["metadata"] = self.metadata.values()
         deep_merge(patch, self.rows.patch(self.touched, self._rows_shown()))
+        if self.audio_binaural.isEnabled() and self.audio_binaural.isChecked():
+            patch.setdefault("audio", {})["binaural"] = self.binaural_settings()
         if "scaling" in self.touched:
             patch["scaling"] = self.preview.scaling.currentData()
         if "multiplexer" in self.touched and self._muxed():

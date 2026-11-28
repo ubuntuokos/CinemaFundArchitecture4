@@ -5006,3 +5006,5 @@
 	Little	Poca
 	LFE level	Nivel de LFE
 	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Los auriculares reproducen la mezcla, o los objetos Dolby Atmos o IAB de un clip, desde su lugar a tu alrededor mediante el conjunto HRTF. Las exportaciones no cambian.
+	Binaural stereo (headphones)	Estéreo binaural (auriculares)
+	The mix as the headphones play it, through the HRTF set, room and LFE level of Settings ▸ Audio Hardware ▸ Headphones. The file is stereo.	La mezcla tal como la reproducen los auriculares, con el conjunto HRTF, la sala y el nivel de LFE de Ajustes ▸ Hardware de audio ▸ Auriculares. El archivo es estéreo.

@@ -138,3 +138,29 @@ def test_real_engine_headphones_from_the_button_to_the_ears(app: Any, tmp_path: 
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_export_window_binaural_option_sends_the_headphone_settings(app: Any) -> None:
+    """B-05c: Export ▸ Audio ▸ Binaural stereo puts the Headphones settings (HRTF set, room, LFE
+    level) into ``settings.audio.binaural``; unticked, or without audio, nothing is sent."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command: str, params: Any = None, on_reply: Any = None, on_error: Any = None) -> int:
+            if command == "prefs.get" and on_reply is not None:
+                on_reply({"value": {"hrtfSet": "/x/own.sofa", "headphoneRoom": "medium", "headphoneLfeDb": -6}}, None)
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    assert dlg.audio_binaural.objectName() == "export.audio.binaural"
+    assert not dlg.audio_binaural.isChecked()
+    assert "binaural" not in dlg.params().get("settings", {}).get("audio", {})
+    dlg._load_audio_prefs()
+    dlg.audio_binaural.setChecked(True)
+    binaural = dlg.params()["settings"]["audio"]["binaural"]
+    assert binaural == {"hrtf": "/x/own.sofa", "room": 0.75, "lfe_db": -6.0}
+    dlg.audio.setChecked(False)  # Export Audio off: the option is greyed out and not sent
+    assert not dlg.audio_binaural.isEnabled()
+    assert "binaural" not in dlg.params().get("settings", {}).get("audio", {})
