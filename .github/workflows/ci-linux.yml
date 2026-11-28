@@ -225,11 +225,16 @@ jobs:
         run: bash scripts/dev/fetch-rw2-samples.sh target/fixtures/rw2
       - name: Clippy with the ffmpeg feature
         run: cargo clippy --locked -p cfa4-ffmpeg --all-targets --features ffmpeg -- -D warnings
-      - name: Tests with the ffmpeg feature
+      # The RW2 tests (lib) must not skip. The source tests make their fixtures with libx264 /
+      # libx265, which the base build does not have (they are in the restricted build only,
+      # docs/licensing.md §7), so those few skip with a message, as on any base-build machine.
+      - name: Tests with the ffmpeg feature (RW2 and unit tests, no skips allowed)
         env:
           CFA4_REQUIRE_ORACLES: "1"
           CFA4_RW2_SAMPLES: ${{ github.workspace }}/target/fixtures/rw2
-        run: cargo test --locked -p cfa4-ffmpeg --features ffmpeg -- --nocapture
+        run: cargo test --locked -p cfa4-ffmpeg --features ffmpeg --lib -- --nocapture
+      - name: Source tests with the ffmpeg feature (x264 / x265 fixtures skip on the base build)
+        run: cargo test --locked -p cfa4-ffmpeg --features ffmpeg --test source -- --nocapture
 
   vendored-docpath:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
