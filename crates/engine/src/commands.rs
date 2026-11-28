@@ -4058,6 +4058,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::qc::commands());
     v.extend(crate::dcp_validation::commands());
     v.extend(crate::dcp_package::commands());
+    v.extend(crate::dcp_repair::commands());
     v.extend(crate::dcp_export::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());

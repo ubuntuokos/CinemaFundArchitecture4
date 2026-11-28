@@ -78,6 +78,21 @@ fn rank(label: ChannelLabel) -> u8 {
 /// Full scale of the decoder's 24-bit output.
 const SCALE: f32 = 1.0 / 8_388_608.0;
 
+/// Hold object audio back at most this many seconds waiting for the first object metadata.
+const MAX_HOLD_SECONDS: u32 = 2;
+
+/// Renders the held object audio: the objects' first states move back to the start of the held
+/// span, so none of it is silent.
+fn release(renderer: &mut Renderer, held: &mut Vec<(u64, Vec<Vec<f32>>)>, out: &mut [Vec<f32>]) {
+    if let Some(&(start, _)) = held.first() {
+        renderer.backdate_first_states(start);
+    }
+    for (start, objects) in held.drain(..) {
+        let objects: Vec<&[f32]> = objects.iter().map(Vec::as_slice).collect();
+        renderer.render(start, &objects, out);
+    }
+}
+
 /// A TrueHD / MLP stream decoder.
 #[derive(Default)]
 pub struct Decoder {
@@ -94,6 +109,13 @@ pub struct Decoder {
     refused: bool,
     /// Samples rendered from the object presentation: the clock object metadata is timed by.
     position: u64,
+    /// Whether the objects have been rendered since the start (or the last seek): until the first
+    /// object metadata arrives the audio is held in `held` instead of being rendered silent.
+    released: bool,
+    /// Held object audio: `(start sample, one signal per object)` per access unit.
+    held: Vec<(u64, Vec<Vec<f32>>)>,
+    /// Sample rate of the held audio.
+    held_rate: u32,
 }
 
 /// The object presentation of an Atmos stream.
@@ -163,6 +185,7 @@ impl Decoder {
                 if self.refused {
                     // the channel presentation takes over at the next major sync
                     renderer.reset();
+                    self.held.clear();
                     self.objects = false;
                     self.presentation = None;
                     self.parser.reset_for_next_major_sync();
@@ -179,9 +202,19 @@ impl Decoder {
                 let objects: Vec<Vec<f32>> = (0..d.channel_count.min(crate::render::MAX_OBJECTS))
                     .map(|c| samples.iter().map(|s| s.get(c).copied().unwrap_or(0) as f32 * SCALE).collect())
                     .collect();
-                let objects: Vec<&[f32]> = objects.iter().map(Vec::as_slice).collect();
-                renderer.render(self.position, &objects, &mut out.channels);
+                let start = self.position;
                 self.position = self.position.saturating_add(samples.len() as u64);
+                // An object has no position before its first metadata (OAMD) payload, which comes
+                // some access units into a stream (and after a seek): hold the audio back until
+                // then rather than render that span silent, and give the objects their first
+                // state from the held span's start on.
+                self.held_rate = d.sampling_frequency;
+                self.held.push((start, objects));
+                let held_samples: u64 = self.held.iter().map(|(_, o)| o.first().map_or(0, |s| s.len() as u64)).sum();
+                if self.released || renderer.has_states() || held_samples >= u64::from(d.sampling_frequency) * u64::from(MAX_HOLD_SECONDS) {
+                    release(renderer, &mut self.held, &mut out.channels);
+                    self.released = true;
+                }
                 continue;
             }
             let channels = d.channel_count.min(MAX_CHANNELS);
@@ -200,6 +233,21 @@ impl Decoder {
         Ok(out)
     }
 
+    /// Ends the stream: renders the object audio still held back waiting for the first object
+    /// metadata (a stream that ends, or has none, within the first access units). Gives nothing
+    /// for other streams.
+    pub fn finish(&mut self) -> Decoded {
+        let Some(renderer) = self.renderer.as_mut() else { return Decoded::default() };
+        if self.held.is_empty() {
+            return Decoded::default();
+        }
+        let labels: Vec<Option<ChannelLabel>> = renderer.layout().labels().into_iter().map(Some).collect();
+        let mut out = Decoded { sample_rate: self.held_rate, channels: vec![Vec::new(); labels.len()], labels };
+        release(renderer, &mut self.held, &mut out.channels);
+        self.released = true;
+        out
+    }
+
     /// Drops all stream state (after a seek); decoding resumes at the next major sync.
     pub fn reset(&mut self) {
         let renderer = self.renderer.take().map(|r| Renderer::new(r.layout().clone()));
@@ -216,6 +264,8 @@ impl Decoder {
         if let Some(r) = self.renderer.as_mut() {
             r.reset();
         }
+        self.held.clear();
+        self.released = false;
     }
 }
 

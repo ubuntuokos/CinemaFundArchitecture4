@@ -15,6 +15,7 @@ use crate::{DcpValidator, Finding, Location, Status, ValidationControl, Validati
 const IMPLEMENTED: &[&str] = &[
     AM_PRESENT,
     AM_DOCUMENT,
+    AM_UNLISTED,
     AM_UNIQUE_IDS,
     AM_PATH_SAFE,
     AM_FILE_EXISTS,
@@ -159,6 +160,7 @@ impl Run<'_> {
             AM_PATH_SAFE,
             AM_FILE_EXISTS,
             AM_HAS_PKL,
+            AM_UNLISTED,
             PKL_DOCUMENT,
             PKL_IN_ASSETMAP,
             PKL_SIZE,
@@ -361,6 +363,10 @@ impl Run<'_> {
     /// DCP-05: the rules over the documents read.
     fn integrity(&mut self, am: &AssetMap, files: &Files, pkls: &[(String, PackingList)], cpls: &[(String, Composition)]) {
         let pkl_note = self.findings.iter().any(|f| f.rule == PKL_DOCUMENT && f.status == Status::Unchecked);
+        if self.request.profile.contains(AM_UNLISTED) {
+            let limits = (self.request.limits.document, self.request.limits.max_documents);
+            self.rule(AM_UNLISTED, integrity::unlisted_documents(&self.root, am, limits.0, limits.1));
+        }
         self.rule(PKL_IN_ASSETMAP, integrity::pkl_in_assetmap(am, pkls));
         self.rule(PKL_SIZE, integrity::sizes(pkls, files));
         if self.request.profile.contains(PKL_HASH) {
