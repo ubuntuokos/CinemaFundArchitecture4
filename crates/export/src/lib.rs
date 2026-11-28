@@ -51,6 +51,7 @@ pub mod presets;
 mod raster;
 pub mod settings;
 pub mod smart_cut;
+pub mod smart_cut_mkv;
 pub mod smart_cut_mpeg;
 pub mod still;
 pub mod timeline_audio;
@@ -3765,6 +3766,8 @@ mod smart_cut_av1_tests;
 mod smart_cut_edge_tests;
 #[cfg(test)]
 mod smart_cut_hevc_tests;
+#[cfg(test)]
+mod smart_cut_mkv_copy_tests;
 #[cfg(test)]
 mod smart_cut_mkv_tests;
 #[cfg(test)]

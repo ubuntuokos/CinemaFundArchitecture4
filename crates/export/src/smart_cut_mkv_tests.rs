@@ -164,8 +164,8 @@ fn check(name: &str, encoder: &str, args: &[&str], codec: Codec, ext: &str) {
     assert_eq!(p.plan.expected_duration.to_tick(), r.plan.expected_duration.to_tick(), "{name}");
     // MP4 takes no MPEG-2 video (no sample entry), so only the other codecs copy MP4 → MP4
     assert!(r.executable || codec == Codec::Mpeg2Video, "{name}: {:?}", r.blockers);
-    // the source side is supported now; only the Matroska output (R2-04) is not yet
-    assert!(!p.blockers.is_empty() && p.blockers.iter().all(|b| !b.contains("demux")), "{name}: {:?}", p.blockers);
+    // R2-04: a Matroska → Matroska copy is supported end to end
+    assert!(p.executable, "{name}: {:?}", p.blockers);
     if codec != Codec::Mpeg2Video {
         // the payload framing is the same in MP4: a bit-exact copy into MP4 plans executable
         let x = plan(ix, want, Container::Mp4, from, to);
