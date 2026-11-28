@@ -83,6 +83,7 @@ fidelity and the remaining work.
 | Camera RAW (R3D, ARRIRAW, BRAW…) | video | — | none | no | no |
 | JPEG XL | image | `crates/jxl` | ported | yes | no |
 | HEIF / HEIC | image | `crates/heif` | own | yes: HEVC image items | no |
+| JPEG HDR gain map (Ultra HDR, ISO 21496-1), MPO | image | `crates/media` | ported | yes: HDR rendition as linear float; .mpo: first picture | no |
 | PCM (WAV, AIFF, BWF) | audio | — | own | yes | yes: Waveform Audio |
 | AAC | audio | `crates/aac` | ported | yes: LC, HE core, LATM, USAC | yes: AAC Audio |
 | AC-3 / E-AC-3 | audio | `crates/ac3` | own | yes | yes: AC-3 audio in video exports |

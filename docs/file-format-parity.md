@@ -1,6 +1,6 @@
 # File format parity
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 MXF import) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-28 · **Change:** minor (HDR gain map JPEGs, MPF) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
 
 Containers, stills, audio files, project and interchange files, captions and presets. Codecs inside
 the containers are in [codec-parity.md](codec-parity.md). Our import list is
@@ -55,6 +55,7 @@ only). "Tested" names the evidence.
 | Format | Premiere | Read | Write (frame / sequence) | % |
 |---|---|---|---|---|
 | PNG, JPEG, TIFF, BMP, GIF | read + write | yes | PNG / TIFF / BMP / JPEG sequences, GIF | 90% |
+| JPEG HDR gain map (Ultra HDR, ISO 21496-1), MPF / `.mpo` | read (Ultra HDR / ISO gain map JPEGs as HDR) | yes (F2g-1): the gain map is applied and the HDR rendition opens at its full headroom as linear Rec. 709 floats; metadata from the ISO 21496-1 block (preferred) or XMP `hdrgm`; an unreadable gain map opens the SDR base with a warning; `.mpo` opens its first picture (the left one of a stereo pair). Not yet: the gain map's own colour space and ICC profiles, Apple's older gain map form | no (F2g-2) | FFmpeg `jpeg_mpf` demuxer (pictures byte for byte), `ffprobe` (parameters), independent f64 computation (ΔE00) | 70% |
 | WebP | — | yes: lossy, lossless, alpha; animated WebP as a clip (#87); bit-exact against libwebp | no | ahead |
 | JPEG XL | — | stills and sequences, own decoder (`cfa4-jxl`, safe port of jxl-oxide): VarDCT and Modular, lossless and lossy, grey / RGB, alpha; deeper than 8 bits, non-sRGB transfers (PQ / HLG / linear) and wide gamut kept as linear float; first frame only (#138), no ICC-profile conversion or CMYK (#139) | no | ahead |
 | **PSD** (layers as sequence) | read (layered) | no | — | 0% |
@@ -96,6 +97,7 @@ validation in Avid and Pro Tools, DVD / Blu-ray / DCP / broadcast MXF delivery.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-28 | minor | HDR gain map JPEGs (Ultra HDR, ISO 21496-1) open as HDR; MPF / `.mpo` files open their first picture (F2g-1) |
 | 2026-11-23 | minor | Matroska: uncompressed video (`V_UNCOMPRESSED`, `UncompressedFourCC` YUY2, UYVY, I420, NV12, Y800) decodes with the existing raw-video decoder; codec backlog CB-M.4 |
 | 2026-11-21 | minor | Matroska: `V_CAVS`, `V_REAL/RV10`-`RV40`, `V_JPEG2000` (and VfW `mjp2`), `A_ALAC` and `A_REAL/*` open through the decoders that existed outside Matroska |
 | 2026-10-26 | minor | JPEG 2000 MXF import, DCP picture tracks included (#77) |
