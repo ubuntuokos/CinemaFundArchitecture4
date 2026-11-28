@@ -1,8 +1,10 @@
 # CFA4-SETTINGS-HW-003 – Rendszerszintű beállítások (root), Áttekintés oldal, a kísérleti héj Beállítások ablaka
 
-**Állapot:** JAVASLAT 0.1 – a tulajdonos jóváhagyására vár. Fejlesztés csak jóváhagyás után indul
+**Állapot:** FINAL 1.0 – a tulajdonos 2026-11-28-án jóváhagyta és véglegesítette; a D1–D6 a javaslat
+szerint (D1 igen, D2 a segéd telepít, D3 csak kiírja, D4 mindig kérje, D5 törölhető, D6 kimarad). A terv
+minden további módosítása után a munka a tulajdonos újabb jóváhagyásáig áll
 ([`docs/coordination.md`](../coordination.md) §2.10).
-**Dátum:** 2026-11-27 · **Tulajdonos:** ubuntuokos
+**Dátum:** 2026-11-27 (véglegesítve 2026-11-28) · **Tulajdonos:** ubuntuokos
 **Projekt:** „CFA4 hardver beállítása”.
 **Előzmény:** [`CFA4-SETTINGS-HW-002.md`](CFA4-SETTINGS-HW-002.md) 6. pontja (a tulajdonos 2026-11-27-én kérte
 ennek a külön tervnek az elkészítését); menüterv: [`CFA4-SETTINGS-MENU-001.md`](CFA4-SETTINGS-MENU-001.md)
@@ -161,9 +163,9 @@ Az A és a B PR kockázatos a §2.9 szerint (biztonsági jellegű, csomagolás),
 - AMD/Intel GPU-s és NPU-s ág: a referenciagépen nincs ilyen hardver, ezért ezek csak hamis sysfs-szel
   tesztelhetők; a valódi mérés a deferred listába kerül.
 
-## 11. Döntések a tulajdonosnak
+## 11. Döntések (eldöntve 2026-11-28, a javaslat szerint)
 
-| # | Kérdés | Javaslat |
+| # | Kérdés | Döntés |
 |---|---|---|
 | D1 | Jóváhagyod az ADR-0017 alapelveit (3. pont) és a segédprogram zárt ige- és komponenslistáját? | Igen. |
 | D2 | A VA-API csomagot a segéd telepítse `apt-get`-tel (jóváhagyás + jelszó után), vagy a menü csak a parancsot mutassa másolásra, ahogy a Media Backends oldal a korlátozott kodekeknél? | A segéd telepítse: ez a root-oldal célja, és a visszavonás is így követhető. |

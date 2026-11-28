@@ -79,7 +79,7 @@ A szövegek angol forrással kerülnek a felületre, a magyar fordítás az `i18
 
 ## 6. Utána (külön terv, külön jóváhagyás)
 
-A terv: [`CFA4-SETTINGS-HW-003.md`](CFA4-SETTINGS-HW-003.md) (jóváhagyásra vár).
+A terv: [`CFA4-SETTINGS-HW-003.md`](CFA4-SETTINGS-HW-003.md) (jóváhagyva 2026-11-28).
 
 1. **Root-keret** (a menüterv 3. szakasza): `cfa4-system-helper` `pkexec`-kel, tervezet → jóváhagyás →
    végrehajtás, első komponensek: `render`/`video` csoporttagság, VA-API csomagok, NPU-ellenőrzés; előtte
