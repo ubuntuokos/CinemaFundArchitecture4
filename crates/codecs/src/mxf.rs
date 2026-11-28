@@ -58,6 +58,8 @@ pub struct MxfSource {
     /// The black picture shown in edit list gaps (made on first use).
     blank: std::sync::OnceLock<Arc<VideoFrame>>,
     video: GopCache,
+    /// Interpret Footage ▸ DNx conventions.
+    dnx: crate::video::DnxChoice,
     /// Why the video cannot be decoded (no decoder for the coding).
     unsupported: Option<String>,
     /// MPEG-2: the first sequence header (primes decoders that start without one).
@@ -148,9 +150,114 @@ struct IabAudio {
     layout: cfa4_iab::Layout,
     /// The last rendered frame (stored index).
     cache: Mutex<Option<(usize, Arc<Vec<Vec<f32>>>)>>,
+    /// The MetaID of each object slot of [`IabAudio::objects`] past the beds, in the order met.
+    slots: Mutex<Vec<u32>>,
 }
 
+/// Object slots of [`IabAudio::objects`] the beds take (the 7.1.4 feeds).
+const IAB_BED_SLOTS: usize = 12;
+/// Most object slots (beds and objects; a DCP carries at most 128 objects).
+const IAB_MAX_SLOTS: usize = IAB_BED_SLOTS + 128;
+
 impl IabAudio {
+    /// The unrendered objects of `frames` samples from `start` (`MediaSource::object_audio`, the
+    /// headphone monitor): the Beds, with their activation and BedRemaps, rendered to the 12
+    /// feeds of 7.1.4 (slots 0 … 11, each a point at its loudspeaker's place, the LFE a bed), and
+    /// every activated Object in a slot of its own (by MetaID, kept for the file's life) with an
+    /// update per sub-block that ramps across it. A frame that does not read is an error.
+    fn objects(&self, file: &MxfFile, bytes: &crate::Src, start: i64, frames: usize) -> Result<cfa4_media::ObjectAudio, String> {
+        use cfa4_truehd::render::{Event, ObjectState, Source};
+        let layout = cfa4_iab::Layout::surround_7_1_4();
+        let rate = if self.rate96 { 96_000 } else { 48_000 };
+        let a = u64::try_from(start.max(0)).unwrap_or(0);
+        let b = a.saturating_add(frames as u64);
+        let mut objects: Vec<Vec<f32>> = Vec::new();
+        let mut current: Vec<Option<Event>> = Vec::new();
+        let mut events: Vec<Event> = Vec::new();
+        let mut slots = self.slots.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut k = self.frame_of(a);
+        while k < self.count && self.start_of(k) < b {
+            let at = self.start_of(k);
+            let len = self.start_of(k + 1).saturating_sub(at);
+            let j = self.first + k;
+            let frame = file.read_sample(bytes, self.track, j).map_err(|e| e.to_string()).and_then(|b| cfa4_iab::parse(&b).map_err(|e| e.to_string()))?;
+            if frame.frame_rate != self.rate || frame.rate96() != self.rate96 {
+                return Err(format!("IAB frame {j}: frame rate {:?} differs from the track's {:?}", frame.frame_rate, self.rate));
+            }
+            let mut take = |slot: usize, signal: &mut dyn Iterator<Item = f32>, updates: Vec<Event>| {
+                if objects.len() <= slot {
+                    objects.resize(slot + 1, vec![0.0; frames]);
+                }
+                for (i, x) in signal.take(usize::try_from(len).unwrap_or(0)).enumerate() {
+                    let t = at + i as u64;
+                    if t >= a && t < b {
+                        objects[slot][(t - a) as usize] = x;
+                    }
+                }
+                for e in updates {
+                    if e.offset < a {
+                        if current.len() <= slot {
+                            current.resize(slot + 1, None);
+                        }
+                        current[slot] = Some(e);
+                    } else if e.offset < b {
+                        events.push(e);
+                    }
+                }
+            };
+            let beds = cfa4_iab::render_beds(&frame, &layout).map_err(|e| format!("IAB frame {j}: {e:?}"))?;
+            for (i, (speaker, feed)) in layout.speakers.iter().zip(&beds).enumerate().take(IAB_BED_SLOTS) {
+                let source = if speaker.lfe {
+                    Source::Bed(cfa4_truehd::structs::oamd::SpeakerLabels::LFE)
+                } else {
+                    Source::Point { position: speaker.position, size: 0.0, zone: 0, snap: false, elevation: true }
+                };
+                let state = ObjectState { source, gain: 1.0 };
+                take(i, &mut feed.iter().copied(), vec![Event { offset: at, object: i, state, ramp: 0 }]);
+            }
+            let sizes = frame.frame_rate.sub_block_sizes(frame.rate96(), frame.frame_index);
+            const SCALE: f32 = 1.0 / 2_147_483_648.0;
+            for o in cfa4_iab::rendered_objects_of(&frame, &layout) {
+                let index = match slots.iter().position(|&m| m == o.meta_id) {
+                    Some(i) => i,
+                    None => {
+                        slots.push(o.meta_id);
+                        slots.len() - 1
+                    }
+                };
+                let slot = IAB_BED_SLOTS + index;
+                if slot >= IAB_MAX_SLOTS {
+                    continue;
+                }
+                let mut updates = Vec::new();
+                let mut t = at;
+                for (sb, &n) in sizes.iter().enumerate() {
+                    if let Some(Some(p)) = o.pan.get(sb) {
+                        let ext = p.spread.extent();
+                        let source = Source::Point {
+                            position: p.position(),
+                            size: (ext[0] + ext[1] + ext[2]) / 3.0,
+                            zone: 0,
+                            snap: matches!(p.snap, cfa4_iab::Snap::On(_)),
+                            elevation: true,
+                        };
+                        // IAB ramps each sub-block's gain across it
+                        let ramp = if sb == 0 { 0 } else { n as u64 };
+                        updates.push(Event { offset: t, object: slot, state: ObjectState { source, gain: p.gain.linear() }, ramp });
+                    }
+                    t += n as u64;
+                }
+                match frame.audio_data(o.audio_id) {
+                    Some(d) => take(slot, &mut d.samples.iter().map(|&x| x as f32 * SCALE), updates),
+                    None => take(slot, &mut std::iter::empty(), updates),
+                }
+            }
+            k += 1;
+        }
+        events.sort_by_key(|e| e.offset);
+        Ok(cfa4_media::ObjectAudio { format: "IAB", sample_rate: rate, start, objects, current: current.into_iter().flatten().collect(), events })
+    }
+
     /// Samples of stored frame `j`.
     fn frame_samples(&self, j: usize) -> u64 {
         self.rate.samples(self.rate96, ((usize::from(self.index0) + j) % 5) as u8) as u64
@@ -459,6 +566,7 @@ impl MxfSource {
                     count,
                     layout: cfa4_iab::Layout::surround_7_1(),
                     cache: Mutex::new(None),
+                    slots: Mutex::new(Vec::new()),
                 })
             })
         } else {
@@ -781,6 +889,7 @@ impl MxfSource {
             vcount,
             blank: std::sync::OnceLock::new(),
             video: GopCache::new(explicit_color),
+            dnx: Default::default(),
             unsupported,
             mpeg2_header,
             sstp_header,
@@ -929,9 +1038,9 @@ impl VideoSamples for MxfVideo<'_> {
         match t.codec {
             Codec::Avc { .. } => Ok(Box::new(crate::video::H264Decoder::annexb())),
             Codec::Mpeg2 => Ok(Box::new(crate::video::Mpeg2Decoder::new(self.src.mpeg2_header.clone()))),
-            // DNx written by FFmpeg follows FFmpeg's conventions (CFA4-DNX-SPEC-001 R5)
-            Codec::Vc3 if self.src.file_written_by_ffmpeg() => Ok(Box::new(crate::video::DnxDecoder { ffmpeg_compat: true })),
-            Codec::Vc3 => make_video_decoder(&SampleEntry::dnx(FourCc(*b"AVdh"), w, h)),
+            // DNx written by FFmpeg follows FFmpeg's conventions (CFA4-DNX-SPEC-001 R5), unless
+            // Interpret Footage says otherwise
+            Codec::Vc3 => Ok(Box::new(crate::video::DnxDecoder { ffmpeg_compat: self.src.dnx.ffmpeg(self.src.file_written_by_ffmpeg()) })),
             Codec::ProRes { profile } => make_video_decoder(&SampleEntry::prores(prores_fourcc(profile), w, h)),
             Codec::Jpeg2000 => Ok(Box::new(crate::j2k::J2kDecoder::new(self.src.j2k_hints))),
             Codec::Dv => Ok(Box::new(crate::video::DvDecoder::default())),
@@ -948,6 +1057,19 @@ impl VideoSamples for MxfVideo<'_> {
 impl MediaSource for MxfSource {
     fn info(&self) -> &MediaInfo {
         &self.info
+    }
+
+    fn object_audio(&self, start: i64, frames: usize) -> Option<Result<cfa4_media::ObjectAudio, MediaError>> {
+        let ia = self.iab.as_ref()?;
+        Some(ia.objects(&self.file, &self.bytes, start, frames).map_err(MediaError::Decode))
+    }
+    fn set_dnx_conventions(&self, ffmpeg: Option<bool>) {
+        self.dnx.set(ffmpeg);
+    }
+
+    fn dnx_ffmpeg_detected(&self) -> Option<bool> {
+        let t = self.file.tracks.get(self.vtrack?)?;
+        matches!(t.codec, Codec::Vc3).then(|| self.file_written_by_ffmpeg())
     }
 
     fn missing_keys(&self) -> Vec<String> {

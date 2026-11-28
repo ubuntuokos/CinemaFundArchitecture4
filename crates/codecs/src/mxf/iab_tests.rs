@@ -218,6 +218,7 @@ fn the_29_97_cadence_maps_samples_to_frames() {
         count: 12,
         layout: Layout::surround_7_1(),
         cache: Mutex::new(None),
+        slots: Mutex::new(Vec::new()),
     };
     // stored frame 2 has FrameIndex 0: 1602 1601 1602 1601 1602 …
     assert_eq!(ia.start_of(1), 1602);
@@ -248,4 +249,59 @@ fn a_frame_with_the_wrong_rate_keeps_the_cadence() {
     // frame 2 starts at sample 4000, as in a track of good frames
     let r2 = cfa4_iab::render(&frames[2], &Layout::surround_7_1()).unwrap();
     assert_eq!(whole.channels[0][4_000..4_100], r2[0][..100]);
+}
+
+/// The headphone monitor's objects (`object_audio`): the Bed as 7.1.4 feeds in slots 0 … 11 and
+/// each Object in a slot of its own with an update per sub-block, its MetaID keeping its slot.
+#[test]
+fn an_iab_track_gives_its_objects_unrendered() {
+    use cfa4_iab::{Decorrelation, Object, Pan, Snap, Spread};
+    use cfa4_truehd::render::Source;
+    let rate = cfa4_iab::FrameRate::R24;
+    let n = rate.samples(false, 0);
+    let pan =
+        |x: u16| Pan { gain: Gain::Unity, position: [x, 32767, 0], snap: Snap::Off, zones: None, spread: Spread::None, decorrelation: Decorrelation::None };
+    let frames: Vec<Frame> = (0..5)
+        .map(|i| {
+            let mut f = bed_frame(rate, 0, i, Coding::Pcm);
+            let mut pans = vec![None; rate.sub_blocks()];
+            pans[0] = Some(pan(32767));
+            pans[4] = Some(pan(65535));
+            f.objects.push(Object {
+                meta_id: 77,
+                audio_id: 9,
+                use_case: None,
+                pan: pans,
+                description: Description::default(),
+                objects: Vec::new(),
+                zones19: None,
+            });
+            f.audio.push(AudioData { id: 9, coding: Coding::Pcm, samples: (0..n).map(|k| ((k % 100) as i32 - 50) << 24).collect() });
+            f.max_rendered = 7;
+            f
+        })
+        .collect();
+    let bytes: Vec<Vec<u8>> = frames.iter().map(|f| cfa4_iab::write(f).unwrap()).collect();
+    let src = MxfSource::open("iab.mxf", Arc::from(iab_mxf(&bytes, (24, 1)))).unwrap();
+    let block = src.object_audio(3_900, 300).expect("IAB has objects").expect("decodes");
+    assert_eq!((block.format, block.sample_rate, block.start), ("IAB", 48_000, 3_900));
+    assert_eq!(block.objects.len(), 13, "12 bed feeds and one Object");
+    assert!(block.objects.iter().all(|o| o.len() == 300));
+    // the Object's own samples, across the frame boundary at 4 000
+    let want: Vec<f32> = (3_900..4_200).map(|t: i32| (t % 2_000 % 100 - 50) as f32 * (1 << 24) as f32 / 2_147_483_648.0).collect();
+    assert_eq!(block.objects[12], want);
+    // the Bed's L feed is its L channel
+    let l: Vec<f32> = frames[1].audio[0].samples[1_900..2_000].iter().map(|&s| s as f32 / 2_147_483_648.0).collect();
+    assert_eq!(block.objects[0][..100], l[..]);
+    // every slot has a state when the block starts; frame 2 starts within it with new updates
+    assert_eq!(block.current.len(), 13);
+    let object = block.current.iter().find(|e| e.object == 12).expect("the Object's state");
+    assert!(matches!(object.state.source, Source::Point { position: [x, ..], .. } if x > 0.99), "{object:?}");
+    assert!(block.events.iter().any(|e| e.offset == 4_000 && e.object == 12));
+    assert!(block.events.windows(2).all(|w| w[0].offset <= w[1].offset));
+    let lfe = block.current.iter().find(|e| e.object == 3).expect("the LFE feed");
+    assert!(matches!(lfe.state.source, Source::Bed(_)));
+    // the slot stays after a seek
+    let again = src.object_audio(0, 10).expect("objects").expect("decodes");
+    assert_eq!(again.objects.len(), 13);
 }
