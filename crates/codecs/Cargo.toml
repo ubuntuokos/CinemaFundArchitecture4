@@ -112,6 +112,7 @@ cfa4-mxf = { workspace = true, features = ["test-util"] }
 cfa4-auro = { workspace = true }
 cfa4-cavs = { workspace = true, features = ["synth"] }
 cfa4-flic = { workspace = true, features = ["synth"] }
+cfa4-h264enc = { workspace = true }
 cfa4-testkit = { workspace = true }
 serde_json = { workspace = true }
 
