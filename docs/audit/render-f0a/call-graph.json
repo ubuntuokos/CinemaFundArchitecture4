@@ -418,6 +418,10 @@
   },
   {
    "from": "cfa4-ffmpeg",
+   "to": "cfa4-metrics"
+  },
+  {
+   "from": "cfa4-ffmpeg",
    "to": "cfa4-testkit"
   },
   {
@@ -11759,6 +11763,36 @@
    "to": "cfa4-route"
   },
   {
+   "from": "cfa4-ffmpeg/rw2.rs",
+   "item": "FrameRequest",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-ffmpeg/rw2.rs",
+   "item": "SharedSource",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-ffmpeg/rw2.rs",
+   "item": "still",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-ffmpeg/rw2.rs",
+   "item": "delta_e_srgb8",
+   "to": "cfa4-metrics"
+  },
+  {
+   "from": "cfa4-ffmpeg/rw2.rs",
+   "item": "oracle",
+   "to": "cfa4-testkit"
+  },
+  {
+   "from": "cfa4-ffmpeg/rw2.rs",
+   "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
    "from": "cfa4-ffmpeg/source.rs",
    "item": "ColorInfo",
    "to": "cfa4-color"
@@ -12346,6 +12380,26 @@
   {
    "from": "cfa4-media/still/jxl.rs",
    "item": "FrameRate",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-media/still/rw2.rs",
+   "item": "ColorInfo",
+   "to": "cfa4-color"
+  },
+  {
+   "from": "cfa4-media/still/rw2.rs",
+   "item": "VideoFrame",
+   "to": "cfa4-frame"
+  },
+  {
+   "from": "cfa4-media/still/rw2.rs",
+   "item": "FrameRate",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-media/still/rw2.rs",
+   "item": "Tick",
    "to": "cfa4-time"
   },
   {

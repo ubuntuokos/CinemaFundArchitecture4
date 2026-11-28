@@ -35,6 +35,7 @@ use serde::Serialize;
 #[cfg(feature = "ffmpeg")]
 mod backend;
 mod route;
+mod rw2;
 #[cfg(feature = "ffmpeg")]
 mod source;
 
@@ -267,7 +268,8 @@ pub fn discover(path: &Path) -> Result<MediaInfo, Error> {
 
 /// Opens the movie or audio file at `path` as an engine media source decoded by FFmpeg.
 ///
-/// Still images are declined (the engine's still decoders handle those).
+/// Still images are declined (the engine's still decoders handle those), except Panasonic RW2
+/// camera raw: FFmpeg decodes its Bayer mosaic and `cfa4-dng` develops it (`rw2` module).
 pub fn open(path: &Path) -> Result<cfa4_media::SharedSource, Error> {
     #[cfg(feature = "ffmpeg")]
     {
@@ -275,6 +277,10 @@ pub fn open(path: &Path) -> Result<cfa4_media::SharedSource, Error> {
             return Err(Error::Disabled);
         }
         let path = checked_path(path)?;
+        if rw2::is_rw2(&path) {
+            let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+            return guarded(move || rw2::open(&path, &name));
+        }
         guarded(move || source::FfSource::open(&path).map(|s| std::sync::Arc::new(s) as cfa4_media::SharedSource))
     }
     #[cfg(not(feature = "ffmpeg"))]

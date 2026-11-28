@@ -80,6 +80,7 @@ fidelity and the remaining work.
 | LCEVC | video | `crates/lcevc` | ported | yes: T.35 SEI in H.264 / HEVC; `lvc1` tracks and TS 0x36 detected only | no |
 | MPEG-4 Part 2 | video | `crates/sstp` | ported | yes: Simple Studio Profile (Sony SR) only: raw .m4v streams and MXF | no |
 | WMV / VC-1 | video | — | none | no | no |
+| Panasonic RW2 camera raw | video | — | dependency | yes: stills, through the optional FFmpeg backend (the mosaic), developed by `crates/dng` with a user-installed DNG camera profile; not the RawFormat 4 of older bodies | no |
 | Camera RAW (R3D, ARRIRAW, BRAW…) | video | — | none | no | no |
 | JPEG XL | image | `crates/jxl` | ported | yes | no |
 | HEIF / HEIC | image | `crates/heif` | own | yes: HEVC image items | no |

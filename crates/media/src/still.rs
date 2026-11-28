@@ -1,4 +1,4 @@
-//! Still images (PNG, JPEG, GIF, WebP, HEIF/HEIC, TIFF, BMP, Targa, DPX, OpenEXR, Radiance HDR, JPEG XL, DNG camera raw) as media
+//! Still images (PNG, JPEG, GIF, WebP, HEIF/HEIC, TIFF, BMP, Targa, DPX, OpenEXR, Radiance HDR, JPEG XL, DNG camera raw; Panasonic RW2 through the FFmpeg backend) as media
 //! sources. Animated PNG, GIF and WebP files open as movies instead ([`crate::animated`]); here they would
 //! show their first frame.
 
@@ -16,6 +16,7 @@ pub mod heic;
 #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
 pub mod heif;
 pub mod jxl;
+pub mod rw2;
 mod ycbcr_tiff;
 
 /// Default still duration (Premiere's preference default is 5 seconds).

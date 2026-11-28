@@ -112,6 +112,19 @@ impl<'a> Tiff<'a> {
         Ok((t, first))
     }
 
+    /// Read the header of a DNG camera profile (`.dcp`): a TIFF file whose magic number is 0x4352
+    /// ("IIRC" / "MMCR") instead of 42 (DNG specification 1.4, "Camera Profile File Format").
+    pub fn new_profile(data: &'a [u8]) -> Result<(Tiff<'a>, u64)> {
+        let big_endian = match data.get(0..4) {
+            Some(b"IIRC") => false,
+            Some(b"MMCR") => true,
+            _ => return Err(Error::Malformed("not a DNG camera profile")),
+        };
+        let t = Tiff { data, big_endian };
+        let first = u64::from(t.u32_at(4)?);
+        Ok((t, first))
+    }
+
     fn bytes_at(&self, off: u64, len: usize) -> Result<&'a [u8]> {
         let start = usize::try_from(off).map_err(|_| Error::Malformed("offset outside the file"))?;
         let end = start.checked_add(len).ok_or(Error::Malformed("offset outside the file"))?;
@@ -295,6 +308,7 @@ pub mod tags {
     pub const MAKE: u16 = 271;
     pub const MODEL: u16 = 272;
     pub const STRIP_OFFSETS: u16 = 273;
+    pub const ORIENTATION: u16 = 274;
     pub const SAMPLES_PER_PIXEL: u16 = 277;
     pub const ROWS_PER_STRIP: u16 = 278;
     pub const STRIP_BYTE_COUNTS: u16 = 279;
@@ -333,6 +347,8 @@ pub mod tags {
     pub const ACTIVE_AREA: u16 = 50829;
     pub const FORWARD_MATRIX_1: u16 = 50964;
     pub const FORWARD_MATRIX_2: u16 = 50965;
+    pub const PROFILE_NAME: u16 = 50936;
+    pub const BASELINE_EXPOSURE_OFFSET: u16 = 51109;
     /// CinemaDNG: SMPTE ST 12-1 time codes, 8 bytes each.
     pub const TIME_CODES: u16 = 51043;
     /// CinemaDNG: frames per second (SRATIONAL).

@@ -145,6 +145,16 @@ static ROWS: &[Row] = &[
     video("LCEVC", &["lcevc"], Ported, Sw("T.35 SEI in H.264 / HEVC; `lvc1` tracks and TS 0x36 detected only"), false, NoEnc),
     video("MPEG-4 Part 2", &["sstp"], Ported, Sw("Simple Studio Profile (Sony SR) only: raw .m4v streams and MXF"), false, NoEnc),
     video("WMV / VC-1", &[], Missing, No, false, NoEnc),
+    video(
+        "Panasonic RW2 camera raw",
+        &[],
+        Dependency,
+        Sw(
+            "stills, through the optional FFmpeg backend (the mosaic), developed by `crates/dng` with a user-installed DNG camera profile; not the RawFormat 4 of older bodies",
+        ),
+        false,
+        NoEnc,
+    ),
     video("Camera RAW (R3D, ARRIRAW, BRAW…)", &[], Missing, No, false, NoEnc),
     image("JPEG XL", &["jxl"], Ported, Sw("")),
     image("HEIF / HEIC", &["heif"], Own, Sw("HEVC image items")),
