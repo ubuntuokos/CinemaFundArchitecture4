@@ -85,7 +85,7 @@ fn cut(av: &Av, from: i64, to: i64) -> Cut {
     let video = out.into_inner();
     assert_eq!(verify_mp4_copy(&p.plan, &index, &source, video.as_slice()).unwrap(), report);
     let interval = interval(av, &p);
-    let audio = plan_audio_copy(&av.file, interval);
+    let audio = plan_audio_copy(&av.file, av.bytes.as_slice(), interval);
     let output = mux_with_audio(&video, &av.file, av.bytes.as_slice(), &audio, interval, Brand::Mp4).unwrap();
     Cut { video, output, audio, interval }
 }
