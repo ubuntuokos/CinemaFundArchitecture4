@@ -14,6 +14,7 @@ graph LR
   cfa4_cli --> cfa4_engine
   cfa4_cli --> cfa4_export
   cfa4_cli --> cfa4_ffmpeg
+  cfa4_cli --> cfa4_frame
   cfa4_cli --> cfa4_gpu
   cfa4_cli --> cfa4_gstreamer
   cfa4_cli --> cfa4_media
@@ -128,6 +129,7 @@ graph LR
 | `cfa4-cli/qc.rs` | `cfa4-qc` | `Expectation`, `check_file_with_outputs`, `profile`, `report` |
 | `cfa4-cli/serve.rs` | `cfa4-audio-dsp` | `LoudnessMeter`, `channels` |
 | `cfa4-cli/serve.rs` | `cfa4-engine` | `DisplayRenderer`, `Event`, `clip_ops`, `mixer`, `voiceover` |
+| `cfa4-cli/serve.rs` | `cfa4-frame` | `AudioBuffer` |
 | `cfa4-cli/serve.rs` | `cfa4-gpu` | `ExportRenderer` |
 | `cfa4-cli/serve.rs` | `cfa4-media` | `cancel`, `wav` |
 | `cfa4-cli/serve.rs` | `cfa4-project` | `ItemId`, `ItemKind`, `Project`, `par_ratio` |
@@ -148,6 +150,7 @@ graph LR
 | `cfa4-cli/serve_media_browser.rs` | `cfa4-render` | `render_item` |
 | `cfa4-cli/serve_media_browser.rs` | `cfa4-testkit` | `fixtures_dir`, `golden` |
 | `cfa4-cli/serve_media_browser.rs` | `cfa4-time` | `Tick` |
+| `cfa4-cli/serve_monitor.rs` | `cfa4-media` | `MediaSource` |
 | `cfa4-cli/serve_multicam.rs` | `cfa4-engine` | `Session`, `multicam` |
 | `cfa4-cli/serve_multicam.rs` | `cfa4-project` | `ItemId` |
 | `cfa4-cli/serve_multicam.rs` | `cfa4-render` | `multicam` |
@@ -304,7 +307,7 @@ graph LR
 | `cfa4-engine/media_browser.rs` | `cfa4-project` | `BinId`, `ItemId`, `MediaRef` |
 | `cfa4-engine/media_browser.rs` | `cfa4-time` | `TimeDisplay`, `format_time` |
 | `cfa4-engine/media_pool.rs` | `cfa4-frame` | `AudioBuffer` |
-| `cfa4-engine/media_pool.rs` | `cfa4-media` | `FrameRequest`, `Generator`, `MediaKind`, `Result`, `SharedReader`, `generators`, `open_bytes`, `open_with_fallback`, `pending`, `reader`, `sequence`, `wav` |
+| `cfa4-engine/media_pool.rs` | `cfa4-media` | `FrameRequest`, `Generator`, `MediaKind`, `ObjectAudio`, `Result`, `SharedReader`, `generators`, `open_bytes`, `open_with_fallback`, `pending`, `reader`, `sequence`, `wav` |
 | `cfa4-engine/media_pool.rs` | `cfa4-project` | `DnxConventions`, `ItemId`, `ItemKind`, `Label` |
 | `cfa4-engine/media_pool.rs` | `cfa4-render` | `SourceProvider`, `colorman`, `offline`, `source_size` |
 | `cfa4-engine/media_pool.rs` | `cfa4-testkit` | `fixtures`, `fixtures_dir`, `oracle` |
@@ -744,6 +747,8 @@ graph LR
 |---|---|---|
 | `cfa4-audio-dsp` | `remix.rs` | `render` |
 | `cfa4-audio-dsp` | `sync.rs` | `mixdown` |
+| `cfa4-cli` | `serve_monitor.rs` | `render` |
+| `cfa4-cli` | `serve_monitor.rs` | `render_objects` |
 | `cfa4-cli` | `serve_shuttle.rs` | `mix_rate` |
 | `cfa4-cli` | `serve_tts.rs` | `preview_audio` |
 | `cfa4-color` | `log.rs` | `apple_log_encode` |
@@ -837,7 +842,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 656 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 658 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (32)
 
@@ -922,7 +927,7 @@ A többi 656 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-smart-edit` | `media_index.rs` | enum | `DependencyStatus` |
 | `cfa4-testkit` | `fixtures.rs` | enum | `Status` |
 
-### Hang (47)
+### Hang (48)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -958,6 +963,7 @@ A többi 656 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-export` | `smart_cut_mpeg.rs` | struct | `MpegAudioTrack` |
 | `cfa4-frame` | `lib.rs` | struct | `AudioBuffer` |
 | `cfa4-media` | `lib.rs` | struct | `AudioStreamInfo` |
+| `cfa4-media` | `lib.rs` | struct | `ObjectAudio` |
 | `cfa4-media` | `still/exr/piz.rs` | struct | `PizChannel` |
 | `cfa4-metrics` | `audio.rs` | struct | `AudioNull` |
 | `cfa4-metrics` | `audio.rs` | struct | `ChannelNull` |
