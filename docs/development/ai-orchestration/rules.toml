@@ -1,0 +1,439 @@
+# CFA4-DEV-AI-ORCHESTRATION-001, F2 / WP2 (TC-01): agent rule register.
+#
+# The register holds REFERENCES only. The text of every rule stays in its source file (`AGENTS.md` is
+# the single text source, D-F2-2 option A); nothing here is a second copy that could drift. The parity
+# test `python/tests/test_agent_rules_parity.py` checks the register against the repository.
+#
+# Fields of a [[rule]]:
+#   id            CFA4-RULE-NNN, unique. Stable: never reuse or renumber an id.
+#   title         short name, for people.
+#   source        repository file the rule is written in.
+#   anchor        text that must occur in `source` (whitespace-insensitive): the section key.
+#   level         how the rule is enforced today:
+#                   "ci"   a CI check fails,
+#                   "hook" a Claude Code hook stops the action (must be wired in .claude/settings.json),
+#                   "text" written down only; nothing checks that it is followed.
+#   coverage      for "ci"/"hook" only: "full", or "partial" when the mechanism checks part of the rule.
+#   enforced_by   repository files of the mechanism (must exist). Required for "ci"/"hook".
+#   scope         ["claude-code"]. ThinkRail and Pi are paused (FINAL 1.2 D-C2), so nothing else is built.
+#   pi            reserved for the Pi side; stays empty until the owner un-pauses it.
+#   status        "active", or "conflict" for an unresolved clash (the test fails while one is open).
+#   conflicts_with / resolution   ids of a clashing rule, and how the clash was settled (both required).
+#   claude_md     the bold lead-ins of CLAUDE.md "Non-negotiables" bullets this rule covers.
+#   note          optional, for people.
+#
+# Honest reading: "text" rules are listed so that they exist, have a source and are not forgotten. The
+# test proves the reference is real; it does not prove the rule is obeyed. Only "ci" and "hook" rules
+# are enforced, and "partial" ones only in part (WP0 inventory, section 2 and C-4).
+
+schema_version = 1
+
+# Non-negotiable CLAUDE.md bullets that are not conformance rules and so need no register row.
+[[claude_md_exempt]]
+point = "Usage budget"
+reason = "model and cost preference (opusplan, Haiku sub-agents, jq-filtered API output); nothing to conform to or check"
+
+# ---------------------------------------------------------------- AGENTS.md
+
+[[rule]]
+id = "CFA4-RULE-001"
+title = "Never crash"
+source = "AGENTS.md"
+anchor = "## 0. Never crash"
+level = "ci"
+coverage = "partial"
+enforced_by = ["clippy.toml", "Cargo.toml", ".github/workflows/ci-linux.yml"]
+scope = ["claude-code"]
+pi = []
+status = "active"
+claude_md = ["The rules in"]
+note = "clippy -D warnings and the tests catch the panic lints and regressions; hostile-input design is not checked."
+
+[[rule]]
+id = "CFA4-RULE-002"
+title = "Linux x86_64 only; no other platform workflows"
+source = "AGENTS.md"
+anchor = "Sole supported build and release target"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+
+[[rule]]
+id = "CFA4-RULE-003"
+title = "Full CI only on workflow_dispatch or the cfa4-full-validation label"
+source = "AGENTS.md"
+anchor = "require an explicit GitHub"
+level = "ci"
+coverage = "full"
+enforced_by = [".github/workflows/ci-linux.yml", ".github/workflows/pr-check.yml"]
+scope = ["claude-code"]
+pi = []
+status = "active"
+
+[[rule]]
+id = "CFA4-RULE-004"
+title = "Licence: GPL-3.0-or-later; no GPL-2.0-only, AGPL in-process or proprietary code"
+source = "AGENTS.md"
+anchor = "**Licence: GPL-3.0-or-later**"
+level = "ci"
+coverage = "partial"
+enforced_by = ["deny.toml", "python/tests/test_license_inventory.py"]
+scope = ["claude-code"]
+pi = []
+status = "active"
+note = "Dependencies are checked; the reuse of copied source code is not."
+
+[[rule]]
+id = "CFA4-RULE-005"
+title = "Upstream brand names stay out of the repository"
+source = "AGENTS.md"
+anchor = "Upstream brand names, marks and icons are removed from CFA4"
+level = "ci"
+coverage = "full"
+enforced_by = ["python/tests/test_independence.py"]
+scope = ["claude-code"]
+pi = []
+status = "active"
+
+[[rule]]
+id = "CFA4-RULE-006"
+title = "No Adobe assets; every asset licensed and attributed; fonts outside the repo"
+source = "AGENTS.md"
+anchor = "## 1. Assets: no Adobe artwork"
+level = "ci"
+coverage = "partial"
+enforced_by = ["xtask/src/main.rs"]
+scope = ["claude-code"]
+pi = []
+status = "active"
+claude_md = ["Fonts, in practice"]
+note = "cargo xtask assets checks sidecars and the index, not whether an image resembles an Adobe asset."
+
+[[rule]]
+id = "CFA4-RULE-007"
+title = "Clean-room: no inspection of application internals"
+source = "AGENTS.md"
+anchor = "## 2. Clean-room code"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+claude_md = ["The rules in"]
+
+[[rule]]
+id = "CFA4-RULE-008"
+title = "Media backends only through cfa4-route; FFmpeg and GStreamer are the allowed exceptions"
+source = "AGENTS.md"
+anchor = "**Media backends**"
+level = "ci"
+coverage = "partial"
+enforced_by = ["xtask/src/main.rs"]
+scope = ["claude-code"]
+pi = []
+status = "active"
+claude_md = ["Rust first"]
+note = "cargo xtask layers checks the dependency layering; routing through cfa4-route is not checked."
+
+[[rule]]
+id = "CFA4-RULE-014"
+title = "Translations live only in i18n/"
+source = "AGENTS.md"
+anchor = "**Translations live in `i18n/`**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+
+[[rule]]
+id = "CFA4-RULE-015"
+title = "GPU vendor neutrality"
+source = "AGENTS.md"
+anchor = "**GPU/accelerator vendor neutrality:**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+
+[[rule]]
+id = "CFA4-RULE-016"
+title = "New UI goes into the Qt 6 GUI; the egui editor is frozen"
+source = "AGENTS.md"
+anchor = "**Qt 6 GUI**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+claude_md = ["Python / Qt"]
+note = "The Python/Qt checks of the same CLAUDE.md bullet are part of the gates in CFA4-RULE-013."
+
+# ---------------------------------------------------------------- CLAUDE.md
+
+[[rule]]
+id = "CFA4-RULE-009"
+title = "Layering: nothing below L5 depends on the UI toolkit"
+source = "CLAUDE.md"
+anchor = "enforced by `cargo xtask layers`"
+level = "ci"
+coverage = "full"
+enforced_by = ["xtask/src/main.rs"]
+scope = ["claude-code"]
+pi = []
+status = "active"
+claude_md = ["Layering"]
+
+[[rule]]
+id = "CFA4-RULE-010"
+title = "Exact time: Tick only, no f64 seconds in edit math"
+source = "CLAUDE.md"
+anchor = "Never use f64 seconds for edit math"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+claude_md = ["Exact time"]
+
+[[rule]]
+id = "CFA4-RULE-011"
+title = "Calendar time goes through chrono"
+source = "CLAUDE.md"
+anchor = "**Calendar time goes through `chrono`**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+claude_md = ["Calendar time goes through"]
+
+[[rule]]
+id = "CFA4-RULE-012"
+title = "Everything is a command; every interactive widget has an automation id"
+source = "CLAUDE.md"
+anchor = "**Everything is a command**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+claude_md = ["Everything is a command", "Everything is agent-drivable"]
+note = "Some tests touch this; no check covers it as a rule."
+
+[[rule]]
+id = "CFA4-RULE-013"
+title = "Quality gates before every commit; one task id per commit; only green states"
+source = "CLAUDE.md"
+anchor = "**Quality gates** before every commit"
+level = "ci"
+coverage = "full"
+enforced_by = [".github/workflows/ci-linux.yml", ".github/workflows/cfa4-gate.yml", "xtask/src/main.rs"]
+scope = ["claude-code"]
+pi = []
+status = "active"
+claude_md = ["Quality gates", "Commits"]
+note = "CI runs the gates on request (CFA4-RULE-003); the commit-message form (task id) is not checked."
+
+# ---------------------------------------------------------------- docs/coordination.md
+
+[[rule]]
+id = "CFA4-RULE-017"
+title = "Branch from a fresh main; do not build on an open PR"
+source = "docs/coordination.md"
+anchor = "**Friss `main`-ből** indíts ágat"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+
+[[rule]]
+id = "CFA4-RULE-018"
+title = "One PR, one topic"
+source = "docs/coordination.md"
+anchor = "**Egy PR = egy téma.**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+
+[[rule]]
+id = "CFA4-RULE-019"
+title = "A finished PR is marked Ready for review; only the merge host merges"
+source = "docs/coordination.md"
+anchor = "**Kész PR-t ne olvassz be magad.**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+note = "Backed in part by repository permissions (F1 report, #650); the repository holds no check for it."
+
+[[rule]]
+id = "CFA4-RULE-020"
+title = "Another session's PR or branch is never touched; one branch, one owner"
+source = "docs/coordination.md"
+anchor = "**Egy ág, egy tulajdonos**"
+level = "hook"
+coverage = "full"
+enforced_by = [
+  "scripts/dev/branch_owner_guard.py",
+  ".github/workflows/cfa4-branch-ownership.yml",
+  "scripts/ci/branch_ownership.py",
+]
+scope = ["claude-code"]
+pi = []
+status = "active"
+note = "Local push guard (Bash PreToolUse hook, wired in .claude/settings.json) plus the cfa4-branch-ownership check."
+
+[[rule]]
+id = "CFA4-RULE-021"
+title = "Shared files: add only your own line, do not reorder or reformat"
+source = "docs/coordination.md"
+anchor = "**Közös fájlok**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+
+[[rule]]
+id = "CFA4-RULE-022"
+title = "With more than 30 open PRs, new work starts only on the owner's request"
+source = "docs/coordination.md"
+anchor = "Ha 30-nál több van, új munkát csak"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+
+[[rule]]
+id = "CFA4-RULE-023"
+title = "Leave no branch without a PR and no temporary branch"
+source = "docs/coordination.md"
+anchor = "**hagyd tisztán**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+note = "The merge host reports leftovers; nothing fails."
+
+[[rule]]
+id = "CFA4-RULE-024"
+title = "Project boundary: never take a task from another project"
+source = "docs/coordination.md"
+anchor = "**Projekthatár**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+
+[[rule]]
+id = "CFA4-RULE-025"
+title = "CodeRabbit review only on risky PRs; every finding answered"
+source = "docs/coordination.md"
+anchor = "**CodeRabbit-ellenőrzés**"
+level = "ci"
+coverage = "partial"
+enforced_by = [".coderabbit.yaml"]
+scope = ["claude-code"]
+pi = []
+status = "active"
+note = "The CodeRabbit check-run exists; whether a PR needed it, and whether every thread was answered, is the merge host's check."
+
+[[rule]]
+id = "CFA4-RULE-026"
+title = "Development only on an owner-approved plan; a plan change stops the work"
+source = "docs/coordination.md"
+anchor = "**Fejlesztés csak jóváhagyott terv alapján**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+note = "CLAUDE.md step 3 and docs/agents.md section 6 point to this rule (the old autonomous-loop clash, WP0 C-1, was settled by that wording)."
+
+[[rule]]
+id = "CFA4-RULE-027"
+title = "A plan is a Markdown file under docs/plans/; owner approval comes first"
+source = "docs/coordination.md"
+anchor = "**Terv csak a repóba kerülhet**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+note = "WP0 C-2: the owner's rule is that a plan is approved as a Markdown file before any PR; the approved text then goes into docs/plans/ unchanged (D-F2-4). Section 2.11 itself is not edited."
+
+[[rule]]
+id = "CFA4-RULE-028"
+title = "Handover and merge-host takeover are written into the PR"
+source = "docs/coordination.md"
+anchor = "**Átadás másik munkamenetnek**"
+level = "ci"
+coverage = "partial"
+enforced_by = ["scripts/ci/branch_ownership.py", ".github/workflows/cfa4-branch-ownership.yml"]
+scope = ["claude-code"]
+pi = []
+status = "active"
+note = "The Átadva line is read by the ownership check; the Gazda átvette line is not checked."
+
+[[rule]]
+id = "CFA4-RULE-029"
+title = "A skipped physical test is recorded in deferred-physical-tests.md"
+source = "docs/coordination.md"
+anchor = "**Kihagyott fizikai teszt feljegyzése**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+
+[[rule]]
+id = "CFA4-RULE-030"
+title = "Every PR description carries the Munkamenet line (and task id, project)"
+source = "docs/coordination.md"
+anchor = "Ezt a sort minden PR leírásába írd be"
+level = "ci"
+coverage = "partial"
+enforced_by = ["scripts/ci/branch_ownership.py"]
+scope = ["claude-code"]
+pi = []
+status = "active"
+note = "Only the Munkamenet line is checked; the task id and project are not (F0 v3 GAP-C1)."
+
+# ---------------------------------------------------------------- docs/agents.md
+
+[[rule]]
+id = "CFA4-RULE-031"
+title = "Push after every green step (8.15a)"
+source = "docs/agents.md"
+anchor = "**Push after every green step (8.15a).**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+note = "Moved into the repository by the C-3 PR (#1851); FINAL 1.2 section 4 is the origin."
+
+[[rule]]
+id = "CFA4-RULE-032"
+title = "One session = one container = one branch = at most one open PR (TC-02)"
+source = "docs/agents.md"
+anchor = "**One session = one container = one branch = at most one open PR (TC-02).**"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+note = "Moved into the repository by the C-3 PR (#1851)."
+
+[[rule]]
+id = "CFA4-RULE-033"
+title = "Review and check sub-agents are read-only"
+source = "CLAUDE.md"
+anchor = "`cfa4-ci-runner` subagent"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
+enforced_by = [".claude/agents/cfa4-ci-runner.md", ".claude/agents/cfa4-branch-lister.md"]
+note = "The agent files limit the tools of those two sub-agents, but this is a convention, not a hook, so the level stays text."
+
+[[rule]]
+id = "CFA4-RULE-034"
+title = "Honest reporting: measured vs estimated; partial is not done"
+source = "docs/agents.md"
+anchor = "### Reporting progress honestly"
+level = "text"
+scope = ["claude-code"]
+pi = []
+status = "active"
