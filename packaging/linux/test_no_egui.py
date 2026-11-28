@@ -18,9 +18,10 @@ class NoEguiInPackagesTests(unittest.TestCase):
     def test_package_build_compiles_only_the_engine(self):
         script = (HERE / "package.sh").read_text()
         builds = re.findall(r"cargo build [^\n]*", script)
-        self.assertTrue(builds)
+        self.assertTrue(any("-p cfa4-cli" in b for b in builds), builds)
         for build in builds:
-            self.assertIn("-p cfa4-cli", build)
+            # the engine, and for the .deb the root helper (ADR 0017); never the egui editor
+            self.assertRegex(build, r"-p (cfa4-cli|cfa4-system-helper)(\s|\)|$)", build)
             self.assertNotRegex(build, r"-p cfa4(\s|$)", build)
             self.assertNotIn("cfa4/", build.replace("cfa4-cli/", ""), build)
         self.assertNotIn('"$BIN/cfa4"', script)
