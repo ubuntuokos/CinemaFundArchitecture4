@@ -2822,6 +2822,13 @@
    "class": "other",
    "crate": "cfa4-engine",
    "kind": "struct",
+   "module": "ingest.rs",
+   "name": "IngestState"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
    "module": "lib.rs",
    "name": "EditorState"
   },
@@ -9076,6 +9083,11 @@
   {
    "from": "cfa4-engine/graphics.rs",
    "item": "Tick",
+   "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/ingest.rs",
+   "item": "FrameRate",
    "to": "cfa4-time"
   },
   {

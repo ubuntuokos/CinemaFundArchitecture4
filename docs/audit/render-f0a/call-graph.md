@@ -268,6 +268,7 @@ graph LR
 | `cfa4-engine/graphics.rs` | `cfa4-project` | `ClipId`, `EffectInstance`, `Project`, `Track`, `TrackId`, `TrackItem`, `find_effect`, `graphic`, `graphic_design`, `resolve_auto_points`, `text_animator` |
 | `cfa4-engine/graphics.rs` | `cfa4-render` | `graphic_clip`, `motion_matrix` |
 | `cfa4-engine/graphics.rs` | `cfa4-time` | `FrameRate`, `Tick` |
+| `cfa4-engine/ingest.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-engine/interchange.rs` | `cfa4-project` | `ItemId`, `ProjectItem` |
 | `cfa4-engine/keyboard.rs` | `cfa4-export` | `still` |
 | `cfa4-engine/keyboard.rs` | `cfa4-geom` | `Vec2` |
@@ -842,7 +843,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 658 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 659 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (32)
 
