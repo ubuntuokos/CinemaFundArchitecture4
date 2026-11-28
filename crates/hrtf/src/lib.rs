@@ -22,6 +22,7 @@
 //!   Dolby's headphone render modes and a room; [`atmos`] feeds it from Dolby TrueHD Atmos and
 //!   IAB.
 //! - [`ChannelMonitor`] (B-03): a monitor's channel mix through headphones, block after block.
+//! - [`sofa`] (B-04): the user's own SOFA (AES69) file as an HRTF set, read with `sofar`.
 //!
 //! Positions are in metres in the listener's frame: x to the right, y up, -z straight ahead.
 //! Nothing here allocates once a renderer is made (a scene may when an update is scheduled), and
@@ -37,6 +38,7 @@ mod near_field_table;
 mod resample;
 pub mod scene;
 mod set;
+pub mod sofa;
 mod speakers;
 
 pub use binaural::{Binaural, BinauralConfig};
@@ -44,6 +46,7 @@ pub use monitor::{ChannelMonitor, MonitorConfig, ObjectMonitor};
 pub use near_field::{NearFieldFilter, ear_direction, near_field};
 pub use scene::{HeadphoneMode, Placement, SceneConfig, SceneRenderer, SceneState};
 pub use set::{HrtfSet, Neighbours};
+pub use sofa::sofa_to_maudhrtf;
 pub use speakers::{Speaker, SpeakerLayout, VirtualSpeakers, VirtualSpeakersConfig, position_of};
 
 /// Errors from loading an HRTF set or making a renderer.
@@ -58,6 +61,9 @@ pub enum Error {
     /// A setting out of its range.
     #[error("invalid setting: {0}")]
     Invalid(&'static str),
+    /// A SOFA file that cannot be read or used ([`sofa`]).
+    #[error("not a usable SOFA file: {0}")]
+    Sofa(String),
 }
 
 /// A `Result` with this crate's [`Error`].
