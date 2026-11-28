@@ -5125,3 +5125,8 @@
 	{time} Detected {count} display(s).	{time} {count} layar terdeteksi.
 	{time} Detected {count} storage device(s).	{time} {count} perangkat penyimpanan terdeteksi.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Layar pemutaran layar penuh
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Otomatis: layar tempat jendela berada. Layar yang tidak tersambung dihitung sebagai Otomatis.
+	Warn when free space falls below	Peringatkan bila ruang kosong di bawah
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = otomatis: 10 GB atau 5% disk, mana yang lebih besar.
+	{name} (not connected)	{name} (tidak tersambung)

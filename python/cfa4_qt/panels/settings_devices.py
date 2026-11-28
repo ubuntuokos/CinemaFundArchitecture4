@@ -3,7 +3,9 @@ R1–R2), on the shared device page (``device_page.py``). Both are read-only: th
 (``QGuiApplication.screens()``, ``QStorageInfo.mountedVolumes()``, plan decision D3), the CFA4
 locations from the engine's ``mediaCache.info`` and ``file.autoSaveStatus``. CFA4 changes nothing in
 the system here; the settings that belong to these devices stay on their pages (Color, Media Cache,
-decision D4) and are linked.
+decision D4) and are linked. The two pages' own keys (R4, PR F) are drawn on their Settings tab:
+``displays.fullscreenPlayback`` (the display the editor goes full screen on, ``fullscreen_target``)
+and ``storage.lowSpaceGb`` (the low-space warning threshold).
 
 Object names: ``settings.displays.page`` / ``settings.storage.page`` (with the device page's
 ``.list``, ``.tabs``, ``.tab.<key>``), ``settings.displays.open.color``,
@@ -36,6 +38,10 @@ PSEUDO_FS = frozenset({"proc", "sysfs", "devtmpfs", "devpts", "tmpfs", "ramfs", 
                        "debugfs", "tracefs", "configfs", "fusectl", "mqueue", "hugetlbfs", "autofs", "binfmt_misc", "efivarfs",
                        "squashfs", "overlay", "nsfs", "rpc_pipefs", "fuse.portal", "fuse.gvfsd-fuse"})
 LOG_LINES = 20
+FULLSCREEN_KEY = "displays.fullscreenPlayback"
+LOW_SPACE_KEY = "storage.lowSpaceGb"
+# draws the page's own setting rows into a Settings tab (the dialog's field widgets)
+SettingsRows = Callable[[QWidget, QVBoxLayout], None]
 
 
 def _label(parent: QWidget, text: str, name: str = "", dim: bool = False, bold: bool = False) -> QLabel:
@@ -119,6 +125,41 @@ def screens() -> list[Display]:
     return out
 
 
+def fullscreen_choices(found: list[Display], current: str) -> list[tuple[str, str]]:
+    """The full-screen display choices: Auto, the connected displays by connector name, and the
+    saved one when it is not connected now (kept so OK does not drop it)."""
+    out = [("auto", tr("Auto"))]
+    seen = {"auto"}
+    for d in found:
+        if d.name and d.name not in seen:
+            seen.add(d.name)
+            out.append((d.name, d.title))
+    if current and current not in seen:
+        out.append((current, fmt("{name} (not connected)", name=current)))
+    return out
+
+
+def fullscreen_target(pref: Any, found: list[Display]) -> Display | None:
+    """The display to go full screen on: the one named by ``pref``, or None for Auto and for a
+    display that is not connected."""
+    if not isinstance(pref, str) or pref in ("", "auto"):
+        return None
+    return next((d for d in found if d.name == pref), None)
+
+
+def _settings_tab(p: QWidget, intro: str, link: QPushButton | None, rows: SettingsRows | None) -> QWidget:
+    w = QWidget(p)
+    v = QVBoxLayout(w)
+    if rows is not None:
+        rows(w, v)
+    v.addWidget(_label(w, intro, dim=True))
+    if link is not None:
+        link.setParent(w)
+        v.addWidget(link, 0, Qt.AlignmentFlag.AlignLeft)
+    v.addStretch(1)
+    return w
+
+
 class DisplaysPage:
     """``source()`` gives the displays (Qt's by default); ``color_on()`` whether Color ▸ Display
     Color Management is on; ``open_page(id)`` opens a Settings page."""
@@ -149,7 +190,8 @@ class DisplaysPage:
         primary = next((d for d in found if d.primary), found[0])
         return fmt("{count} display(s), primary: {name}", count=len(found), name=primary.title), []
 
-    def page(self, parent: QWidget) -> QWidget:
+    def page(self, parent: QWidget, rows: SettingsRows | None = None) -> QWidget:
+        """The page; ``rows`` draws the page's own settings on its Settings tab."""
         box = QWidget(parent)
         col = QVBoxLayout(box)
         col.setContentsMargins(0, 0, 0, 0)
@@ -192,12 +234,8 @@ class DisplaysPage:
             return w
 
         def settings(p: QWidget, _e: DeviceEntry | None) -> QWidget:
-            w = QWidget(p)
-            v = QVBoxLayout(w)
-            v.addWidget(_label(w, tr("CFA4's own display settings are on the Color page."), dim=True))
-            v.addWidget(_link(w, tr("Color…"), "settings.displays.open.color", "color", self.open_page), 0, Qt.AlignmentFlag.AlignLeft)
-            v.addStretch(1)
-            return w
+            return _settings_tab(p, tr("CFA4's own display settings are on the Color page."),
+                                 _link(p, tr("Color…"), "settings.displays.open.color", "color", self.open_page), rows)
 
         def diagnostics(p: QWidget, _e: DeviceEntry | None) -> QWidget:
             w = QWidget(p)
@@ -362,7 +400,8 @@ class StoragePage:
             return fmt("{free} free on the media cache's disk ({root})", free=_gb(v.free), root=v.root), warn
         return fmt("{count} storage device(s)", count=len(found)), warn
 
-    def page(self, parent: QWidget) -> QWidget:
+    def page(self, parent: QWidget, rows: SettingsRows | None = None) -> QWidget:
+        """The page; ``rows`` draws the page's own settings on its Settings tab."""
         box = QWidget(parent)
         col = QVBoxLayout(box)
         col.setContentsMargins(0, 0, 0, 0)
@@ -416,12 +455,8 @@ class StoragePage:
             return w
 
         def settings(p: QWidget, _e: DeviceEntry | None) -> QWidget:
-            w = QWidget(p)
-            v = QVBoxLayout(w)
-            v.addWidget(_label(w, tr("Where CFA4 keeps its cache is set on the Media Cache page."), dim=True))
-            v.addWidget(_link(w, tr("Media Cache…"), "settings.storage.open.mediaCache", "mediaCache", self.open_page), 0, Qt.AlignmentFlag.AlignLeft)
-            v.addStretch(1)
-            return w
+            return _settings_tab(p, tr("Where CFA4 keeps its cache is set on the Media Cache page."),
+                                 _link(p, tr("Media Cache…"), "settings.storage.open.mediaCache", "mediaCache", self.open_page), rows)
 
         def diagnostics(p: QWidget, _e: DeviceEntry | None) -> QWidget:
             w = QWidget(p)

@@ -5126,3 +5126,8 @@
 	{time} Detected {count} display(s).	{time} ディスプレイを {count} 台検出しました。
 	{time} Detected {count} storage device(s).	{time} ストレージデバイスを {count} 台検出しました。
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	フルスクリーン再生のディスプレイ
+	Auto: the display the window is on. A display that is not connected counts as Auto.	自動: ウィンドウがあるディスプレイ。接続されていないディスプレイは自動として扱われます。
+	Warn when free space falls below	空き容量がこの値を下回ったら警告
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = 自動: 10 GB またはディスクの 5% のうち大きい方。
+	{name} (not connected)	{name} (未接続)

@@ -5119,3 +5119,8 @@ export.summary	Low	matala
 	{time} Detected {count} display(s).	{time} Löytyi {count} näyttöä.
 	{time} Detected {count} storage device(s).	{time} Löytyi {count} tallennuslaitetta.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Koko näytön toiston näyttö
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Auto: näyttö, jolla ikkuna on. Liittämätön näyttö lasketaan Autoksi.
+	Warn when free space falls below	Varoita, kun vapaa tila laskee alle
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = automaattinen: 10 Gt tai 5 % levystä, kumpi on suurempi.
+	{name} (not connected)	{name} (ei liitetty)

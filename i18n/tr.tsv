@@ -5118,3 +5118,8 @@ export.summary	Low	düşük
 	{time} Detected {count} display(s).	{time} {count} ekran algılandı.
 	{time} Detected {count} storage device(s).	{time} {count} depolama aygıtı algılandı.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Tam ekran oynatma ekranı
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Otomatik: pencerenin bulunduğu ekran. Bağlı olmayan bir ekran Otomatik sayılır.
+	Warn when free space falls below	Boş alan şunun altına düşünce uyar
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = otomatik: 10 GB veya diskin %5'i, hangisi büyükse.
+	{name} (not connected)	{name} (bağlı değil)

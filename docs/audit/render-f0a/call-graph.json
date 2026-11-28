@@ -3243,6 +3243,13 @@
    "crate": "cfa4-engine",
    "kind": "struct",
    "module": "settings.rs",
+   "name": "DisplayPrefs"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "settings.rs",
    "name": "Field"
   },
   {
@@ -3342,6 +3349,13 @@
    "kind": "enum",
    "module": "settings.rs",
    "name": "Row"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "settings.rs",
+   "name": "StoragePrefs"
   },
   {
    "class": "other",

@@ -5120,3 +5120,8 @@ export.summary	Low	დაბალი
 	{time} Detected {count} display(s).	{time} ნაპოვნია ეკრანები: {count}.
 	{time} Detected {count} storage device(s).	{time} ნაპოვნია შესანახი მოწყობილობები: {count}.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	სრულეკრანიანი დაკვრის ეკრანი
+	Auto: the display the window is on. A display that is not connected counts as Auto.	ავტო: ეკრანი, რომელზეც ფანჯარაა. მიუერთებელი ეკრანი ავტოდ ითვლება.
+	Warn when free space falls below	გაფრთხილება, როცა თავისუფალი ადგილი ჩამოსცდება
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = ავტომატური: 10 GB ან დისკის 5%, რომელიც მეტია.
+	{name} (not connected)	{name} (არ არის მიერთებული)

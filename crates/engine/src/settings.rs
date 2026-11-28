@@ -718,6 +718,42 @@ impl Default for MemoryPrefs {
     }
 }
 
+/// Settings ▸ Hardware & Devices ▸ Displays (CFA4-SETTINGS-HW-004 R4).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct DisplayPrefs {
+    /// The display the Qt editor goes full screen on: `auto` (the one the window is on) or a
+    /// screen's connector name as the system reports it (`DP-1`, `HDMI-A-1`). A display that is not
+    /// connected counts as `auto`.
+    pub fullscreen_playback: String,
+}
+
+impl Default for DisplayPrefs {
+    fn default() -> Self {
+        Self { fullscreen_playback: "auto".into() }
+    }
+}
+
+impl DisplayPrefs {
+    /// Longest connector name kept; anything longer is not a screen name.
+    pub const MAX_NAME: usize = 128;
+
+    /// An empty or overlong display name falls back to `auto`; surrounding blanks go.
+    pub fn sanitize(&mut self) {
+        let name = self.fullscreen_playback.trim();
+        self.fullscreen_playback = if name.is_empty() || name.chars().count() > Self::MAX_NAME { "auto".into() } else { name.to_string() };
+    }
+}
+
+/// Settings ▸ Hardware & Devices ▸ Storage Devices (CFA4-SETTINGS-HW-004 R4).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct StoragePrefs {
+    /// Warn when the free space on a disk CFA4 writes to falls below this many GB; 0 = automatic
+    /// (10 GB or 5% of the disk, whichever is larger).
+    pub low_space_gb: u32,
+}
+
 /// Settings ▸ Timeline.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -1392,6 +1428,26 @@ static CATEGORIES: &[Category] = &[
             Row::Custom("memoryInfo"),
             f("memory.ramReservedGb", "RAM reserved for other applications", int(1.0, 1024.0, "GB"), false),
             f("memory.frameCacheMb", "Frame cache for monitors and thumbnails", int(64.0, 65_536.0, "MB"), true),
+        ],
+    },
+    Category {
+        id: "displays",
+        group: "hardware",
+        title: "Displays",
+        rows: &[
+            Row::Custom("displays"),
+            f("displays.fullscreenPlayback", "Full-screen playback display", Kind::Text, true),
+            Row::Note("Auto: the display the window is on. A display that is not connected counts as Auto."),
+        ],
+    },
+    Category {
+        id: "storage",
+        group: "hardware",
+        title: "Storage Devices",
+        rows: &[
+            Row::Custom("storage"),
+            f("storage.lowSpaceGb", "Warn when free space falls below", int(0.0, 100_000.0, "GB"), true),
+            Row::Note("0 = automatic: 10 GB or 5% of the disk, whichever is larger."),
         ],
     },
     Category {

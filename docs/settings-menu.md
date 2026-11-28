@@ -1,6 +1,6 @@
 # Settings and Hardware menu (Qt 6)
 
-> **Last updated:** 2026-11-28 · **Change:** minor (Displays and Storage Devices pages, CFA4-SETTINGS-HW-004)
+> **Last updated:** 2026-11-28 · **Change:** minor (Displays and Storage Devices pages and their two settings, CFA4-SETTINGS-HW-004)
 
 The Settings window of the Qt 6 editor, `cfa4-qt` (`python/cfa4_qt/panels/settings.py` and
 `settings_hardware.py`, Edit ▸ Preferences ▸ <page>, Ctrl+,). Phases 1 and 2 were first built in
@@ -79,9 +79,17 @@ Next step (approved 2026-11-27): [plans/CFA4-SETTINGS-HW-002.md](plans/CFA4-SETT
   copy from `file.autoSaveStatus`); a disk holding one warns below 10 GB or 5 % free, whichever is
   larger, or when it is read-only. Their Settings tabs link to Color and Media Cache, where those
   settings stay (plan decision D4). The Overview gets a row for each.
+- Their own settings (HW-004 R4) are the engine categories `displays` and `storage` (group
+  `hardware`, `crates/engine/src/settings.rs`), drawn on the Settings tab above the links:
+  `displays.fullscreenPlayback` (Full-screen playback display: `auto` or a connector name such as
+  `DP-1`; the editor's Full screen goes to that display, a display that is not connected counts as
+  Auto; the choice lists the connected displays and keeps a saved one that is unplugged) and
+  `storage.lowSpaceGb` (the low-space warning threshold in GB, 0 = automatic). Reset and OK work
+  as on every engine page; `prefs.get` / `prefs.set` reach both keys.
 - Object names: `settings.displays.page` and `settings.storage.page` (with `.list`, `.tabs`,
   `.tab.<details|capabilities|settings|diagnostics>`), `settings.displays.open.color`,
-  `settings.storage.open.mediaCache`.
+  `settings.storage.open.mediaCache`, `settings.displays.fullscreenPlayback`,
+  `settings.storage.lowSpaceGb`.
 
 ## System Settings (root) (`cfa4-qt`, CFA4-SETTINGS-HW-003)
 

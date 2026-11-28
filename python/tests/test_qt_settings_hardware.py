@@ -549,3 +549,90 @@ def test_real_screen_and_volume_lists_do_not_crash(app: Any) -> None:
 
     assert isinstance(screens(), list)
     assert all(v.fs not in PSEUDO_FS and v.total > 0 for v in volumes())
+
+
+# ----- HW-004 R4: the two pages' own settings (the engine's displays / storage categories) -----
+OWN_SCHEMA: dict[str, Any] = {
+    **SCHEMA,
+    "categories": [
+        *SCHEMA["categories"],
+        {"id": "displays", "title": "Displays", "group": "hardware", "defaults": {"fullscreenPlayback": "auto"},
+         "rows": [{"type": "custom", "id": "displays"},
+                  field("displays.fullscreenPlayback", "Full-screen playback display", {"type": "text"}, "auto"),
+                  {"type": "note", "text": "Auto: the display the window is on. A display that is not connected counts as Auto."}]},
+        {"id": "storage", "title": "Storage Devices", "group": "hardware", "defaults": {"lowSpaceGb": 0},
+         "rows": [{"type": "custom", "id": "storage"},
+                  field("storage.lowSpaceGb", "Warn when free space falls below", {"type": "int", "min": 0, "max": 100000, "unit": "GB"}, 0),
+                  {"type": "note", "text": "0 = automatic: 10 GB or 5% of the disk, whichever is larger."}]},
+    ],
+}
+
+
+class OwnEngine(StubEngine):
+    def __init__(self, display: str = "auto", low_gb: int = 0) -> None:
+        super().__init__()
+        self.values = {**self.values, "displays": {"fullscreenPlayback": display}, "storage": {"lowSpaceGb": low_gb}}
+
+    def execute(self, command: str, params: dict[str, Any] | None = None, on_reply: Any = None, on_error: Any = None) -> int:
+        if command == "prefs.schema":
+            self.sent.append((command, params or {}))
+            on_reply(OWN_SCHEMA, None)
+            return len(self.sent)
+        return super().execute(command, params, on_reply, on_error)
+
+
+def test_fullscreen_display_choices_and_target() -> None:
+    from cfa4_qt.panels.settings_devices import fullscreen_choices, fullscreen_target
+
+    found = _displays()
+    assert fullscreen_choices(found, "auto") == [("auto", "Auto"), ("HDMI-1", "Dell U2720Q (HDMI-1)"), ("DP-1", "Eizo CS2740 (DP-1)")]
+    assert fullscreen_choices(found, "eDP-9")[-1] == ("eDP-9", "eDP-9 (not connected)")
+    assert fullscreen_target("DP-1", found) is found[1]
+    assert fullscreen_target("auto", found) is None and fullscreen_target("eDP-9", found) is None and fullscreen_target(None, found) is None
+
+
+def test_arrange_uses_the_engines_display_and_storage_categories() -> None:
+    sections = arrange(OWN_SCHEMA)
+    hardware = sections[-1][1]
+    assert [c["id"] for c in hardware] == ["hardwareOverview", "accelerators", "displays", "storage", "memory", "systemComponents"]
+    assert "qtOnly" not in hardware[2] and hardware[3]["defaults"] == {"lowSpaceGb": 0}
+
+
+def test_displays_settings_tab_picks_the_fullscreen_display(app: Any) -> None:
+    from cfa4_qt.panels.settings_devices import DisplaysPage
+
+    engine = OwnEngine(display="eDP-9")
+    d = PreferencesDialog(None, engine, "general")
+    d.displays = DisplaysPage(d.select_page, lambda: False, _displays)
+    d.select_page("displays")
+    assert d.reset_button.isEnabled()  # the page owns its key
+    tabs = find(d, QtWidgets.QTabWidget, "settings.displays.page.tabs")
+    tabs.setCurrentIndex(2)
+    combo = find(d, QtWidgets.QComboBox, "settings.displays.fullscreenPlayback")
+    assert [combo.itemData(i) for i in range(combo.count())] == ["auto", "HDMI-1", "DP-1", "eDP-9"]
+    assert combo.currentText() == "eDP-9 (not connected)"  # kept, so OK does not drop it
+    combo.setCurrentIndex(2)
+    assert d.values["displays"]["fullscreenPlayback"] == "DP-1"
+    d.reset_page()
+    assert d.values["displays"]["fullscreenPlayback"] == "auto"
+    d.close()
+
+
+def test_storage_threshold_changes_the_low_space_warning(app: Any) -> None:
+    from cfa4_qt.panels.settings_devices import StoragePage
+
+    def status(low_gb: int) -> str:
+        engine = OwnEngine(low_gb=low_gb)
+        d = PreferencesDialog(None, engine, "general")
+        d.storage = StoragePage(engine, lambda: d._hardware_changed("storage"), d.select_page,
+                                lambda: float(d.values["storage"]["lowSpaceGb"]), source=_volumes)
+        d.select_page("storage")
+        find(d, QtWidgets.QTabWidget, "settings.storage.page.tabs").setCurrentIndex(2)
+        spin = find(d, QtWidgets.QSpinBox, "settings.storage.lowSpaceGb")
+        assert spin.value() == low_gb
+        text = find(d, QtWidgets.QListWidget, "settings.storage.page.list").item(1).text()
+        d.close()
+        return str(text)
+
+    assert status(0).split("\n")[1].startswith("⚠")  # automatic: 5% of 2 TB = 100 GB > 50 GB free
+    assert not status(40).split("\n")[1].startswith("⚠")  # 40 GB threshold, 50 GB free

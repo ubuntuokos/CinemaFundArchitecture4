@@ -5119,3 +5119,8 @@ export.summary	Low	χαμηλή
 	{time} Detected {count} display(s).	{time} Εντοπίστηκαν οθόνες: {count}.
 	{time} Detected {count} storage device(s).	{time} Εντοπίστηκαν συσκευές αποθήκευσης: {count}.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Οθόνη αναπαραγωγής πλήρους οθόνης
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Αυτόματο: η οθόνη όπου βρίσκεται το παράθυρο. Μια μη συνδεδεμένη οθόνη μετράει ως Αυτόματο.
+	Warn when free space falls below	Προειδοποίηση όταν ο ελεύθερος χώρος πέσει κάτω από
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = αυτόματο: 10 GB ή 5% του δίσκου, όποιο είναι μεγαλύτερο.
+	{name} (not connected)	{name} (μη συνδεδεμένη)

@@ -5119,3 +5119,8 @@ export.summary	Low	తక్కువ
 	{time} Detected {count} display(s).	{time} {count} డిస్‌ప్లేలు గుర్తించబడ్డాయి.
 	{time} Detected {count} storage device(s).	{time} {count} నిల్వ పరికరాలు గుర్తించబడ్డాయి.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	పూర్తి స్క్రీన్ ప్లేబ్యాక్ డిస్‌ప్లే
+	Auto: the display the window is on. A display that is not connected counts as Auto.	ఆటో: విండో ఉన్న డిస్‌ప్లే. కనెక్ట్ చేయని డిస్‌ప్లే ఆటోగా లెక్కించబడుతుంది.
+	Warn when free space falls below	ఖాళీ స్థలం దీని కంటే తక్కువైతే హెచ్చరించు
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = ఆటోమేటిక్: 10 GB లేదా డిస్క్‌లో 5%, ఏది పెద్దదైతే అది.
+	{name} (not connected)	{name} (కనెక్ట్ చేయలేదు)

@@ -5117,3 +5117,8 @@
 	{time} Detected {count} display(s).	{time} Rilevati {count} schermo/i.
 	{time} Detected {count} storage device(s).	{time} Rilevati {count} dispositivo/i di archiviazione.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Schermo per la riproduzione a schermo intero
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Auto: lo schermo su cui si trova la finestra. Uno schermo non collegato vale come Auto.
+	Warn when free space falls below	Avvisa quando lo spazio libero scende sotto
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = automatico: 10 GB o il 5% del disco, il valore maggiore.
+	{name} (not connected)	{name} (non collegato)

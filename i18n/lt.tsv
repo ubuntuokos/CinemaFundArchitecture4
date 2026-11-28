@@ -5120,3 +5120,8 @@ export.summary	Low	žema
 	{time} Detected {count} display(s).	{time} Rasta ekranų: {count}.
 	{time} Detected {count} storage device(s).	{time} Rasta saugojimo įrenginių: {count}.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Viso ekrano atkūrimo ekranas
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Auto: ekranas, kuriame yra langas. Neprijungtas ekranas laikomas Auto.
+	Warn when free space falls below	Įspėti, kai laisvos vietos lieka mažiau nei
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = automatiškai: 10 GB arba 5 % disko, kuris didesnis.
+	{name} (not connected)	{name} (neprijungtas)

@@ -170,6 +170,10 @@ pub struct Preferences {
     pub media_analysis: settings::MediaAnalysisPrefs,
     pub media_cache: settings::MediaCachePrefs,
     pub memory: settings::MemoryPrefs,
+    /// Settings ▸ Displays (CFA4-SETTINGS-HW-004).
+    pub displays: settings::DisplayPrefs,
+    /// Settings ▸ Storage Devices (CFA4-SETTINGS-HW-004).
+    pub storage: settings::StoragePrefs,
     pub playback: PlaybackPrefs,
     pub plugins: settings::PluginPrefs,
     pub timeline: settings::TimelinePrefs,
@@ -205,6 +209,8 @@ impl Default for Preferences {
             media_analysis: Default::default(),
             media_cache: Default::default(),
             memory: Default::default(),
+            displays: Default::default(),
+            storage: Default::default(),
             playback: Default::default(),
             plugins: Default::default(),
             timeline: Default::default(),
@@ -414,6 +420,7 @@ impl Preferences {
         self.trim.large_trim_offset = self.trim.large_trim_offset.clamp(1, 1000);
         self.labels.sanitize_labels();
         self.appearance.sync_color_theme();
+        self.displays.sanitize();
         self.version = settings::PREFS_VERSION;
     }
 

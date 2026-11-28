@@ -5117,3 +5117,8 @@ export.summary	Low	nízká
 	{time} Detected {count} display(s).	{time} Nalezené obrazovky: {count}.
 	{time} Detected {count} storage device(s).	{time} Nalezená úložná zařízení: {count}.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Displej pro přehrávání na celou obrazovku
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Auto: displej, na kterém je okno. Nepřipojený displej se počítá jako Auto.
+	Warn when free space falls below	Upozornit, když volné místo klesne pod
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = automaticky: 10 GB nebo 5 % disku, podle toho, co je větší.
+	{name} (not connected)	{name} (nepřipojeno)

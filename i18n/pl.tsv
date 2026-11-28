@@ -5117,3 +5117,8 @@ export.summary	Low	niska
 	{time} Detected {count} display(s).	{time} Wykryto ekrany: {count}.
 	{time} Detected {count} storage device(s).	{time} Wykryto urządzenia pamięci masowej: {count}.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Ekran odtwarzania pełnoekranowego
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Auto: ekran, na którym jest okno. Niepodłączony ekran liczy się jako Auto.
+	Warn when free space falls below	Ostrzegaj, gdy wolne miejsce spadnie poniżej
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = automatycznie: 10 GB lub 5% dysku, w zależności od tego, co większe.
+	{name} (not connected)	{name} (niepodłączony)
