@@ -126,8 +126,20 @@ fn set_at(set: &SetId, rate: u32) -> Load {
     Load::Pending
 }
 
+/// Makes the set for `rate` now, waiting up to `seconds` (`cfa4-cli binaural`, which renders a
+/// whole file and has no stereo fold to play meanwhile); the set's name, or why it cannot be made.
+pub fn load(set: &SetId, rate: u32, seconds: u64) -> Result<String, String> {
+    if !wait_for(set, rate, seconds) {
+        return Err(format!("the HRTF set {} took longer than {seconds} s to make", set.name()));
+    }
+    match set_at(set, rate) {
+        Load::Ready(made) => Ok(made.name().to_owned()),
+        Load::Failed(e) => Err(e),
+        Load::Pending => Err("the HRTF set is still being made".into()),
+    }
+}
+
 /// Waits (up to `seconds`) until the set for `rate` is made or refused; for tests and the CLI.
-#[cfg(test)]
 pub fn wait_for(set: &SetId, rate: u32, seconds: u64) -> bool {
     let until = std::time::Instant::now() + std::time::Duration::from_secs(seconds);
     loop {

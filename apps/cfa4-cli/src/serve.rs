@@ -458,7 +458,7 @@ fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
 /// and then the reply's `monitor` object. A layout the headphone monitor has none for (3, 4, 5,
 /// 7 … channels) is folded to stereo first; while the HRTF set is being made, or when it cannot
 /// be, the stereo fold plays.
-fn heard(
+pub(crate) fn heard(
     target: &'static str,
     start: i64,
     sound: cfa4_frame::AudioBuffer,
