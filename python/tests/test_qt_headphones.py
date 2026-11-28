@@ -60,6 +60,7 @@ def test_real_engine_headphones_from_the_button_to_the_ears(app: Any, tmp_path: 
     the speakers play; the button again turns the headphones off."""
     from cfa4_qt.main_window import MainWindow
 
+    assert REAL is not None
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
     win = MainWindow(engine, settings)
@@ -117,8 +118,8 @@ def test_real_engine_headphones_from_the_button_to_the_ears(app: Any, tmp_path: 
         engine.execute("prefs.set", {"values": {"audioHardware.hrtfSet": str(bad), "audioHardware.headphoneRoom": "off"}}, on_reply=lambda r, _d: done.append(r))
         assert wait_until(app, lambda: done, 10_000)
         win.load_audio_output()
-        assert wait_until(app, lambda: (mon.headphones or {}).get("hrtf") == str(bad), 10_000)
-        assert (mon.headphones or {}).get("room") == 0.0
+        assert wait_until(app, lambda: mon.headphones is not None and mon.headphones.get("hrtf") == str(bad), 10_000)
+        assert mon.headphones is not None and mon.headphones.get("room") == 0.0
         heard.clear()
         assert play_until(lambda: any("error" in h for h in heard), 60_000), heard
         wait_until(app, lambda: False, 300)
