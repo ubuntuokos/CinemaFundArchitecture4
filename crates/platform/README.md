@@ -24,7 +24,7 @@ let availability = cfa4_platform::register(); // Available("NVDEC") or Available
   encoding stays opt-in per export (Off by default). The chosen chains, the device inventory and
   the vendor-neutrality coverage are in `perf.stats` → `route`.
 - **64-bit Linux: NVIDIA NVENC H.264 and H.265 (HEVC) encoding** (`nvenc/`), 8-bit SDR 4:2:0 for Export. The driver's
-  `libnvidia-encode.so.1`, API 12.1, is loaded at run time,
+  `libnvidia-encode.so.1` is loaded at run time at NVENC API 13.1 when the driver reports it (driver 610 and later) and at API 12.1 on every other driver since 531 (`CFA4_NVENC_API=12.1` forces the older level, `13.1` insists on the newer one),
   so machines without NVIDIA still start. It retains a primary
   CUDA context through the runtime-loaded `libcuda.so.1`, released after the encoder is destroyed.
   No SDK, CUDA toolkit or NVIDIA binaries are bundled or required at build time. 8-bit pictures go
@@ -158,8 +158,8 @@ level 4 High tier, which many hardware decoders refuse; it is now level 4.1 Main
   profile 2, 10-bit 4:2:0). NVENC chose the High tier for level 4 at 12 Mb/s; the record just says so.
   Pictures of the wrong depth for the encoder (an `hdr` picture to a Main encoder, an RGBA one to
   Main 10, or a float slice of the wrong length) are errors, never panics.
-- **HDR10 static metadata is SEI, not an API.** NVENC 12.1 has no mastering-display field, so PQ
-  streams get the mastering display colour volume (payload 137) and content light level (144)
+- **HDR10 static metadata: API 13.1 writes it, 12.1 gets SEI.** NVENC 12.1 has no mastering-display field, so PQ
+  streams on a 12.1 session get the mastering display colour volume (payload 137) and content light level (144)
   messages through `NV_ENC_PIC_PARAMS_HEVC::seiPayloadArray` on every IDR picture, with the values
   of `ColorSignal::static_metadata` (BT.2020/D65, 1000 / 0.0001 cd/m², MaxCLL/MaxFALL 0), the same
   that the software H.264 encoder's SEI and the `mdcv` / `clli` boxes carry. NVENC writes them as
@@ -194,7 +194,7 @@ level 4 High tier, which many hardware decoders refuse; it is now level 4.1 Main
 | `tests/setting.rs` | Hardware decoding Off gives the software decoder through `make_video_decoder` and the media stack (no hardware frames); Auto gives the hardware decoder where available |
 | `tests/nvenc.rs` (Linux, NVIDIA) | H.264 from NVENC (1280×720, 6 Mbps, 72 frames) decodes with our decoder at worst 46.9 dB luma PSNR; IDR at 0, 24 and 48; dts / pts right |
 | `tests/nvenc_export.rs` (Linux; fallback also tested without NVIDIA) | Export with hardware encoding against the software encoder through the export pipeline: the two decoded files at worst 54.8 dB luma PSNR; ffmpeg decodes the file without errors; declined cases go to the software encoder; the counters |
-| `src/nvenc/abi_tests.rs` (Linux) | FFI structs' sizes, alignments, field offsets, constants, GUIDs and the bit-field masks of the `flags` words (H.264, HEVC, and the HEVC picture parameters with the SEI payload array) against a C compiler's view of NVIDIA's `nvEncodeAPI.h` (12.1) |
+| `src/nvenc/abi_tests.rs` (Linux) | FFI structs' sizes, alignments, field offsets, constants, GUIDs and the bit-field masks of the `flags` words (H.264, HEVC, and the HEVC picture parameters with the SEI payload array) against a C compiler's view of NVIDIA's `nvEncodeAPI.h` (12.1; the 13.1 additions and version tags too) |
 | `src/nvenc/{mod,hevc,export}.rs` unit tests | HEVC NAL types, stripping and parameter-set splitting (including `IDR_N_LP`, whose header byte reads as a PPS in H.264, and one-byte or truncated NAL units); the `hvcC` built from real VPS / SPS / PPS (Main and Main 10: accepted as what was asked for, refused as the other, other depths refused), every truncation and bit flip of the SPS, wrong profile, size and NAL types; HEVC levels; P010 layout (shift, little-endian, interleaving, pitch in bytes, narrow pitches and short buffers); the 10-bit capability decline; the SEI messages |
 | `crates/export/src/hdr_tests.rs` | `rgbf_to_yuv420_10`: exact codes for black, white, grey and the BT.2020 primaries and secondaries, NaN / infinity / out-of-range, odd sizes, wrong lengths and overflowing sizes; the HDR probe registry; which exports are HDR (HEVC SDR without a probe, HDR with one, `settings.sdr` forcing SDR); the SEI of the software H.264 encoder equals `ColorSignal::static_metadata` |
 | `tests/nvdec.rs` (Linux, NVIDIA driver) | H.264 High, HEVC Main (open GOP: CRA + RASL) and Main 10 at 640x360, H.264 and HEVC Main 10 at 1080p: bit-exact with the software decoders over the whole stream, after `reset` + reseek to every sync sample and again after the resets; a forced mid-stream failure continues in software with identical output; interlaced and 10-bit H.264 and 4:2:2 HEVC are declined, as is everything while Hardware decoding is Off; damaged samples (bit flips, truncation, corrupt lengths) never crash or hang |

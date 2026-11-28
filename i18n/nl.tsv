@@ -4970,3 +4970,16 @@ export.summary	Low	laag
 	Thresholds	Drempels
 	Trail	Spoor
 	Use gestures in the window	Gebaren in het venster gebruiken
+	DVD-Video folder (VIDEO_TS)	DVD-Video-map (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-map (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorf, 6 Mbps, GOP 15, AC-3 192 kbps, hoofdstukken uit de hoofdstukmarkeringen van de sequentie
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-map (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorf, 6 Mbps, GOP 18, AC-3 192 kbps, hoofdstukken uit de hoofdstukmarkeringen van de sequentie
+	DNx decoding:	DNx-decodering:
+	As detected from the file ({detected})	Zoals gedetecteerd uit het bestand ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standaard)
+	FFmpeg-compatible	FFmpeg-compatibel
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg leest sommige DNx-bestanden anders dan de standaard (4:4:4-kleuren, inverse kwantisatie). Door FFmpeg gecodeerd materiaal wordt herkend; kies hier als de detectie onjuist is.
+	DNx Coding	DNx-codering
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-compatibel (voor op FFmpeg gebaseerde tools)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Uit: gecodeerd volgens SMPTE ST 2019-1. Aan: gecodeerd zoals FFmpeg DNx schrijft, voor tools die op FFmpeg zijn gebouwd.

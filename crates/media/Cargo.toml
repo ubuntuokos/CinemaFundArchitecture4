@@ -23,6 +23,7 @@ cfa4-yamaha-oki = { workspace = true }
 cfa4-realaudio = { workspace = true }
 cfa4-twinvq = { workspace = true }
 cfa4-truespeech = { workspace = true }
+cfa4-truehd = { workspace = true }
 log = { workspace = true }
 rayon = { workspace = true }
 serde = { workspace = true }

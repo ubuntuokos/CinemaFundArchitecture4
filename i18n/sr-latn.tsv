@@ -4972,3 +4972,16 @@ export.summary	Low	nizak
 	Thresholds	Pragovi
 	Trail	Trag
 	Use gestures in the window	Koristi pokrete u prozoru
+	DVD-Video folder (VIDEO_TS)	DVD-Video fascikla (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video fascikla (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfno, 6 Mbps, GOP 15, AC-3 192 kbps, poglavlja iz markera poglavlja sekvence
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video fascikla (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfno, 6 Mbps, GOP 18, AC-3 192 kbps, poglavlja iz markera poglavlja sekvence
+	DNx decoding:	DNx dekodiranje:
+	As detected from the file ({detected})	Prema prepoznavanju iz datoteke ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	Kompatibilno sa FFmpeg-om
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg neke DNx datoteke čita drugačije od standarda (boje 4:4:4, inverzna kvantizacija). Snimak kodiran FFmpeg-om se prepoznaje; izaberite ovde ako je prepoznavanje pogrešno.
+	DNx Coding	DNx kodiranje
+	FFmpeg-compatible (for FFmpeg-based tools)	Kompatibilno sa FFmpeg-om (za alate zasnovane na FFmpeg-u)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Isključeno: kodirano prema SMPTE ST 2019-1. Uključeno: kodirano onako kako FFmpeg zapisuje DNx, za alate zasnovane na FFmpeg-u.
