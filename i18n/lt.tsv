@@ -5020,3 +5020,41 @@ export.summary	Low	žema
 	not in this build	neįtraukta į šią versiją
 	switched off in the settings	išjungta nustatymuose
 	vendor-locked backends are switched off	su gamintoju susietos posistemės išjungtos
+	Add user {user} to the group {group}.	Įtraukti naudotoją {user} į grupę {group}.
+	Apply the plan?	Taikyti planą?
+	Apply…	Taikyti…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 atšaukia tik tai, ką pakeitė pati. Sistema paprašys administratoriaus slaptažodžio.
+	Check failed: {error}	Patikra nepavyko: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Tikrina NPU branduolio tvarkyklę ir programinę aparatinę įrangą; tik pataria ir nieko nekeičia.
+	Components	Komponentai
+	Done. Log out and back in for the change to take effect.	Atlikta. Atsijunkite ir vėl prisijunkite, kad pakeitimas įsigaliotų.
+	GPU access	GPU prieiga
+	Install packages: {packages}	Įdiegti paketus: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Įdiegia Ubuntu paketą su Intel arba AMD GPU aparatine vaizdo tvarkykle (NVIDIA naudoja NVDEC).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Leidžia atverti GPU ir NPU įrenginių mazgus: įtraukia jus į grupę (render, video), kuriai jie priklauso.
+	Log	Žurnalas
+	Log out and back in afterwards for the change to take effect.	Po to atsijunkite ir vėl prisijunkite, kad pakeitimas įsigaliotų.
+	Missing access or driver: System Settings (root)…	Trūksta prieigos ar tvarkyklės: Sistemos nustatymai (root)…
+	NPU driver	NPU tvarkyklė
+	Not needed	Nereikia
+	Nothing happened yet in this window.	Šiame lange dar nieko neįvyko.
+	Nothing to change.	Nėra ką keisti.
+	Plan	Planas
+	Plan for {component} failed: {error}	Komponento {component} planas nepavyko: {error}
+	Plan for {component}: {plan}	Komponento {component} planas: {plan}
+	Plan…	Planas…
+	System Settings (root)	Sistemos nustatymai (root)
+	System Settings (root)…	Sistemos nustatymai (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Čia esantys veiksmai prašo administratoriaus slaptažodžio ir keičia sistemą už CFA4 ribų.
+	The system will ask for an administrator password.	Sistema paprašys administratoriaus slaptažodžio.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Šiame diegime nėra sistemos pagalbinės programos (ji pateikiama su .deb paketu): matote, ko trūksta, bet čia to pakeisti negalite.
+	Undo the changes?	Atšaukti pakeitimus?
+	Undo: removes the installed packages again.	Atšaukimas: vėl pašalina įdiegtus paketus.
+	Undo: removes you from the group again.	Atšaukimas: vėl pašalina jus iš grupės.
+	Undo…	Atšaukti…
+	VA-API drivers	VA-API tvarkyklės
+	Waiting for log out	Laukiama atsijungimo
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec neįdiegta (Ubuntu paketas pkexec), todėl CFA4 negali paprašyti slaptažodžio.
+	{method} {component} failed: {error}	{method} {component} nepavyko: {error}
+	{method} {component}: done	{method} {component}: atlikta
+	{method} {component}: waiting for the password…	{method} {component}: laukiama slaptažodžio…

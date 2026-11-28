@@ -5019,3 +5019,41 @@ export.summary	Low	lav
 	not in this build	ikke i denne build
 	switched off in the settings	slået fra i indstillingerne
 	vendor-locked backends are switched off	producentbundne backends er slået fra
+	Add user {user} to the group {group}.	Føj brugeren {user} til gruppen {group}.
+	Apply the plan?	Anvend planen?
+	Apply…	Anvend…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 fortryder kun det, det selv har ændret. Systemet vil bede om en administratoradgangskode.
+	Check failed: {error}	Kontrollen mislykkedes: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Kontrollerer NPU'ens kernedriver og firmware; giver kun vejledning og ændrer intet.
+	Components	Komponenter
+	Done. Log out and back in for the change to take effect.	Færdig. Log ud og ind igen, for at ændringen træder i kraft.
+	GPU access	GPU-adgang
+	Install packages: {packages}	Installer pakker: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Installerer Ubuntu-pakken med hardware-videodriveren til en Intel- eller AMD-GPU (NVIDIA bruger NVDEC).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Lader dig åbne GPU- og NPU-enhedsnoderne: føjer dig til gruppen (render, video), der ejer dem.
+	Log	Log
+	Log out and back in afterwards for the change to take effect.	Log derefter ud og ind igen, for at ændringen træder i kraft.
+	Missing access or driver: System Settings (root)…	Manglende adgang eller driver: Systemindstillinger (root)…
+	NPU driver	NPU-driver
+	Not needed	Ikke nødvendig
+	Nothing happened yet in this window.	Der er ikke sket noget i dette vindue endnu.
+	Nothing to change.	Intet at ændre.
+	Plan	Plan
+	Plan for {component} failed: {error}	Planen for {component} mislykkedes: {error}
+	Plan for {component}: {plan}	Plan for {component}: {plan}
+	Plan…	Plan…
+	System Settings (root)	Systemindstillinger (root)
+	System Settings (root)…	Systemindstillinger (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Handlingerne her beder om en administratoradgangskode og ændrer systemet uden for CFA4.
+	The system will ask for an administrator password.	Systemet vil bede om en administratoradgangskode.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Denne installation har ingen systemhjælper (den følger med .deb-pakken): du kan se, hvad der mangler, men ikke ændre det her.
+	Undo the changes?	Fortryd ændringerne?
+	Undo: removes the installed packages again.	Fortryd: fjerner de installerede pakker igen.
+	Undo: removes you from the group again.	Fortryd: fjerner dig fra gruppen igen.
+	Undo…	Fortryd…
+	VA-API drivers	VA-API-drivere
+	Waiting for log out	Venter på udlogning
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec er ikke installeret (Ubuntu-pakken pkexec), så CFA4 kan ikke bede om adgangskoden.
+	{method} {component} failed: {error}	{method} {component} mislykkedes: {error}
+	{method} {component}: done	{method} {component}: færdig
+	{method} {component}: waiting for the password…	{method} {component}: venter på adgangskoden…

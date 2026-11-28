@@ -2,16 +2,19 @@
 
 ``arrange`` lays the engine's categories out under the groups of ``prefs.schema``
 (``crates/engine/src/settings.rs`` ``groups()``) and adds two pages the engine schema does not
-carry: Hardware & Devices ▸ **Accelerators (GPU / NPU)**, first in its group, and Media & Playback ▸
-**Decoding & Encoding**, after Media. An engine that sends no ``groups`` keeps the flat list.
+carry: Hardware & Devices ▸ **Accelerators (GPU / NPU)**, first in its group, Hardware & Devices ▸
+**System Settings (root)**, last in it (``settings_system``, CFA4-SETTINGS-HW-003 R3), and Media &
+Playback ▸ **Decoding & Encoding**, after Media. An engine that sends no ``groups`` keeps the flat list.
 
 ``HardwarePages`` asks the engine for ``hardware.inventory`` / ``codecs.capabilities`` once per
 dialog (Detect Again asks with ``refresh``) and draws the read-only tables. CFA4 changes nothing
-on the system here; the decoding page's two fields are the Playback category's own keys.
+on the system here; the decoding page's two fields are the Playback category's own keys. When GPU
+access or a driver is missing, both pages link to System Settings (root).
 
 Object names: ``settings.group.<id>`` (the group headings), ``settings.accelerators.devices``,
 ``settings.accelerators.plans``, ``settings.accelerators.refresh``, ``settings.codecs.table``,
-``settings.codecs.hardwareDecoder``, ``settings.codecs.gstreamer``, ``settings.codecs.refresh``.
+``settings.codecs.hardwareDecoder``, ``settings.codecs.gstreamer``, ``settings.codecs.refresh``,
+``settings.system.open`` (the link to System Settings (root)).
 """
 
 from __future__ import annotations
@@ -34,10 +37,12 @@ from PySide6.QtWidgets import (
 from .. import theme
 from ..hardware_report import WORKLOAD_TITLES, Codecs, Hardware, ReportError, pci_name
 from ..i18n import N_, fmt, tr
+from .settings_system import SYSTEM_PAGE, SYSTEM_TITLE, SystemPage, open_link
 
 ACCELERATORS_PAGE = "accelerators"
 DECODING_PAGE = "decoding"
-QT_ONLY_PAGES = frozenset({ACCELERATORS_PAGE, DECODING_PAGE})
+REPORT_PAGES = frozenset({ACCELERATORS_PAGE, DECODING_PAGE})
+QT_ONLY_PAGES = frozenset({ACCELERATORS_PAGE, DECODING_PAGE, SYSTEM_PAGE})
 DECODING_FIELDS = ("playback.hardwareDecoding", "playback.draftDecode")
 ACCELERATORS_TITLE = N_("Accelerators (GPU / NPU)")
 DECODING_TITLE = N_("Decoding & Encoding")
@@ -76,6 +81,11 @@ def _accelerators_page() -> dict[str, Any]:
             "rows": [{"type": "custom", "id": "accelerators"}]}
 
 
+def _system_page() -> dict[str, Any]:
+    return {"id": SYSTEM_PAGE, "title": SYSTEM_TITLE, "group": "hardware", "qtOnly": True,
+            "rows": [{"type": "custom", "id": SYSTEM_PAGE}]}
+
+
 def arrange(schema: Any) -> list[tuple[dict[str, Any] | None, list[dict[str, Any]]]]:
     """``[(group, pages)]`` in display order; ``group`` is None for the flat list of an engine
     without groups. A page of a group the schema does not list goes under General."""
@@ -97,6 +107,7 @@ def arrange(schema: Any) -> list[tuple[dict[str, Any] | None, list[dict[str, Any
         members = [c for c in cats if group_of(c) == g["id"]]
         if g["id"] == "hardware":
             members.insert(0, _accelerators_page())
+            members.append(_system_page())
         if g["id"] == "media" and playback is not None:
             after = next((i + 1 for i, c in enumerate(members) if c.get("id") == "media"), len(members))
             members.insert(after, _decoding_page(playback))
@@ -139,9 +150,12 @@ class HardwarePages:
     """The reports behind the two pages. ``engine.call(method, params, on_reply, on_error)`` is the
     engine client's; ``changed(page)`` runs when a report for ``page`` arrived or failed."""
 
-    def __init__(self, engine: Any, changed: Callable[[str], None]) -> None:
+    def __init__(self, engine: Any, changed: Callable[[str], None], system: SystemPage | None = None,
+                 open_page: Callable[[str], None] | None = None) -> None:
         self.engine = engine
         self.changed = changed
+        self.system = system
+        self.open_page = open_page
         self.hardware: Hardware | None = None
         self.hardware_error = ""
         self.codecs: Codecs | None = None
@@ -151,9 +165,12 @@ class HardwarePages:
     # ----- the engine -----
     def load(self, page: str, refresh: bool = False) -> None:
         """Ask for the report ``page`` shows, once (again with ``refresh``)."""
-        if page not in QT_ONLY_PAGES or (page in self._asked and not refresh):
+        if page not in REPORT_PAGES or (page in self._asked and not refresh):
             return
         self._asked.add(page)
+        if self.system is not None:
+            # what the System Settings (root) page would fix decides the link on this page
+            self.system.load()
         method = "hardware.inventory" if page == ACCELERATORS_PAGE else "codecs.capabilities"
         if refresh:
             if page == ACCELERATORS_PAGE:
@@ -225,7 +242,13 @@ class HardwarePages:
         col.addWidget(plans)
         for note in hw.notes:
             col.addWidget(_label(box, note, dim=True))
+        self._link(box, col, False)
         return box
+
+    def _link(self, box: QWidget, col: QVBoxLayout, missing: bool) -> None:
+        """The link to System Settings (root) when access or a driver is missing."""
+        if self.open_page is not None and (missing or (self.system is not None and self.system.needs_attention())):
+            col.addWidget(open_link(box, self.open_page), 0, Qt.AlignmentFlag.AlignLeft)
 
     @staticmethod
     def _devices(box: QWidget, hw: Hardware) -> QTableWidget:
@@ -294,4 +317,5 @@ class HardwarePages:
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         _fit(table)
         col.addWidget(table)
+        self._link(box, col, not c.hardware_decoder.name)
         return box

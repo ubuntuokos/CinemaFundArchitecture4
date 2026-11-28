@@ -5019,3 +5019,41 @@ export.summary	Low	төмен
 	not in this build	бұл жинаққа кірмейді
 	switched off in the settings	баптауларда өшірілген
 	vendor-locked backends are switched off	өндірушіге байланған модульдер өшірілген
+	Add user {user} to the group {group}.	{user} пайдаланушысын {group} тобына қосу.
+	Apply the plan?	Жоспарды қолдану керек пе?
+	Apply…	Қолдану…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 тек өзі өзгерткенін ғана болдырмайды. Жүйе әкімші құпиясөзін сұрайды.
+	Check failed: {error}	Тексеру сәтсіз аяқталды: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	NPU ядро драйвері мен микробағдарламасын тексереді; тек кеңес береді, ештеңені өзгертпейді.
+	Components	Құрамдас бөліктер
+	Done. Log out and back in for the change to take effect.	Дайын. Өзгеріс күшіне енуі үшін жүйеден шығып, қайта кіріңіз.
+	GPU access	GPU қолжетімділігі
+	Install packages: {packages}	Бумаларды орнату: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Intel немесе AMD GPU-ның аппараттық бейне драйвері бар Ubuntu бумасын орнатады (NVIDIA NVDEC қолданады).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	GPU және NPU құрылғы түйіндерін ашуға мүмкіндік береді: сізді олар тиесілі топқа (render, video) қосады.
+	Log	Журнал
+	Log out and back in afterwards for the change to take effect.	Кейін өзгеріс күшіне енуі үшін жүйеден шығып, қайта кіріңіз.
+	Missing access or driver: System Settings (root)…	Қолжетімділік немесе драйвер жоқ: Жүйе баптаулары (root)…
+	NPU driver	NPU драйвері
+	Not needed	Қажет емес
+	Nothing happened yet in this window.	Бұл терезеде әлі ештеңе болған жоқ.
+	Nothing to change.	Өзгертетін ештеңе жоқ.
+	Plan	Жоспар
+	Plan for {component} failed: {error}	{component} жоспары сәтсіз: {error}
+	Plan for {component}: {plan}	{component} жоспары: {plan}
+	Plan…	Жоспар…
+	System Settings (root)	Жүйе баптаулары (root)
+	System Settings (root)…	Жүйе баптаулары (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Мұндағы әрекеттер әкімші құпиясөзін сұрайды және жүйені CFA4-тен тыс өзгертеді.
+	The system will ask for an administrator password.	Жүйе әкімші құпиясөзін сұрайды.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Бұл орнатуда жүйе көмекшісі жоқ (ол .deb бумасымен келеді): нені жетіспейтінін көресіз, бірақ мұнда өзгерте алмайсыз.
+	Undo the changes?	Өзгерістерді болдырмау керек пе?
+	Undo: removes the installed packages again.	Болдырмау: орнатылған бумаларды қайта жояды.
+	Undo: removes you from the group again.	Болдырмау: сізді топтан қайта шығарады.
+	Undo…	Болдырмау…
+	VA-API drivers	VA-API драйверлері
+	Waiting for log out	Жүйеден шығуды күтуде
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec орнатылмаған (Ubuntu бумасы pkexec), сондықтан CFA4 құпиясөзді сұрай алмайды.
+	{method} {component} failed: {error}	{method} {component} сәтсіз: {error}
+	{method} {component}: done	{method} {component}: дайын
+	{method} {component}: waiting for the password…	{method} {component}: құпиясөз күтілуде…

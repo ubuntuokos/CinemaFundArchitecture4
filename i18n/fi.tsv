@@ -5019,3 +5019,41 @@ export.summary	Low	matala
 	not in this build	ei mukana tässä koostuksessa
 	switched off in the settings	poistettu käytöstä asetuksissa
 	vendor-locked backends are switched off	valmistajaan sidotut taustaosat on poistettu käytöstä
+	Add user {user} to the group {group}.	Lisää käyttäjä {user} ryhmään {group}.
+	Apply the plan?	Otetaanko suunnitelma käyttöön?
+	Apply…	Ota käyttöön…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 kumoaa vain sen, minkä se itse muutti. Järjestelmä kysyy ylläpitäjän salasanaa.
+	Check failed: {error}	Tarkistus epäonnistui: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Tarkistaa NPU:n ydinajurin ja laiteohjelmiston; antaa vain ohjeita eikä muuta mitään.
+	Components	Komponentit
+	Done. Log out and back in for the change to take effect.	Valmis. Kirjaudu ulos ja takaisin sisään, jotta muutos tulee voimaan.
+	GPU access	GPU-käyttöoikeus
+	Install packages: {packages}	Asenna paketit: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Asentaa Ubuntu-paketin, jossa on Intel- tai AMD-GPU:n laitteistovideoajuri (NVIDIA käyttää NVDEC:tä).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Antaa avata GPU- ja NPU-laitesolmut: lisää sinut ryhmään (render, video), joka omistaa ne.
+	Log	Loki
+	Log out and back in afterwards for the change to take effect.	Kirjaudu sen jälkeen ulos ja takaisin sisään, jotta muutos tulee voimaan.
+	Missing access or driver: System Settings (root)…	Puuttuva käyttöoikeus tai ajuri: Järjestelmäasetukset (root)…
+	NPU driver	NPU-ajuri
+	Not needed	Ei tarpeen
+	Nothing happened yet in this window.	Tässä ikkunassa ei ole vielä tapahtunut mitään.
+	Nothing to change.	Ei mitään muutettavaa.
+	Plan	Suunnitelma
+	Plan for {component} failed: {error}	Komponentin {component} suunnitelma epäonnistui: {error}
+	Plan for {component}: {plan}	Komponentin {component} suunnitelma: {plan}
+	Plan…	Suunnitelma…
+	System Settings (root)	Järjestelmäasetukset (root)
+	System Settings (root)…	Järjestelmäasetukset (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Tämän sivun toiminnot kysyvät ylläpitäjän salasanaa ja muuttavat järjestelmää CFA4:n ulkopuolella.
+	The system will ask for an administrator password.	Järjestelmä kysyy ylläpitäjän salasanaa.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Tässä asennuksessa ei ole järjestelmäapuria (se tulee .deb-paketin mukana): näet, mitä puuttuu, mutta et voi muuttaa sitä täällä.
+	Undo the changes?	Kumotaanko muutokset?
+	Undo: removes the installed packages again.	Kumoa: poistaa asennetut paketit uudelleen.
+	Undo: removes you from the group again.	Kumoa: poistaa sinut ryhmästä uudelleen.
+	Undo…	Kumoa…
+	VA-API drivers	VA-API-ajurit
+	Waiting for log out	Odottaa uloskirjautumista
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec ei ole asennettu (Ubuntu-paketti pkexec), joten CFA4 ei voi kysyä salasanaa.
+	{method} {component} failed: {error}	{method} {component} epäonnistui: {error}
+	{method} {component}: done	{method} {component}: valmis
+	{method} {component}: waiting for the password…	{method} {component}: odottaa salasanaa…

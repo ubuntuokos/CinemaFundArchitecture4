@@ -5019,3 +5019,41 @@ export.summary	Low	తక్కువ
 	not in this build	ఈ బిల్డ్‌లో భాగం కాదు
 	switched off in the settings	సెట్టింగ్‌లలో ఆపివేయబడింది
 	vendor-locked backends are switched off	తయారీదారుకు కట్టుబడిన బ్యాకెండ్‌లు ఆపివేయబడ్డాయి
+	Add user {user} to the group {group}.	వినియోగదారు {user} ను సమూహం {group} లో చేర్చు.
+	Apply the plan?	ప్రణాళికను వర్తింపజేయాలా?
+	Apply…	వర్తింపజేయి…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 తాను మార్చినదాన్ని మాత్రమే రద్దు చేస్తుంది. సిస్టమ్ నిర్వాహక పాస్‌వర్డ్ అడుగుతుంది.
+	Check failed: {error}	తనిఖీ విఫలమైంది: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	NPU కెర్నల్ డ్రైవర్ మరియు ఫర్మ్‌వేర్‌ను తనిఖీ చేస్తుంది; మార్గదర్శనం మాత్రమే ఇస్తుంది, ఏమీ మార్చదు.
+	Components	భాగాలు
+	Done. Log out and back in for the change to take effect.	పూర్తయింది. మార్పు అమలులోకి రావడానికి లాగ్ అవుట్ చేసి మళ్లీ లాగిన్ అవ్వండి.
+	GPU access	GPU యాక్సెస్
+	Install packages: {packages}	ప్యాకేజీలను ఇన్‌స్టాల్ చేయి: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Intel లేదా AMD GPU హార్డ్‌వేర్ వీడియో డ్రైవర్ ఉన్న Ubuntu ప్యాకేజీని ఇన్‌స్టాల్ చేస్తుంది (NVIDIA NVDEC ను వాడుతుంది).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	GPU మరియు NPU పరికర నోడ్‌లను తెరవడానికి అనుమతిస్తుంది: వాటికి యజమాని అయిన సమూహం (render, video) లో మిమ్మల్ని చేరుస్తుంది.
+	Log	లాగ్
+	Log out and back in afterwards for the change to take effect.	తర్వాత మార్పు అమలులోకి రావడానికి లాగ్ అవుట్ చేసి మళ్లీ లాగిన్ అవ్వండి.
+	Missing access or driver: System Settings (root)…	యాక్సెస్ లేదా డ్రైవర్ లేదు: సిస్టమ్ సెట్టింగ్‌లు (root)…
+	NPU driver	NPU డ్రైవర్
+	Not needed	అవసరం లేదు
+	Nothing happened yet in this window.	ఈ విండోలో ఇంకా ఏమీ జరగలేదు.
+	Nothing to change.	మార్చాల్సింది ఏమీ లేదు.
+	Plan	ప్రణాళిక
+	Plan for {component} failed: {error}	{component} ప్రణాళిక విఫలమైంది: {error}
+	Plan for {component}: {plan}	{component} ప్రణాళిక: {plan}
+	Plan…	ప్రణాళిక…
+	System Settings (root)	సిస్టమ్ సెట్టింగ్‌లు (root)
+	System Settings (root)…	సిస్టమ్ సెట్టింగ్‌లు (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	ఇక్కడి చర్యలు నిర్వాహక పాస్‌వర్డ్ అడుగుతాయి మరియు CFA4 వెలుపల సిస్టమ్‌ను మారుస్తాయి.
+	The system will ask for an administrator password.	సిస్టమ్ నిర్వాహక పాస్‌వర్డ్ అడుగుతుంది.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	ఈ ఇన్‌స్టాలేషన్‌లో సిస్టమ్ సహాయకం లేదు (అది .deb ప్యాకేజీతో వస్తుంది): ఏమి లేదో చూడగలరు, కానీ ఇక్కడ మార్చలేరు.
+	Undo the changes?	మార్పులను రద్దు చేయాలా?
+	Undo: removes the installed packages again.	రద్దు: ఇన్‌స్టాల్ చేసిన ప్యాకేజీలను మళ్లీ తీసివేస్తుంది.
+	Undo: removes you from the group again.	రద్దు: మిమ్మల్ని సమూహం నుండి మళ్లీ తీసివేస్తుంది.
+	Undo…	రద్దు చేయి…
+	VA-API drivers	VA-API డ్రైవర్లు
+	Waiting for log out	లాగ్ అవుట్ కోసం వేచి ఉంది
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec ఇన్‌స్టాల్ కాలేదు (Ubuntu ప్యాకేజీ pkexec), కాబట్టి CFA4 పాస్‌వర్డ్ అడగలేదు.
+	{method} {component} failed: {error}	{method} {component} విఫలమైంది: {error}
+	{method} {component}: done	{method} {component}: పూర్తయింది
+	{method} {component}: waiting for the password…	{method} {component}: పాస్‌వర్డ్ కోసం వేచి ఉంది…

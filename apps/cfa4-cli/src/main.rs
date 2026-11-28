@@ -45,6 +45,7 @@ mod serve_scopes;
 mod serve_shm;
 mod serve_shuttle;
 mod serve_surface;
+mod serve_system;
 mod serve_tcsync;
 mod serve_text;
 mod serve_tts;

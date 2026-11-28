@@ -5025,3 +5025,41 @@
 	not in this build	tidak termasuk dalam build ini
 	switched off in the settings	dimatikan di pengaturan
 	vendor-locked backends are switched off	backend yang terikat vendor dimatikan
+	Add user {user} to the group {group}.	Tambahkan pengguna {user} ke grup {group}.
+	Apply the plan?	Terapkan rencana?
+	Apply…	Terapkan…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 hanya membatalkan apa yang diubahnya sendiri. Sistem akan meminta kata sandi administrator.
+	Check failed: {error}	Pemeriksaan gagal: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Memeriksa driver kernel dan firmware NPU; hanya memberi panduan dan tidak mengubah apa pun.
+	Components	Komponen
+	Done. Log out and back in for the change to take effect.	Selesai. Keluar lalu masuk kembali agar perubahan berlaku.
+	GPU access	Akses GPU
+	Install packages: {packages}	Pasang paket: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Memasang paket Ubuntu berisi driver video perangkat keras untuk GPU Intel atau AMD (NVIDIA memakai NVDEC).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Memungkinkan Anda membuka node perangkat GPU dan NPU: menambahkan Anda ke grup (render, video) pemiliknya.
+	Log	Log
+	Log out and back in afterwards for the change to take effect.	Setelah itu keluar lalu masuk kembali agar perubahan berlaku.
+	Missing access or driver: System Settings (root)…	Akses atau driver tidak ada: Pengaturan Sistem (root)…
+	NPU driver	Driver NPU
+	Not needed	Tidak diperlukan
+	Nothing happened yet in this window.	Belum terjadi apa pun di jendela ini.
+	Nothing to change.	Tidak ada yang perlu diubah.
+	Plan	Rencana
+	Plan for {component} failed: {error}	Rencana untuk {component} gagal: {error}
+	Plan for {component}: {plan}	Rencana untuk {component}: {plan}
+	Plan…	Rencana…
+	System Settings (root)	Pengaturan Sistem (root)
+	System Settings (root)…	Pengaturan Sistem (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Tindakan di sini meminta kata sandi administrator dan mengubah sistem di luar CFA4.
+	The system will ask for an administrator password.	Sistem akan meminta kata sandi administrator.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Instalasi ini tidak memiliki pembantu sistem (disertakan dalam paket .deb): Anda dapat melihat apa yang kurang, tetapi tidak dapat mengubahnya di sini.
+	Undo the changes?	Batalkan perubahan?
+	Undo: removes the installed packages again.	Batalkan: menghapus lagi paket yang dipasang.
+	Undo: removes you from the group again.	Batalkan: mengeluarkan Anda lagi dari grup.
+	Undo…	Batalkan…
+	VA-API drivers	Driver VA-API
+	Waiting for log out	Menunggu keluar
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec tidak terpasang (paket Ubuntu pkexec), jadi CFA4 tidak dapat meminta kata sandi.
+	{method} {component} failed: {error}	{method} {component} gagal: {error}
+	{method} {component}: done	{method} {component}: selesai
+	{method} {component}: waiting for the password…	{method} {component}: menunggu kata sandi…

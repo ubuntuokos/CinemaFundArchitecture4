@@ -5019,3 +5019,41 @@ export.summary	Low	madal
 	not in this build	pole selles järgus
 	switched off in the settings	seadetes välja lülitatud
 	vendor-locked backends are switched off	tootjaga seotud taustaprogrammid on välja lülitatud
+	Add user {user} to the group {group}.	Lisa kasutaja {user} rühma {group}.
+	Apply the plan?	Kas rakendada plaan?
+	Apply…	Rakenda…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 võtab tagasi ainult selle, mida ta ise muutis. Süsteem küsib administraatori parooli.
+	Check failed: {error}	Kontroll ebaõnnestus: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Kontrollib NPU tuumadraiverit ja püsivara; annab ainult juhiseid ega muuda midagi.
+	Components	Komponendid
+	Done. Log out and back in for the change to take effect.	Valmis. Muudatuse jõustamiseks logi välja ja uuesti sisse.
+	GPU access	GPU juurdepääs
+	Install packages: {packages}	Paigalda paketid: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Paigaldab Intel- või AMD-GPU riistvaralise videodraiveriga Ubuntu paketi (NVIDIA kasutab NVDEC-i).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Võimaldab avada GPU ja NPU seadmesõlmi: lisab sind rühma (render, video), kellele need kuuluvad.
+	Log	Logi
+	Log out and back in afterwards for the change to take effect.	Seejärel logi muudatuse jõustamiseks välja ja uuesti sisse.
+	Missing access or driver: System Settings (root)…	Puuduv juurdepääs või draiver: Süsteemi sätted (root)…
+	NPU driver	NPU draiver
+	Not needed	Pole vaja
+	Nothing happened yet in this window.	Selles aknas pole veel midagi juhtunud.
+	Nothing to change.	Pole midagi muuta.
+	Plan	Plaan
+	Plan for {component} failed: {error}	Komponendi {component} plaan ebaõnnestus: {error}
+	Plan for {component}: {plan}	Komponendi {component} plaan: {plan}
+	Plan…	Plaan…
+	System Settings (root)	Süsteemi sätted (root)
+	System Settings (root)…	Süsteemi sätted (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Siinsed toimingud küsivad administraatori parooli ja muudavad süsteemi väljaspool CFA4-t.
+	The system will ask for an administrator password.	Süsteem küsib administraatori parooli.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Selles paigalduses pole süsteemiabilist (see tuleb .deb paketiga): näed, mis puudub, kuid siin ei saa seda muuta.
+	Undo the changes?	Kas võtta muudatused tagasi?
+	Undo: removes the installed packages again.	Tagasivõtmine: eemaldab paigaldatud paketid uuesti.
+	Undo: removes you from the group again.	Tagasivõtmine: eemaldab sind rühmast uuesti.
+	Undo…	Võta tagasi…
+	VA-API drivers	VA-API draiverid
+	Waiting for log out	Ootab väljalogimist
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec pole paigaldatud (Ubuntu pakett pkexec), seega ei saa CFA4 parooli küsida.
+	{method} {component} failed: {error}	{method} {component} ebaõnnestus: {error}
+	{method} {component}: done	{method} {component}: valmis
+	{method} {component}: waiting for the password…	{method} {component}: ootab parooli…

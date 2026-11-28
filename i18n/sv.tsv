@@ -5019,3 +5019,41 @@ export.summary	Low	låg
 	not in this build	ingår inte i detta bygge
 	switched off in the settings	avstängd i inställningarna
 	vendor-locked backends are switched off	tillverkarbundna motorer är avstängda
+	Add user {user} to the group {group}.	Lägg till användaren {user} i gruppen {group}.
+	Apply the plan?	Tillämpa planen?
+	Apply…	Tillämpa…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 ångrar bara det som det själv har ändrat. Systemet kommer att be om ett administratörslösenord.
+	Check failed: {error}	Kontrollen misslyckades: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Kontrollerar NPU:ns kärndrivrutin och fast programvara; ger bara vägledning och ändrar ingenting.
+	Components	Komponenter
+	Done. Log out and back in for the change to take effect.	Klart. Logga ut och in igen för att ändringen ska gälla.
+	GPU access	GPU-åtkomst
+	Install packages: {packages}	Installera paket: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Installerar Ubuntu-paketet med maskinvarudrivrutinen för video till en Intel- eller AMD-GPU (NVIDIA använder NVDEC).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Låter dig öppna GPU- och NPU-enhetsnoderna: lägger till dig i gruppen (render, video) som äger dem.
+	Log	Logg
+	Log out and back in afterwards for the change to take effect.	Logga sedan ut och in igen för att ändringen ska gälla.
+	Missing access or driver: System Settings (root)…	Saknad åtkomst eller drivrutin: Systeminställningar (root)…
+	NPU driver	NPU-drivrutin
+	Not needed	Behövs inte
+	Nothing happened yet in this window.	Inget har hänt i det här fönstret ännu.
+	Nothing to change.	Inget att ändra.
+	Plan	Plan
+	Plan for {component} failed: {error}	Planen för {component} misslyckades: {error}
+	Plan for {component}: {plan}	Plan för {component}: {plan}
+	Plan…	Plan…
+	System Settings (root)	Systeminställningar (root)
+	System Settings (root)…	Systeminställningar (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Åtgärderna här ber om ett administratörslösenord och ändrar systemet utanför CFA4.
+	The system will ask for an administrator password.	Systemet kommer att be om ett administratörslösenord.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Den här installationen saknar systemhjälpen (den följer med .deb-paketet): du ser vad som saknas men kan inte ändra det här.
+	Undo the changes?	Ångra ändringarna?
+	Undo: removes the installed packages again.	Ångra: tar bort de installerade paketen igen.
+	Undo: removes you from the group again.	Ångra: tar bort dig ur gruppen igen.
+	Undo…	Ångra…
+	VA-API drivers	VA-API-drivrutiner
+	Waiting for log out	Väntar på utloggning
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec är inte installerat (Ubuntu-paketet pkexec), så CFA4 kan inte be om lösenordet.
+	{method} {component} failed: {error}	{method} {component} misslyckades: {error}
+	{method} {component}: done	{method} {component}: klart
+	{method} {component}: waiting for the password…	{method} {component}: väntar på lösenordet…

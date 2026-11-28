@@ -5016,3 +5016,41 @@ export.summary	Low	低
 	not in this build	此版本未包含
 	switched off in the settings	已在設定中關閉
 	vendor-locked backends are switched off	綁定廠商的後端已關閉
+	Add user {user} to the group {group}.	將使用者 {user} 加入群組 {group}。
+	Apply the plan?	要套用此計畫嗎？
+	Apply…	套用…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 只會復原它自己做的變更。系統會要求輸入管理員密碼。
+	Check failed: {error}	檢查失敗：{error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	檢查 NPU 的核心驅動程式與韌體；只提供指引，不做任何變更。
+	Components	元件
+	Done. Log out and back in for the change to take effect.	完成。登出後再重新登入，變更才會生效。
+	GPU access	GPU 存取
+	Install packages: {packages}	安裝套件：{packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	安裝含有 Intel 或 AMD GPU 硬體視訊驅動程式的 Ubuntu 套件（NVIDIA 使用 NVDEC）。
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	讓你可以開啟 GPU 與 NPU 裝置節點：將你加入擁有它們的群組（render、video）。
+	Log	記錄
+	Log out and back in afterwards for the change to take effect.	之後登出再重新登入，變更才會生效。
+	Missing access or driver: System Settings (root)…	缺少存取權或驅動程式：系統設定（root）…
+	NPU driver	NPU 驅動程式
+	Not needed	不需要
+	Nothing happened yet in this window.	此視窗中尚未發生任何事。
+	Nothing to change.	沒有需要變更的項目。
+	Plan	計畫
+	Plan for {component} failed: {error}	{component} 的計畫失敗：{error}
+	Plan for {component}: {plan}	{component} 的計畫：{plan}
+	Plan…	計畫…
+	System Settings (root)	系統設定（root）
+	System Settings (root)…	系統設定（root）…
+	The actions here ask for an administrator password and change the system outside CFA4.	此處的動作會要求管理員密碼，並在 CFA4 之外變更系統。
+	The system will ask for an administrator password.	系統會要求輸入管理員密碼。
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	此安裝沒有系統輔助程式（隨 .deb 套件提供）：你可以看到缺少什麼，但無法在此變更。
+	Undo the changes?	要復原這些變更嗎？
+	Undo: removes the installed packages again.	復原：再次移除已安裝的套件。
+	Undo: removes you from the group again.	復原：再次將你從群組中移除。
+	Undo…	復原…
+	VA-API drivers	VA-API 驅動程式
+	Waiting for log out	等待登出
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	未安裝 pkexec（Ubuntu 套件 pkexec），因此 CFA4 無法要求密碼。
+	{method} {component} failed: {error}	{method} {component} 失敗：{error}
+	{method} {component}: done	{method} {component}：完成
+	{method} {component}: waiting for the password…	{method} {component}：正在等待密碼…

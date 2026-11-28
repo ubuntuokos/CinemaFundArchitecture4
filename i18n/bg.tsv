@@ -5020,3 +5020,41 @@ export.summary	Low	ниско
 	not in this build	не е част от тази компилация
 	switched off in the settings	изключено в настройките
 	vendor-locked backends are switched off	модулите, обвързани с производител, са изключени
+	Add user {user} to the group {group}.	Добавяне на потребителя {user} в групата {group}.
+	Apply the plan?	Да се приложи ли планът?
+	Apply…	Прилагане…
+	CFA4 undoes only what it changed itself. The system will ask for an administrator password.	CFA4 отменя само това, което е променил сам. Системата ще поиска администраторска парола.
+	Check failed: {error}	Проверката не бе успешна: {error}
+	Checks the NPU's kernel driver and firmware; it only gives guidance and changes nothing.	Проверява драйвера на ядрото и фърмуера на NPU; само дава насоки и не променя нищо.
+	Components	Компоненти
+	Done. Log out and back in for the change to take effect.	Готово. Излезте и влезте отново, за да влезе промяната в сила.
+	GPU access	Достъп до GPU
+	Install packages: {packages}	Инсталиране на пакети: {packages}
+	Installs the Ubuntu package with the hardware video driver of an Intel or AMD GPU (NVIDIA uses NVDEC).	Инсталира пакета на Ubuntu с хардуерния видеодрайвер за GPU на Intel или AMD (NVIDIA използва NVDEC).
+	Lets you open the GPU and NPU device nodes: adds you to the group (render, video) that owns them.	Позволява отваряне на възлите на устройствата GPU и NPU: добавя ви в групата (render, video), която ги притежава.
+	Log	Дневник
+	Log out and back in afterwards for the change to take effect.	След това излезте и влезте отново, за да влезе промяната в сила.
+	Missing access or driver: System Settings (root)…	Липсва достъп или драйвер: Системни настройки (root)…
+	NPU driver	Драйвер за NPU
+	Not needed	Не е нужно
+	Nothing happened yet in this window.	В този прозорец още нищо не се е случило.
+	Nothing to change.	Няма какво да се променя.
+	Plan	План
+	Plan for {component} failed: {error}	Планът за {component} не бе успешен: {error}
+	Plan for {component}: {plan}	План за {component}: {plan}
+	Plan…	План…
+	System Settings (root)	Системни настройки (root)
+	System Settings (root)…	Системни настройки (root)…
+	The actions here ask for an administrator password and change the system outside CFA4.	Действията тук искат администраторска парола и променят системата извън CFA4.
+	The system will ask for an administrator password.	Системата ще поиска администраторска парола.
+	This installation has no system helper (it comes with the .deb package): you can see what is missing, but not change it here.	Тази инсталация няма системен помощник (идва с пакета .deb): виждате какво липсва, но не можете да го промените тук.
+	Undo the changes?	Да се отменят ли промените?
+	Undo: removes the installed packages again.	Отмяна: отново премахва инсталираните пакети.
+	Undo: removes you from the group again.	Отмяна: отново ви премахва от групата.
+	Undo…	Отмяна…
+	VA-API drivers	Драйвери VA-API
+	Waiting for log out	Изчаква излизане
+	pkexec is not installed (Ubuntu package pkexec), so CFA4 cannot ask for the password.	pkexec не е инсталиран (пакет на Ubuntu pkexec), затова CFA4 не може да поиска паролата.
+	{method} {component} failed: {error}	{method} {component} не бе успешно: {error}
+	{method} {component}: done	{method} {component}: готово
+	{method} {component}: waiting for the password…	{method} {component}: изчаква се паролата…
