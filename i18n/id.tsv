@@ -4991,3 +4991,21 @@
 	DNx Coding	Pengodean DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Kompatibel dengan FFmpeg (untuk alat berbasis FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Mati: dienkode menurut SMPTE ST 2019-1. Nyala: dienkode seperti FFmpeg menulis DNx, untuk alat yang dibangun di atas FFmpeg.
+	Bi Linear X	Bilinear X
+	Bi Linear Y	Bilinear Y
+	Burst	Ledakan
+	Checkerboard Small	Papan catur kecil
+	Clock	Jam
+	Cloud	Awan
+	Curtain	Tirai
+	Diagonal (built in)	Diagonal (bawaan)
+	Horizontal Blinds	Kerai horizontal
+	Linear X	Linear X
+	Linear Y	Linear Y
+	Luma Mask	Masker luma
+	Radial Bars	Batang radial
+	Spiral	Spiral
+	Spiral2	Spiral 2
+	Square2	Persegi 2
+	Square2 Bars	Persegi 2 batang
+	Symmetric Clock	Jam simetris

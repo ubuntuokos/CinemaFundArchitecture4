@@ -4982,3 +4982,21 @@ export.summary	Low	低
 	DNx Coding	DNx 編碼
 	FFmpeg-compatible (for FFmpeg-based tools)	相容於 FFmpeg（供以 FFmpeg 為基礎的工具使用）
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	關：依 SMPTE ST 2019-1 編碼。開：依 FFmpeg 寫入 DNx 的方式編碼，供以 FFmpeg 為基礎的工具使用。
+	Bi Linear X	雙線性 X
+	Bi Linear Y	雙線性 Y
+	Burst	迸發
+	Checkerboard Small	小棋盤
+	Clock	時鐘
+	Cloud	雲
+	Curtain	簾幕
+	Diagonal (built in)	對角線（內建）
+	Horizontal Blinds	水平百葉窗
+	Linear X	線性 X
+	Linear Y	線性 Y
+	Luma Mask	亮度遮罩
+	Radial Bars	放射條
+	Spiral	螺旋
+	Spiral2	螺旋 2
+	Square2	方形 2
+	Square2 Bars	方形 2 條
+	Symmetric Clock	對稱時鐘

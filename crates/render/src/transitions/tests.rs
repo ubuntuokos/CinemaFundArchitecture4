@@ -706,3 +706,27 @@ fn typewriter_cursor_stays_on_the_text_block() {
         }
     }
 }
+
+#[test]
+fn gradient_wipe_luma_masks_change_the_reveal_and_the_default_is_unchanged() {
+    let def = effect_defs().iter().find(|d| d.id == "gradient_wipe").expect("gradient_wipe");
+    let (a, b) = (frame_a(), frame_b());
+    let mut base = def.instance();
+    let default_out = apply(&base, &a, &b, 0.5);
+    let mut diffs = 0;
+    for choice in 1..cfa4_project::vtransition::LUMA_OPTS.len() as u32 {
+        base.params.get_mut("luma").expect("luma param").value = ParamValue::Choice(choice);
+        let out = apply(&base, &a, &b, 0.5);
+        assert!(out.px.iter().all(|v| v.is_finite()), "choice {choice}");
+        if out.px != default_out.px {
+            diffs += 1;
+        }
+        // at p = 0 the outgoing frame shows, at p = 1 the incoming one, whatever the mask
+        let start = apply(&base, &a, &b, 0.0);
+        let end = apply(&base, &a, &b, 1.0);
+        let close = |x: &Image, y: &Image| x.px.iter().zip(&y.px).all(|(p, q)| (p - q).abs() < 0.02);
+        assert!(close(&start, &a), "choice {choice} at p = 0");
+        assert!(close(&end, &b), "choice {choice} at p = 1");
+    }
+    assert!(diffs >= 15, "the masks must produce different reveals, only {diffs} did");
+}

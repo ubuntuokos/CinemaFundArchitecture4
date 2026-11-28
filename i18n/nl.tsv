@@ -4983,3 +4983,21 @@ export.summary	Low	laag
 	DNx Coding	DNx-codering
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-compatibel (voor op FFmpeg gebaseerde tools)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Uit: gecodeerd volgens SMPTE ST 2019-1. Aan: gecodeerd zoals FFmpeg DNx schrijft, voor tools die op FFmpeg zijn gebouwd.
+	Bi Linear X	Bilineair X
+	Bi Linear Y	Bilineair Y
+	Burst	Uitbarsting
+	Checkerboard Small	Klein dambord
+	Clock	Klok
+	Cloud	Wolk
+	Curtain	Gordijn
+	Diagonal (built in)	Diagonaal (ingebouwd)
+	Horizontal Blinds	Horizontale jaloezieën
+	Linear X	Lineair X
+	Linear Y	Lineair Y
+	Luma Mask	Lumamasker
+	Radial Bars	Radiale balken
+	Spiral	Spiraal
+	Spiral2	Spiraal 2
+	Square2	Vierkant 2
+	Square2 Bars	Vierkant 2 balken
+	Symmetric Clock	Symmetrische klok

@@ -4985,3 +4985,21 @@ export.summary	Low	madal
 	DNx Coding	DNx-i kodeerimine
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpegiga ühilduv (FFmpegil põhinevatele tööriistadele)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Väljas: kodeeritud SMPTE ST 2019-1 järgi. Sees: kodeeritud nii, nagu FFmpeg DNx-i kirjutab, FFmpegil põhinevatele tööriistadele.
+	Bi Linear X	Bilineaarne X
+	Bi Linear Y	Bilineaarne Y
+	Burst	Purse
+	Checkerboard Small	Väike malelaud
+	Clock	Kell
+	Cloud	Pilv
+	Curtain	Eesriie
+	Diagonal (built in)	Diagonaal (sisseehitatud)
+	Horizontal Blinds	Horisontaalsed ribakardinad
+	Linear X	Lineaarne X
+	Linear Y	Lineaarne Y
+	Luma Mask	Heleduse mask
+	Radial Bars	Radiaalribad
+	Spiral	Spiraal
+	Spiral2	Spiraal 2
+	Square2	Ruut 2
+	Square2 Bars	Ruut 2 ribad
+	Symmetric Clock	Sümmeetriline kell

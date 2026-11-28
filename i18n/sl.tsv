@@ -4986,3 +4986,21 @@ export.summary	Low	nizka
 	DNx Coding	Kodiranje DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Združljivo s FFmpeg (za orodja na osnovi FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Izklopljeno: kodirano po SMPTE ST 2019-1. Vklopljeno: kodirano tako, kot FFmpeg zapisuje DNx, za orodja na osnovi FFmpeg.
+	Bi Linear X	Bilinearno X
+	Bi Linear Y	Bilinearno Y
+	Burst	Izbruh
+	Checkerboard Small	Majhna šahovnica
+	Clock	Ura
+	Cloud	Oblak
+	Curtain	Zavesa
+	Diagonal (built in)	Diagonala (vgrajena)
+	Horizontal Blinds	Vodoravne žaluzije
+	Linear X	Linearno X
+	Linear Y	Linearno Y
+	Luma Mask	Maska svetlosti
+	Radial Bars	Radialni trakovi
+	Spiral	Spirala
+	Spiral2	Spirala 2
+	Square2	Kvadrat 2
+	Square2 Bars	Kvadrat 2 trakovi
+	Symmetric Clock	Simetrična ura

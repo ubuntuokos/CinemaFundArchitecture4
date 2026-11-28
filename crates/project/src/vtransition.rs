@@ -71,6 +71,30 @@ fn angle(id: &'static str, label: &'static str, def: f64) -> ParamDef {
 fn centre() -> ParamDef {
     fixed(pt("center", "Center", f64::NAN, f64::NAN))
 }
+/// Gradient Wipe ▸ Luma Mask: the built-in diagonal gradient, then the shipped CC0 luma set (KDN-21).
+/// The order must match `cfa4_render::lumas::FILES` (a render test checks it).
+pub const LUMA_OPTS: &[&str] = &[
+    "Diagonal (built in)",
+    "Bi Linear X",
+    "Bi Linear Y",
+    "Burst",
+    "Checkerboard Small",
+    "Clock",
+    "Cloud",
+    "Curtain",
+    "Horizontal Blinds",
+    "Linear X",
+    "Linear Y",
+    "Radial",
+    "Radial Bars",
+    "Spiral",
+    "Spiral2",
+    "Square",
+    "Square2",
+    "Square2 Bars",
+    "Symmetric Clock",
+];
+
 fn direction() -> ParamDef {
     ch("direction", "Direction", DIR_OPTS, 3)
 }
@@ -446,7 +470,13 @@ pub(crate) fn video_transition_defs() -> Vec<EffectDef> {
         tr("checker_wipe", "Checker Wipe", OBSOLETE_VIDEO_TRANSITIONS, A, vec![]),
         tr("cube_spin", "Cube Spin", OBSOLETE_VIDEO_TRANSITIONS, A, vec![]),
         tr("flip_over", "Flip Over", OBSOLETE_VIDEO_TRANSITIONS, A, vec![]),
-        tr("gradient_wipe", "Gradient Wipe", OBSOLETE_VIDEO_TRANSITIONS, A, vec![fixed(crate::effect::f("softness", "Softness", 10.0, 0.0, 100.0, ""))]),
+        tr(
+            "gradient_wipe",
+            "Gradient Wipe",
+            OBSOLETE_VIDEO_TRANSITIONS,
+            A,
+            vec![fixed(crate::effect::f("softness", "Softness", 10.0, 0.0, 100.0, "")), ch("luma", "Luma Mask", LUMA_OPTS, 0)],
+        ),
         tr("page_turn", "Page Turn", OBSOLETE_VIDEO_TRANSITIONS, A, vec![]),
         tr("venetian_blinds", "Venetian Blinds", OBSOLETE_VIDEO_TRANSITIONS, A, vec![]),
     ]

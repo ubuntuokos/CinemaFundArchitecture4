@@ -4983,3 +4983,21 @@ export.summary	Low	niska
 	DNx Coding	Kodowanie DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Zgodne z FFmpeg (dla narzędzi opartych na FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Wyłączone: kodowanie zgodnie z SMPTE ST 2019-1. Włączone: kodowanie tak, jak FFmpeg zapisuje DNx, dla narzędzi opartych na FFmpeg.
+	Bi Linear X	Dwuliniowy X
+	Bi Linear Y	Dwuliniowy Y
+	Burst	Wybuch
+	Checkerboard Small	Mała szachownica
+	Clock	Zegar
+	Cloud	Chmura
+	Curtain	Kurtyna
+	Diagonal (built in)	Przekątna (wbudowana)
+	Horizontal Blinds	Żaluzje poziome
+	Linear X	Liniowy X
+	Linear Y	Liniowy Y
+	Luma Mask	Maska luminancji
+	Radial Bars	Pasy radialne
+	Spiral	Spirala
+	Spiral2	Spirala 2
+	Square2	Kwadrat 2
+	Square2 Bars	Kwadrat 2 pasy
+	Symmetric Clock	Zegar symetryczny

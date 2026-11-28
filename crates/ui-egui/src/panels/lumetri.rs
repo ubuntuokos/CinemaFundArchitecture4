@@ -294,7 +294,7 @@ fn lut_combo(ui: &mut egui::Ui, app: &mut Cfa4App, e: &EffectInstance, param: &s
     let builtins: Vec<&cfa4_render::luts::Builtin> = if input {
         cfa4_render::luts::input_builtins().collect()
     } else {
-        cfa4_render::luts::builtins().iter().filter(|b| b.id.starts_with("look-")).collect()
+        cfa4_render::luts::builtins().iter().filter(|b| b.id.starts_with("look-") || b.id.starts_with("cc0-")).collect()
     };
     entries.extend(builtins.into_iter().map(|b| (format!("builtin:{}", b.id), b.label.clone())));
     entries.extend(app.session.project.luts.iter().map(|l| (format!("lib:{}", l.id), l.name.clone())));

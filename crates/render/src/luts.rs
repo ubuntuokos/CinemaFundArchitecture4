@@ -27,7 +27,17 @@ pub struct Builtin {
 enum BuiltinKind {
     LogTo709(ColorSpace),
     Look(u32),
+    /// A shipped CC0 `.cube` creative look (KDN-21), embedded from `assets/luts/`.
+    Cube(&'static str),
 }
+
+/// The shipped creative-look cubes: id, label, file text (Kdenlive data set, CC0-1.0).
+const CUBE_LOOKS: &[(&str, &str, &str)] = &[
+    ("cc0-blue-tint", "Blue Tint (CC0)", include_str!("../../../assets/luts/BLUE_TINT.cube")),
+    ("cc0-cinematic", "Cinematic (CC0)", include_str!("../../../assets/luts/CINEMATIC.cube")),
+    ("cc0-green-tint", "Green Tint (CC0)", include_str!("../../../assets/luts/GREEN_TINT.cube")),
+    ("cc0-teal-orange", "Teal and Orange (CC0)", include_str!("../../../assets/luts/TEAL_ORANGE.cube")),
+];
 
 /// Built-in LUTs offered in the Input LUT menu (camera conversions) and the Look menu.
 pub fn builtins() -> &'static [Builtin] {
@@ -44,6 +54,9 @@ pub fn builtins() -> &'static [Builtin] {
             .unwrap_or(&[]);
         for (i, name) in looks.iter().enumerate().skip(1) {
             v.push(Builtin { id: format!("look-{}", slug(name)), label: (*name).to_string(), kind: BuiltinKind::Look(i as u32) });
+        }
+        for (id, label, text) in CUBE_LOOKS {
+            v.push(Builtin { id: (*id).to_string(), label: (*label).to_string(), kind: BuiltinKind::Cube(text) });
         }
         v
     })
@@ -69,12 +82,17 @@ fn slug(s: &str) -> String {
 impl Builtin {
     /// Generate the LUT (33³; our own procedural work).
     pub fn generate(&self) -> Lut {
+        if let BuiltinKind::Cube(text) = self.kind {
+            // the embedded files are checked by a test; an unreadable one falls back to identity
+            return Lut::parse(text, Some(LutFormat::Cube)).unwrap_or_else(|_| Lut::from_cube(Lut3d::from_fn(2, |c| c)));
+        }
         let mut cube = match self.kind {
             BuiltinKind::LogTo709(cs) => {
                 let t = cfa4_color::InputTransform::new(cs, Range::Limited, &cfa4_color::ColorPipeline::REC709, None);
                 Lut3d::from_fn(33, |c| t.convert(c).map(|v| cfa4_color::linear_to_srgb(v.clamp(0.0, 1.0))))
             }
             BuiltinKind::Look(n) => Lut3d::from_fn(33, |c| crate::effects::apply_look(n, c).map(|v| v.clamp(0.0, 1.0))),
+            BuiltinKind::Cube(_) => Lut3d::from_fn(2, |c| c),
         };
         cube.title = format!("CFA4 {}", self.label);
         Lut::from_cube(cube)
@@ -177,6 +195,21 @@ mod tests {
         let c = [0.3, 0.5, 0.7];
         let (a, want) = (lk.apply(c), crate::effects::apply_look(1, c));
         assert!((0..3).all(|k| (a[k] - want[k]).abs() < 0.01), "{a:?} vs {want:?}");
+    }
+
+    #[test]
+    fn shipped_cc0_cube_looks_load_and_differ_from_identity() {
+        for (id, _, text) in CUBE_LOOKS {
+            let parsed = Lut::parse(text, Some(LutFormat::Cube)).unwrap_or_else(|e| panic!("{id}: {e:?}"));
+            let l = resolve(None, &format!("builtin:{id}")).unwrap_or_else(|| panic!("{id} does not resolve"));
+            let c = [0.25, 0.5, 0.75];
+            assert_eq!(l.apply(c), parsed.apply(c), "{id}: same output as loading the .cube directly");
+            let out = l.apply(c);
+            assert!((0..3).any(|k| (out[k] - c[k]).abs() > 0.01), "{id} must change the colour: {out:?}");
+            assert!(out.iter().all(|v| v.is_finite() && (-0.01..=1.01).contains(v)), "{id}: {out:?}");
+        }
+        assert!(builtins().iter().filter(|b| b.id.starts_with("cc0-")).count() == 4);
+        assert!(input_builtins().all(|b| !b.id.starts_with("cc0-")), "creative looks are not camera conversions");
     }
 
     #[test]

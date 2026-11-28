@@ -274,3 +274,14 @@ Events: `surfaceAction` `{command, params, device, control, seq}`, `surfaceLearn
 Learn states: `learning`, `capturing`, `pending`, `conflict`, `timeout`, `confirmed`, `rejected`, `cancelled`. A binding is stored by the GUI only after confirm; OK writes preferences and the schema-checked file `active-<device>.json` under `$XDG_DATA_HOME/cfa4/Control Surfaces/`.
 
 Trigger inputs are not dropped when the lane is full (the reader waits and `stalls` grows). Continuous values keep the last one (`coalesced`). The lane starts at 256. The final size is not measured yet (N-08).
+
+### Shipped lumas and creative-look LUTs
+
+CC0 data from the Kdenlive set (plan KDN-21), embedded in the binary, with attribution in `ATTRIBUTION.md`.
+`lut.list` now also returns four creative looks as `builtin:cc0-blue-tint`, `builtin:cc0-cinematic`,
+`builtin:cc0-green-tint` and `builtin:cc0-teal-orange` (usable with `lumetri.setLook`, never offered as
+camera input conversions). The Gradient Wipe transition has a `luma` choice parameter: 0 is the built-in
+diagonal gradient, 1–18 are the shipped greyscale masks of `assets/lumas/PAL/` (Bi Linear X/Y, Burst,
+Checkerboard Small, Clock, Cloud, Curtain, Horizontal Blinds, Linear X/Y, Radial, Radial Bars, Spiral,
+Spiral2, Square, Square2, Square2 Bars, Symmetric Clock), set with `effects.setParam` like any choice.
+The luma set adds 7.2 MB and the four LUTs 2.1 MB to the source tree and the release package.

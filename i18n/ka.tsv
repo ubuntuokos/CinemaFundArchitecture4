@@ -4986,3 +4986,21 @@ export.summary	Low	დაბალი
 	DNx Coding	DNx-ის კოდირება
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-თან თავსებადი (FFmpeg-ზე დაფუძნებული ხელსაწყოებისთვის)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	გამორთული: კოდირება SMPTE ST 2019-1-ის მიხედვით. ჩართული: კოდირება ისე, როგორც FFmpeg წერს DNx-ს, FFmpeg-ზე აგებული ხელსაწყოებისთვის.
+	Bi Linear X	ბილინეარული X
+	Bi Linear Y	ბილინეარული Y
+	Burst	აფეთქება
+	Checkerboard Small	პატარა ჭადრაკის დაფა
+	Clock	საათი
+	Cloud	ღრუბელი
+	Curtain	ფარდა
+	Diagonal (built in)	დიაგონალი (ჩაშენებული)
+	Horizontal Blinds	ჰორიზონტალური ჟალუზი
+	Linear X	ხაზოვანი X
+	Linear Y	ხაზოვანი Y
+	Luma Mask	ლუმას ნიღაბი
+	Radial Bars	რადიალური ზოლები
+	Spiral	სპირალი
+	Spiral2	სპირალი 2
+	Square2	კვადრატი 2
+	Square2 Bars	კვადრატი 2 ზოლები
+	Symmetric Clock	სიმეტრიული საათი

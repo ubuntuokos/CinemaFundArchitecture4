@@ -5790,6 +5790,13 @@
    "class": "other",
    "crate": "cfa4-render",
    "kind": "struct",
+   "module": "lumas.rs",
+   "name": "Luma"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-render",
+   "kind": "struct",
    "module": "lumetri_presets.rs",
    "name": "LumetriPreset"
   },
@@ -13087,6 +13094,11 @@
    "from": "cfa4-render/lib.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-render/lumas.rs",
+   "item": "vtransition",
+   "to": "cfa4-project"
   },
   {
    "from": "cfa4-render/lumetri_presets.rs",

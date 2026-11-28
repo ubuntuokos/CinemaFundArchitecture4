@@ -22,6 +22,7 @@ pub mod graphic_clip;
 pub mod graphics;
 pub mod homography;
 pub mod image;
+pub mod lumas;
 pub mod lumetri_presets;
 pub mod luts;
 pub mod mask;

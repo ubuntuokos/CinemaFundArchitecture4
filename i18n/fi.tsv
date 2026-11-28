@@ -4985,3 +4985,21 @@ export.summary	Low	matala
 	DNx Coding	DNx-koodaus
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-yhteensopiva (FFmpeg-pohjaisille työkaluille)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Pois: koodattu SMPTE ST 2019-1:n mukaan. Päällä: koodattu niin kuin FFmpeg kirjoittaa DNx:n, FFmpegiin perustuville työkaluille.
+	Bi Linear X	Bilineaarinen X
+	Bi Linear Y	Bilineaarinen Y
+	Burst	Purkaus
+	Checkerboard Small	Pieni shakkilauta
+	Clock	Kello
+	Cloud	Pilvi
+	Curtain	Verho
+	Diagonal (built in)	Viisto (sisäänrakennettu)
+	Horizontal Blinds	Vaakalamellit
+	Linear X	Lineaarinen X
+	Linear Y	Lineaarinen Y
+	Luma Mask	Luminanssimaski
+	Radial Bars	Säteittäiset palkit
+	Spiral	Spiraali
+	Spiral2	Spiraali 2
+	Square2	Neliö 2
+	Square2 Bars	Neliö 2 palkit
+	Symmetric Clock	Symmetrinen kello
