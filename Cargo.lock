@@ -1578,6 +1578,7 @@ dependencies = [
  "cfa4-dcp-validate",
  "cfa4-dcpomatic",
  "cfa4-dng",
+ "cfa4-dnx",
  "cfa4-docpath",
  "cfa4-edit",
  "cfa4-export",

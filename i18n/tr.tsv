@@ -4976,3 +4976,11 @@ export.summary	Low	düşük
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video klasörü (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfik, 6 Mbps, GOP 15, AC-3 192 kbps, bölümler dizinin Bölüm işaretçilerinden
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video klasörü (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfik, 6 Mbps, GOP 18, AC-3 192 kbps, bölümler dizinin Bölüm işaretçilerinden
+	DNx decoding:	DNx kod çözme:
+	As detected from the file ({detected})	Dosyadan algılandığı gibi ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standart)
+	FFmpeg-compatible	FFmpeg uyumlu
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg bazı DNx dosyalarını standarttan farklı okur (4:4:4 renkler, ters niceleme). FFmpeg ile kodlanmış görüntü algılanır; algılama yanlışsa burada seçin.
+	DNx Coding	DNx kodlama
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg uyumlu (FFmpeg tabanlı araçlar için)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Kapalı: SMPTE ST 2019-1'e göre kodlanır. Açık: FFmpeg'in DNx yazdığı biçimde kodlanır, FFmpeg tabanlı araçlar için.

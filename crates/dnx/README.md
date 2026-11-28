@@ -119,7 +119,9 @@ the prose of §7.3.1.2; we follow the prose (normative text takes precedence).
   (including the 4-byte scan-line alignment), starting from the previous frame's value, then
   gives macroblocks one finer step, spread evenly over the frame, while the budget allows.
 - `export::Format::DnxHr` (`file.exportMedia {"format":"dnxhr","dnxProfile":"lb|sq|hq|hqx"}`)
-  writes QuickTime `AVdh` + PCM. The Avid-specific `ACLR`/`ADHR` sample-entry atoms are not
+  writes QuickTime `AVdh` + PCM, by SMPTE ST 2019-1; `"dnxFfmpegCompat":true` codes it as FFmpeg
+  writes DNx instead (CFA4-DNX-SPEC-001 D3). Interpret Footage chooses how an item's DNx decodes
+  (`clip.interpretFootage {"dnxConventions":"auto|smpte|ffmpeg"}`, `media.dnxInfo`; D2). The Avid-specific `ACLR`/`ADHR` sample-entry atoms are not
   written (ffmpeg and our reader don't need them).
 - The 4:2:2 DNxHD IDs are export profiles too (`"dnxProfile":"hd1235|hd1237|hd1238|hd1250|hd1251|hd1252|hd1253"`),
   written as QuickTime `AVdn` or in MXF (OP1a / OP-Atom, the ID in the picture coding label).

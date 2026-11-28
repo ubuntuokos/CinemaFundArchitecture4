@@ -58,6 +58,8 @@ pub struct MxfSource {
     /// The black picture shown in edit list gaps (made on first use).
     blank: std::sync::OnceLock<Arc<VideoFrame>>,
     video: GopCache,
+    /// Interpret Footage ▸ DNx conventions.
+    dnx: crate::video::DnxChoice,
     /// Why the video cannot be decoded (no decoder for the coding).
     unsupported: Option<String>,
     /// MPEG-2: the first sequence header (primes decoders that start without one).
@@ -887,6 +889,7 @@ impl MxfSource {
             vcount,
             blank: std::sync::OnceLock::new(),
             video: GopCache::new(explicit_color),
+            dnx: Default::default(),
             unsupported,
             mpeg2_header,
             sstp_header,
@@ -1035,9 +1038,9 @@ impl VideoSamples for MxfVideo<'_> {
         match t.codec {
             Codec::Avc { .. } => Ok(Box::new(crate::video::H264Decoder::annexb())),
             Codec::Mpeg2 => Ok(Box::new(crate::video::Mpeg2Decoder::new(self.src.mpeg2_header.clone()))),
-            // DNx written by FFmpeg follows FFmpeg's conventions (CFA4-DNX-SPEC-001 R5)
-            Codec::Vc3 if self.src.file_written_by_ffmpeg() => Ok(Box::new(crate::video::DnxDecoder { ffmpeg_compat: true })),
-            Codec::Vc3 => make_video_decoder(&SampleEntry::dnx(FourCc(*b"AVdh"), w, h)),
+            // DNx written by FFmpeg follows FFmpeg's conventions (CFA4-DNX-SPEC-001 R5), unless
+            // Interpret Footage says otherwise
+            Codec::Vc3 => Ok(Box::new(crate::video::DnxDecoder { ffmpeg_compat: self.src.dnx.ffmpeg(self.src.file_written_by_ffmpeg()) })),
             Codec::ProRes { profile } => make_video_decoder(&SampleEntry::prores(prores_fourcc(profile), w, h)),
             Codec::Jpeg2000 => Ok(Box::new(crate::j2k::J2kDecoder::new(self.src.j2k_hints))),
             Codec::Dv => Ok(Box::new(crate::video::DvDecoder::default())),
@@ -1059,6 +1062,14 @@ impl MediaSource for MxfSource {
     fn object_audio(&self, start: i64, frames: usize) -> Option<Result<cfa4_media::ObjectAudio, MediaError>> {
         let ia = self.iab.as_ref()?;
         Some(ia.objects(&self.file, &self.bytes, start, frames).map_err(MediaError::Decode))
+    }
+    fn set_dnx_conventions(&self, ffmpeg: Option<bool>) {
+        self.dnx.set(ffmpeg);
+    }
+
+    fn dnx_ffmpeg_detected(&self) -> Option<bool> {
+        let t = self.file.tracks.get(self.vtrack?)?;
+        matches!(t.codec, Codec::Vc3).then(|| self.file_written_by_ffmpeg())
     }
 
     fn missing_keys(&self) -> Vec<String> {
