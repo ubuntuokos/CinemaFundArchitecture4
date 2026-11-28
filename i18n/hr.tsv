@@ -5079,3 +5079,43 @@ export.summary	Low	niska
 	{count} connected	Povezano: {count}
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	Izlaza: {outputs}, ulaza: {inputs}
+	CFA4 warns below {limit} free.	CFA4 upozorava ispod {limit} slobodnog prostora.
+	CFA4's own display settings are on the Color page.	Vlastite postavke zaslona CFA4 nalaze se na stranici Boja.
+	Displays	Zasloni
+	Displays…	Zasloni…
+	File system	Datotečni sustav
+	Free	Slobodno
+	Full-screen playback: yes	Reprodukcija preko cijelog zaslona: da
+	HDR: not known (the system does not report it to CFA4).	HDR: nepoznato (sustav to ne javlja CFA4).
+	Low on space: {free} free on {root}.	Malo prostora: {free} slobodno na {root}.
+	Mount point	Točka montiranja
+	No CFA4 location on this disk.	Na ovom disku nema lokacije CFA4.
+	No display found.	Nije pronađen nijedan zaslon.
+	No storage device found.	Nije pronađen nijedan uređaj za pohranu.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Jedan piksel programskog monitora pri 100 % ovdje zauzima {n} piksela uređaja.
+	Physical size	Fizička veličina
+	Pixel density	Gustoća piksela
+	Primary	Glavni
+	Read-only	Samo za čitanje
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Samo za čitanje: zasloni koje javlja sustav. CFA4 ovdje ne mijenja postavke zaslona.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Samo za čitanje: montirana pohrana i mjesto gdje CFA4 čuva svoje datoteke. CFA4 ovdje ništa ne mijenja na diskovima.
+	Recovery copy	Kopija za oporavak
+	Refresh rate	Frekvencija osvježavanja
+	Resolution	Razlučivost
+	Serial number	Serijski broj
+	Storage Devices	Uređaji za pohranu
+	Storage Devices…	Uređaji za pohranu…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Gdje CFA4 čuva svoju predmemoriju, postavlja se na stranici Predmemorija medija.
+	not known	nepoznato
+	read-only	samo za čitanje
+	{count} display(s), primary: {name}	Zasloni: {count}, glavni: {name}
+	{count} storage device(s)	Uređaji za pohranu: {count}
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} slobodno
+	{free} free on the media cache's disk ({root})	{free} slobodno na disku predmemorije medija ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} je samo za čitanje: CFA4 ne može ondje pisati.
+	{time} Detected {count} display(s).	{time} Pronađeni zasloni: {count}.
+	{time} Detected {count} storage device(s).	{time} Pronađeni uređaji za pohranu: {count}.
+	{w} × {h} mm	{w} × {h} mm

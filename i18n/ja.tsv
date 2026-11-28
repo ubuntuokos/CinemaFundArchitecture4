@@ -5086,3 +5086,43 @@
 	{count} connected	{count} 台接続
 	{gpus} GPU, {npus} NPU	{gpus} GPU、{npus} NPU
 	{outputs} outputs, {inputs} inputs	出力 {outputs}、入力 {inputs}
+	CFA4 warns below {limit} free.	空き容量が {limit} 未満になると CFA4 が警告します。
+	CFA4's own display settings are on the Color page.	CFA4 独自の表示設定は「カラー」ページにあります。
+	Displays	ディスプレイ
+	Displays…	ディスプレイ…
+	File system	ファイルシステム
+	Free	空き
+	Full-screen playback: yes	フルスクリーン再生: 可
+	HDR: not known (the system does not report it to CFA4).	HDR: 不明 (システムが CFA4 に報告しません)。
+	Low on space: {free} free on {root}.	空き容量が少なくなっています: {root} の空きは {free} です。
+	Mount point	マウントポイント
+	No CFA4 location on this disk.	このディスクに CFA4 の保存場所はありません。
+	No display found.	ディスプレイが見つかりません。
+	No storage device found.	ストレージデバイスが見つかりません。
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	100% のプログラムモニターの 1 ピクセルは、ここではデバイスの {n} ピクセルに相当します。
+	Physical size	物理サイズ
+	Pixel density	画素密度
+	Primary	プライマリ
+	Read-only	読み取り専用
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	読み取り専用: システムが報告するディスプレイです。CFA4 はここで表示設定を変更しません。
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	読み取り専用: マウントされたストレージと CFA4 のファイルの保存場所です。CFA4 はここでディスクに変更を加えません。
+	Recovery copy	復元用コピー
+	Refresh rate	リフレッシュレート
+	Resolution	解像度
+	Serial number	シリアル番号
+	Storage Devices	ストレージデバイス
+	Storage Devices…	ストレージデバイス…
+	Where CFA4 keeps its cache is set on the Media Cache page.	CFA4 のキャッシュの保存場所は「メディアキャッシュ」ページで設定します。
+	not known	不明
+	read-only	読み取り専用
+	{count} display(s), primary: {name}	ディスプレイ {count} 台、プライマリ: {name}
+	{count} storage device(s)	ストレージデバイス {count} 台
+	{dpi} dpi	{dpi} dpi
+	{free} free	空き {free}
+	{free} free on the media cache's disk ({root})	メディアキャッシュのディスク ({root}) の空き: {free}
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} は読み取り専用です: CFA4 は書き込めません。
+	{time} Detected {count} display(s).	{time} ディスプレイを {count} 台検出しました。
+	{time} Detected {count} storage device(s).	{time} ストレージデバイスを {count} 台検出しました。
+	{w} × {h} mm	{w} × {h} mm

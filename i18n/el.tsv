@@ -5079,3 +5079,43 @@ export.summary	Low	χαμηλή
 	{count} connected	Συνδεδεμένες: {count}
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	Έξοδοι: {outputs}, είσοδοι: {inputs}
+	CFA4 warns below {limit} free.	Το CFA4 προειδοποιεί κάτω από {limit} ελεύθερα.
+	CFA4's own display settings are on the Color page.	Οι ρυθμίσεις οθόνης του ίδιου του CFA4 βρίσκονται στη σελίδα Χρώμα.
+	Displays	Οθόνες
+	Displays…	Οθόνες…
+	File system	Σύστημα αρχείων
+	Free	Ελεύθερα
+	Full-screen playback: yes	Αναπαραγωγή σε πλήρη οθόνη: ναι
+	HDR: not known (the system does not report it to CFA4).	HDR: άγνωστο (το σύστημα δεν το αναφέρει στο CFA4).
+	Low on space: {free} free on {root}.	Λίγος χώρος: {free} ελεύθερα στο {root}.
+	Mount point	Σημείο προσάρτησης
+	No CFA4 location on this disk.	Δεν υπάρχει θέση του CFA4 σε αυτόν τον δίσκο.
+	No display found.	Δεν βρέθηκε οθόνη.
+	No storage device found.	Δεν βρέθηκε συσκευή αποθήκευσης.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Ένα εικονοστοιχείο της οθόνης προγράμματος στο 100% καλύπτει εδώ {n} εικονοστοιχεία συσκευής.
+	Physical size	Φυσικό μέγεθος
+	Pixel density	Πυκνότητα εικονοστοιχείων
+	Primary	Κύρια
+	Read-only	Μόνο ανάγνωση
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Μόνο ανάγνωση: οι οθόνες που αναφέρει το σύστημα. Το CFA4 δεν αλλάζει εδώ τις ρυθμίσεις οθόνης.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Μόνο ανάγνωση: οι προσαρτημένοι χώροι αποθήκευσης και πού κρατά το CFA4 τα αρχεία του. Το CFA4 δεν αλλάζει τίποτα στους δίσκους εδώ.
+	Recovery copy	Αντίγραφο ανάκτησης
+	Refresh rate	Ρυθμός ανανέωσης
+	Resolution	Ανάλυση
+	Serial number	Σειριακός αριθμός
+	Storage Devices	Συσκευές αποθήκευσης
+	Storage Devices…	Συσκευές αποθήκευσης…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Το πού κρατά το CFA4 την κρυφή μνήμη του ορίζεται στη σελίδα Κρυφή μνήμη πολυμέσων.
+	not known	άγνωστο
+	read-only	μόνο ανάγνωση
+	{count} display(s), primary: {name}	Οθόνες: {count}, κύρια: {name}
+	{count} storage device(s)	Συσκευές αποθήκευσης: {count}
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} ελεύθερα
+	{free} free on the media cache's disk ({root})	{free} ελεύθερα στον δίσκο της κρυφής μνήμης πολυμέσων ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	Το {root} είναι μόνο για ανάγνωση: το CFA4 δεν μπορεί να γράψει εκεί.
+	{time} Detected {count} display(s).	{time} Εντοπίστηκαν οθόνες: {count}.
+	{time} Detected {count} storage device(s).	{time} Εντοπίστηκαν συσκευές αποθήκευσης: {count}.
+	{w} × {h} mm	{w} × {h} mm

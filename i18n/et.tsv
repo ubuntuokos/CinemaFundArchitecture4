@@ -5079,3 +5079,43 @@ export.summary	Low	madal
 	{count} connected	{count} ühendatud
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	{outputs} väljundit, {inputs} sisendit
+	CFA4 warns below {limit} free.	CFA4 hoiatab, kui vaba ruumi on alla {limit}.
+	CFA4's own display settings are on the Color page.	CFA4 enda kuvasätted on lehel Värv.
+	Displays	Kuvarid
+	Displays…	Kuvarid…
+	File system	Failisüsteem
+	Free	Vaba
+	Full-screen playback: yes	Täisekraanil taasesitus: jah
+	HDR: not known (the system does not report it to CFA4).	HDR: teadmata (süsteem ei teata seda CFA4-le).
+	Low on space: {free} free on {root}.	Vähe ruumi: {root} kettal {free} vaba.
+	Mount point	Haakepunkt
+	No CFA4 location on this disk.	Sellel kettal pole CFA4 asukohta.
+	No display found.	Kuvarit ei leitud.
+	No storage device found.	Salvestusseadet ei leitud.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Programmimonitori üks piksel 100% juures katab siin {n} seadme pikslit.
+	Physical size	Füüsiline suurus
+	Pixel density	Pikslitihedus
+	Primary	Peamine
+	Read-only	Kirjutuskaitstud
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Ainult lugemiseks: süsteemi teatatud kuvarid. CFA4 ei muuda siin kuvasätteid.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Ainult lugemiseks: haagitud salvestid ja koht, kus CFA4 oma faile hoiab. CFA4 ei muuda siin ketastel midagi.
+	Recovery copy	Taastekoopia
+	Refresh rate	Värskendussagedus
+	Resolution	Eraldusvõime
+	Serial number	Seerianumber
+	Storage Devices	Salvestusseadmed
+	Storage Devices…	Salvestusseadmed…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Kus CFA4 oma vahemälu hoiab, määratakse lehel Meedia vahemälu.
+	not known	teadmata
+	read-only	kirjutuskaitstud
+	{count} display(s), primary: {name}	{count} kuvarit, peamine: {name}
+	{count} storage device(s)	{count} salvestusseadet
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} vaba
+	{free} free on the media cache's disk ({root})	Meedia vahemälu kettal ({root}) on {free} vaba
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} on kirjutuskaitstud: CFA4 ei saa sinna kirjutada.
+	{time} Detected {count} display(s).	{time} Leiti {count} kuvarit.
+	{time} Detected {count} storage device(s).	{time} Leiti {count} salvestusseadet.
+	{w} × {h} mm	{w} × {h} mm

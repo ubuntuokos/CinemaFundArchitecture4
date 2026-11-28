@@ -1,6 +1,6 @@
 """The shared device page of Settings ▸ Hardware & Devices (``docs/plans/CFA4-SETTINGS-HW-003.md``
 R4, the menu plan's "common device page"): a device list with each device's status on the left,
-and tabs on the right (Details, Capabilities, Drivers, Diagnostics). Accelerators is the first page
+and tabs on the right (Details, Capabilities, Settings, Drivers, Diagnostics). Accelerators is the first page
 built on it; later device pages (displays, storage, cameras, tablets) reuse it with their own rows.
 
 A page gives ``DeviceEntry`` rows and, per tab, a function that draws the tab for the selected
@@ -17,7 +17,8 @@ from PySide6.QtWidgets import QHBoxLayout, QListWidget, QListWidgetItem, QScroll
 from ..i18n import N_, tr
 
 # the standard tabs, in order (key, title)
-TABS = (("details", N_("Details")), ("capabilities", N_("Capabilities")), ("drivers", N_("Drivers")), ("diagnostics", N_("Diagnostics")))
+TABS = (("details", N_("Details")), ("capabilities", N_("Capabilities")), ("settings", N_("Settings")), ("drivers", N_("Drivers")),
+        ("diagnostics", N_("Diagnostics")))
 
 
 @dataclass(frozen=True)

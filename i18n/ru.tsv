@@ -5060,3 +5060,43 @@
 	{count} connected	Подключено: {count}
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	Выходов: {outputs}, входов: {inputs}
+	CFA4 warns below {limit} free.	CFA4 предупреждает, если свободно меньше {limit}.
+	CFA4's own display settings are on the Color page.	Собственные настройки дисплея CFA4 находятся на странице «Цвет».
+	Displays	Дисплеи
+	Displays…	Дисплеи…
+	File system	Файловая система
+	Free	Свободно
+	Full-screen playback: yes	Полноэкранное воспроизведение: да
+	HDR: not known (the system does not report it to CFA4).	HDR: неизвестно (система не сообщает об этом CFA4).
+	Low on space: {free} free on {root}.	Мало места: на {root} свободно {free}.
+	Mount point	Точка монтирования
+	No CFA4 location on this disk.	На этом диске нет расположений CFA4.
+	No display found.	Дисплей не найден.
+	No storage device found.	Накопитель не найден.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Один пиксель программного монитора при 100% занимает здесь {n} пикс. устройства.
+	Physical size	Физический размер
+	Pixel density	Плотность пикселей
+	Primary	Основной
+	Read-only	Только чтение
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Только чтение: дисплеи, о которых сообщает система. CFA4 ничего не меняет здесь в настройках дисплея.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Только чтение: подключённые накопители и место, где CFA4 хранит свои файлы. CFA4 ничего не меняет здесь на дисках.
+	Recovery copy	Копия для восстановления
+	Refresh rate	Частота обновления
+	Resolution	Разрешение
+	Serial number	Серийный номер
+	Storage Devices	Накопители
+	Storage Devices…	Накопители…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Где CFA4 хранит свой кэш, задаётся на странице «Кэш медиа».
+	not known	неизвестно
+	read-only	только чтение
+	{count} display(s), primary: {name}	Дисплеев: {count}, основной: {name}
+	{count} storage device(s)	Накопителей: {count}
+	{dpi} dpi	{dpi} dpi
+	{free} free	Свободно {free}
+	{free} free on the media cache's disk ({root})	На диске кэша медиа ({root}) свободно {free}
+	{hz} Hz	{hz} Гц
+	{n} GB	{n} ГБ
+	{root} is read-only: CFA4 cannot write there.	{root} только для чтения: CFA4 не может туда записывать.
+	{time} Detected {count} display(s).	{time} Найдено дисплеев: {count}.
+	{time} Detected {count} storage device(s).	{time} Найдено накопителей: {count}.
+	{w} × {h} mm	{w} × {h} мм

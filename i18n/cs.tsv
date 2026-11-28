@@ -5077,3 +5077,43 @@ export.summary	Low	nízká
 	{count} connected	Připojeno: {count}
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	Výstupy: {outputs}, vstupy: {inputs}
+	CFA4 warns below {limit} free.	CFA4 upozorní pod {limit} volného místa.
+	CFA4's own display settings are on the Color page.	Vlastní nastavení zobrazení CFA4 jsou na stránce Barva.
+	Displays	Obrazovky
+	Displays…	Obrazovky…
+	File system	Systém souborů
+	Free	Volné
+	Full-screen playback: yes	Přehrávání na celou obrazovku: ano
+	HDR: not known (the system does not report it to CFA4).	HDR: neznámé (systém ho CFA4 neoznamuje).
+	Low on space: {free} free on {root}.	Málo místa: {free} volného na {root}.
+	Mount point	Přípojný bod
+	No CFA4 location on this disk.	Na tomto disku není žádné umístění CFA4.
+	No display found.	Nenalezena žádná obrazovka.
+	No storage device found.	Nenalezeno žádné úložné zařízení.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Jeden pixel programového monitoru při 100 % zde zabírá {n} pixel(ů) zařízení.
+	Physical size	Fyzická velikost
+	Pixel density	Hustota pixelů
+	Primary	Hlavní
+	Read-only	Jen pro čtení
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Jen pro čtení: obrazovky, které hlásí systém. CFA4 zde nemění žádné nastavení zobrazení.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Jen pro čtení: připojená úložiště a místo, kde CFA4 uchovává své soubory. CFA4 zde na discích nic nemění.
+	Recovery copy	Obnovovací kopie
+	Refresh rate	Obnovovací frekvence
+	Resolution	Rozlišení
+	Serial number	Sériové číslo
+	Storage Devices	Úložná zařízení
+	Storage Devices…	Úložná zařízení…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Kde CFA4 uchovává svou mezipaměť, se nastavuje na stránce Mezipaměť médií.
+	not known	neznámé
+	read-only	jen pro čtení
+	{count} display(s), primary: {name}	Obrazovky: {count}, hlavní: {name}
+	{count} storage device(s)	Úložná zařízení: {count}
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} volného
+	{free} free on the media cache's disk ({root})	{free} volného na disku mezipaměti médií ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} je jen pro čtení: CFA4 tam nemůže zapisovat.
+	{time} Detected {count} display(s).	{time} Nalezené obrazovky: {count}.
+	{time} Detected {count} storage device(s).	{time} Nalezená úložná zařízení: {count}.
+	{w} × {h} mm	{w} × {h} mm

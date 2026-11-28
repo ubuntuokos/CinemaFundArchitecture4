@@ -5075,3 +5075,43 @@
 	{count} connected	已连接 {count} 个
 	{gpus} GPU, {npus} NPU	{gpus} 个 GPU，{npus} 个 NPU
 	{outputs} outputs, {inputs} inputs	{outputs} 个输出，{inputs} 个输入
+	CFA4 warns below {limit} free.	可用空间低于 {limit} 时 CFA4 会发出警告。
+	CFA4's own display settings are on the Color page.	CFA4 自身的显示设置在“颜色”页面。
+	Displays	显示器
+	Displays…	显示器…
+	File system	文件系统
+	Free	可用
+	Full-screen playback: yes	全屏播放：可以
+	HDR: not known (the system does not report it to CFA4).	HDR：未知（系统未向 CFA4 报告）。
+	Low on space: {free} free on {root}.	空间不足：{root} 上仅剩 {free}。
+	Mount point	挂载点
+	No CFA4 location on this disk.	此磁盘上没有 CFA4 位置。
+	No display found.	未找到显示器。
+	No storage device found.	未找到存储设备。
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	节目监视器在 100% 时的一个像素在此对应 {n} 个设备像素。
+	Physical size	物理尺寸
+	Pixel density	像素密度
+	Primary	主显示器
+	Read-only	只读
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	只读：系统报告的显示器。CFA4 不会在此更改任何显示设置。
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	只读：已挂载的存储以及 CFA4 存放文件的位置。CFA4 不会在此更改磁盘上的任何内容。
+	Recovery copy	恢复副本
+	Refresh rate	刷新率
+	Resolution	分辨率
+	Serial number	序列号
+	Storage Devices	存储设备
+	Storage Devices…	存储设备…
+	Where CFA4 keeps its cache is set on the Media Cache page.	CFA4 的缓存位置在“媒体缓存”页面设置。
+	not known	未知
+	read-only	只读
+	{count} display(s), primary: {name}	{count} 个显示器，主显示器：{name}
+	{count} storage device(s)	{count} 个存储设备
+	{dpi} dpi	{dpi} dpi
+	{free} free	可用 {free}
+	{free} free on the media cache's disk ({root})	媒体缓存所在磁盘（{root}）可用 {free}
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} 为只读：CFA4 无法写入。
+	{time} Detected {count} display(s).	{time} 检测到 {count} 个显示器。
+	{time} Detected {count} storage device(s).	{time} 检测到 {count} 个存储设备。
+	{w} × {h} mm	{w} × {h} mm

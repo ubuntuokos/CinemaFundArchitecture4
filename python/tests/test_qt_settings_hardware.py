@@ -130,7 +130,9 @@ class StubEngine:
 
     def execute(self, command: str, params: dict[str, Any] | None = None, on_reply: Any = None, on_error: Any = None) -> int:
         self.sent.append((command, params or {}))
-        replies = {"prefs.schema": SCHEMA, "prefs.get": {"values": self.values}, "prefs.set": {}}
+        replies = {"prefs.schema": SCHEMA, "prefs.get": {"values": self.values}, "prefs.set": {},
+                   "mediaCache.info": {"location": "/media/work/cache", "files": 3, "bytes": 1024},
+                   "file.autoSaveStatus": {"autoSaveDir": "/home/user/.local/share/cfa4/autosave", "sessionDir": "/home/user/.local/share/cfa4/session"}}
         if command in replies and on_reply:
             on_reply(replies[command], None)
         return len(self.sent)
@@ -168,7 +170,7 @@ def test_arrange_orders_the_groups_and_adds_the_qt_only_pages() -> None:
     assert [(g["id"] if g else None, [c["id"] for c in pages]) for g, pages in sections] == [
         ("general", ["general", "orphan"]),  # a page of an unknown group goes under General
         ("media", ["media", "decoding", "playback"]),
-        ("hardware", ["hardwareOverview", "accelerators", "memory", "systemComponents"]),
+        ("hardware", ["hardwareOverview", "accelerators", "displays", "storage", "memory", "systemComponents"]),
     ]
     decoding = sections[1][1][1]
     keys = [r["field"]["key"] for r in decoding["rows"] if r["type"] == "field"]
@@ -209,7 +211,7 @@ def test_pci_names_come_from_the_system_list(tmp_path: Path) -> None:
 
 def test_the_list_shows_group_headings_with_their_pages(app: Any) -> None:
     d = PreferencesDialog(None, StubEngine(), "general")
-    assert listed(d) == ["#general", "general", "orphan", "#media", "media", "decoding", "playback", "#hardware", "hardwareOverview", "accelerators", "memory", "systemComponents"]
+    assert listed(d) == ["#general", "general", "orphan", "#media", "media", "decoding", "playback", "#hardware", "hardwareOverview", "accelerators", "displays", "storage", "memory", "systemComponents"]
     assert find(d, QtWidgets.QLabel, "settings.group.hardware").text() == "Hardware & Devices"
     # the reports are asked for only when their page opens
     assert not [m for m, _p in d.engine.sent if m in ("hardware.inventory", "codecs.capabilities")]
@@ -277,6 +279,7 @@ def test_menu_and_patch_reach_the_qt_only_pages(app: Any) -> None:
 
     assert ("accelerators", "Accelerators (GPU / NPU)…") in MENU and ("decoding", "Decoding & Encoding…") in MENU
     assert ("systemComponents", "System Settings (root)…") in MENU
+    assert ("displays", "Displays…") in MENU and ("storage", "Storage Devices…") in MENU
     d = PreferencesDialog(None, StubEngine(), "general")
     d.patch({"page": "decoding"})
     assert d.page == "decoding" and d.findChild(QtWidgets.QWidget, "settings.page.decoding") is not None
@@ -361,7 +364,7 @@ def test_accelerators_device_page_shows_one_device_per_entry(app: Any) -> None:
     # the system helper's check decides the status: renderD128 needs the render group
     assert devices.item(0).text().endswith("No access")
     tabs = find(d, QtWidgets.QTabWidget, "settings.accelerators.page.tabs")
-    assert [tabs.tabText(i) for i in range(tabs.count())] == ["Details", "Capabilities", "Drivers", "Diagnostics"]
+    assert [tabs.tabText(i) for i in range(tabs.count())] == ["Details", "Capabilities", "Drivers", "Diagnostics"]  # no Settings tab
     diagnostics = find(d, QtWidgets.QWidget, "settings.accelerators.page.tab.diagnostics")
     assert any("needs group render" in w.text() for w in diagnostics.findChildren(QtWidgets.QLabel))
     # the selection and the tab survive a rebuild (a report arriving)
@@ -449,3 +452,100 @@ def test_real_engine_reports_the_hardware_pages(app: Any, tmp_path: Path) -> Non
         d.close()
     finally:
         engine.stop()
+
+
+GB = 1 << 30
+
+
+def _displays() -> list[Any]:
+    from cfa4_qt.panels.settings_devices import Display
+
+    return [Display("1:HDMI-1", "HDMI-1", "Dell", "U2720Q", "", 3840, 2160, 60.0, 2.0, (597, 336), 163.0, 1920, 0, False),
+            Display("0:DP-1", "DP-1", "Eizo", "CS2740", "ABC123", 2560, 1440, 59.95, 1.0, (597, 336), 109.0, 0, 0, True)]
+
+
+def _volumes() -> list[Any]:
+    from cfa4_qt.panels.settings_devices import Volume
+
+    return [Volume("/", "/dev/nvme0n1p2", "ext4", 500 * GB, 120 * GB, False, "System"),
+            Volume("/media/work", "/dev/sda1", "ext4", 2000 * GB, 50 * GB, False, "Work"),
+            Volume("/media/cd", "/dev/sr0", "iso9660", 4 * GB, 0, True, "CD")]
+
+
+def test_storage_helpers_pick_the_volume_and_the_limit() -> None:
+    from cfa4_qt.panels.settings_devices import low_space_limit, volume_of
+
+    vols = _volumes()
+    assert volume_of("/media/work/cache/x", vols) is vols[1]
+    assert volume_of("/media/workshop", vols) is vols[0]  # a prefix of the name is not the mount point
+    assert volume_of("/home/user", vols) is vols[0] and volume_of("", vols) is None
+    assert low_space_limit(100 * GB) == 10 * GB and low_space_limit(2000 * GB) == 100 * GB  # 10 GB or 5%
+    assert low_space_limit(2000 * GB, 25) == 25 * GB
+
+
+def test_displays_page_lists_the_screens_primary_first(app: Any) -> None:
+    from cfa4_qt.panels.settings_devices import DisplaysPage
+
+    d = PreferencesDialog(None, StubEngine(), "general")
+    d.displays = DisplaysPage(d.select_page, lambda: False, lambda: sorted(_displays(), key=lambda x: not x.primary))
+    d.select_page("displays")
+    items = find(d, QtWidgets.QListWidget, "settings.displays.page.list")
+    assert items.count() == 2 and items.item(0).text() == "Eizo CS2740 (DP-1)\nPrimary"
+    tabs = find(d, QtWidgets.QTabWidget, "settings.displays.page.tabs")
+    assert [tabs.tabText(i) for i in range(tabs.count())] == ["Details", "Capabilities", "Settings", "Diagnostics"]
+    details = find(d, QtWidgets.QWidget, "settings.displays.page.tab.details")
+    assert "Resolution: 2560 × 1440" in [w.text() for w in details.findChildren(QtWidgets.QLabel)]
+    items.setCurrentRow(1)
+    caps = find(d, QtWidgets.QWidget, "settings.displays.page.tab.capabilities")
+    assert any("covers 2 device pixel" in w.text() for w in caps.findChildren(QtWidgets.QLabel))
+    assert any("Detected 2 display(s)" in w.text() for w in find(d, QtWidgets.QWidget, "settings.displays.page.tab.diagnostics").findChildren(QtWidgets.QLabel))
+    tabs.setCurrentIndex(2)
+    find(d, QtWidgets.QPushButton, "settings.displays.open.color").click()
+    assert d.page == "color" or "color" not in [c.get("id") for c in d.categories]
+    d.close()
+
+
+def test_storage_page_marks_the_cfa4_disks_and_low_space(app: Any) -> None:
+    from cfa4_qt.panels.settings_devices import StoragePage
+
+    engine = StubEngine()
+    d = PreferencesDialog(None, engine, "general")
+    d.storage = StoragePage(engine, lambda: d._hardware_changed("storage"), d.select_page, source=_volumes)
+    d.select_page("storage")
+    assert "mediaCache.info" in [m for m, _p in engine.sent] and "file.autoSaveStatus" in [m for m, _p in engine.sent]
+    items = find(d, QtWidgets.QListWidget, "settings.storage.page.list")
+    texts = [items.item(i).text() for i in range(items.count())]
+    assert texts[1].startswith("Work (/media/work)\n⚠ 50.0 GB free") and "CFA4" in texts[1]  # 50 GB < 5% of 2 TB
+    assert "⚠" not in texts[0] and "CFA4" in texts[0]  # auto-saves in the home folder, enough space
+    assert "read-only" in texts[2] and "⚠" not in texts[2]  # read-only but no CFA4 location
+    items.setCurrentRow(1)
+    caps = find(d, QtWidgets.QWidget, "settings.storage.page.tab.capabilities")
+    lines = [w.text() for w in caps.findChildren(QtWidgets.QLabel)]
+    assert "Media Cache: /media/work/cache" in lines and any(x.startswith("⚠ Low on space") for x in lines)
+    text, warnings = d.storage.summary()
+    assert text == "50.0 GB free on the media cache's disk (/media/work)" and len(warnings) == 1
+    d.close()
+
+
+def test_overview_has_display_and_storage_rows(app: Any) -> None:
+    from cfa4_qt.panels.settings_devices import DisplaysPage, StoragePage
+
+    engine = StubEngine()
+    d = PreferencesDialog(None, engine, "general")
+    d.displays = DisplaysPage(d.select_page, None, _displays)
+    d.storage = StoragePage(engine, lambda: d._hardware_changed("hardwareOverview"), d.select_page, source=_volumes)
+    d.overview.extra = [("displays", "Displays", d.displays.summary), ("storage", "Storage Devices", d.storage.summary)]
+    d.select_page("hardwareOverview")
+    assert find(d, QtWidgets.QLabel, "settings.overview.displays.summary").text() == "2 display(s), primary: Eizo CS2740 (DP-1)"
+    row = find(d, QtWidgets.QFrame, "settings.overview.storage")
+    assert any(w.text().startswith("⚠ Low on space") for w in row.findChildren(QtWidgets.QLabel))
+    find(d, QtWidgets.QPushButton, "settings.overview.storage.open").click()
+    assert d.page == "storage"
+    d.close()
+
+
+def test_real_screen_and_volume_lists_do_not_crash(app: Any) -> None:
+    from cfa4_qt.panels.settings_devices import PSEUDO_FS, screens, volumes
+
+    assert isinstance(screens(), list)
+    assert all(v.fs not in PSEUDO_FS and v.total > 0 for v in volumes())

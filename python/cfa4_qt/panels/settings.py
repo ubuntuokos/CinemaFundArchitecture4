@@ -22,7 +22,7 @@ from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtCore import QPointF, QRectF, Qt, QUrl, Signal
-from PySide6.QtGui import QColor, QDesktopServices, QPainter, QPaintEvent, QPen
+from PySide6.QtGui import QColor, QDesktopServices, QGuiApplication, QPainter, QPaintEvent, QPen
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -52,6 +52,7 @@ from .. import theme
 from ..i18n import N_, fmt, tr
 from .gesture_settings import gesture_page
 from .settings_hardware import ACCELERATORS_PAGE, DECODING_PAGE, QT_ONLY_PAGES, HardwarePages, arrange
+from .settings_devices import DISPLAYS_PAGE, DISPLAYS_TITLE, STORAGE_PAGE, STORAGE_TITLE, DisplaysPage, StoragePage
 from .settings_overview import OVERVIEW_PAGE, OverviewPage
 from .settings_system import SYSTEM_PAGE, SystemPage
 
@@ -87,6 +88,9 @@ MENU = (
     # the Qt-only pages (CFA4-SETTINGS-HW-002, HW-003)
     (OVERVIEW_PAGE, N_("Hardware Overview…")),
     (ACCELERATORS_PAGE, N_("Accelerators (GPU / NPU)…")),
+    # CFA4-SETTINGS-HW-004
+    (DISPLAYS_PAGE, N_("Displays…")),
+    (STORAGE_PAGE, N_("Storage Devices…")),
     (DECODING_PAGE, N_("Decoding & Encoding…")),
     # CFA4-SETTINGS-HW-003 R3
     (SYSTEM_PAGE, N_("System Settings (root)…")),
@@ -389,6 +393,15 @@ class PreferencesDialog(QDialog):
                                      lambda: self.devices(), lambda: self.memory(),
                                      lambda: int(number(get(self.values, "memory.frameCacheMb"), 0)),
                                      lambda p: any(c.get("id") == p for c in self.categories), self.select_page)
+        # Displays and Storage Devices (HW-004): Qt's screen and volume lists, read-only
+        self.displays = DisplaysPage(self.select_page, lambda: bool(get(self.values, "color.displayColorManagement")))
+        self.storage = StoragePage(engine, lambda: self._hardware_changed(STORAGE_PAGE), self.select_page)
+        self.overview.extra = [(DISPLAYS_PAGE, DISPLAYS_TITLE, self.displays.summary), (STORAGE_PAGE, STORAGE_TITLE, self.storage.summary)]
+        app = QGuiApplication.instance()
+        if isinstance(app, QGuiApplication):
+            # a display plugged in or out redraws the page (the dialog's own slot: disconnected with it)
+            app.screenAdded.connect(self._screens_changed)
+            app.screenRemoved.connect(self._screens_changed)
         self.surface_profiles: list[dict[str, Any]] | None = None  # controlSurfaces.profiles
         self._surfaces_pending = self._surfaces_building = False
         self.monitor_lines: list[str] = []  # the MIDI Monitor's lines, kept across page rebuilds
@@ -538,6 +551,9 @@ class PreferencesDialog(QDialog):
         if shown and self.ready:
             self._build_page()
 
+    def _screens_changed(self, *_a: Any) -> None:
+        self._hardware_changed(DISPLAYS_PAGE)
+
     def select_page(self, page: str) -> None:
         if not any(c.get("id") == page for c in self.categories):
             return
@@ -551,6 +567,8 @@ class PreferencesDialog(QDialog):
         self.hardware.load(page)
         if page == SYSTEM_PAGE:
             self.system.load()
+        if page in (OVERVIEW_PAGE, STORAGE_PAGE):
+            self.storage.load()
         if page == OVERVIEW_PAGE:
             self.overview.load()
         self._build_page()
@@ -897,6 +915,10 @@ class PreferencesDialog(QDialog):
             return self.system.page(parent)
         if name == OVERVIEW_PAGE:
             return self.overview.page(parent)
+        if name == DISPLAYS_PAGE:
+            return self.displays.page(parent)
+        if name == STORAGE_PAGE:
+            return self.storage.page(parent)
         if name == "labelPresets":
             return self._label_presets(parent)
         if name == "memoryInfo":

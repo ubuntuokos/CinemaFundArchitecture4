@@ -5085,3 +5085,43 @@
 	{count} connected	{count} terhubung
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	{outputs} keluaran, {inputs} masukan
+	CFA4 warns below {limit} free.	CFA4 memperingatkan bila ruang kosong di bawah {limit}.
+	CFA4's own display settings are on the Color page.	Pengaturan tampilan milik CFA4 ada di halaman Warna.
+	Displays	Layar
+	Displays…	Layar…
+	File system	Sistem berkas
+	Free	Kosong
+	Full-screen playback: yes	Pemutaran layar penuh: ya
+	HDR: not known (the system does not report it to CFA4).	HDR: tidak diketahui (sistem tidak melaporkannya ke CFA4).
+	Low on space: {free} free on {root}.	Ruang sedikit: {free} kosong di {root}.
+	Mount point	Titik kait
+	No CFA4 location on this disk.	Tidak ada lokasi CFA4 di disk ini.
+	No display found.	Tidak ada layar yang ditemukan.
+	No storage device found.	Tidak ada perangkat penyimpanan yang ditemukan.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Satu piksel monitor program pada 100% di sini mencakup {n} piksel perangkat.
+	Physical size	Ukuran fisik
+	Pixel density	Kerapatan piksel
+	Primary	Utama
+	Read-only	Hanya baca
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Hanya baca: layar yang dilaporkan sistem. CFA4 tidak mengubah pengaturan tampilan di sini.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Hanya baca: penyimpanan yang terkait dan tempat CFA4 menyimpan berkasnya. CFA4 tidak mengubah apa pun pada disk di sini.
+	Recovery copy	Salinan pemulihan
+	Refresh rate	Laju penyegaran
+	Resolution	Resolusi
+	Serial number	Nomor seri
+	Storage Devices	Perangkat penyimpanan
+	Storage Devices…	Perangkat penyimpanan…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Tempat CFA4 menyimpan cache-nya diatur di halaman Cache Media.
+	not known	tidak diketahui
+	read-only	hanya baca
+	{count} display(s), primary: {name}	{count} layar, utama: {name}
+	{count} storage device(s)	{count} perangkat penyimpanan
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} kosong
+	{free} free on the media cache's disk ({root})	{free} kosong di disk cache media ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} hanya baca: CFA4 tidak bisa menulis di sana.
+	{time} Detected {count} display(s).	{time} {count} layar terdeteksi.
+	{time} Detected {count} storage device(s).	{time} {count} perangkat penyimpanan terdeteksi.
+	{w} × {h} mm	{w} × {h} mm

@@ -5079,3 +5079,43 @@ export.summary	Low	төмен
 	{count} connected	Қосылған: {count}
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	Шығыстар: {outputs}, кірістер: {inputs}
+	CFA4 warns below {limit} free.	CFA4 бос орын {limit} мөлшерінен аз болса ескертеді.
+	CFA4's own display settings are on the Color page.	CFA4-тің өз дисплей баптаулары «Түс» бетінде.
+	Displays	Дисплейлер
+	Displays…	Дисплейлер…
+	File system	Файлдық жүйе
+	Free	Бос
+	Full-screen playback: yes	Толық экранда ойнату: иә
+	HDR: not known (the system does not report it to CFA4).	HDR: белгісіз (жүйе оны CFA4-ке хабарламайды).
+	Low on space: {free} free on {root}.	Орын аз: {root} ішінде {free} бос.
+	Mount point	Тіркеу нүктесі
+	No CFA4 location on this disk.	Бұл дискіде CFA4 орны жоқ.
+	No display found.	Дисплей табылмады.
+	No storage device found.	Сақтау құрылғысы табылмады.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Бағдарлама мониторының бір пикселі 100% кезінде мұнда құрылғының {n} пикселін алады.
+	Physical size	Физикалық өлшемі
+	Pixel density	Пиксель тығыздығы
+	Primary	Негізгі
+	Read-only	Тек оқу
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Тек оқу: жүйе хабарлаған дисплейлер. CFA4 мұнда дисплей баптауларын өзгертпейді.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Тек оқу: тіркелген жинақтағыштар және CFA4 файлдарын сақтайтын орын. CFA4 мұнда дискілерде ештеңе өзгертпейді.
+	Recovery copy	Қалпына келтіру көшірмесі
+	Refresh rate	Жаңарту жиілігі
+	Resolution	Ажыратымдылық
+	Serial number	Сериялық нөмір
+	Storage Devices	Сақтау құрылғылары
+	Storage Devices…	Сақтау құрылғылары…
+	Where CFA4 keeps its cache is set on the Media Cache page.	CFA4 кэшін қай жерде сақтайтыны «Медиа кэші» бетінде бапталады.
+	not known	белгісіз
+	read-only	тек оқу
+	{count} display(s), primary: {name}	Дисплейлер: {count}, негізгі: {name}
+	{count} storage device(s)	Сақтау құрылғылары: {count}
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} бос
+	{free} free on the media cache's disk ({root})	Медиа кэшінің дискісінде ({root}) {free} бос
+	{hz} Hz	{hz} Гц
+	{n} GB	{n} ГБ
+	{root} is read-only: CFA4 cannot write there.	{root} тек оқу үшін: CFA4 оған жаза алмайды.
+	{time} Detected {count} display(s).	{time} Табылған дисплейлер: {count}.
+	{time} Detected {count} storage device(s).	{time} Табылған сақтау құрылғылары: {count}.
+	{w} × {h} mm	{w} × {h} мм

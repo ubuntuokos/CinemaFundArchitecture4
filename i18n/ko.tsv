@@ -5071,3 +5071,43 @@
 	{count} connected	{count}개 연결됨
 	{gpus} GPU, {npus} NPU	GPU {gpus}개, NPU {npus}개
 	{outputs} outputs, {inputs} inputs	출력 {outputs}개, 입력 {inputs}개
+	CFA4 warns below {limit} free.	여유 공간이 {limit} 미만이면 CFA4가 경고합니다.
+	CFA4's own display settings are on the Color page.	CFA4 자체 디스플레이 설정은 색상 페이지에 있습니다.
+	Displays	디스플레이
+	Displays…	디스플레이…
+	File system	파일 시스템
+	Free	여유
+	Full-screen playback: yes	전체 화면 재생: 가능
+	HDR: not known (the system does not report it to CFA4).	HDR: 알 수 없음(시스템이 CFA4에 알려 주지 않음).
+	Low on space: {free} free on {root}.	공간 부족: {root}에 {free} 남음.
+	Mount point	마운트 지점
+	No CFA4 location on this disk.	이 디스크에는 CFA4 위치가 없습니다.
+	No display found.	디스플레이를 찾지 못했습니다.
+	No storage device found.	저장 장치를 찾지 못했습니다.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	100%의 프로그램 모니터 한 픽셀은 여기서 장치 픽셀 {n}개에 해당합니다.
+	Physical size	물리적 크기
+	Pixel density	픽셀 밀도
+	Primary	기본
+	Read-only	읽기 전용
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	읽기 전용: 시스템이 보고하는 디스플레이입니다. CFA4는 여기서 디스플레이 설정을 바꾸지 않습니다.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	읽기 전용: 마운트된 저장소와 CFA4가 파일을 두는 위치입니다. CFA4는 여기서 디스크를 바꾸지 않습니다.
+	Recovery copy	복구 사본
+	Refresh rate	주사율
+	Resolution	해상도
+	Serial number	일련번호
+	Storage Devices	저장 장치
+	Storage Devices…	저장 장치…
+	Where CFA4 keeps its cache is set on the Media Cache page.	CFA4가 캐시를 두는 위치는 미디어 캐시 페이지에서 설정합니다.
+	not known	알 수 없음
+	read-only	읽기 전용
+	{count} display(s), primary: {name}	디스플레이 {count}개, 기본: {name}
+	{count} storage device(s)	저장 장치 {count}개
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} 남음
+	{free} free on the media cache's disk ({root})	미디어 캐시 디스크({root})에 {free} 남음
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root}은(는) 읽기 전용입니다: CFA4가 쓸 수 없습니다.
+	{time} Detected {count} display(s).	{time} 디스플레이 {count}개를 찾았습니다.
+	{time} Detected {count} storage device(s).	{time} 저장 장치 {count}개를 찾았습니다.
+	{w} × {h} mm	{w} × {h} mm

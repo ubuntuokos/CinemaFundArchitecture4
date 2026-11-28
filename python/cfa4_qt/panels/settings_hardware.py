@@ -39,13 +39,14 @@ from .. import theme
 from ..hardware_report import WORKLOAD_TITLES, Codecs, Device, Hardware, ReportError, pci_name
 from ..i18n import N_, fmt, tr
 from .device_page import DeviceEntry, DevicePage
+from .settings_devices import DISPLAYS_PAGE, DISPLAYS_TITLE, STORAGE_PAGE, STORAGE_TITLE
 from .settings_overview import OVERVIEW_PAGE, OVERVIEW_TITLE
 from .settings_system import SYSTEM_PAGE, SYSTEM_TITLE, SystemPage, open_link
 
 ACCELERATORS_PAGE = "accelerators"
 DECODING_PAGE = "decoding"
 REPORT_PAGES = frozenset({ACCELERATORS_PAGE, DECODING_PAGE})
-QT_ONLY_PAGES = frozenset({OVERVIEW_PAGE, ACCELERATORS_PAGE, DECODING_PAGE, SYSTEM_PAGE})
+QT_ONLY_PAGES = frozenset({OVERVIEW_PAGE, ACCELERATORS_PAGE, DISPLAYS_PAGE, STORAGE_PAGE, DECODING_PAGE, SYSTEM_PAGE})
 DECODING_FIELDS = ("playback.hardwareDecoding", "playback.draftDecode")
 ACCELERATORS_TITLE = N_("Accelerators (GPU / NPU)")
 DECODING_TITLE = N_("Decoding & Encoding")
@@ -89,6 +90,10 @@ def _overview_page() -> dict[str, Any]:
             "rows": [{"type": "custom", "id": OVERVIEW_PAGE}]}
 
 
+def _qt_page(page: str, title: str) -> dict[str, Any]:
+    return {"id": page, "title": title, "group": "hardware", "qtOnly": True, "rows": [{"type": "custom", "id": page}]}
+
+
 def _system_page() -> dict[str, Any]:
     return {"id": SYSTEM_PAGE, "title": SYSTEM_TITLE, "group": "hardware", "qtOnly": True,
             "rows": [{"type": "custom", "id": SYSTEM_PAGE}]}
@@ -114,7 +119,7 @@ def arrange(schema: Any) -> list[tuple[dict[str, Any] | None, list[dict[str, Any
     for g in groups:
         members = [c for c in cats if group_of(c) == g["id"]]
         if g["id"] == "hardware":
-            members[:0] = [_overview_page(), _accelerators_page()]
+            members[:0] = [_overview_page(), _accelerators_page(), _qt_page(DISPLAYS_PAGE, DISPLAYS_TITLE), _qt_page(STORAGE_PAGE, STORAGE_TITLE)]
             members.append(_system_page())
         if g["id"] == "media" and playback is not None:
             after = next((i + 1 for i, c in enumerate(members) if c.get("id") == "media"), len(members))

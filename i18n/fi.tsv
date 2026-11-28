@@ -5079,3 +5079,43 @@ export.summary	Low	matala
 	{count} connected	{count} yhdistetty
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	{outputs} lähtöä, {inputs} tuloa
+	CFA4 warns below {limit} free.	CFA4 varoittaa, kun vapaata on alle {limit}.
+	CFA4's own display settings are on the Color page.	CFA4:n omat näyttöasetukset ovat Väri-sivulla.
+	Displays	Näytöt
+	Displays…	Näytöt…
+	File system	Tiedostojärjestelmä
+	Free	Vapaana
+	Full-screen playback: yes	Koko näytön toisto: kyllä
+	HDR: not known (the system does not report it to CFA4).	HDR: ei tiedossa (järjestelmä ei ilmoita sitä CFA4:lle).
+	Low on space: {free} free on {root}.	Tila vähissä: {free} vapaana kohteessa {root}.
+	Mount point	Liitoskohta
+	No CFA4 location on this disk.	Tällä levyllä ei ole CFA4-sijaintia.
+	No display found.	Näyttöä ei löytynyt.
+	No storage device found.	Tallennuslaitetta ei löytynyt.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Ohjelmamonitorin yksi pikseli 100 %:ssa vastaa tässä {n} laitepikseliä.
+	Physical size	Fyysinen koko
+	Pixel density	Pikselitiheys
+	Primary	Ensisijainen
+	Read-only	Vain luku
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Vain luku: järjestelmän ilmoittamat näytöt. CFA4 ei muuta tässä mitään näyttöasetuksia.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Vain luku: liitetyt tallennustilat ja se, minne CFA4 tallentaa tiedostonsa. CFA4 ei muuta tässä mitään levyillä.
+	Recovery copy	Palautuskopio
+	Refresh rate	Virkistystaajuus
+	Resolution	Tarkkuus
+	Serial number	Sarjanumero
+	Storage Devices	Tallennuslaitteet
+	Storage Devices…	Tallennuslaitteet…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Se, minne CFA4 tallentaa välimuistinsa, asetetaan Median välimuisti -sivulla.
+	not known	ei tiedossa
+	read-only	vain luku
+	{count} display(s), primary: {name}	{count} näyttöä, ensisijainen: {name}
+	{count} storage device(s)	{count} tallennuslaitetta
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} vapaana
+	{free} free on the media cache's disk ({root})	{free} vapaana median välimuistin levyllä ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} Gt
+	{root} is read-only: CFA4 cannot write there.	{root} on vain luku: CFA4 ei voi kirjoittaa sinne.
+	{time} Detected {count} display(s).	{time} Löytyi {count} näyttöä.
+	{time} Detected {count} storage device(s).	{time} Löytyi {count} tallennuslaitetta.
+	{w} × {h} mm	{w} × {h} mm

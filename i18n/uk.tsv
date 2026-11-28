@@ -5060,3 +5060,43 @@
 	{count} connected	Під'єднано: {count}
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	Виходів: {outputs}, входів: {inputs}
+	CFA4 warns below {limit} free.	CFA4 попереджає, якщо вільно менше {limit}.
+	CFA4's own display settings are on the Color page.	Власні налаштування дисплея CFA4 розташовані на сторінці «Колір».
+	Displays	Дисплеї
+	Displays…	Дисплеї…
+	File system	Файлова система
+	Free	Вільно
+	Full-screen playback: yes	Повноекранне відтворення: так
+	HDR: not known (the system does not report it to CFA4).	HDR: невідомо (система не повідомляє про це CFA4).
+	Low on space: {free} free on {root}.	Мало місця: на {root} вільно {free}.
+	Mount point	Точка монтування
+	No CFA4 location on this disk.	На цьому диску немає розташувань CFA4.
+	No display found.	Дисплей не знайдено.
+	No storage device found.	Накопичувач не знайдено.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Один піксель програмного монітора при 100% займає тут {n} пікс. пристрою.
+	Physical size	Фізичний розмір
+	Pixel density	Щільність пікселів
+	Primary	Основний
+	Read-only	Лише читання
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Лише читання: дисплеї, про які повідомляє система. CFA4 нічого не змінює тут у налаштуваннях дисплея.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Лише читання: під'єднані накопичувачі та місце, де CFA4 зберігає свої файли. CFA4 нічого не змінює тут на дисках.
+	Recovery copy	Копія для відновлення
+	Refresh rate	Частота оновлення
+	Resolution	Роздільна здатність
+	Serial number	Серійний номер
+	Storage Devices	Накопичувачі
+	Storage Devices…	Накопичувачі…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Де CFA4 зберігає свій кеш, задається на сторінці «Кеш медіа».
+	not known	невідомо
+	read-only	лише читання
+	{count} display(s), primary: {name}	Дисплеїв: {count}, основний: {name}
+	{count} storage device(s)	Накопичувачів: {count}
+	{dpi} dpi	{dpi} dpi
+	{free} free	Вільно {free}
+	{free} free on the media cache's disk ({root})	На диску кешу медіа ({root}) вільно {free}
+	{hz} Hz	{hz} Гц
+	{n} GB	{n} ГБ
+	{root} is read-only: CFA4 cannot write there.	{root} лише для читання: CFA4 не може туди записувати.
+	{time} Detected {count} display(s).	{time} Знайдено дисплеїв: {count}.
+	{time} Detected {count} storage device(s).	{time} Знайдено накопичувачів: {count}.
+	{w} × {h} mm	{w} × {h} мм

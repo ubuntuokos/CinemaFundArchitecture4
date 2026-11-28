@@ -5111,3 +5111,43 @@ export.summary	Low	alacsony
 	{count} connected	{count} csatlakoztatva
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	{outputs} kimenet, {inputs} bemenet
+	CFA4 warns below {limit} free.	A CFA4 {limit} szabad hely alatt figyelmeztet.
+	CFA4's own display settings are on the Color page.	A CFA4 saját kijelzőbeállításai a Szín oldalon vannak.
+	Displays	Kijelzők
+	Displays…	Kijelzők…
+	File system	Fájlrendszer
+	Free	Szabad
+	Full-screen playback: yes	Teljes képernyős lejátszás: igen
+	HDR: not known (the system does not report it to CFA4).	HDR: nem ismert (a rendszer nem adja meg a CFA4-nek).
+	Low on space: {free} free on {root}.	Kevés a hely: {free} szabad ezen: {root}.
+	Mount point	Csatolási pont
+	No CFA4 location on this disk.	Ezen a lemezen nincs CFA4-hely.
+	No display found.	Nem található kijelző.
+	No storage device found.	Nem található tárolóeszköz.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	A Program monitor egy képpontja 100%-on itt {n} eszközképpontnyi.
+	Physical size	Fizikai méret
+	Pixel density	Képpontsűrűség
+	Primary	Elsődleges
+	Read-only	Csak olvasható
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Csak olvasható: a rendszer által jelentett kijelzők. A CFA4 itt semmit sem módosít a kijelzőbeállításokon.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Csak olvasható: a csatolt tárolók, és hogy a CFA4 hol tartja a fájljait. A CFA4 itt semmit sem módosít a lemezeken.
+	Recovery copy	Helyreállítási másolat
+	Refresh rate	Frissítési frekvencia
+	Resolution	Felbontás
+	Serial number	Sorozatszám
+	Storage Devices	Tárolóeszközök
+	Storage Devices…	Tárolóeszközök…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Hogy a CFA4 hol tartja a gyorsítótárát, azt a Médiagyorsítótár oldalon lehet beállítani.
+	not known	nem ismert
+	read-only	csak olvasható
+	{count} display(s), primary: {name}	{count} kijelző, elsődleges: {name}
+	{count} storage device(s)	{count} tárolóeszköz
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} szabad
+	{free} free on the media cache's disk ({root})	{free} szabad a médiagyorsítótár lemezén ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} csak olvasható: a CFA4 nem tud oda írni.
+	{time} Detected {count} display(s).	{time} {count} kijelző felismerve.
+	{time} Detected {count} storage device(s).	{time} {count} tárolóeszköz felismerve.
+	{w} × {h} mm	{w} × {h} mm

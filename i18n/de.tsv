@@ -5084,3 +5084,43 @@
 	{count} connected	{count} verbunden
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	{outputs} Ausgänge, {inputs} Eingänge
+	CFA4 warns below {limit} free.	CFA4 warnt unter {limit} freiem Speicher.
+	CFA4's own display settings are on the Color page.	Die eigenen Anzeigeeinstellungen von CFA4 befinden sich auf der Seite Farbe.
+	Displays	Bildschirme
+	Displays…	Bildschirme…
+	File system	Dateisystem
+	Free	Frei
+	Full-screen playback: yes	Vollbildwiedergabe: ja
+	HDR: not known (the system does not report it to CFA4).	HDR: unbekannt (das System meldet es CFA4 nicht).
+	Low on space: {free} free on {root}.	Wenig Speicherplatz: {free} frei auf {root}.
+	Mount point	Einhängepunkt
+	No CFA4 location on this disk.	Kein CFA4-Speicherort auf diesem Datenträger.
+	No display found.	Kein Bildschirm gefunden.
+	No storage device found.	Kein Speichergerät gefunden.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Ein Pixel des Programmmonitors bei 100 % entspricht hier {n} Gerätepixel(n).
+	Physical size	Physische Größe
+	Pixel density	Pixeldichte
+	Primary	Primär
+	Read-only	Schreibgeschützt
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Nur lesen: die Bildschirme, die das System meldet. CFA4 ändert hier nichts an den Anzeigeeinstellungen.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Nur lesen: die eingehängten Datenträger und wo CFA4 seine Dateien ablegt. CFA4 ändert hier nichts an den Datenträgern.
+	Recovery copy	Wiederherstellungskopie
+	Refresh rate	Bildwiederholrate
+	Resolution	Auflösung
+	Serial number	Seriennummer
+	Storage Devices	Speichergeräte
+	Storage Devices…	Speichergeräte…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Wo CFA4 seinen Cache ablegt, wird auf der Seite Mediencache festgelegt.
+	not known	unbekannt
+	read-only	schreibgeschützt
+	{count} display(s), primary: {name}	{count} Bildschirm(e), primär: {name}
+	{count} storage device(s)	{count} Speichergerät(e)
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} frei
+	{free} free on the media cache's disk ({root})	{free} frei auf dem Datenträger des Mediencaches ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} ist schreibgeschützt: CFA4 kann dort nicht schreiben.
+	{time} Detected {count} display(s).	{time} {count} Bildschirm(e) erkannt.
+	{time} Detected {count} storage device(s).	{time} {count} Speichergerät(e) erkannt.
+	{w} × {h} mm	{w} × {h} mm

@@ -5079,3 +5079,43 @@ export.summary	Low	låg
 	{count} connected	{count} anslutna
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	{outputs} utgångar, {inputs} ingångar
+	CFA4 warns below {limit} free.	CFA4 varnar under {limit} ledigt.
+	CFA4's own display settings are on the Color page.	CFA4:s egna skärminställningar finns på sidan Färg.
+	Displays	Skärmar
+	Displays…	Skärmar…
+	File system	Filsystem
+	Free	Ledigt
+	Full-screen playback: yes	Uppspelning i helskärm: ja
+	HDR: not known (the system does not report it to CFA4).	HDR: okänt (systemet rapporterar det inte till CFA4).
+	Low on space: {free} free on {root}.	Ont om utrymme: {free} ledigt på {root}.
+	Mount point	Monteringspunkt
+	No CFA4 location on this disk.	Ingen CFA4-plats på den här disken.
+	No display found.	Ingen skärm hittades.
+	No storage device found.	Ingen lagringsenhet hittades.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	En bildpunkt i programmonitorn vid 100 % motsvarar här {n} enhetsbildpunkt(er).
+	Physical size	Fysisk storlek
+	Pixel density	Bildpunktstäthet
+	Primary	Primär
+	Read-only	Skrivskyddad
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Skrivskyddat: skärmarna som systemet rapporterar. CFA4 ändrar inget i skärminställningarna här.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Skrivskyddat: den monterade lagringen och var CFA4 lägger sina filer. CFA4 ändrar inget på diskarna här.
+	Recovery copy	Återställningskopia
+	Refresh rate	Uppdateringsfrekvens
+	Resolution	Upplösning
+	Serial number	Serienummer
+	Storage Devices	Lagringsenheter
+	Storage Devices…	Lagringsenheter…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Var CFA4 lägger sin cache ställs in på sidan Mediecache.
+	not known	okänt
+	read-only	skrivskyddad
+	{count} display(s), primary: {name}	{count} skärm(ar), primär: {name}
+	{count} storage device(s)	{count} lagringsenhet(er)
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} ledigt
+	{free} free on the media cache's disk ({root})	{free} ledigt på mediecachens disk ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} är skrivskyddad: CFA4 kan inte skriva där.
+	{time} Detected {count} display(s).	{time} {count} skärm(ar) hittades.
+	{time} Detected {count} storage device(s).	{time} {count} lagringsenhet(er) hittades.
+	{w} × {h} mm	{w} × {h} mm

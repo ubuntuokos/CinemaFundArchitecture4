@@ -5087,3 +5087,43 @@
 	{count} connected	{count} conectados
 	{gpus} GPU, {npus} NPU	{gpus} GPU, {npus} NPU
 	{outputs} outputs, {inputs} inputs	{outputs} saídas, {inputs} entradas
+	CFA4 warns below {limit} free.	O CFA4 avisa abaixo de {limit} livres.
+	CFA4's own display settings are on the Color page.	As configurações de tela próprias do CFA4 ficam na página Cor.
+	Displays	Telas
+	Displays…	Telas…
+	File system	Sistema de arquivos
+	Free	Livre
+	Full-screen playback: yes	Reprodução em tela cheia: sim
+	HDR: not known (the system does not report it to CFA4).	HDR: desconhecido (o sistema não informa ao CFA4).
+	Low on space: {free} free on {root}.	Pouco espaço: {free} livres em {root}.
+	Mount point	Ponto de montagem
+	No CFA4 location on this disk.	Nenhum local do CFA4 neste disco.
+	No display found.	Nenhuma tela encontrada.
+	No storage device found.	Nenhum dispositivo de armazenamento encontrado.
+	One pixel of the Program Monitor at 100% covers {n} device pixel(s) here.	Um pixel do monitor de programa a 100% ocupa aqui {n} pixel(s) do dispositivo.
+	Physical size	Tamanho físico
+	Pixel density	Densidade de pixels
+	Primary	Principal
+	Read-only	Somente leitura
+	Read-only: the displays the system reports. CFA4 changes nothing in the display settings here.	Somente leitura: as telas que o sistema informa. O CFA4 não altera nenhuma configuração de tela aqui.
+	Read-only: the mounted storage and where CFA4 keeps its files. CFA4 changes nothing on the disks here.	Somente leitura: o armazenamento montado e onde o CFA4 guarda seus arquivos. O CFA4 não altera nada nos discos aqui.
+	Recovery copy	Cópia de recuperação
+	Refresh rate	Taxa de atualização
+	Resolution	Resolução
+	Serial number	Número de série
+	Storage Devices	Dispositivos de armazenamento
+	Storage Devices…	Dispositivos de armazenamento…
+	Where CFA4 keeps its cache is set on the Media Cache page.	Onde o CFA4 guarda seu cache é definido na página Cache de mídia.
+	not known	desconhecido
+	read-only	somente leitura
+	{count} display(s), primary: {name}	{count} tela(s), principal: {name}
+	{count} storage device(s)	{count} dispositivo(s) de armazenamento
+	{dpi} dpi	{dpi} dpi
+	{free} free	{free} livres
+	{free} free on the media cache's disk ({root})	{free} livres no disco do cache de mídia ({root})
+	{hz} Hz	{hz} Hz
+	{n} GB	{n} GB
+	{root} is read-only: CFA4 cannot write there.	{root} é somente leitura: o CFA4 não consegue gravar lá.
+	{time} Detected {count} display(s).	{time} {count} tela(s) detectada(s).
+	{time} Detected {count} storage device(s).	{time} {count} dispositivo(s) de armazenamento detectado(s).
+	{w} × {h} mm	{w} × {h} mm
