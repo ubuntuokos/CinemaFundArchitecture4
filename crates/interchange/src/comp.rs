@@ -815,6 +815,7 @@ fn build_sequence(
                 6 => AudioChannels::Surround51,
                 8 => AudioChannels::Surround71,
                 10 => AudioChannels::Surround712,
+                12 => AudioChannels::Surround714,
                 _ => AudioChannels::Stereo,
             };
         }

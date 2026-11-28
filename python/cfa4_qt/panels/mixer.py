@@ -134,7 +134,7 @@ class Strip(QWidget):
         self.hot_center.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.center", "value": v, "time": self.panel.now}))
         self.hot_lfe = hot(self, FADER_MIN_DB, FADER_MAX_DB, 0.5)
         self.hot_lfe.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.lfe", "value": v, "time": self.panel.now}))
-        # the height to the top surrounds, on a strip feeding a 7.1.2 bus (#406)
+        # the height to the top, on a strip feeding a 7.1.2 or 7.1.4 bus (#406)
         self.hot_height = hot(self, 0.0, 100.0, 1.0, decimals=0, suffix="%")
         self.hot_height.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.height", "value": v, "time": self.panel.now}))
         self._puck = (0.0, 0.0)  # the dragged 5.1 puck
@@ -189,7 +189,7 @@ class Strip(QWidget):
         self.update()
 
     def channels(self) -> int:
-        return {"5.1": 6, "7.1": 8, "7.1.2": 10}.get(self.data.get("channels") or "", 2)
+        return {"5.1": 6, "7.1": 8, "7.1.2": 10, "7.1.4": 12}.get(self.data.get("channels") or "", 2)
 
     # ----- layout -----
     def layout_regions(self) -> dict[str, QRectF]:

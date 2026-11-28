@@ -130,7 +130,7 @@ impl LiveMix {
     pub fn overrides(&self) -> HashMap<(TrackId, String), Override> {
         lock(&self.overrides).clone()
     }
-    /// Peak levels (linear, post-fader, one per channel of the strip: 2, or 6/8/10 for 5.1/7.1/7.1.2) per strip
+    /// Peak levels (linear, post-fader, one per channel of the strip: 2, or 6/8/10/12 for 5.1/7.1/7.1.2/7.1.4) per strip
     /// since the last call; [`MASTER`] is the Mix.
     pub fn take_meters(&self) -> HashMap<TrackId, Vec<f32>> {
         std::mem::take(&mut *lock(&self.meters))
@@ -292,7 +292,7 @@ struct Insert<'a> {
 struct Strip<'a> {
     track: Cow<'a, Track>,
     kind: Kind,
-    /// Bus width: 2, or 6/8/10 for 5.1/7.1/7.1.2.
+    /// Bus width: 2, or 6/8/10/12 for 5.1/7.1/7.1.2/7.1.4.
     width: usize,
     pre: Vec<Insert<'a>>,
     post: Vec<Insert<'a>>,
@@ -605,7 +605,7 @@ pub fn width_of(c: AudioChannels) -> usize {
 /// The layout a strip's signal is positioned as by the surround panner.
 fn source_layout(tr: &Track, width: usize) -> Layout {
     match (width, tr.channels) {
-        (6 | 8 | 10, _) => Layout::from_channels(width),
+        (6 | 8 | 10 | 12, _) => Layout::from_channels(width),
         (_, AudioChannels::Mono) => Layout::Mono,
         _ => Layout::Stereo,
     }
@@ -618,7 +618,7 @@ fn convert_width(buf: &Bus, layout: Layout, to: usize) -> Bus {
     }
     let n = buf.first().map_or(0, Vec::len);
     match (layout, to) {
-        (Layout::Mono, 6 | 8 | 10) => {
+        (Layout::Mono, 6 | 8 | 10 | 12) => {
             let mut v = silent(to, n);
             v[chans::C] = buf[0].clone();
             v
@@ -843,7 +843,7 @@ fn run_strip(
         return StripOut { routes: outs, meter, out: Some(buf) };
     }
     let out_w = my_routes.iter().find(|(_, r)| r.tap == Tap::Out).map(|(_, r)| plan.strips[r.target].width).unwrap_or(2);
-    if matches!(out_w, 6 | 8 | 10) {
+    if matches!(out_w, 6 | 8 | 10 | 12) {
         buf = pan_surround(&buf, layout, out_w, tr, id, ovs, c_c, sr);
     } else {
         if buf.len() != 2 {
@@ -857,7 +857,7 @@ fn run_strip(
 }
 
 /// Mix `frames` samples of the sequence starting at sample `start` through the mixer graph, at the
-/// Mix's width (2 channels, or 6/8/10 in L, R, C, LFE, Ls, Rs (Lss, Rss, Lrs, Rrs, Lts, Rts) order for a surround Mix). `live` adds the UI's
+/// Mix's width (2 channels, or 6/8/10/12 in L, R, C, LFE, Ls, Rs (Lss, Rss, Lrs, Rrs, Lts, Rts / Ltf, Rtf, Ltr, Rtr) order for a surround Mix). `live` adds the UI's
 /// held controls and receives the meters.
 pub fn mix_graph(project: &Project, seq: &Sequence, start: i64, frames: usize, sources: &dyn SourceProvider, live: Option<&LiveMix>) -> AudioBuffer {
     mix_graph_at(project, seq, start, frames, sources, live, 0)

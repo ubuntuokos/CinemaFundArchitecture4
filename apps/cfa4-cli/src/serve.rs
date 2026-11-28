@@ -783,8 +783,8 @@ fn time_readout(s: &Session, p: &Value) -> Result<Value, String> {
 
 /// Most buckets one `media.peaks` returns.
 const MAX_PEAK_BUCKETS: usize = 20_000;
-/// Most channels a per-channel `media.peaks` returns (7.1.2 is ten); further channels are left out.
-const MAX_PEAK_CHANNELS: usize = 10;
+/// Most channels a per-channel `media.peaks` returns (7.1.4 is twelve); further channels are left out.
+const MAX_PEAK_CHANNELS: usize = 12;
 /// Longest media span one `media.peaks` reads (10 minutes at 48 kHz), so a request stays short.
 const MAX_PEAK_FRAMES: i64 = 48_000 * 600;
 
@@ -1640,7 +1640,7 @@ mod tests {
             path.to_string_lossy().into_owned()
         };
         let mut s = Session::default();
-        let imported = s.execute("file.import", json!({"paths": [write("l6.wav", 6), write("l2.wav", 2), write("l12.wav", 12)]})).expect("import");
+        let imported = s.execute("file.import", json!({"paths": [write("l6.wav", 6), write("l2.wav", 2), write("l14.wav", 14)]})).expect("import");
         assert!(imported["errors"].as_array().is_none_or(Vec::is_empty), "{imported}");
         let with_channels = |s: &Session, n: u32| {
             s.project
@@ -1676,7 +1676,7 @@ mod tests {
         assert_eq!(n, 2);
         assert!((v[1] - 0.05).abs() < 1e-3 && (v[41] - 0.10).abs() < 1e-3, "{} {}", v[1], v[41]);
         // more channels than the cap: cut at the cap, the first ones kept
-        let item = with_channels(&s, 12);
+        let item = with_channels(&s, 14);
         let (n, v) = peaks(&mut s, item);
         assert_eq!(n, MAX_PEAK_CHANNELS);
         assert!((v[(MAX_PEAK_CHANNELS - 1) * 40 + 1] - MAX_PEAK_CHANNELS as f32 / 20.0).abs() < 1e-3);

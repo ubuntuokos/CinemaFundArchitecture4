@@ -3612,7 +3612,10 @@ fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, s
                 }
                 buf.clear();
                 match &mut writer {
-                    AudioWriter::Pcm(c) => pcm::encode(*c, &audio_out::interleave(&planar), fmt, &mut buf),
+                    AudioWriter::Pcm(c) => {
+                        let planar = if *c == pcm::PcmContainer::Wav { pcm::wav_order(planar) } else { planar };
+                        pcm::encode(*c, &audio_out::interleave(&planar), fmt, &mut buf)
+                    }
                     AudioWriter::Flac(enc) => {
                         let ints: Vec<Vec<i32>> = planar.iter().map(|c| c.iter().map(|&s| fmt.quantise(s)).collect()).collect();
                         let refs: Vec<&[i32]> = ints.iter().map(Vec::as_slice).collect();

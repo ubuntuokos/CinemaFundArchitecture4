@@ -10273,9 +10273,9 @@ def test_audio_track_mixer(app, tmp_path: Path, monkeypatch):
         win.docks["Audio Track Mixer"].raise_()
         assert wait_until(app, lambda: [s.ref for s in mixer.strips if s.isVisible()] == ["A1", "A2", "A3", "Mix"], 10_000)
         a1 = mixer.strips[0]
-        # meter bars per channel format, 7.1 and 7.1.2 included (#374)
+        # meter bars per channel format, 7.1, 7.1.2 and 7.1.4 included (#374, binaural plan B-03b)
         saved = a1.data
-        for fmt, n in (("Stereo", 2), ("5.1", 6), ("7.1", 8), ("7.1.2", 10), ("Adaptive", 2)):
+        for fmt, n in (("Stereo", 2), ("5.1", 6), ("7.1", 8), ("7.1.2", 10), ("7.1.4", 12), ("Adaptive", 2)):
             a1.data = {**saved, "channels": fmt}
             assert a1.channels() == n, fmt
         a1.data = saved

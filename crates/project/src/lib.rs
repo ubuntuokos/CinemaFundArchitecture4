@@ -238,7 +238,9 @@ impl AudioChannelMap {
         let clips = match format {
             AudioChannels::Mono => (0..n).map(|c| vec![c]).collect(),
             AudioChannels::Stereo => (0..n).step_by(2).map(|c| if c + 1 < n { vec![c, c + 1] } else { vec![c] }).collect(),
-            AudioChannels::Surround51 | AudioChannels::Surround71 | AudioChannels::Surround712 | AudioChannels::Adaptive => vec![(0..n).collect()],
+            AudioChannels::Surround51 | AudioChannels::Surround71 | AudioChannels::Surround712 | AudioChannels::Surround714 | AudioChannels::Adaptive => {
+                vec![(0..n).collect()]
+            }
         };
         Self { format, clips }
     }
@@ -588,10 +590,12 @@ pub enum AudioChannels {
     Surround71,
     /// 7.1.2 (9.1OH): 7.1 DS and the overhead Lts, Rts.
     Surround712,
+    /// 7.1.4: 7.1 DS and the top Ltf, Rtf, Ltr, Rtr (a Mix or submix; tracks of 7.1.4 sources).
+    Surround714,
 }
 
 impl AudioChannels {
-    /// The channel count of a fixed format (5.1: 6, 7.1: 8, 7.1.2: 10, stereo: 2, mono: 1);
+    /// The channel count of a fixed format (5.1: 6, 7.1: 8, 7.1.2: 10, 7.1.4: 12, stereo: 2, mono: 1);
     /// `None` for adaptive.
     pub fn fixed_channels(self) -> Option<usize> {
         match self {
@@ -600,12 +604,13 @@ impl AudioChannels {
             AudioChannels::Surround51 => Some(6),
             AudioChannels::Surround71 => Some(8),
             AudioChannels::Surround712 => Some(10),
+            AudioChannels::Surround714 => Some(12),
             AudioChannels::Adaptive => None,
         }
     }
-    /// Whether this is a surround format (5.1, 7.1 or 7.1.2), panned with the surround panner.
+    /// Whether this is a surround format (5.1, 7.1, 7.1.2 or 7.1.4), panned with the surround panner.
     pub fn is_surround(self) -> bool {
-        matches!(self, AudioChannels::Surround51 | AudioChannels::Surround71 | AudioChannels::Surround712)
+        matches!(self, AudioChannels::Surround51 | AudioChannels::Surround71 | AudioChannels::Surround712 | AudioChannels::Surround714)
     }
 }
 

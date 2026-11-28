@@ -24,7 +24,7 @@ MAX_PEAKS = 200
 PEAKS_PER_SECOND = 100
 MAX_BUCKETS = 20_000
 MAX_PEAK_SECONDS = 600  # the engine's limit per request
-MAX_CHANNELS = 10  # the engine's per-channel limit (7.1.2)
+MAX_CHANNELS = 12  # the engine's per-channel limit (7.1.4)
 MAX_CHANNEL_VALUES = 600_000  # (min, max) pairs kept for per-channel waveforms, over all entries
 
 

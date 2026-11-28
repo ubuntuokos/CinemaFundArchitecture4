@@ -92,7 +92,12 @@ pub fn header(container: PcmContainer, channels: u16, sample_rate: u32, format: 
                 // cbSize, valid bits, channel mask, KSDATAFORMAT_SUBTYPE_PCM / _IEEE_FLOAT
                 v.extend_from_slice(&22u16.to_le_bytes());
                 v.extend_from_slice(&bits.to_le_bytes());
-                let mask: u32 = if channels == 6 { 0x3F } else { 0 };
+                let mask: u32 = match channels {
+                    6 => 0x3F,
+                    // L R C LFE, back L/R, side L/R, top front L/R, top back L/R (see `wav_order`)
+                    12 => WAV_714_MASK,
+                    _ => 0,
+                };
                 v.extend_from_slice(&mask.to_le_bytes());
                 v.extend_from_slice(&tag.to_le_bytes());
                 v.extend_from_slice(&SUBTYPE_TAIL);
@@ -169,9 +174,23 @@ fn write_whole(container: PcmContainer, interleaved: &[f32], channels: u16, samp
     Ok(v)
 }
 
+/// The `WAVE_FORMAT_EXTENSIBLE` speaker mask of 7.1.4: front L/R/C, LFE, back L/R, side L/R, top
+/// front L/R and top back L/R.
+pub const WAV_714_MASK: u32 = 0x3F | 0x600 | 0x1000 | 0x4000 | 0x8000 | 0x2_0000;
+
+/// Planar audio in WAV's channel order: a 12-channel (7.1.4) mix in CFA4's order (L R C LFE Lss
+/// Rss Lrs Rrs Ltf Rtf Ltr Rtr) moves the rear pair before the sides, as the speaker mask's bit
+/// order wants (L R C LFE Lrs Rrs Lss Rss Ltf Rtf Ltr Rtr); other counts stay as they are.
+pub fn wav_order(mut planar: Vec<Vec<f32>>) -> Vec<Vec<f32>> {
+    if planar.len() == 12 {
+        planar[4..8].rotate_left(2);
+    }
+    planar
+}
+
 /// A RIFF/WAVE file of interleaved samples. More than two channels are written as
 /// `WAVE_FORMAT_EXTENSIBLE` with the speaker mask of the layout (6 channels: L, R, C, LFE, Ls, Rs
-/// = `0x3F`).
+/// = `0x3F`; 12 channels: 7.1.4 in WAV order, [`WAV_714_MASK`], see [`wav_order`]).
 pub fn write_wav(interleaved: &[f32], channels: u16, sample_rate: u32, format: SampleFormat) -> Result<Vec<u8>, String> {
     write_whole(PcmContainer::Wav, interleaved, channels, sample_rate, format)
 }
