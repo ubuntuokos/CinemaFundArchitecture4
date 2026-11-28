@@ -4004,6 +4004,13 @@
   {
    "class": "other",
    "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "mkv_source.rs",
+   "name": "MkvVideo"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
    "kind": "enum",
    "module": "mpeg_out.rs",
    "name": "Mpeg2Container"
@@ -6625,6 +6632,13 @@
    "kind": "struct",
    "module": "lib.rs",
    "name": "GpuRenderStats"
+  },
+  {
+   "class": "render",
+   "crate": "cfa4-export",
+   "kind": "enum",
+   "module": "mkv_source.rs",
+   "name": "MkvSourceError"
   },
   {
    "class": "render",
@@ -11399,6 +11413,41 @@
    "from": "cfa4-export/lib.rs",
    "item": "TICKS_PER_SECOND",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-export/mkv_source.rs",
+   "item": "av1_index",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/mkv_source.rs",
+   "item": "capabilities",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/mkv_source.rs",
+   "item": "h264_index",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/mkv_source.rs",
+   "item": "hevc_index",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/mkv_source.rs",
+   "item": "media_index",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/mkv_source.rs",
+   "item": "mpeg2_index",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/mkv_source.rs",
+   "item": "timestamp",
+   "to": "cfa4-smart-edit"
   },
   {
    "from": "cfa4-export/mpeg_out.rs",
