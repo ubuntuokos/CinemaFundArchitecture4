@@ -106,7 +106,7 @@ checked: malformed access units return `Err`, never panic.
 
 ## Test results
 
-All produced by `cargo test -p cfa4-aac -- --nocapture` (ffmpeg 9.0 as oracle, found by
+All produced by `cargo test -p cfa4-aac -- --nocapture` (ffmpeg as oracle, found by
 `cfa4-testkit`; tests skip when it is absent). Fixtures go to `target/fixtures/aac/`.
 
 ### Encoder quality / bitrate (2 s synthetic signals, decoded by ffmpeg)
@@ -137,8 +137,9 @@ ffmpeg errors, no output clips (peak < 1.0), and CBR is within ±0.1% of target 
 | chords 3/4/5/7/8ch 48k | 192–448 | exact | 16000 | 26–28 | 26–28 | 38 | 7–13 | 2e-7 |
 | chords 2ch 8 k … 96 k (10 rates) | 24–256 | exact | 3.9–21 k | 13–38 | | 17–47 | | ≤3e-7 |
 
-Reference points from ffmpeg's own AAC encoder on the same signals (stereo 48 kHz, segSNR):
-sweep 128k 39.7, speech 128k 21.2, chords 128k 32.8, clicks 128k 43.3 (ours: 52/20/39/54). Pure SNR
+Reference points from an older ffmpeg AAC encoder on the same signals (stereo 48 kHz, segSNR):
+sweep 128k 39.7, speech 128k 21.2, chords 128k 32.8, clicks 128k 43.3 (ours: 52/20/39/54); the
+pinned FFmpeg's encoder is compared below. Pure SNR
 is not a perceptual measure: the model deliberately leaves noise under the masking threshold, and
 full-band white noise is the worst case by design.
 
@@ -157,10 +158,38 @@ monotonically with q.
 | 3.0, 5.1 (320k), 7.1 wide with PCE (448k) | 1.2e-7, 1.5e-7, 1.3e-7 |
 | stereo 44.1k 160k `-aac_coder fast` | 1.2e-7 |
 
-Our own encoder's streams: ≤1.6e-6 against ffmpeg for every case above. PNS (ffmpeg's encoder does not
-emit it, so streams are hand-built): total energy within 0.15 dB of ffmpeg; per-frame energy within
-0.8 dB (random vectors differ). For noise bands flagged `ms_used` we produce identical L/R noise as
-the standard specifies; ffmpeg produces independent noise there.
+Our own encoder's streams: ≤1.6e-6 against ffmpeg for every case above. PNS, hand-built streams:
+total energy within 0.15 dB of ffmpeg; per-frame energy within 0.8 dB (random vectors differ). For
+noise bands flagged `ms_used` we produce identical L/R noise as the standard specifies; ffmpeg
+produces independent noise there.
+
+**The pinned FFmpeg's encoder** (`CFA4_FFMPEG_MIN_VERSION` in `packaging/ffmpeg-version.env`; NMR
+coder by default, `-aac_rc cbr|abr`, `-aac_nmr_speed`; CFA4-FFMPEG-9.1-001 F2n). These cases skip on
+an older ffmpeg. Without PNS, sample by sample: NMR, two-loop, ABR, speed 4, intensity stereo + M/S at
+32 kHz 40k, mono 16 kHz ABR, 5.1 and 7.1 ABR, all ≤1.7e-7. With its defaults (PNS on) the noise bands
+are random, so the decoders are compared by power per third-octave band (where a band is within 60
+dB of the loudest): stereo 44.1k 48k, stereo 48k 64k ABR, mono 32k 24k, mono 44.1k 32k two-loop,
+stereo 44.1k 64k fast, at most 0.81 dB apart (test limit 1 dB).
+
+### Our encoder next to the pinned FFmpeg encoder
+
+`tests/ffmpeg_encoder_compare.rs` prints this table (owner decision: no thresholds). Stereo, 2 s,
+decoded by ffmpeg; kb/s is the payload rate without ADTS headers; bw is SNR below our coded bandwidth.
+
+| signal | rate / target | CFA4 kb/s · SNR · bw · seg | ffmpeg default | ffmpeg, PNS off |
+|---|---|---|---|---|
+| sweep | 44.1k / 128k | 127.9 · 26.2 · 27.4 · 54.2 | 130.5 · 42.1 · 44.7 · 56.0 | same |
+| speech | 44.1k / 128k | 128.0 · 21.7 · 23.5 · 21.9 | 83.4 · 25.0 · 30.1 · 30.3 | 83.8 · 25.0 · 30.0 · 30.1 |
+| chords | 44.1k / 128k | 128.0 · 20.1 · 20.1 · 38.4 | 131.1 · 39.6 · 39.6 · 43.0 | 130.6 · 39.7 · 39.8 · 43.9 |
+| clicks | 44.1k / 128k | 128.0 · 20.5 · 26.8 · 53.6 | 106.9 · 13.9 · 14.7 · 50.3 | same |
+| chords | 44.1k / 64k | 64.0 · 12.4 · 12.4 · 20.6 | 66.3 · 23.1 · 23.1 · 25.2 | 66.0 · 23.0 · 23.0 · 25.0 |
+| speech | 48k / 96k | 96.0 · 21.1 · 23.2 · 21.3 | 65.8 · 23.9 · 29.0 · 27.4 | 66.5 · 23.9 · 29.0 · 27.4 |
+| chords | 48k / 192k | 192.0 · 32.2 · 32.2 · 47.3 | 193.2 · 45.0 · 45.0 · 50.6 | same |
+| clicks | 48k / 192k | 192.0 · 24.6 · 34.1 · 55.3 | 156.0 · 21.8 · 24.7 · 54.5 | 154.9 · 21.8 · 24.7 · 54.4 |
+
+On tonal and speech-like content the pinned FFmpeg encoder reaches clearly higher waveform SNR,
+on speech at well under the target bitrate; on clicks ours keeps transients better. SNR is not a
+perceptual measure, so this is a pointer for encoder work, not a verdict.
 
 ### Robustness
 
