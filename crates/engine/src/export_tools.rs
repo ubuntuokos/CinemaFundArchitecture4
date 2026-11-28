@@ -842,11 +842,11 @@ fn check_scheduled_start(s: &mut Session) {
 
 fn scheduled_start_json(s: &Session) -> Value {
     let Some(id) = s.export_queue.start_task.as_deref() else { return Value::Null };
-    let t = s.tasks.queue().get(id);
+    let t = s.tasks.task(id);
     json!({
         "task": id,
-        "at": t.and_then(|t| t.start.at()),
-        "state": t.map(|t| t.state),
+        "at": t.as_ref().and_then(|t| t.start.at()),
+        "state": t.as_ref().map(|t| t.state),
         "needsDecision": s.tasks.needs_decision(id),
     })
 }

@@ -33,6 +33,7 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+pub mod backend;
 pub mod budget;
 pub mod class;
 pub mod gpumem;
@@ -46,6 +47,7 @@ pub mod resources;
 pub mod schedule;
 mod system;
 
+pub use backend::QueueBackend;
 pub use budget::{Budget, BudgetSettings, GpuBudget, GpuExcluded};
 pub use class::{AiFloor, FloorReason, RamProfile, ai_floor, ram_profile};
 pub use journal::TaskJournal;

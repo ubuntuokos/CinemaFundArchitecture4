@@ -219,7 +219,7 @@ mod tests {
         pump(&mut s);
         assert!(matches!(j.result.lock().unwrap().as_ref(), Some(Err(e)) if e == "cancelled"));
         assert!(!ran.load(Ordering::Relaxed));
-        assert_eq!(s.tasks.queue().tasks()[0].state, cfa4_tasks::State::Cancelled);
+        assert_eq!(s.tasks.tasks()[0].state, cfa4_tasks::State::Cancelled);
     }
 
     #[test]
@@ -231,6 +231,6 @@ mod tests {
         assert_eq!(s.background.waiting(), 0);
         settle(&mut s, &j);
         assert!(ran.load(Ordering::Relaxed));
-        assert_eq!(s.tasks.queue().tasks()[0].state, cfa4_tasks::State::Failed, "the body reported an error");
+        assert_eq!(s.tasks.tasks()[0].state, cfa4_tasks::State::Failed, "the body reported an error");
     }
 }
