@@ -260,6 +260,40 @@ fn mix(out: &mut [Vec<f32>], x: &[i32], gains: &[Vec<f32>], sizes: &[usize]) {
 /// Renders `frame` to the loudspeakers of `layout`: one buffer per loudspeaker, [`Frame::samples`]
 /// samples each, full scale ±1.0.
 pub fn render(frame: &Frame, layout: &Layout) -> Result<Vec<Vec<f32>>> {
+    let mut out = render_beds(frame, layout)?;
+    let sizes = frame.frame_rate.sub_block_sizes(frame.rate96(), frame.frame_index);
+    let ns = layout.speakers.len();
+    let scaled = |v: Vec<f32>, k: f32| v.into_iter().map(|g| g * k).collect::<Vec<f32>>();
+    for o in rendered_objects_of(frame, layout) {
+        let Some(a) = frame.audio_data(o.audio_id) else { continue };
+        let mut cur: Option<&Pan> = None;
+        let mut gains = Vec::with_capacity(sizes.len());
+        for sb in 0..sizes.len() {
+            if let Some(Some(p)) = o.pan.get(sb) {
+                cur = Some(p);
+            }
+            let g = match cur {
+                Some(p) => scaled(pan_point(layout, p.position(), p.spread.extent(), p.zones.as_ref(), p.snap), p.gain.linear()),
+                None => vec![0.0; ns],
+            };
+            gains.push(g);
+        }
+        mix(&mut out, &a.samples, &gains, &sizes);
+    }
+    Ok(out)
+}
+
+/// The Objects of `frame` that render in `layout`'s Target Environment (UseCase activation and
+/// conditional replacements applied), for a renderer that places them itself.
+pub fn rendered_objects_of<'a>(frame: &'a Frame, layout: &Layout) -> Vec<&'a Object> {
+    let mut objects = Vec::new();
+    rendered_objects(&frame.objects, layout, &mut objects);
+    objects
+}
+
+/// Renders only the Beds of `frame` (with their BedRemaps) to the loudspeakers of `layout`, as
+/// [`render`] does.
+pub fn render_beds(frame: &Frame, layout: &Layout) -> Result<Vec<Vec<f32>>> {
     let n = frame.samples();
     let sizes = frame.frame_rate.sub_block_sizes(frame.rate96(), frame.frame_index);
     let ns = layout.speakers.len();
@@ -300,23 +334,5 @@ pub fn render(frame: &Frame, layout: &Layout) -> Result<Vec<Vec<f32>>> {
         }
     }
 
-    let mut objects = Vec::new();
-    rendered_objects(&frame.objects, layout, &mut objects);
-    for o in objects {
-        let Some(a) = frame.audio_data(o.audio_id) else { continue };
-        let mut cur: Option<&Pan> = None;
-        let mut gains = Vec::with_capacity(sizes.len());
-        for sb in 0..sizes.len() {
-            if let Some(Some(p)) = o.pan.get(sb) {
-                cur = Some(p);
-            }
-            let g = match cur {
-                Some(p) => scaled(pan_point(layout, p.position(), p.spread.extent(), p.zones.as_ref(), p.snap), p.gain.linear()),
-                None => vec![0.0; ns],
-            };
-            gains.push(g);
-        }
-        mix(&mut out, &a.samples, &gains, &sizes);
-    }
     Ok(out)
 }

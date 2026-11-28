@@ -4977,3 +4977,11 @@ export.summary	Low	låg
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-mapp (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfisk, 6 Mbps, GOP 15, AC-3 192 kbps, kapitel från sekvensens kapitelmarkörer
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-mapp (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfisk, 6 Mbps, GOP 18, AC-3 192 kbps, kapitel från sekvensens kapitelmarkörer
+	DNx decoding:	DNx-avkodning:
+	As detected from the file ({detected})	Enligt identifiering från filen ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	FFmpeg-kompatibel
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg läser vissa DNx-filer annorlunda än standarden (4:4:4-färger, invers kvantisering). Material som FFmpeg har kodat identifieras; välj här om identifieringen är fel.
+	DNx Coding	DNx-kodning
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibel (för FFmpeg-baserade verktyg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Av: kodas enligt SMPTE ST 2019-1. På: kodas så som FFmpeg skriver DNx, för verktyg byggda på FFmpeg.

@@ -237,12 +237,49 @@ pub trait MediaSource: Send + Sync {
     fn carrier(&self) -> Option<SharedSource> {
         None
     }
+    /// Interpret Footage ▸ DNx conventions (CFA4-DNX-SPEC-001 R5, D2): decode DNx (VC-3) video
+    /// with FFmpeg's conventions (`Some(true)`), by SMPTE ST 2019-1 (`Some(false)`), or as the
+    /// source detects from its container (`None`). Decoders made afterwards use it: call it on a
+    /// freshly opened source, before its first frame. Sources without DNx video ignore it.
+    fn set_dnx_conventions(&self, _ffmpeg: Option<bool>) {}
+    /// What the source detects from its container for its DNx video, whatever
+    /// [`set_dnx_conventions`](Self::set_dnx_conventions) chose: `Some(true)` when FFmpeg encoded
+    /// it (FFmpeg's conventions), `Some(false)` for the standard's. `None` without DNx video.
+    fn dnx_ffmpeg_detected(&self) -> Option<bool> {
+        None
+    }
     /// The Key IDs (UUID text) of encrypted essence (ST 429-6) whose content key is not loaded:
     /// its picture is black and its sound silent until a KDM brings them (#1053). Read when
     /// asked, so it is empty once the keys are there. Empty for sources that are not encrypted.
     fn missing_keys(&self) -> Vec<String> {
         Vec::new()
     }
+    /// The object audio of the primary stream from sample `start` (at the stream's own rate,
+    /// media time), unrendered, for the headphone monitor
+    /// (`docs/plans/CFA4-BINAURAL-MONITOR-001.md` B-03): `None` for a stream without objects (Dolby TrueHD
+    /// Atmos and IAB have them), an error when this block's objects cannot be decoded (the
+    /// rendered channels of [`audio`](Self::audio) still play).
+    fn object_audio(&self, _start: i64, _frames: usize) -> Option<Result<ObjectAudio>> {
+        None
+    }
+}
+
+/// Unrendered object audio of one block (see [`MediaSource::object_audio`]).
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ObjectAudio {
+    /// The format's name, as a monitor shows it ("Dolby TrueHD Atmos", "IAB").
+    pub format: &'static str,
+    /// The stream's own rate.
+    pub sample_rate: u32,
+    /// The block's first sample.
+    pub start: i64,
+    /// One mono signal per object (beds first), each the block's length.
+    pub objects: Vec<Vec<f32>>,
+    /// Each object's last metadata update before `start` (offsets in media samples): its state
+    /// when playing starts here.
+    pub current: Vec<cfa4_truehd::render::Event>,
+    /// The updates within the block, in order (offsets in media samples).
+    pub events: Vec<cfa4_truehd::render::Event>,
 }
 
 pub type SharedSource = Arc<dyn MediaSource>;

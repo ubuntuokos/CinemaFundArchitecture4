@@ -39,6 +39,7 @@ mod serve_graphics;
 mod serve_live;
 mod serve_lumetri;
 mod serve_media_browser;
+mod serve_monitor;
 mod serve_multicam;
 mod serve_project;
 mod serve_scopes;

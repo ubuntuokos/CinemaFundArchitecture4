@@ -18,6 +18,10 @@
   },
   {
    "from": "cfa4-cli",
+   "to": "cfa4-frame"
+  },
+  {
+   "from": "cfa4-cli",
    "to": "cfa4-gpu"
   },
   {
@@ -491,6 +495,16 @@
    "crate": "cfa4-audio-dsp",
    "fn": "mixdown",
    "module": "sync.rs"
+  },
+  {
+   "crate": "cfa4-cli",
+   "fn": "render",
+   "module": "serve_monitor.rs"
+  },
+  {
+   "crate": "cfa4-cli",
+   "fn": "render_objects",
+   "module": "serve_monitor.rs"
   },
   {
    "crate": "cfa4-cli",
@@ -1193,6 +1207,13 @@
    "kind": "struct",
    "module": "lib.rs",
    "name": "AudioStreamInfo"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-media",
+   "kind": "struct",
+   "module": "lib.rs",
+   "name": "ObjectAudio"
   },
   {
    "class": "audio",
@@ -2334,6 +2355,20 @@
    "kind": "struct",
    "module": "serve.rs",
    "name": "Reply"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-cli",
+   "kind": "struct",
+   "module": "serve_monitor.rs",
+   "name": "Binaural"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-cli",
+   "kind": "enum",
+   "module": "serve_monitor.rs",
+   "name": "SetId"
   },
   {
    "class": "other",
@@ -4977,6 +5012,13 @@
   {
    "class": "other",
    "crate": "cfa4-project",
+   "kind": "enum",
+   "module": "lib.rs",
+   "name": "DnxConventions"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
    "kind": "struct",
    "module": "lib.rs",
    "name": "FieldOptions"
@@ -7138,6 +7180,11 @@
   },
   {
    "from": "cfa4-cli/serve.rs",
+   "item": "AudioBuffer",
+   "to": "cfa4-frame"
+  },
+  {
+   "from": "cfa4-cli/serve.rs",
    "item": "ExportRenderer",
    "to": "cfa4-gpu"
   },
@@ -7340,6 +7387,11 @@
    "from": "cfa4-cli/serve_media_browser.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-cli/serve_monitor.rs",
+   "item": "MediaSource",
+   "to": "cfa4-media"
   },
   {
    "from": "cfa4-cli/serve_multicam.rs",
@@ -7834,6 +7886,11 @@
   {
    "from": "cfa4-engine/color.rs",
    "item": "ClipId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/color.rs",
+   "item": "DnxConventions",
    "to": "cfa4-project"
   },
   {
@@ -9538,6 +9595,11 @@
   },
   {
    "from": "cfa4-engine/media_pool.rs",
+   "item": "ObjectAudio",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/media_pool.rs",
    "item": "Result",
    "to": "cfa4-media"
   },
@@ -9580,6 +9642,11 @@
    "from": "cfa4-engine/media_pool.rs",
    "item": "wav",
    "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/media_pool.rs",
+   "item": "DnxConventions",
+   "to": "cfa4-project"
   },
   {
    "from": "cfa4-engine/media_pool.rs",
