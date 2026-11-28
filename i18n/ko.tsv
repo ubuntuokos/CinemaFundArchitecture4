@@ -4977,3 +4977,4 @@
 	DNx Coding	DNx 인코딩
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg 호환(FFmpeg 기반 도구용)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	끔: SMPTE ST 2019-1에 따라 인코딩합니다. 켬: FFmpeg가 DNx를 쓰는 방식으로 인코딩합니다(FFmpeg 기반 도구용).
+	Check Project…	프로젝트 검사…

@@ -274,3 +274,12 @@ Events: `surfaceAction` `{command, params, device, control, seq}`, `surfaceLearn
 Learn states: `learning`, `capturing`, `pending`, `conflict`, `timeout`, `confirmed`, `rejected`, `cancelled`. A binding is stored by the GUI only after confirm; OK writes preferences and the schema-checked file `active-<device>.json` under `$XDG_DATA_HOME/cfa4/Control Surfaces/`.
 
 Trigger inputs are not dropped when the lane is full (the reader waits and `stalls` grows). Continuous values keep the last one (`coalesced`). The lane starts at 256. The final size is not measured yet (N-08).
+
+### Project check
+
+`project.check` (File ▸ Check Project…, params `{"maxEffects":n=8}`) is a read-only health report on the open
+project, built from the project model and changing nothing. Findings carry `section`, `kind`, `item`, `clip`,
+`sequence` and `message`: `missing` (`missing`, `offline`, `proxyMissing`), `integrity` (`danglingClip`,
+`unknownEffect`, `pastMediaEnd`, `unusedMedia`) and `performance` (`noProxy` for 4K media without a proxy,
+`heavyClip`). The result also has `counts` per kind, per-sequence `sequences` statistics and `ok`, which is false
+when media is missing or the integrity section finds damage (unused media is advice only).

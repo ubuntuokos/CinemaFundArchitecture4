@@ -4986,3 +4986,4 @@ export.summary	Low	žema
 	DNx Coding	DNx kodavimas
 	FFmpeg-compatible (for FFmpeg-based tools)	Suderinama su FFmpeg (FFmpeg pagrįstiems įrankiams)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Išjungta: koduojama pagal SMPTE ST 2019-1. Įjungta: koduojama taip, kaip FFmpeg rašo DNx, FFmpeg pagrįstiems įrankiams.
+	Check Project…	Patikrinti projektą…

@@ -4985,3 +4985,4 @@ export.summary	Low	төмен
 	DNx Coding	DNx кодтау
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-пен үйлесімді (FFmpeg негізіндегі құралдар үшін)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Өшірулі: SMPTE ST 2019-1 бойынша кодталады. Қосулы: FFmpeg DNx-ті қалай жазса, солай кодталады, FFmpeg негізіндегі құралдар үшін.
+	Check Project…	Жобаны тексеру…

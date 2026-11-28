@@ -4985,3 +4985,4 @@ export.summary	Low	nizak
 	DNx Coding	DNx kodiranje
 	FFmpeg-compatible (for FFmpeg-based tools)	Kompatibilno sa FFmpeg-om (za alate zasnovane na FFmpeg-u)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Isključeno: kodirano prema SMPTE ST 2019-1. Uključeno: kodirano onako kako FFmpeg zapisuje DNx, za alate zasnovane na FFmpeg-u.
+	Check Project…	Proveri projekat…

@@ -4982,3 +4982,4 @@ export.summary	Low	低
 	DNx Coding	DNx 編碼
 	FFmpeg-compatible (for FFmpeg-based tools)	相容於 FFmpeg（供以 FFmpeg 為基礎的工具使用）
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	關：依 SMPTE ST 2019-1 編碼。開：依 FFmpeg 寫入 DNx 的方式編碼，供以 FFmpeg 為基礎的工具使用。
+	Check Project…	檢查專案…
