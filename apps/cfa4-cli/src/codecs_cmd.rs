@@ -249,6 +249,7 @@ const NOT_CODECS: &[&str] = &[
     "st2110",
     "store",
     "surface",
+    "surface-adapters",
     "surface-catalog",
     "surface-model",
     "tasks",

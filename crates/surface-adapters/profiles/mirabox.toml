@@ -1,0 +1,50 @@
+# mirabox-family device profiles (CFA4-HW-CONTROL-SURFACES-001, adapter `mirabox-family`).
+#
+# One profile per USB id. The values tell mirajazz how to talk to the device and how its raw key
+# numbers map to the catalogue's controls. `confirmed = false` means the values come from a
+# reference, not from a CFA4 report on a real unit: the adapter uses them, but the catalogue keeps
+# the features UNTESTED until the hardware test wizard writes a cfa4-hil report.
+#
+# Sources:
+# - USB ids: opendeck-akp153 README, "Supported devices" (AKP153E 0300:1010, rev. 2 0300:3010).
+#   Facts only; no code is taken from it (GPL-3.0).
+# - usage page / usage, protocol version, raw key count, image format and the key order:
+#   mirajazz 0.16.3 `examples/akp153r.rs` (MPL-2.0), for the AKP153R of the same family. The
+#   AKP153E is assumed to be the same until `cfa4-cli surfaces --adapter mirabox-family --probe`
+#   and the wizard confirm it on the owner's unit.
+#
+# Layout: the device numbers its 18 inputs 1..18. In display order they form a 3 × 6 grid whose
+# last column (display 5, 11, 17) holds the three keys without a screen. `display_to_device[d]`
+# is the device index (0-based) of display position d; images are written to that index.
+
+[[profile]]
+model = "ajazz.akp153e"
+name = "AJAZZ AKP153E"
+vid = 0x0300
+pid = 0x1010
+usage_page = 0xffa0
+usage = 1
+protocol_version = 1
+raw_keys = 18
+unique_serial = false
+confirmed = false
+image = { mode = "jpeg", width = 85, height = 85, rotation = 90, mirror = "both" }
+display_to_device = [12, 9, 6, 3, 0, 15, 13, 10, 7, 4, 1, 16, 14, 11, 8, 5, 2, 17]
+grid = { rows = 3, columns = 6 }
+lcd_columns = 5
+
+[[profile]]
+model = "ajazz.akp153e"
+name = "AJAZZ AKP153E (rev. 2)"
+vid = 0x0300
+pid = 0x3010
+usage_page = 0xffa0
+usage = 1
+protocol_version = 1
+raw_keys = 18
+unique_serial = false
+confirmed = false
+image = { mode = "jpeg", width = 85, height = 85, rotation = 90, mirror = "both" }
+display_to_device = [12, 9, 6, 3, 0, 15, 13, 10, 7, 4, 1, 16, 14, 11, 8, 5, 2, 17]
+grid = { rows = 3, columns = 6 }
+lcd_columns = 5
