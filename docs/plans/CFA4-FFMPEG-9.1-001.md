@@ -1,6 +1,6 @@
 # CFA4-FFMPEG-9.1-001 – Átállás a CFA4 saját FFmpeg-buildjében 9.0.2-ről 9.1-re
 
-**Verzió:** FINAL 1.4 (jóváhagyva 2026-11-24); kiegészítés 2026-11-24: D4 időpont, F1-es megállapítások, D10 (nyitott)
+**Verzió:** FINAL 1.4 (jóváhagyva 2026-11-24); kiegészítés 2026-11-24: D4 időpont, F1-es megállapítások, D10; 2026-11-28: D10 eldöntve
 **Dátum:** 2026-11-24
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-24-én az irányt jóváhagyta („az irányt jóváhagyom”);
@@ -50,7 +50,7 @@ Az FFmpeg továbbra is kiegészítő háttér a `cfa4-route` mögött.
 | ASTC | külső könyvtárral: `--enable-libastcenc`, **libastcenc 5.4 vagy újabb** (ARM astc-encoder, Apache-2.0, GPL-3-kompatibilis); `.astc` és KTX 1.0 muxer/demuxer is jön. | F2j hátralékban (D7); bekerülésekor új build-függőség. |
 | NVIDIA optikai folyamos interpoláció | `vf_fruc_vulkan`: Vulkan-szűrő, de a `VK_NV_optical_flow` NVIDIA-bővítményre épül; Vulkan-fejléc ≥ 1.4.317 és SPIR-V fordító kell. | A D6 változatlanul érvényes (csak gyártófüggetlen úttal együtt). |
 | APV Vulkan-kódoló | `vulkan` + `spirv_compiler`: a buildhez `glslc` vagy `glslangValidator` program kell. A mai CFA4-build ezt nem biztosítja. | F1: a `glslc` kötelező build-eszköz lesz (D9). |
-| NVDEC CUARRAY | `ffnvcodec_cuarray`: az nv-codec-headers-nek ismernie kell a `CUDA_ARRAY3D_VIDEO_ENCODE_DECODE`-ot. **F1-es megállapítás (2026-11-24):** ezt csak az nv-codec-headers n13.1.15.0 (Video Codec SDK 13.1, 2026-06) tudja; az Ubuntu 26.04-ben 12.1.14 van. A 13.1-es fejlécek **legalább 610-es NVIDIA-meghajtót** írnak elő, ezért velük az NVENC/NVDEC a régebbi meghajtókon leállna. | Az F1 az Ubuntu 12.1.14-es fejléceivel épül, a CUARRAY nélkül; az F2f a D10-ig áll. |
+| NVDEC CUARRAY | `ffnvcodec_cuarray`: az nv-codec-headers-nek ismernie kell a `CUDA_ARRAY3D_VIDEO_ENCODE_DECODE`-ot. **F1-es megállapítás (2026-11-24):** ezt csak az nv-codec-headers n13.1.15.0 (Video Codec SDK 13.1, 2026-06) tudja; az Ubuntu 26.04-ben 12.1.14 van. A 13.1-es fejlécek **legalább 610-es NVIDIA-meghajtót** írnak elő, ezért velük az NVENC/NVDEC a régebbi meghajtókon leállna. | Az F1 az Ubuntu 12.1.14-es fejléceivel épül, a CUARRAY nélkül. Az F2f a CFA4 saját NVDEC-jében készül ([CFA4-NVDEC-CUARRAY-001](CFA4-NVDEC-CUARRAY-001.md)). |
 | `libcurl` | `--enable-libcurl` autodetect; a CFA4 `--disable-autodetect`-tel épít, így magától kimarad. | R11 változatlan, az ellenőrzés marad. |
 | xHE-AAC (`libfdk-xhe-aac`) | az `EXTERNAL_LIBRARY_NONFREE_LIST` tagja. | Megerősíti, hogy kimarad (V.). |
 | A cikkből kimaradt tételek | erősen javított natív AAC-kódoló; H.264 data partitioning; az `ffmpeg` CLI kétsávos LCEVC-kezelése; gráf alapú bitstream-szűrő API; az `asf_o` demuxer eltávolítva; D3D12 DirectML (Windows); AVFoundation (macOS). | F2m, F2n és F2c bővül; az új BSF API a kötések újragenerálását érinti (R5); az `asf_o`-t a CFA4 nem használja; a Windows/macOS tételek kimaradnak (V.). |
@@ -152,7 +152,7 @@ formátumok közül az, amelyről a tulajdonos saját kódot kér.
 | D7 | ASTC (F2j) bekerüljön-e most? | **Hátralékba** a 3D/animációs tervekhez. | a javaslat szerint: hátralékba (a tulajdonos pontosítása, 2026-11-24) |
 | D8 | Az F2e (AMF VQE) Linuxon nem épül. Mi kerüljön a helyére? | **AMF H.264 / HEVC / AV1 hardveres kódolás és dekódolás, plusz `sr_amf` és `vpp_amf`** a routerben, CPU-tartalékkal; így a D2 (AMF bekerül) Linuxon is hasznot hoz. | a javaslat szerint, jóváhagyva |
 | D9 | Melyik SPIR-V fordító kerüljön a CFA4-buildbe? | – | a tulajdonos döntése (2026-11-24): **a `glslc`**, kötelező build-eszközként |
-| D10 | Az F2f (NVDEC CUARRAY) a 610-es vagy újabb NVIDIA-meghajtót igénylő nv-codec-headers 13.1-et kívánja. Mikor kerüljön be? | **Később**: amikor a CFA4 támogatott NVIDIA-meghajtóinak minimuma eléri a 610-et (vagy két külön NVIDIA-build); addig az F1 az Ubuntu 12.1.14-es fejléceit használja. | nyitott |
+| D10 | Az F2f (NVDEC CUARRAY) a 610-es vagy újabb NVIDIA-meghajtót igénylő nv-codec-headers 13.1-et kívánja. Mikor kerüljön be? | **Később**: amikor a CFA4 támogatott NVIDIA-meghajtóinak minimuma eléri a 610-et (vagy két külön NVIDIA-build); addig az F1 az Ubuntu 12.1.14-es fejléceit használja. | **most** (tulajdonos, 2026-11-28: „d10 kell”); a megvalósítás: [CFA4-NVDEC-CUARRAY-001](CFA4-NVDEC-CUARRAY-001.md) (FINAL 1.0, E1 = A: a CFA4 saját NVDEC-je, futásidejű meghajtóvizsgálattal; az FFmpeg a 12.1.14-es fejléceken marad, így a 610 alatti meghajtókon semmi sem romlik) |
 
 ## VII. PR-bontás
 
