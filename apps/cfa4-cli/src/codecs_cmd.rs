@@ -148,6 +148,7 @@ static ROWS: &[Row] = &[
     video("Camera RAW (R3D, ARRIRAW, BRAW…)", &[], Missing, No, false, NoEnc),
     image("JPEG XL", &["jxl"], Ported, Sw("")),
     image("HEIF / HEIC", &["heif"], Own, Sw("HEVC image items")),
+    image("JPEG HDR gain map (Ultra HDR, ISO 21496-1), MPO", &["media"], Ported, Sw("HDR rendition as linear float; .mpo: first picture")),
     audio("PCM (WAV, AIFF, BWF)", &[], Own, Sw(""), Fmt(Format::Wav)),
     audio("AAC", &["aac"], Ported, Sw("LC, HE core, LATM, USAC"), Fmt(Format::Aac)),
     audio("AC-3 / E-AC-3", &["ac3"], Own, Sw(""), AudioTrack("AC-3 audio in video exports")),

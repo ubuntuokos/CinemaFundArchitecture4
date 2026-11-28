@@ -1,4 +1,4 @@
-//! Still images (PNG, JPEG, GIF, WebP, HEIF/HEIC, TIFF, BMP, Targa, DPX, OpenEXR, Radiance HDR, JPEG XL, DNG camera raw) as media
+//! Still images (PNG, JPEG (with HDR gain maps and MPF / `.mpo`, [`gainmap`]), GIF, WebP, HEIF/HEIC, TIFF, BMP, Targa, DPX, OpenEXR, Radiance HDR, JPEG XL, DNG camera raw) as media
 //! sources. Animated PNG, GIF and WebP files open as movies instead ([`crate::animated`]); here they would
 //! show their first frame.
 
@@ -11,6 +11,7 @@ use crate::{FrameRequest, MediaError, MediaInfo, MediaKind, MediaSource, Result,
 
 pub mod dng;
 pub mod exr;
+pub mod gainmap;
 pub mod hdr;
 pub mod heic;
 #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
@@ -152,6 +153,12 @@ impl StillSource {
         }
         if crate::dpx::sniff(bytes) {
             return crate::dpx::still(name, bytes);
+        }
+        // a JPEG with a gain map opens as its HDR rendition, an MPF file as its first picture
+        if bytes.starts_with(&[0xFF, 0xD8, 0xFF])
+            && let Some(s) = gainmap::still(name, bytes)?
+        {
+            return Ok(s);
         }
         let r = decode_raster(name, bytes)?;
         Ok(Self::from_rgba(name, r.width, r.height, r.rgba, r.has_alpha, bytes.len() as u64))

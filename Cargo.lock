@@ -2080,6 +2080,7 @@ dependencies = [
  "cfa4-heif",
  "cfa4-hevc",
  "cfa4-jxl",
+ "cfa4-metrics",
  "cfa4-realaudio",
  "cfa4-testkit",
  "cfa4-time",
@@ -2091,6 +2092,7 @@ dependencies = [
  "log",
  "png",
  "rayon",
+ "roxmltree",
  "serde",
  "thiserror 2.0.21",
 ]
