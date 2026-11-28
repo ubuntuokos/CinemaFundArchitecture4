@@ -354,7 +354,7 @@ fn audio_of(src: &Source, plan: &SmartCutPlan, p: &Value) -> Option<(CutInterval
     let first = plan.plan.segments.first()?;
     let duration = u64::try_from(plan.plan.expected_duration.value).ok()?;
     let interval = CutInterval::of_video(track, first.source_in.value, duration);
-    Some((interval, plan_audio_copy(&src.file, interval)))
+    Some((interval, plan_audio_copy(&src.file, &*src.bytes, interval)))
 }
 
 fn audio_json(audio: &Option<(CutInterval, AudioPlan)>) -> Value {

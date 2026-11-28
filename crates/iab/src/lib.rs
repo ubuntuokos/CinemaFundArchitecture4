@@ -31,7 +31,7 @@ pub use frame::{
     AudioData, Bed, BedChannel, Coding, Decorrelation, Description, Frame, FrameRate, Gain, Object, ObjectZones19, Pan, Remap, RemapBlock, Snap, Spread,
     UserData, ZoneGain, frame_size, parse, split,
 };
-pub use render::{Layout, Speaker, channel_position, render};
+pub use render::{Layout, Speaker, channel_position, render, render_beds, rendered_objects_of};
 pub use write::write;
 
 /// Errors. Malformed input gives an error, never a panic.

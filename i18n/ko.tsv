@@ -4970,3 +4970,32 @@
 	Thresholds	임계값
 	Trail	궤적
 	Use gestures in the window	창에서 제스처 사용
+	DVD-Video folder (VIDEO_TS)	DVD-Video 폴더 (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 폴더 (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 아나모픽, 6 Mbps, GOP 15, AC-3 192 kbps, 시퀀스의 챕터 마커로 챕터 생성
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 폴더 (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 아나모픽, 6 Mbps, GOP 18, AC-3 192 kbps, 시퀀스의 챕터 마커로 챕터 생성
+
+# DCP package views (DCP-23)
+	Package	패키지
+	Composition	컴포지션
+	Security	보안
+	Save HTML…	HTML 저장…
+	Asset map	에셋 맵
+	Packing list	패킹 리스트
+	Track file	트랙 파일
+	Not a file	파일이 아님
+	Unsafe path	안전하지 않은 경로
+	Reel {n}	릴 {n}
+	Signed documents	서명된 문서
+	Encrypted assets	암호화된 에셋
+	Key ID: {id}	키 ID: {id}
+	Package structure unavailable: {error}	패키지 구조를 사용할 수 없음: {error}
+	DNx decoding:	DNx 디코딩:
+	As detected from the file ({detected})	파일에서 감지한 대로 ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (표준)
+	FFmpeg-compatible	FFmpeg 호환
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg는 일부 DNx 파일을 표준과 다르게 읽습니다(4:4:4 색상, 역양자화). FFmpeg로 인코딩한 영상은 감지됩니다. 감지가 잘못된 경우 여기에서 선택하십시오.
+	DNx Coding	DNx 인코딩
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg 호환(FFmpeg 기반 도구용)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	끔: SMPTE ST 2019-1에 따라 인코딩합니다. 켬: FFmpeg가 DNx를 쓰는 방식으로 인코딩합니다(FFmpeg 기반 도구용).

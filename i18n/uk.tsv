@@ -4959,3 +4959,32 @@
 	Thresholds	Пороги
 	Trail	Слід
 	Use gestures in the window	Жести у вікні
+	DVD-Video folder (VIDEO_TS)	Папка DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 анаморфне, 6 Mbps, GOP 15, AC-3 192 kbps, розділи з маркерів розділів послідовності
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 анаморфне, 6 Mbps, GOP 18, AC-3 192 kbps, розділи з маркерів розділів послідовності
+
+# DCP package views (DCP-23)
+	Package	Пакет
+	Composition	Композиція
+	Security	Безпека
+	Save HTML…	Зберегти HTML…
+	Asset map	Карта ресурсів
+	Packing list	Пакувальний список
+	Track file	Файл доріжки
+	Not a file	Не файл
+	Unsafe path	Небезпечний шлях
+	Reel {n}	Бобіна {n}
+	Signed documents	Підписані документи
+	Encrypted assets	Зашифровані ресурси
+	Key ID: {id}	ID ключа: {id}
+	Package structure unavailable: {error}	Структура пакета недоступна: {error}
+	DNx decoding:	Декодування DNx:
+	As detected from the file ({detected})	Як визначено з файлу ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (стандарт)
+	FFmpeg-compatible	Сумісно з FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg читає деякі файли DNx інакше, ніж передбачає стандарт (кольори 4:4:4, зворотне квантування). Матеріал, закодований FFmpeg, визначається автоматично; оберіть тут, якщо визначення хибне.
+	DNx Coding	Кодування DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Сумісно з FFmpeg (для інструментів на основі FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Вимк.: кодування за SMPTE ST 2019-1. Увімк.: кодування так, як FFmpeg записує DNx, для інструментів на основі FFmpeg.

@@ -43,6 +43,7 @@ from .dock_gutters import DockGutters
 from .engine import EngineClient, EngineError
 from .i18n import LANGUAGES, N_, TR, fmt, tr
 from .i18n import system_language as i18n_system_language
+from .render_notices import new_notices
 from .media_backends import MediaBackendsDialog
 from .panels.about import AboutDialog
 from .panels.clip_dialogs import DIALOGS as CLIP_DIALOGS
@@ -474,6 +475,7 @@ class MainWindow(QMainWindow):
         self.job_watch.timeout.connect(self.watch_jobs)
         self._watched_render: tuple[int, int] | None = None  # (job, where playback starts after it)
         self._new_jobs: set[int] = set()
+        self._render_seen: set[tuple[str, str, str]] = set()  # warning/fallback events already announced
 
         for panel in (
             self.monitor,
@@ -2510,7 +2512,7 @@ class MainWindow(QMainWindow):
     def interpret_footage(self, cid: str, params: dict[str, Any]) -> bool:
         """Interpret Footage without settings opens its dialog (egui's), for the items given or
         the Project panel's selection. True when it did."""
-        if cid != "clip.interpretFootage" or "colorSpace" in params or "pixelAspect" in params:
+        if cid != "clip.interpretFootage" or any(k in params for k in ("colorSpace", "pixelAspect", "dnxConventions")):
             return False
         items = [i for i in params.get("items") or self.project_panel.selected_items() or self.selected_clip_items() if isinstance(i, int)]
         dialog = InterpretFootageDialog(self, self.engine, items, self.execute)
@@ -3072,6 +3074,13 @@ class MainWindow(QMainWindow):
             got(jobs, b)
 
         self.engine.execute("jobs.list", {}, on_reply=got_all, on_error=lambda _m: self.job_watch.stop())
+        # warning and fallback events of the render job API (A4: nothing degrades quietly)
+        self.engine.execute("render.list", {}, on_reply=self._render_notices, on_error=lambda _m: None)
+
+    def _render_notices(self, reply: Any, _b: bytes | None) -> None:
+        for text, error in new_notices(reply, self._render_seen):
+            self.events.log(text, error=error, source="render")
+            self.statusBar().showMessage(text, 8000)
 
     def _after_render(self, jobs: Any) -> None:
         if self._watched_render is None or not isinstance(jobs, list):

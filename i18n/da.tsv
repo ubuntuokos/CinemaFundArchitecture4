@@ -4978,3 +4978,32 @@ export.summary	Low	lav
 	Thresholds	Tærskler
 	Trail	Spor
 	Use gestures in the window	Brug gestusser i vinduet
+	DVD-Video folder (VIDEO_TS)	DVD-Video-mappe (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-mappe (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfisk, 6 Mbps, GOP 15, AC-3 192 kbps, kapitler fra sekvensens kapitelmarkører
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-mappe (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfisk, 6 Mbps, GOP 18, AC-3 192 kbps, kapitler fra sekvensens kapitelmarkører
+
+# DCP package views (DCP-23)
+	Package	Pakke
+	Composition	Komposition
+	Security	Sikkerhed
+	Save HTML…	Gem HTML…
+	Asset map	Aktivoversigt
+	Packing list	Pakkeliste
+	Track file	Sporfil
+	Not a file	Ikke en fil
+	Unsafe path	Usikker sti
+	Reel {n}	Rulle {n}
+	Signed documents	Signerede dokumenter
+	Encrypted assets	Krypterede aktiver
+	Key ID: {id}	Nøgle-id: {id}
+	Package structure unavailable: {error}	Pakkestrukturen er ikke tilgængelig: {error}
+	DNx decoding:	DNx-afkodning:
+	As detected from the file ({detected})	Som registreret fra filen ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	FFmpeg-kompatibel
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg læser nogle DNx-filer anderledes end standarden (4:4:4-farver, invers kvantisering). Optagelser, som FFmpeg har kodet, registreres; vælg her, når registreringen er forkert.
+	DNx Coding	DNx-kodning
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibel (til FFmpeg-baserede værktøjer)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Fra: kodet efter SMPTE ST 2019-1. Til: kodet, som FFmpeg skriver DNx, til værktøjer bygget på FFmpeg.

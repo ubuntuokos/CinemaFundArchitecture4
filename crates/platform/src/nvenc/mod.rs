@@ -1,7 +1,7 @@
 //! NVIDIA NVENC hardware encoding (64-bit Linux): H.264 and H.265 (HEVC) Main / Main 10.
 //!
 //! The encoder runs on the GPU's NVENC engine through the driver's `libnvidia-encode.so.1` (on the
-//! CUDA driver's primary context, `libcuda.so.1`) (API 12.1, [`ffi`]; no CUDA toolkit, no SDK to install): pictures go in as NV12 input buffers, the Annex B output
+//! CUDA driver's primary context, `libcuda.so.1`) (API 12.1 or 13.1, chosen from the driver, [`ffi`]; no CUDA toolkit, no SDK to install): pictures go in as NV12 input buffers, the Annex B output
 //! comes back as length-prefixed samples with the parameter sets split out for the `avcC` (H.264)
 //! or the `hvcC` (HEVC, see [`hevc`]). One session, ring and NV12 path serves both codecs; the
 //! codec only chooses the GUIDs, the codec configuration and how NAL units are told apart.

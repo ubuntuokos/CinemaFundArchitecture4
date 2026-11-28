@@ -85,7 +85,7 @@ Szemantikus verzió (`ContractVersion { major, minor }`). Szerződésteszt: (1) 
 |---|---|
 | A meglévő renderer a szerződésen át bit-azonos a golden halmazzal, PTS-diff 0 | KÉSZ (adapter-PR #1829): a job-ként futtatott export (MJPEG/MOV és WAV, a demo projekten, saját anyag) bájtra azonos a megvárt (szinkron) exporttal, így a PTS-diff 0; a teszt `a_job_export_is_byte_identical_to_the_waited_export` |
 | Cancel latencia ≤ Küszöb@F0; 20 cancel/SIGKILL után 0 csonka fájl | RÉSZBEN: a latencia mért; a fő exportúton a csonka végleges fájl 0, a csomag-kimeneteken (DCP, IMF, MXF, OP-Atom) a fájlonkénti atomi írás megvan (PR #1825), 20 valódi SIGKILL-ciklus (a teszt binárisa gyermekként fut és kill-elve): 0 csonka fájl végleges néven, a kill utáni `.cfa4-export-*` árvákat a `sweep_orphans` takarítja. A mérő korlátja: kikapcsolt szakaszolással is 0 csonka fájlt talált, a garanciát a `a_package_file_appears_under_its_final_name_only_when_published` mechanizmusteszt mutatja |
-| Minden S1 jelölt leképezhető, BLOCKED, vagy ADR-rel módosul | NYITOTT: F2 előtt |
+| Minden S1 jelölt leképezhető, BLOCKED, vagy ADR-rel módosul | KÉSZ: `C0-candidate-mapping.md` (István, 2026-11-25); az egyetlen szerződésmódosítás (VapourSynth) az ADR-RENDER-WORKER-OUTPUT-INDEX, a szerződés 0.2 |
 | A Qt6 felelőse írásban elfogadja a job API-t | ELFOGADVA: István mint a Qt6 felelőse elfogadta (2026-11-24, „elfogadom”; ez a job API-t is fedi) |
 
 ## 11. Döntések (István, 2026-11-24: mind a hat javaslat elfogadva)

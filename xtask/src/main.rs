@@ -132,6 +132,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("media", 1),
     ("project", 1),
     ("audio-dsp", 1),
+    ("hrtf", 1),
     ("text", 1),
     ("route", 1),
     ("audit", 1),
@@ -148,6 +149,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("store", 5),
     ("edit", 2),
     ("objtrack", 2),
+    ("mi", 2),
     ("codecs", 2),
     ("keyframe", 2),
     ("effects", 2),
@@ -191,6 +193,7 @@ const L0_FOUNDATION: &[&str] = &["time", "geom", "color", "bitstream", "testkit"
 
 /// Allowed same-layer edges (from, to).
 const SAME_LAYER: &[(&str, &str)] = &[
+    ("hrtf", "audio-dsp"),
     ("dcp-inspect", "dcp-validate"),
     ("vdb", "sandbox"),
     ("media", "frame"),

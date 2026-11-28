@@ -18,6 +18,10 @@
   },
   {
    "from": "cfa4-cli",
+   "to": "cfa4-frame"
+  },
+  {
+   "from": "cfa4-cli",
    "to": "cfa4-gpu"
   },
   {
@@ -491,6 +495,16 @@
    "crate": "cfa4-audio-dsp",
    "fn": "mixdown",
    "module": "sync.rs"
+  },
+  {
+   "crate": "cfa4-cli",
+   "fn": "render",
+   "module": "serve_monitor.rs"
+  },
+  {
+   "crate": "cfa4-cli",
+   "fn": "render_objects",
+   "module": "serve_monitor.rs"
   },
   {
    "crate": "cfa4-cli",
@@ -1198,6 +1212,13 @@
    "class": "audio",
    "crate": "cfa4-media",
    "kind": "struct",
+   "module": "lib.rs",
+   "name": "ObjectAudio"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-media",
+   "kind": "struct",
    "module": "still/exr/piz.rs",
    "name": "PizChannel"
   },
@@ -1291,6 +1312,41 @@
    "kind": "struct",
    "module": "preview.rs",
    "name": "AudioSegment"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "enum",
+   "module": "audio_index.rs",
+   "name": "AudioCodec"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "struct",
+   "module": "audio_index.rs",
+   "name": "AudioConfig"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "struct",
+   "module": "audio_index.rs",
+   "name": "AudioIndex"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "enum",
+   "module": "audio_index.rs",
+   "name": "AudioIndexError"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-smart-edit",
+   "kind": "struct",
+   "module": "audio_index.rs",
+   "name": "AudioUnit"
   },
   {
    "class": "audio",
@@ -1550,6 +1606,13 @@
    "kind": "struct",
    "module": "side.rs",
    "name": "FrameSideData"
+  },
+  {
+   "class": "frame",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "range_meter.rs",
+   "name": "RangeFrame"
   },
   {
    "class": "frame",
@@ -2331,6 +2394,20 @@
   {
    "class": "other",
    "crate": "cfa4-cli",
+   "kind": "struct",
+   "module": "serve_monitor.rs",
+   "name": "Binaural"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-cli",
+   "kind": "enum",
+   "module": "serve_monitor.rs",
+   "name": "SetId"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-cli",
    "kind": "type",
    "module": "serve_shuttle.rs",
    "name": "Raw"
@@ -2677,6 +2754,13 @@
    "kind": "enum",
    "module": "dcp_export.rs",
    "name": "Severity"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-engine",
+   "kind": "struct",
+   "module": "dcp_repair.rs",
+   "name": "DcpRepairSession"
   },
   {
    "class": "other",
@@ -4201,6 +4285,20 @@
    "class": "other",
    "crate": "cfa4-golden",
    "kind": "struct",
+   "module": "range_meter.rs",
+   "name": "Layer"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
+   "module": "range_meter.rs",
+   "name": "RangeReport"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-golden",
+   "kind": "struct",
    "module": "validation.rs",
    "name": "Capture"
   },
@@ -4952,6 +5050,13 @@
    "kind": "enum",
    "module": "lib.rs",
    "name": "BinEntry"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-project",
+   "kind": "enum",
+   "module": "lib.rs",
+   "name": "DnxConventions"
   },
   {
    "class": "other",
@@ -7117,6 +7222,11 @@
   },
   {
    "from": "cfa4-cli/serve.rs",
+   "item": "AudioBuffer",
+   "to": "cfa4-frame"
+  },
+  {
+   "from": "cfa4-cli/serve.rs",
    "item": "ExportRenderer",
    "to": "cfa4-gpu"
   },
@@ -7319,6 +7429,11 @@
    "from": "cfa4-cli/serve_media_browser.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-cli/serve_monitor.rs",
+   "item": "MediaSource",
+   "to": "cfa4-media"
   },
   {
    "from": "cfa4-cli/serve_multicam.rs",
@@ -7813,6 +7928,11 @@
   {
    "from": "cfa4-engine/color.rs",
    "item": "ClipId",
+   "to": "cfa4-project"
+  },
+  {
+   "from": "cfa4-engine/color.rs",
+   "item": "DnxConventions",
    "to": "cfa4-project"
   },
   {
@@ -8384,6 +8504,16 @@
    "from": "cfa4-engine/dcp_import.rs",
    "item": "Tick",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-engine/dcp_repair.rs",
+   "item": "Progress",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-engine/dcp_repair.rs",
+   "item": "Report",
+   "to": "cfa4-export"
   },
   {
    "from": "cfa4-engine/dcp_validation.rs",
@@ -9517,6 +9647,11 @@
   },
   {
    "from": "cfa4-engine/media_pool.rs",
+   "item": "ObjectAudio",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/media_pool.rs",
    "item": "Result",
    "to": "cfa4-media"
   },
@@ -9559,6 +9694,11 @@
    "from": "cfa4-engine/media_pool.rs",
    "item": "wav",
    "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-engine/media_pool.rs",
+   "item": "DnxConventions",
+   "to": "cfa4-project"
   },
   {
    "from": "cfa4-engine/media_pool.rs",
@@ -11059,6 +11199,11 @@
    "from": "cfa4-export/as02_share.rs",
    "item": "FrameRate",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-export/audio_copy.rs",
+   "item": "audio_index",
+   "to": "cfa4-smart-edit"
   },
   {
    "from": "cfa4-export/audio_out.rs",

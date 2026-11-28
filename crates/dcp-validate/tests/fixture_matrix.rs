@@ -301,3 +301,31 @@ fn an_unreadable_track_file_fails_without_panicking() {
     assert!(failed(&r).contains(&"DCP.AM.005"), "{:?}", failed(&r));
     let _ = std::fs::remove_dir_all(&d);
 }
+
+#[test]
+fn an_unlisted_packing_list_or_composition_is_a_warning_not_a_failure() {
+    // DCP.AM.007: copies of the PKL and CPL the asset map does not list (a left-over or a second version)
+    let d = copy("unlisted");
+    for prefix in ["pkl_", "cpl_"] {
+        let src = file(&d, prefix);
+        let name = src.file_name().unwrap().to_string_lossy().into_owned();
+        std::fs::copy(&src, d.join(format!("old_{name}"))).unwrap();
+    }
+    // a file that is no PKL or CPL, and one that is not XML at all, are not reported
+    std::fs::write(d.join("notes.xml"), "<Notes/>").unwrap();
+    std::fs::write(d.join("readme.txt"), "x").unwrap();
+    let r = validate(&d);
+    let warned: Vec<_> = r.findings.iter().filter(|f| f.rule == "DCP.AM.007" && f.status == Status::Warning).collect();
+    assert_eq!(warned.len(), 2, "{warned:?}");
+    assert!(warned.iter().all(|f| f.location.file.as_deref().is_some_and(|n| n.starts_with("old_"))));
+    assert!(failed(&r).is_empty(), "{:?}", failed(&r));
+    assert_ne!(r.verdict, Verdict::Fail);
+    // the original, untouched package passes the rule
+    let ok = validate(&copy("listed"));
+    assert!(
+        ok.findings.iter().all(|f| f.rule != "DCP.AM.007" || f.status == Status::Pass),
+        "{:?}",
+        ok.findings.iter().filter(|f| f.rule == "DCP.AM.007").collect::<Vec<_>>()
+    );
+    let _ = std::fs::remove_dir_all(&d);
+}

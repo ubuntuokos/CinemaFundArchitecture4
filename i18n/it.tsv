@@ -4976,3 +4976,32 @@
 	Thresholds	Soglie
 	Trail	Scia
 	Use gestures in the window	Usa i gesti nella finestra
+	DVD-Video folder (VIDEO_TS)	Cartella DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Cartella DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfico, 6 Mbps, GOP 15, AC-3 192 kbps, capitoli dai marcatori Capitolo della sequenza
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Cartella DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfico, 6 Mbps, GOP 18, AC-3 192 kbps, capitoli dai marcatori Capitolo della sequenza
+
+# DCP package views (DCP-23)
+	Package	Pacchetto
+	Composition	Composizione
+	Security	Sicurezza
+	Save HTML…	Salva HTML…
+	Asset map	Mappa degli asset
+	Packing list	Lista di impacchettamento
+	Track file	File di traccia
+	Not a file	Non è un file
+	Unsafe path	Percorso non sicuro
+	Reel {n}	Rullo {n}
+	Signed documents	Documenti firmati
+	Encrypted assets	Asset cifrati
+	Key ID: {id}	ID chiave: {id}
+	Package structure unavailable: {error}	Struttura del pacchetto non disponibile: {error}
+	DNx decoding:	Decodifica DNx:
+	As detected from the file ({detected})	Come rilevato dal file ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	Compatibile con FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg legge alcuni file DNx in modo diverso dallo standard (colori 4:4:4, quantizzazione inversa). Il materiale codificato da FFmpeg viene rilevato; scegli qui se il rilevamento è errato.
+	DNx Coding	Codifica DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Compatibile con FFmpeg (per strumenti basati su FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Disattivato: codificato secondo SMPTE ST 2019-1. Attivato: codificato come FFmpeg scrive il DNx, per strumenti basati su FFmpeg.

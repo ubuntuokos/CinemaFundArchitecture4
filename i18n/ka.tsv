@@ -4979,3 +4979,32 @@ export.summary	Low	დაბალი
 	Thresholds	ზღურბლები
 	Trail	კვალი
 	Use gestures in the window	ჟესტები ფანჯარაში
+	DVD-Video folder (VIDEO_TS)	DVD-Video საქაღალდე (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video საქაღალდე (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 ანამორფული, 6 Mbps, GOP 15, AC-3 192 kbps, თავები მიმდევრობის თავის მარკერებიდან
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video საქაღალდე (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 ანამორფული, 6 Mbps, GOP 18, AC-3 192 kbps, თავები მიმდევრობის თავის მარკერებიდან
+
+# DCP package views (DCP-23)
+	Package	პაკეტი
+	Composition	კომპოზიცია
+	Security	უსაფრთხოება
+	Save HTML…	HTML-ის შენახვა…
+	Asset map	რესურსების რუკა
+	Packing list	შეფუთვის სია
+	Track file	ტრეკის ფაილი
+	Not a file	არ არის ფაილი
+	Unsafe path	სახიფათო გზა
+	Reel {n}	რგოლი {n}
+	Signed documents	ხელმოწერილი დოკუმენტები
+	Encrypted assets	დაშიფრული რესურსები
+	Key ID: {id}	გასაღების ID: {id}
+	Package structure unavailable: {error}	პაკეტის სტრუქტურა მიუწვდომელია: {error}
+	DNx decoding:	DNx-ის დეკოდირება:
+	As detected from the file ({detected})	ფაილიდან ამოცნობის მიხედვით ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (სტანდარტი)
+	FFmpeg-compatible	FFmpeg-თან თავსებადი
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg ზოგიერთ DNx ფაილს სტანდარტისგან განსხვავებულად კითხულობს (4:4:4 ფერები, შებრუნებული კვანტირება). FFmpeg-ით კოდირებული მასალა ამოიცნობა; აირჩიეთ აქ, თუ ამოცნობა მცდარია.
+	DNx Coding	DNx-ის კოდირება
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-თან თავსებადი (FFmpeg-ზე დაფუძნებული ხელსაწყოებისთვის)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	გამორთული: კოდირება SMPTE ST 2019-1-ის მიხედვით. ჩართული: კოდირება ისე, როგორც FFmpeg წერს DNx-ს, FFmpeg-ზე აგებული ხელსაწყოებისთვის.
