@@ -4973,6 +4973,22 @@
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 文件夹 (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 变形宽银幕, 6 Mbps, GOP 15, AC-3 192 kbps, 章节来自序列的章节标记
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 文件夹 (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 变形宽银幕, 6 Mbps, GOP 18, AC-3 192 kbps, 章节来自序列的章节标记
+
+# DCP package views (DCP-23)
+	Package	包
+	Composition	合成
+	Security	安全
+	Save HTML…	保存 HTML…
+	Asset map	资产映射
+	Packing list	装箱清单
+	Track file	轨道文件
+	Not a file	不是文件
+	Unsafe path	不安全的路径
+	Reel {n}	卷 {n}
+	Signed documents	已签名的文档
+	Encrypted assets	已加密的资产
+	Key ID: {id}	密钥 ID：{id}
+	Package structure unavailable: {error}	无法获取包结构：{error}
 	DNx decoding:	DNx 解码：
 	As detected from the file ({detected})	按文件检测结果 ({detected})
 	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1（标准）

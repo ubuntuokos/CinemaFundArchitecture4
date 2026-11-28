@@ -29,7 +29,7 @@ Design principles:
  L4  engine
  L3  render · render-contracts (cfa4-render-contracts) · gpu · export · smart-edit · qc · golden (test-only)
      DCP validation: dcp-validate · dcp-inspect · DCP mastering: dcpomatic · downloads: fetch-client
- L2  tasks (cfa4-tasks) · edit · objtrack · codecs · interchange · captions · credits · speech · tts · tts-text
+ L2  tasks (cfa4-tasks) · edit · objtrack · mi · codecs · interchange · captions · credits · speech · tts · tts-text
  L1  frame · io-core · media · project · audio-dsp · hrtf · text · route (cfa4-route) · audit (cfa4-audit) · tcsync · surface-model · metrics · live · sandbox · surface-catalog
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
      codecs/containers: isobmff · matroska · mxf · cfb · mpegts · st2110 · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · dv · lcevc · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
@@ -162,6 +162,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `fetch-client` | L3 | `cfa4-fetch-client`: the engine's side of downloads ([CFA4-SECURITY-001](plans/CFA4-SECURITY-001.md) D5): the request (files pinned to an `https://` address, size and SHA-256) and progress protocol, finding and starting `cfa4-fetch`, cancelling it; no network code |
 | `dcpomatic` | L3 | DCP mastering with the DCP-o-matic build CFA4 ships (plan [CFA4-DCPOMATIC-001](plans/CFA4-DCPOMATIC-001-FINAL-1.0.md), ADR 0011): `dcpomatic2_create` and `dcpomatic2_cli make-dcp` as separate processes from `/usr/lib/cfa4/dcpomatic/` only (never `PATH`), argument array, own process group, private `HOME`/`TMPDIR`, timeout, cancel and progress ([README](../crates/dcpomatic/README.md)) |
 | `objtrack` | L2 | `cfa4-objtrack`: multi-object box tracking for Object Mask: IoU, constant-velocity Kalman filter, Hungarian assignment and the SORT tracker; pure Rust, depends on `cfa4-geom` only ([plan](plans/OBJECT-MASK-PLAN-001-2026-11-03.md) OM-A4, [README](../crates/objtrack/README.md)) |
+| `mi` | L2 | `cfa4-mi`: Media Intelligence core ([plan](plans/CFA4-MEDIA-INTELLIGENCE-001-FINAL-2.0.md)): sampled SHA-256 media identity (`sha256s1`), `Tick` time anchors with the query time relations, provenance classes; pure logic, no database (the `mi` schema lives in `cfa4-store`) ([README](../crates/mi/README.md)) |
 | `smart-edit` | L3 | `cfa4-smart-edit`: Smart Cut / Smart Render planning: media capability registry (WP-01), later GOP index and render plans; decides, never executes ([plan](plans/CFA4-SMART-CUT-RENDER-R1.md), [baseline](audit/smart-edit-baseline.md), [README](../crates/smart-edit/README.md)) |
 | `engine` | L4 | `Session`, command registry, undo history, media pool, jobs, interchange glue |
 | `ui-egui` | L5 | the egui frontend: docking, panels, timeline, monitors, playback, control-channel handlers |

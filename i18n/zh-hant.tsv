@@ -4974,6 +4974,22 @@ export.summary	Low	低
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 資料夾 (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 變形寬螢幕, 6 Mbps, GOP 15, AC-3 192 kbps, 章節來自序列的章節標記
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 資料夾 (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 變形寬螢幕, 6 Mbps, GOP 18, AC-3 192 kbps, 章節來自序列的章節標記
+
+# DCP package views (DCP-23)
+	Package	套件
+	Composition	合成
+	Security	安全性
+	Save HTML…	儲存 HTML…
+	Asset map	資產對應表
+	Packing list	裝箱清單
+	Track file	軌道檔案
+	Not a file	不是檔案
+	Unsafe path	不安全的路徑
+	Reel {n}	捲 {n}
+	Signed documents	已簽署的文件
+	Encrypted assets	已加密的資產
+	Key ID: {id}	金鑰 ID：{id}
+	Package structure unavailable: {error}	無法取得套件結構：{error}
 	DNx decoding:	DNx 解碼：
 	As detected from the file ({detected})	依檔案偵測結果 ({detected})
 	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1（標準）
