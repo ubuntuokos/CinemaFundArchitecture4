@@ -18,7 +18,7 @@ use serde_json::{Value, json};
 pub enum SetId {
     /// The built-in SADIE II KU100 set.
     Builtin,
-    /// A `.maudhrtf` file.
+    /// A `.maudhrtf` or SOFA (`.sofa`, AES69) file.
     File(String),
 }
 
@@ -52,8 +52,8 @@ pub fn parse(p: &Value) -> Result<Option<Binaural>, String> {
         None | Some(Value::Null) => SetId::Builtin,
         Some(v) => match v.as_str() {
             Some("builtin") => SetId::Builtin,
-            Some(path) if path.to_ascii_lowercase().ends_with(".maudhrtf") => SetId::File(path.to_owned()),
-            _ => return Err("`monitor.hrtf` must be \"builtin\" or a .maudhrtf file".into()),
+            Some(path) if [".maudhrtf", ".sofa"].iter().any(|x| path.to_ascii_lowercase().ends_with(x)) => SetId::File(path.to_owned()),
+            _ => return Err("`monitor.hrtf` must be \"builtin\", a .maudhrtf or a .sofa file".into()),
         },
     };
     let number = |key: &str, default: f32, lo: f32, hi: f32| -> Result<f32, String> {
@@ -87,7 +87,9 @@ fn make(set: &SetId, rate: u32) -> Result<HrtfSet, String> {
         SetId::Builtin => HrtfSet::builtin(rate).map_err(|e| e.to_string()),
         SetId::File(path) => {
             let bytes = std::fs::read(path).map_err(|e| format!("{path}: {e}"))?;
-            HrtfSet::from_maudhrtf(&bytes, Some(rate)).map_err(|e| format!("{path}: {e}"))
+            let set =
+                if path.to_ascii_lowercase().ends_with(".sofa") { HrtfSet::from_sofa(&bytes, Some(rate)) } else { HrtfSet::from_maudhrtf(&bytes, Some(rate)) };
+            set.map_err(|e| format!("{path}: {e}"))
         }
     }
 }
@@ -247,12 +249,14 @@ mod tests {
         let b = parse(&json!({"monitor": {"mode": "binaural", "room": 0, "lfe_db": -20, "hrtf": "/x/kemar.maudhrtf"}})).expect("ok").expect("some");
         assert_eq!(b.set, SetId::File("/x/kemar.maudhrtf".into()));
         assert_eq!(b.config, MonitorConfig { room: 0.0, lfe_db: -20.0 });
+        let b = parse(&json!({"monitor": {"mode": "binaural", "hrtf": "/x/Mine.SOFA"}})).expect("ok").expect("some");
+        assert_eq!(b.set, SetId::File("/x/Mine.SOFA".into()));
         for bad in [
             json!({"monitor": {"mode": "loud"}}),
             json!({"monitor": {}}),
             json!({"monitor": {"mode": "binaural", "room": 2}}),
             json!({"monitor": {"mode": "binaural", "lfe_db": "x"}}),
-            json!({"monitor": {"mode": "binaural", "hrtf": "a.sofa"}}),
+            json!({"monitor": {"mode": "binaural", "hrtf": "a.wav"}}),
         ] {
             assert!(parse(&bad).is_err(), "{bad} is refused");
         }
@@ -266,5 +270,19 @@ mod tests {
         assert!(ears.is_none());
         assert_eq!(meta["mode"], "speakers");
         assert!(meta["error"].as_str().is_some_and(|e| e.contains("none.maudhrtf")), "{meta}");
+    }
+
+    #[test]
+    fn a_broken_sofa_file_is_reported_not_fatal() {
+        let dir = std::env::temp_dir().join(format!("cfa4-sofa-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let path = dir.join("broken.sofa");
+        std::fs::write(&path, b"\x89HDF\r\n\x1a\nnot really").expect("write");
+        let b = Binaural { set: SetId::File(path.to_string_lossy().into_owned()), config: MonitorConfig::default() };
+        assert!(wait_for(&b.set, 48_000, 10));
+        let (ears, meta) = render("program", 48_000, 0, &[vec![0.0; 16], vec![0.0; 16]], 16, &b);
+        assert!(ears.is_none());
+        assert!(meta["error"].as_str().is_some_and(|e| e.contains("SOFA")), "{meta}");
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

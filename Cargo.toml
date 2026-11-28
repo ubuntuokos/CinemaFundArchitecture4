@@ -169,6 +169,8 @@ cfa4-vdb = { path = "crates/vdb" }
 cfa4-fetch-client = { path = "crates/fetch-client" }
 
 # foundation
+# SOFA (AES69) HRTF files for the headphone monitor (pure Rust, MIT OR Apache-2.0; binaural plan B-04)
+sofar = { version = "0.4.0", default-features = false }
 thiserror = "2"
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"

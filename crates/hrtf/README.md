@@ -52,13 +52,19 @@ room.process(&channels, &mut left, &mut right);                   // 12 channels
 - `VirtualSpeakers`: a channel layout (mono, 2.0, 5.1, 7.1, 7.1.2, 7.1.4 in WAV order, or any
   `Speaker::At` list) as fixed `Binaural` sources at the nominal loudspeaker directions; the LFE
   low-passed at 120 Hz into both ears at -10 dB (configurable).
+- `sofa` (B-04): the user's own SOFA file (AES69 `SimpleFreeFieldHRIR`) as an HRTF set. The HDF5
+  datasets are read with [`sofar`](https://crates.io/crates/sofar) (pure Rust, MIT OR
+  Apache-2.0); each response's onset and minimum-phase form are put on the built-in set's rings
+  (a port of Maul Audio's `tools/sofa_to_maudhrtf.py`), so `HrtfSet::from_sofa` gives a
+  `.maudhrtf` file loaded as the built-in one. A set measured at several distances keeps the one
+  most directions share.
 
 ## Origin
 
 The binaural core is a Rust port of [Maul Audio](https://github.com/Rawframe-Project/maul-audio)
 (MIT, Copyright (c) 2026 Sirac Ozmen), commit `aeb383458250759f92a3e724a5bd006505e45b4d`:
 `src/hrtf*.{h,c}`, `file_fields.c`, `crc32.c`, `binaural.c`, `binaural_dsp.{h,c}`,
-`near_field*.{h,c}` (the table copied unchanged). The ported files keep the MIT notice
+`near_field*.{h,c}` (the table copied unchanged), and `tools/sofa_to_maudhrtf.py` (`sofa.rs`). The ported files keep the MIT notice
 (`LICENSE-MIT.maul-audio`); `speakers.rs` and `lib.rs` are CFA4's own (GPL-3.0-or-later).
 Register row: `docs/licensing.md` §5.
 
@@ -85,3 +91,9 @@ Register row: `docs/licensing.md` §5.
   with and without the near field and for the set resampled to 44.1 kHz (48000 frames each); the
   committed fixtures keep the first 4096 frames, compared within 1e-6 (1e-5 resampled: libm rounding
   of the resampler's f64 kernel differs by machine, 1.5e-6 on the CI runner).
+- `sofa.rs` unit tests: malformed files are errors, a minimum-phase impulse stays an impulse and two
+  onsets differ by the delay between them. With `CFA4_SOFA` set to a SOFA file the set loads and the
+  left ear leads for a source on the left; with `CFA4_SOFA_MAUDHRTF` also set to Maul Audio's tool
+  output for it, ours matches it: on 2026-11-28 MIT KEMAR (normal pinna, from libmysofa's `share/`)
+  converted in 1.2 s, 1628 of 1652 directions within 0.1 sample and 1 % of the peak; the other 24
+  are ring directions where two measured directions tie for third nearest, and each tool takes one.

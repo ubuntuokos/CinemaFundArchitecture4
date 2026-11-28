@@ -1911,6 +1911,7 @@ dependencies = [
  "cfa4-audio-dsp",
  "cfa4-iab",
  "cfa4-truehd",
+ "sofar",
  "thiserror 2.0.21",
 ]
 
@@ -7836,6 +7837,20 @@ checksum = "c3d1e2c7f27f8d4cb10542a02c49005dbd6e93095799d6f3be745fae9f8fedd4"
 dependencies = [
  "libc",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "sofar"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ba07a7507e4ff68a059effe66c2a4efffbb45092d4a6885ae1b989a41ef94cb"
+dependencies = [
+ "arrayvec",
+ "bitflags 2.13.2",
+ "log",
+ "miniz_oxide 0.9.1",
+ "thiserror 2.0.21",
+ "winnow",
 ]
 
 [[package]]

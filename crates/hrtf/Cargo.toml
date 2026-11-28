@@ -13,4 +13,5 @@ workspace = true
 cfa4-audio-dsp = { workspace = true }
 cfa4-iab = { workspace = true }
 cfa4-truehd = { workspace = true }
+sofar = { workspace = true }
 thiserror = { workspace = true }
