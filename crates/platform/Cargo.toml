@@ -44,6 +44,7 @@ libloading = "0.9"
 
 [dev-dependencies]
 cfa4-testkit = { workspace = true }
+cfa4-h264enc = { workspace = true }
 cfa4-media = { workspace = true }
 cfa4-frame = { workspace = true }
 cfa4-project = { workspace = true }

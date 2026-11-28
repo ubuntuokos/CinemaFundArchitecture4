@@ -170,18 +170,13 @@ pub(crate) fn framemd5(ffmpeg: &Path, path: &Path) -> Vec<String> {
     String::from_utf8_lossy(&o.stdout).lines().filter(|l| !l.starts_with('#')).map(|l| l.rsplit(',').next().unwrap().trim().to_string()).collect()
 }
 
-pub(crate) fn has_libx265(ffmpeg: &Path) -> bool {
-    cfa4_testkit::ffmpeg_has_encoder(ffmpeg, "libx265")
-}
-
 /// FFmpeg as the oracle: x265 closed GOPs with B pictures cut on an IDR decode to the source
 /// pictures; in an open GOP stream the CRA pictures with RASL leading pictures are not used as
 /// cut-in points.
 #[test]
 fn ffmpeg_decodes_hevc_cuts_to_the_source_pictures() {
     let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("HEVC Smart Cut decode") else { return };
-    if !has_libx265(&ffmpeg) {
-        cfa4_testkit::skip("smart_cut_hevc_tests", "ffmpeg has no libx265");
+    if !cfa4_testkit::encoders_or_skip("smart_cut_hevc_tests", &ffmpeg, &["libx265"]) {
         return;
     }
     let dir = std::env::temp_dir().join(format!("cfa4-hevc-cut-{}", std::process::id()));

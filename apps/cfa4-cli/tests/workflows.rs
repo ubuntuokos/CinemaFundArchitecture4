@@ -273,6 +273,10 @@ fn clips_on<'a>(seq: &'a Value, kind: &str, track: usize) -> &'a Vec<Value> {
 #[test]
 fn phone_vfr_clip_extract_gain_title_to_h264_mp4() {
     let (ffmpeg, ffprobe) = cfa4_testkit::require_oracles!();
+    // libx264 is patent-restricted and never in CFA4's FFmpeg (cfa4_testkit::RESTRICTED_ENCODERS)
+    if !cfa4_testkit::encoders_or_skip("phone workflow", &ffmpeg, &["libx264"]) {
+        return;
+    }
     let Some(src) = phone_vfr_mp4(&ffmpeg) else {
         return cfa4_testkit::skip("phone workflow", "ffmpeg could not make the VFR H.264/AAC fixture (libx264?)");
     };
@@ -381,6 +385,10 @@ fn phone_vfr_clip_extract_gain_title_to_h264_mp4() {
 #[test]
 fn camera_long_gop_two_audio_tracks_trim_dissolve_to_prores() {
     let (ffmpeg, ffprobe) = cfa4_testkit::require_oracles!();
+    // libx264 is patent-restricted and never in CFA4's FFmpeg (cfa4_testkit::RESTRICTED_ENCODERS)
+    if !cfa4_testkit::encoders_or_skip("camera workflow", &ffmpeg, &["libx264"]) {
+        return;
+    }
     let Some(src) = camera_long_gop_mkv(&ffmpeg) else {
         return cfa4_testkit::skip("camera workflow", "ffmpeg could not make the long-GOP Matroska fixture (libx264?)");
     };

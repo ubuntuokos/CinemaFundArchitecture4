@@ -147,8 +147,7 @@ fn mpeg2_closed_gop_reference() {
 #[test]
 fn h264_closed_gop_reference() {
     let (ff, fp) = cfa4_testkit::require_oracles!();
-    if !has_encoder(&ff, "libx264") {
-        cfa4_testkit::skip("index_oracle::h264_closed_gop_reference", "ffmpeg has no libx264");
+    if !cfa4_testkit::encoders_or_skip("index_oracle::h264_closed_gop_reference", &ff, &["libx264"]) {
         return;
     }
     let Some(file) =
@@ -167,8 +166,7 @@ fn h264_closed_gop_reference() {
 #[test]
 fn h264_open_gop_reference() {
     let (ff, fp) = cfa4_testkit::require_oracles!();
-    if !has_encoder(&ff, "libx264") {
-        cfa4_testkit::skip("index_oracle::h264_open_gop_reference", "ffmpeg has no libx264");
+    if !cfa4_testkit::encoders_or_skip("index_oracle::h264_open_gop_reference", &ff, &["libx264"]) {
         return;
     }
     let args = ["-c:v", "libx264", "-bf", "2", "-pix_fmt", "yuv420p", "-x264-params", "keyint=25:min-keyint=25:scenecut=0:open-gop=1"];
@@ -185,8 +183,7 @@ fn h264_open_gop_reference() {
 #[test]
 fn hevc_closed_gop_reference() {
     let (ff, fp) = cfa4_testkit::require_oracles!();
-    if !has_encoder(&ff, "libx265") {
-        cfa4_testkit::skip("index_oracle::hevc_closed_gop_reference", "ffmpeg has no libx265");
+    if !cfa4_testkit::encoders_or_skip("index_oracle::hevc_closed_gop_reference", &ff, &["libx265"]) {
         return;
     }
     let args = ["-c:v", "libx265", "-pix_fmt", "yuv420p", "-x265-params", "keyint=25:min-keyint=25:scenecut=0:open-gop=0:bframes=3:log-level=error"];
@@ -202,8 +199,7 @@ fn hevc_closed_gop_reference() {
 #[test]
 fn hevc_open_gop_reference() {
     let (ff, fp) = cfa4_testkit::require_oracles!();
-    if !has_encoder(&ff, "libx265") {
-        cfa4_testkit::skip("index_oracle::hevc_open_gop_reference", "ffmpeg has no libx265");
+    if !cfa4_testkit::encoders_or_skip("index_oracle::hevc_open_gop_reference", &ff, &["libx265"]) {
         return;
     }
     let args = ["-c:v", "libx265", "-pix_fmt", "yuv420p", "-x265-params", "keyint=25:min-keyint=25:scenecut=0:open-gop=1:bframes=3:log-level=error"];

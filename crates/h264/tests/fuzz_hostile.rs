@@ -90,8 +90,8 @@ fn hostile_streams_never_panic() {
 fn sweep() {
     let Some(ff) = cfa4_testkit::ffmpeg_or_skip("h264 fuzz") else { return };
     for &(name, args, pix) in SEEDS {
-        if !cfa4_testkit::ffmpeg_has_encoder(&ff, "libx264") {
-            cfa4_testkit::skip("h264 fuzz", &format!("this ffmpeg has no libx264 encoder (seed {name})"));
+        // libx264 is patent-restricted and never in CFA4's FFmpeg: the seeds skip without it
+        if !cfa4_testkit::encoders_or_skip(&format!("h264 fuzz seed {name}"), &ff, &["libx264"]) {
             continue;
         }
         let Some(seed) = make(&ff, name, args, pix) else {
