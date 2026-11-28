@@ -5,7 +5,7 @@
 //! The core reads the dialect-independent part of the format: profile, clock-time values,
 //! producers and chains, playlists (`entry` and `blank`), tractors and their tracks. The
 //! dialect parts (`kdenlive:*`, `shotcut:*` properties) only decide how tracks are typed. What
-//! the importer does not map yet (effects other than Kdenlive's Volume, compositions, nested
+//! the importer does not map yet (effect parameters other than Kdenlive's Volume, compositions, nested
 //! sequences, unknown generators) is listed in the [`Report`]; it never makes the import fail.
 //!
 //! Facts about the format are those confirmed in
@@ -421,7 +421,7 @@ impl<'a, 'd> Imp<'a, 'd, '_> {
                     if (speed - 1.0).abs() > 1e-9 {
                         ti.speed = speed;
                     }
-                    self.effects(e, prod, &mut ti);
+                    self.effects(e, prod, kind, &mut ti);
                     let clip = ti.id;
                     match self.b.place(seq, kind, at, ti) {
                         None => self.report.warn("a clip past the supported track count was not imported"),
@@ -516,18 +516,48 @@ impl<'a, 'd> Imp<'a, 'd, '_> {
         resolve_path(resource, base)
     }
 
-    /// The effects of a clip: Kdenlive's Volume is mapped ([`Self::volume`]), the rest is reported.
-    fn effects(&mut self, entry: Node<'a, 'd>, prod: Node<'a, 'd>, ti: &mut TrackItem) {
+    /// The effects of a clip: Kdenlive's Volume is mapped ([`Self::volume`]), the others through the
+    /// KDN-20 table ([`Self::table_effect`]); what neither maps is reported.
+    fn effects(&mut self, entry: Node<'a, 'd>, prod: Node<'a, 'd>, kind: TrackKind, ti: &mut TrackItem) {
         for f in children(entry, "filter").chain(children(prod, "filter")) {
             if prop(f, "disable") == Some("1") || prop(f, "internal_added").is_some() {
                 continue;
             }
             let service = prop(f, "kdenlive_id").or_else(|| prop(f, "shotcut:filter")).or_else(|| prop(f, "mlt_service")).unwrap_or("?");
-            if self.dialect == Dialect::Kdenlive && service == "volume" && self.volume(f, ti) {
+            if self.dialect == Dialect::Kdenlive && ((service == "volume" && self.volume(f, ti)) || self.table_effect(service, kind, ti)) {
                 continue;
             }
             self.report.warn(format!("the effect {service:?} is not imported yet"));
         }
+    }
+
+    /// A Kdenlive effect through the KDN-20 table (`data/kdenlive-effect-map.csv`): the CFA4 effect the
+    /// table names is added to the clip with its default settings (the table has no parameter mapping
+    /// yet) and the substitution is reported. An effect the table lists as having no CFA4 equivalent
+    /// is reported as dropped. `false` when the table does not decide it (an id it lacks, a stand-in
+    /// that is a built-in clip property or of the other track kind), so the caller reports it.
+    fn table_effect(&mut self, service: &str, kind: TrackKind, ti: &mut TrackItem) -> bool {
+        let Some(entry) = crate::kdenlive_map::effect(service) else { return false };
+        if entry.fit == crate::kdenlive_map::Fit::Missing {
+            self.report.warn(format!("the Kdenlive effect {service:?} has no CFA4 equivalent and was not imported"));
+            return true;
+        }
+        let Some(def) = cfa4_project::effect::find_effect(&entry.cfa4) else { return false };
+        let on_track = match def.kind {
+            cfa4_project::effect::EffectKind::Video => kind == TrackKind::Video,
+            cfa4_project::effect::EffectKind::Audio => kind == TrackKind::Audio,
+            _ => false,
+        };
+        if def.intrinsic || !on_track {
+            return false;
+        }
+        ti.effects.push(def.instance());
+        let approx = if entry.fit == crate::kdenlive_map::Fit::Close { " (a similar effect, not an identical one)" } else { "" };
+        self.report.warn(format!(
+            "the Kdenlive effect {service:?} was imported as CFA4's {:?}{approx} with default settings: its parameters are not imported yet",
+            def.name
+        ));
+        true
     }
 
     /// Kdenlive's Volume effect (`kdenlive_id` `volume`, animated `level` in dB; the effect

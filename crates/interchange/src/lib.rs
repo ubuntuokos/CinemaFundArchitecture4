@@ -36,6 +36,7 @@ pub mod otio;
 
 mod common;
 mod comp;
+mod kdenlive_map;
 mod mlt;
 pub mod wav;
 mod xml;
