@@ -89,6 +89,7 @@ pub mod svq1;
 pub mod svq3;
 pub mod theora;
 pub mod thp;
+pub mod truehd_objects;
 pub mod twinvq;
 pub mod utvideo;
 pub mod video;
