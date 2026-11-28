@@ -214,7 +214,10 @@ def test_workspace_edits_through_engine_commands(app: Any) -> None:
         ws.close()
 
 
-@pytest.mark.skipif(REAL is None, reason="needs a built cfa4-cli (and cfa4-studio-host next to it)")
+@pytest.mark.skipif(
+    REAL is None or not (os.environ.get("CFA4_STUDIO_HOST") or (REAL.parent / "cfa4-studio-host").exists()),
+    reason="needs a built cfa4-cli and cfa4-studio-host",
+)
 def test_workspace_with_the_real_engine(app: Any) -> None:
     assert REAL is not None
     engine = EngineClient(REAL)

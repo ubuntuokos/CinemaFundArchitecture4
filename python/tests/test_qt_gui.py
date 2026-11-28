@@ -15284,7 +15284,10 @@ def test_real_engine_live_window(app, tmp_path: Path):
         engine.stop()
 
 
-@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+@pytest.mark.skipif(
+    REAL is None or not (os.environ.get("CFA4_STUDIO_HOST") or (REAL.parent / "cfa4-studio-host").exists()),
+    reason="needs cfa4-cli and cfa4-studio-host (cargo build -p cfa4-cli -p cfa4-studio-host)",
+)
 def test_real_engine_live_studio_workspace(app, tmp_path: Path):
     """S1c: Graphics and Titles ▸ Live Studio… opens the workspace; a scene and a source made there
     are engine commands (undoable from the main window) and the program picture shows them."""
