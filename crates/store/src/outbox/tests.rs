@@ -32,7 +32,7 @@ fn new_task(id: &str) -> cfa4_tasks::NewTask {
 async fn a_state_change_writes_a_canonical_envelope_with_a_uuid_v7_event_id() {
     let Some((_db, store)) = setup().await else { return };
     let tasks = store.tasks(QueueConfig::default());
-    tasks.submit(new_task("t-env"), 1_700_000_000_000).await.expect("submit");
+    tasks.submit(new_task("00000000-0000-7000-8000-0000000000c9"), 1_700_000_000_000).await.expect("submit");
     let relay = store.outbox();
     let mut seen = Vec::new();
     let n = relay
@@ -72,7 +72,7 @@ async fn a_state_change_writes_a_canonical_envelope_with_a_uuid_v7_event_id() {
     assert!(env["published_at"].is_string(), "the hand-over time is filled in");
     assert!(env["causation_id"].is_null());
     assert_eq!(env["payload"]["entity_seq"], 0, "creation is sequence 0");
-    assert_eq!(env["payload"]["taskId"], "t-env");
+    assert_eq!(env["payload"]["taskId"], "00000000-0000-7000-8000-0000000000c9");
     // a UUID of version 7 whose first 48 bits are the milliseconds since the epoch
     let id = e.event_id.replace('-', "");
     assert_eq!(id.get(12..13), Some("7"), "{id}");
@@ -93,7 +93,7 @@ async fn relay_is_at_least_once_keeps_the_event_id_and_marks_only_what_was_confi
     let Some((_db, store)) = setup().await else { return };
     let tasks = store.tasks(QueueConfig::default());
     for i in 0..3 {
-        tasks.submit(new_task(&format!("t-{i}")), 1_700_000_000_000).await.expect("submit");
+        tasks.submit(new_task(&format!("00000000-0000-7000-8000-{:012x}", 0x400 + i)), 1_700_000_000_000).await.expect("submit");
     }
     let relay = store.outbox();
     assert_eq!(relay.pending().await.expect("pending"), 3);
@@ -139,7 +139,7 @@ async fn relay_is_at_least_once_keeps_the_event_id_and_marks_only_what_was_confi
 async fn two_relays_never_hand_over_the_same_row_at_the_same_time() {
     let Some((_db, store)) = setup().await else { return };
     let tasks = store.tasks(QueueConfig::default());
-    tasks.submit(new_task("t-race"), 1_700_000_000_000).await.expect("submit");
+    tasks.submit(new_task("00000000-0000-7000-8000-0000000000ca"), 1_700_000_000_000).await.expect("submit");
     let (a, b) = (store.outbox(), store.outbox());
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
     let (hold, other) = tokio::join!(

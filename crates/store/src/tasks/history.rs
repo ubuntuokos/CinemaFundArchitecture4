@@ -8,7 +8,7 @@ use cfa4_tasks::Confidence;
 use serde::{Deserialize, Serialize};
 
 use super::TaskStore;
-use crate::{StoreError, check_text};
+use crate::{StoreError, check_task_id, check_text};
 
 /// How many run records one lookup returns at most.
 const MAX_RUNS: i64 = 1_000;
@@ -69,7 +69,7 @@ impl TaskStore {
     /// Record an estimate for a task (the newest one is the current one). `min_s <= max_s`;
     /// an unknown task is an error.
     pub async fn record_estimate(&self, task_id: &str, min_s: u64, max_s: u64, confidence: Confidence, basis: EstimateBasis) -> Result<(), StoreError> {
-        check_text("task id", task_id, 1, 256)?;
+        check_task_id(task_id)?;
         if min_s > max_s {
             return Err(StoreError::Query { detail: "estimate minimum is above its maximum".into() });
         }
@@ -80,7 +80,7 @@ impl TaskStore {
         let client = self.store.client().await?;
         client
             .execute(
-                "INSERT INTO tasks.estimate (task_id, min_s, max_s, confidence, basis) VALUES ($1, $2, $3, $4, $5)",
+                "INSERT INTO tasks.estimate (task_id, min_s, max_s, confidence, basis) VALUES ($1::text::uuid, $2, $3, $4, $5)",
                 &[&task_id, &big("minimum", min_s)?, &big("maximum", max_s)?, &confidence, &basis.as_str()],
             )
             .await
@@ -90,11 +90,11 @@ impl TaskStore {
 
     /// The newest estimate of a task.
     pub async fn current_estimate(&self, task_id: &str) -> Result<Option<EstimateRecord>, StoreError> {
-        check_text("task id", task_id, 1, 256)?;
+        check_task_id(task_id)?;
         let client = self.store.client().await?;
         let row = client
             .query_opt(
-                "SELECT min_s, max_s, confidence, basis, (extract(epoch from at) * 1000)::bigint AS at_ms FROM tasks.estimate WHERE task_id = $1 ORDER BY id DESC LIMIT 1",
+                "SELECT min_s, max_s, confidence, basis, (extract(epoch from at) * 1000)::bigint AS at_ms FROM tasks.estimate WHERE task_id = $1::text::uuid ORDER BY id DESC LIMIT 1",
                 &[&task_id],
             )
             .await
@@ -125,7 +125,7 @@ impl TaskStore {
 
     /// Record what a finished run cost.
     pub async fn record_run(&self, run: &RunRecord) -> Result<(), StoreError> {
-        check_text("task id", &run.task_id, 1, 256)?;
+        check_task_id(&run.task_id)?;
         check_text("implementation", &run.implementation, 1, 128)?;
         check_text("path", &run.path, 0, 128)?;
         check_text("hardware", &run.hardware, 0, 256)?;
@@ -133,7 +133,7 @@ impl TaskStore {
         client
             .execute(
                 "INSERT INTO tasks.run_history (task_id, implementation, path, hardware, input_bytes, duration_ms, peak_ram_bytes, peak_vram_bytes) \
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+                 VALUES ($1::text::uuid, $2, $3, $4, $5, $6, $7, $8)",
                 &[
                     &run.task_id,
                     &run.implementation,
@@ -159,7 +159,7 @@ impl TaskStore {
         let client = self.store.client().await?;
         let rows = client
             .query(
-                "SELECT task_id, implementation, path, hardware, input_bytes, duration_ms, peak_ram_bytes, peak_vram_bytes FROM tasks.run_history \
+                "SELECT task_id::text AS task_id, implementation, path, hardware, input_bytes, duration_ms, peak_ram_bytes, peak_vram_bytes FROM tasks.run_history \
                  WHERE implementation = $1 AND hardware = $2 ORDER BY id DESC LIMIT $3",
                 &[&implementation, &hardware, &limit],
             )

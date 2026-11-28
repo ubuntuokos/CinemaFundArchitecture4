@@ -13,7 +13,7 @@ use cfa4_tasks::{Manager, Monitor, NewTask, Priority, Queue, QueueConfig, QueueE
 use serde_json::{Value, json};
 use tokio_postgres::Transaction;
 
-use crate::{Store, StoreError};
+use crate::{Store, StoreError, check_task_id};
 
 /// At most this many open tasks are locked by one scheduler step.
 const MAX_LOCKED: i64 = cfa4_tasks::queue::MAX_TASKS as i64;
@@ -93,7 +93,7 @@ impl TaskStore {
             let doc = serde_json::to_value(t).map_err(StoreError::query)?;
             let n = tx
                 .execute(
-                    "UPDATE tasks.task SET state = $2, class_rank = $3, priority = $4, start_at = to_timestamp($5::bigint / 1000.0), lease_owner = $6, lease_until = to_timestamp($7::bigint / 1000.0), version = $8, doc = $9, updated_at = now() WHERE id = $1 AND version = $10",
+                    "UPDATE tasks.task SET state = $2, class_rank = $3, priority = $4, start_at = to_timestamp($5::bigint / 1000.0), lease_owner = $6, lease_until = to_timestamp($7::bigint / 1000.0), version = $8, doc = $9, updated_at = now() WHERE id = $1::text::uuid AND version = $10",
                     &[
                         &t.id,
                         &state_name(t.state),
@@ -143,7 +143,7 @@ impl TaskStore {
             cfa4_tasks::MissedStart::AskUser => "ask",
         };
         tx.execute(
-            "INSERT INTO tasks.schedule (task_id, mode, start_at, time_zone, if_missed) VALUES ($1, $2, to_timestamp($3::bigint / 1000.0), $4, $5) \
+            "INSERT INTO tasks.schedule (task_id, mode, start_at, time_zone, if_missed) VALUES ($1::text::uuid, $2, to_timestamp($3::bigint / 1000.0), $4, $5) \
              ON CONFLICT (task_id) DO UPDATE SET mode = EXCLUDED.mode, start_at = EXCLUDED.start_at, time_zone = EXCLUDED.time_zone, if_missed = EXCLUDED.if_missed",
             &[&t.id, &mode, &at, &t.time_zone, &if_missed],
         )
@@ -160,7 +160,7 @@ impl TaskStore {
                 _ => String::new(),
             };
             tx.execute(
-                "INSERT INTO tasks.transition (task_id, seq, from_state, to_state, at, by_actor, reason) VALUES ($1, $2, $3, $4, to_timestamp($5::bigint / 1000.0), $6, $7)",
+                "INSERT INTO tasks.transition (task_id, seq, from_state, to_state, at, by_actor, reason) VALUES ($1::text::uuid, $2, $3, $4, to_timestamp($5::bigint / 1000.0), $6, $7)",
                 &[&t.id, &ms(l.seq), &from, &to, &ms(l.at), &by, &l.reason],
             )
             .await
@@ -183,9 +183,10 @@ impl TaskStore {
         manager: Option<&mut Manager>,
         op: impl FnOnce(&mut Queue, Option<&mut Manager>) -> Result<R, QueueError>,
     ) -> Result<R, StoreError> {
+        check_task_id(id)?;
         let mut client = self.store.client().await?;
         let tx = client.transaction().await.map_err(StoreError::query)?;
-        let tasks = Self::load(&tx, "SELECT id, doc FROM tasks.task WHERE id = $1 FOR UPDATE", &[&id]).await?;
+        let tasks = Self::load(&tx, "SELECT id::text AS id, doc FROM tasks.task WHERE id = $1::text::uuid FOR UPDATE", &[&id]).await?;
         if tasks.is_empty() {
             return Err(QueueError::NotFound { id: id.to_owned() }.into());
         }
@@ -204,6 +205,7 @@ impl TaskStore {
 
     /// Add a task (`scheduled` or `queued`) and wake the scheduler.
     pub async fn submit(&self, new: NewTask, now: UtcMs) -> Result<Task, StoreError> {
+        check_task_id(&new.id)?;
         let mut queue = Queue::new(self.config.clone());
         let task = queue.submit(new, now)?.clone();
         let mut client = self.store.client().await?;
@@ -215,7 +217,7 @@ impl TaskStore {
         let doc = serde_json::to_value(&task).map_err(StoreError::query)?;
         let n = tx
             .execute(
-                "INSERT INTO tasks.task (id, state, class_rank, priority, submitted_at, start_at, version, doc) VALUES ($1, $2, $3, $4, to_timestamp($5::bigint / 1000.0), to_timestamp($6::bigint / 1000.0), $7, $8) ON CONFLICT (id) DO NOTHING",
+                "INSERT INTO tasks.task (id, state, class_rank, priority, submitted_at, start_at, version, doc) VALUES ($1::text::uuid, $2, $3, $4, to_timestamp($5::bigint / 1000.0), to_timestamp($6::bigint / 1000.0), $7, $8) ON CONFLICT (id) DO NOTHING",
                 &[&task.id, &state_name(task.state), &class_rank(task.request.class), &priority_rank(task.priority), &ms(task.submitted_at), &start_at(&task), &ms(task.version), &doc],
             )
             .await
@@ -241,7 +243,7 @@ impl TaskStore {
         let tx = client.transaction().await.map_err(StoreError::query)?;
         let tasks = Self::load(
             &tx,
-            "SELECT id, doc FROM tasks.task WHERE state IN ('scheduled', 'queued', 'waiting', 'running', 'cancelling') ORDER BY class_rank, priority DESC, submitted_at LIMIT $1 FOR UPDATE SKIP LOCKED",
+            "SELECT id::text AS id, doc FROM tasks.task WHERE state IN ('scheduled', 'queued', 'waiting', 'running', 'cancelling') ORDER BY class_rank, priority DESC, submitted_at LIMIT $1 FOR UPDATE SKIP LOCKED",
             &[&MAX_LOCKED],
         )
         .await?;
@@ -256,9 +258,10 @@ impl TaskStore {
     }
 
     pub async fn get(&self, id: &str) -> Result<Option<Task>, StoreError> {
+        check_task_id(id)?;
         let mut client = self.store.client().await?;
         let tx = client.transaction().await.map_err(StoreError::query)?;
-        let mut tasks = Self::load(&tx, "SELECT id, doc FROM tasks.task WHERE id = $1", &[&id]).await?;
+        let mut tasks = Self::load(&tx, "SELECT id::text AS id, doc FROM tasks.task WHERE id = $1::text::uuid", &[&id]).await?;
         Ok(tasks.pop())
     }
 
@@ -284,22 +287,23 @@ impl TaskStore {
     /// Run `op` on one locked task that changes neither its state nor its version, and write the
     /// task back.
     async fn in_place<R>(&self, id: &str, op: impl FnOnce(&mut Queue) -> Result<R, QueueError>, stage: Option<(u64, Option<&str>)>) -> Result<R, StoreError> {
+        check_task_id(id)?;
         let mut client = self.store.client().await?;
         let tx = client.transaction().await.map_err(StoreError::query)?;
-        let tasks = Self::load(&tx, "SELECT id, doc FROM tasks.task WHERE id = $1 FOR UPDATE", &[&id]).await?;
+        let tasks = Self::load(&tx, "SELECT id::text AS id, doc FROM tasks.task WHERE id = $1::text::uuid FOR UPDATE", &[&id]).await?;
         let mut queue = Queue::from_tasks(self.config.clone(), tasks);
         let r = op(&mut queue)?;
         let task = queue.get(id).ok_or_else(|| StoreError::from(QueueError::NotFound { id: id.to_owned() }))?;
         let doc = serde_json::to_value(task).map_err(StoreError::query)?;
         tx.execute(
-            "UPDATE tasks.task SET lease_until = to_timestamp($2::bigint / 1000.0), doc = $3, updated_at = now() WHERE id = $1",
+            "UPDATE tasks.task SET lease_until = to_timestamp($2::bigint / 1000.0), doc = $3, updated_at = now() WHERE id = $1::text::uuid",
             &[&id, &task.lease_until.map(ms), &doc],
         )
         .await
         .map_err(StoreError::query)?;
         if let Some((stage, cache_key)) = stage {
             tx.execute(
-                "INSERT INTO tasks.checkpoint (task_id, stage, cache_key) VALUES ($1, $2, $3) ON CONFLICT (task_id, stage) DO NOTHING",
+                "INSERT INTO tasks.checkpoint (task_id, stage, cache_key) VALUES ($1::text::uuid, $2, $3) ON CONFLICT (task_id, stage) DO NOTHING",
                 &[&id, &ms(stage), &cache_key],
             )
             .await

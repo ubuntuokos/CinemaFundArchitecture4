@@ -48,11 +48,11 @@ pub(crate) async fn emit(tx: &Transaction<'_>, task_id: &str, subject: &str, pay
     tx.execute(
         "WITH new AS (SELECT tasks.uuid7() AS id) \
          INSERT INTO tasks.outbox (task_id, subject, event_id, event) \
-         SELECT $1, $2, new.id, jsonb_build_object(\
+         SELECT $1::text::uuid, $2::text, new.id, jsonb_build_object(\
              'event_id', new.id, 'event_type', $2::text, 'event_version', 1, \
              'occurred_at', to_char(clock_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'), \
              'published_at', NULL, 'producer', 'cfa4-store', 'producer_instance', 'local', \
-             'correlation_id', md5($1)::uuid, 'causation_id', NULL, 'trace_id', $1::text, \
+             'correlation_id', md5($1::text)::uuid, 'causation_id', NULL, 'trace_id', $1::text, \
              'schema_id', $4::text, 'content_type', 'application/json', 'classification', 'internal', \
              'payload', $3::jsonb, 'metadata', '{}'::jsonb) FROM new",
         &[&task_id, &subject, payload, &SCHEMA_ID],
@@ -102,7 +102,7 @@ impl Relay {
         let tx = client.transaction().await.map_err(StoreError::postgres)?;
         let rows = tx
             .query(
-                "SELECT id, event_id::text AS event_id, task_id, subject, \
+                "SELECT id, event_id::text AS event_id, task_id::text AS task_id, subject, \
                  jsonb_set(event, '{published_at}', to_jsonb(to_char(clock_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'))) AS envelope \
                  FROM tasks.outbox WHERE published_at IS NULL ORDER BY id LIMIT $1 FOR UPDATE SKIP LOCKED",
                 &[&limit],
