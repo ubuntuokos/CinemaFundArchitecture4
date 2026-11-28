@@ -149,8 +149,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   summary table first, every failure listed). Fidelity tiers (exact, approximate, stub, unrated; an
   item with no annotation is *unrated*, `exact` needs evidence) come from `xtask/parity/fidelity.json`
   and automatic panel stubs. Committed, text-only references (schema 1, every item names the
-  `docs/**/*.md` it comes from; `--check-reference` is part of `cargo xtask ci`) exist for **panels, menus, effects and
-  transitions** (the Effects-panel names are in [target-effects-reference.md](target-effects-reference.md), owner decision 2026-11-25). `xtask/parity/thresholds.json` holds the least present and exact *counts* per area;
+  `docs/**/*.md` it comes from; `--check-reference` is part of `cargo xtask ci`) exist for **panels, menus, effects,
+  transitions and commands** (names in [target-effects-reference.md](target-effects-reference.md) and [target-commands-reference.md](target-commands-reference.md), owner decisions 2026-11-25 and 2026-11-28). `xtask/parity/thresholds.json` holds the least present and exact *counts* per area;
   `cargo xtask parity --ci` fails below them and hints when one can be raised;
   `--check-ratchet --base REF` fails when a count is lowered or removed; `docs/parity-checklist.md` is
   generated from the committed references (`--write-checklist`; `--check-checklist` is part of
@@ -159,11 +159,10 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   the `parity-report` artifact.
 - **Measured (committed references, 2026-11-25):** panels 24/28 present (1 stub, 23 unrated), menus
   16/17 present (16 unrated), effects 161/161 and transitions 87/87 present (3 approximate, the rest
-  unrated); no item is rated exact yet.
-- **Missing:** a committed reference for **commands** (no source list of the target's command names is
-  committed, so `--area commands` stays "not measured" under `--ci`), preferences and formats, and
+  unrated), commands 147/196 present (135 in the same menu place, 12 elsewhere); no item is rated exact yet.
+- **Missing:** the commands list is compiled from public documentation, not from the application: the owner verifies it against an installed copy; preferences and formats, and
   behaviour tests (G1): a tier is an annotation, not a behaviour test.
-- **Estimate:** 2–4 h left (a commands reference).
+- **Estimate:** 2–3 h left (verify the commands list; menu items below the top level).
 
 ## G8. UI fidelity: monitor handles, Effect Controls, docking
 

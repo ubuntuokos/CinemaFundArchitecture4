@@ -1,0 +1,791 @@
+{
+  "schema": 1,
+  "area": "commands",
+  "outOfScope": [],
+  "items": [
+    {
+      "path": "File ▸ New ▸ Project",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Production",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Sequence",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Sequence From Clip",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Bin",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Search Bin",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Offline File",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Adjustment Layer",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Legacy Title",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Photoshop File",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Bars and Tone",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Black Video",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Color Matte",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ HD Bars and Tone",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Universal Counting Leader",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ New ▸ Transparent Video",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Open Project",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Open Production",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Close",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Close Project",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Close Production",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Close All Projects",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Refresh All Projects",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Revert",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Save",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Save As",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Save a Copy",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Save All",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Capture",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Batch Capture",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Link Media",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Make Offline",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Import from Media Browser",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Import",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Export ▸ Media",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Export ▸ Motion Graphics Template",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Export ▸ Captions",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Export ▸ Markers",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Export ▸ Selection",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Export ▸ EDL",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Export ▸ OMF",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Export ▸ AAF",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Export ▸ Avid Log Exchange",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Export ▸ Final Cut Pro XML",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Export ▸ Selects As Premiere Project",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Get Properties for ▸ File",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Get Properties for ▸ Selection",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Project Settings ▸ General",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Project Settings ▸ Scratch Disks",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Project Settings ▸ Ingest Settings",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Production Settings",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Project Manager",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "File ▸ Exit",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Undo",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Redo",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Cut",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Copy",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Paste",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Paste Insert",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Paste Attributes",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Clear",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Ripple Delete",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Duplicate",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Select All",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Deselect All",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Find",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Find Next",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Violet",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Iris",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Caribbean",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Lavender",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Cerulean",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Forest",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Rose",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Mango",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Purple",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Blue",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Teal",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Magenta",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Tan",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Green",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Brown",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Yellow",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Select Label Group",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Label ▸ Label Defaults",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Remove Unused",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Consolidate Duplicates",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Edit Original",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Edit in Adobe Audition ▸ Sequence",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Edit in Adobe Audition ▸ Clip",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Edit in Adobe Photoshop",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Keyboard Shortcuts",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Edit ▸ Preferences",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Rename",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Make Subclip",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Edit Subclip",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Edit Offline",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Source Settings",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Modify ▸ Audio Channels",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Modify ▸ Interpret Footage",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Modify ▸ Timecode",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Video Options ▸ Frame Hold Options",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Video Options ▸ Add Frame Hold",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Video Options ▸ Insert Frame Hold Segment",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Video Options ▸ Field Options",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Video Options ▸ Time Interpolation",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Video Options ▸ Scale to Frame Size",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Video Options ▸ Set to Frame Size",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Audio Options ▸ Audio Gain",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Audio Options ▸ Breakout to Mono",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Audio Options ▸ Extract Audio",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Speed/Duration",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Remove Effects",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Insert",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Overwrite",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Enable",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Link",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Group",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Ungroup",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Synchronize",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Nest",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Clip ▸ Make Subsequence",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Sequence Settings",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Render Effects in Work Area",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Render Entire Work Area",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Render Selection",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Render Audio",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Delete Render Files",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Delete Work Area Render Files",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Lift",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Extract",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Apply Video Transition",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Apply Audio Transition",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Apply Default Transitions",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Zoom In",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Zoom Out",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Go to Gap ▸ Next in Sequence",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Go to Gap ▸ Previous in Sequence",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Go to Gap ▸ Next in Track",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Go to Gap ▸ Previous in Track",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Add Edit",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Add Edit to All Tracks",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Trim Edit",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Extend Selected Edit to Playhead",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Add Tracks",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Delete Tracks",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Normalize Master Track",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Sequence ▸ Make Subsequence",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Mark In",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Mark Out",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Mark Clip",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Mark Selection",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Go to In",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Go to Out",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Clear In",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Clear Out",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Clear In and Out",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Add Marker",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Go to Next Marker",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Go to Previous Marker",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Clear Selected Marker",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Clear All Markers",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Edit Marker",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Markers ▸ Add Chapter Marker",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ New Layer ▸ Text",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ New Layer ▸ Vertical Text",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ New Layer ▸ Rectangle",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ New Layer ▸ Ellipse",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ New Layer ▸ From File",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Install Motion Graphics Template",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Select Next Layer",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Select Previous Layer",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Align ▸ Left",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Align ▸ Center Horizontally",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Align ▸ Right",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Align ▸ Top",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Align ▸ Center Vertically",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Align ▸ Bottom",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Arrange ▸ Bring to Front",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Arrange ▸ Bring Forward",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Arrange ▸ Send Backward",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Arrange ▸ Send to Back",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Replace All Fonts",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "View ▸ Playback Resolution",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "View ▸ Pause Resolution",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "View ▸ Display Mode",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "View ▸ Magnification",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "View ▸ Show Rulers",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "View ▸ Show Guides",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "View ▸ Lock Guides",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "View ▸ Add Guide",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "View ▸ Clear Guides",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "View ▸ Snap in Program Monitor",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "View ▸ Show Transparency Grid",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "View ▸ Loop",
+      "source": "docs/target-commands-reference.md"
+    },
+    {
+      "path": "View ▸ Overlays",
+      "source": "docs/target-commands-reference.md"
+    }
+  ]
+}
