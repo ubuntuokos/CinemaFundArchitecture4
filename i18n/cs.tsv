@@ -4983,3 +4983,9 @@ export.summary	Low	nízká
 	DNx Coding	Kódování DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Kompatibilní s FFmpeg (pro nástroje založené na FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Vypnuto: kódování podle SMPTE ST 2019-1. Zapnuto: kódování tak, jak DNx zapisuje FFmpeg, pro nástroje postavené na FFmpeg.
+	Loading HRTF…	Načítání HRTF…
+	Headphones (Binaural)	Sluchátka (binaurálně)
+	Binaural	Binaurálně
+	{layout} · binaural	{layout} · binaurálně
+	{source} · {n} objects · binaural	{source} · {n} objektů · binaurálně
+	Headphones: {error}. Playing through the speakers.	Sluchátka: {error}. Zvuk hraje z reproduktorů.

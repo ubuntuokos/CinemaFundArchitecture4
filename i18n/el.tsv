@@ -4985,3 +4985,9 @@ export.summary	Low	χαμηλή
 	DNx Coding	Κωδικοποίηση DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Συμβατό με FFmpeg (για εργαλεία βασισμένα στο FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Ανενεργό: κωδικοποίηση κατά SMPTE ST 2019-1. Ενεργό: κωδικοποίηση όπως γράφει το FFmpeg το DNx, για εργαλεία βασισμένα στο FFmpeg.
+	Loading HRTF…	Φόρτωση HRTF…
+	Headphones (Binaural)	Ακουστικά (binaural)
+	Binaural	Binaural
+	{layout} · binaural	{layout} · binaural
+	{source} · {n} objects · binaural	{source} · {n} αντικείμενα · binaural
+	Headphones: {error}. Playing through the speakers.	Ακουστικά: {error}. Ο ήχος παίζει από τα ηχεία.

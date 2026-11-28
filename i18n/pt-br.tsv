@@ -4993,3 +4993,9 @@
 	DNx Coding	Codificação DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Compatível com FFmpeg (para ferramentas baseadas em FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Desligado: codificado conforme SMPTE ST 2019-1. Ligado: codificado como o FFmpeg grava DNx, para ferramentas baseadas em FFmpeg.
+	Loading HRTF…	Carregando HRTF…
+	Headphones (Binaural)	Fones de ouvido (binaural)
+	Binaural	Binaural
+	{layout} · binaural	{layout} · binaural
+	{source} · {n} objects · binaural	{source} · {n} objetos · binaural
+	Headphones: {error}. Playing through the speakers.	Fones de ouvido: {error}. O som sai pelos alto-falantes.

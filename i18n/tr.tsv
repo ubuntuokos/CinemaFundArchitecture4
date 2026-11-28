@@ -4984,3 +4984,9 @@ export.summary	Low	düşük
 	DNx Coding	DNx kodlama
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg uyumlu (FFmpeg tabanlı araçlar için)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Kapalı: SMPTE ST 2019-1'e göre kodlanır. Açık: FFmpeg'in DNx yazdığı biçimde kodlanır, FFmpeg tabanlı araçlar için.
+	Loading HRTF…	HRTF yükleniyor…
+	Headphones (Binaural)	Kulaklık (binaural)
+	Binaural	Binaural
+	{layout} · binaural	{layout} · binaural
+	{source} · {n} objects · binaural	{source} · {n} nesne · binaural
+	Headphones: {error}. Playing through the speakers.	Kulaklık: {error}. Ses hoparlörlerden çalıyor.

@@ -4986,3 +4986,9 @@ export.summary	Low	დაბალი
 	DNx Coding	DNx-ის კოდირება
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-თან თავსებადი (FFmpeg-ზე დაფუძნებული ხელსაწყოებისთვის)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	გამორთული: კოდირება SMPTE ST 2019-1-ის მიხედვით. ჩართული: კოდირება ისე, როგორც FFmpeg წერს DNx-ს, FFmpeg-ზე აგებული ხელსაწყოებისთვის.
+	Loading HRTF…	HRTF იტვირთება…
+	Headphones (Binaural)	ყურსასმენები (ბინაურალური)
+	Binaural	ბინაურალური
+	{layout} · binaural	{layout} · ბინაურალური
+	{source} · {n} objects · binaural	{source} · {n} ობიექტი · ბინაურალური
+	Headphones: {error}. Playing through the speakers.	ყურსასმენები: {error}. ხმა დინამიკებით ისმის.

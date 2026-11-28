@@ -4985,3 +4985,9 @@ export.summary	Low	తక్కువ
 	DNx Coding	DNx ఎన్‌కోడింగ్
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg అనుకూలం (FFmpeg ఆధారిత సాధనాల కోసం)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	ఆఫ్: SMPTE ST 2019-1 ప్రకారం ఎన్‌కోడ్ అవుతుంది. ఆన్: FFmpeg DNx ను రాసే విధంగా ఎన్‌కోడ్ అవుతుంది, FFmpeg ఆధారిత సాధనాల కోసం.
+	Loading HRTF…	HRTF లోడ్ అవుతోంది…
+	Headphones (Binaural)	హెడ్‌ఫోన్లు (బైనారల్)
+	Binaural	బైనారల్
+	{layout} · binaural	{layout} · బైనారల్
+	{source} · {n} objects · binaural	{source} · {n} ఆబ్జెక్టులు · బైనారల్
+	Headphones: {error}. Playing through the speakers.	హెడ్‌ఫోన్లు: {error}. శబ్దం స్పీకర్లలో వస్తోంది.

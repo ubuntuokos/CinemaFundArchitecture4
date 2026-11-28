@@ -4982,3 +4982,9 @@ export.summary	Low	低
 	DNx Coding	DNx 編碼
 	FFmpeg-compatible (for FFmpeg-based tools)	相容於 FFmpeg（供以 FFmpeg 為基礎的工具使用）
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	關：依 SMPTE ST 2019-1 編碼。開：依 FFmpeg 寫入 DNx 的方式編碼，供以 FFmpeg 為基礎的工具使用。
+	Loading HRTF…	正在載入 HRTF…
+	Headphones (Binaural)	耳機（雙耳）
+	Binaural	雙耳
+	{layout} · binaural	{layout} · 雙耳
+	{source} · {n} objects · binaural	{source} · {n} 個物件 · 雙耳
+	Headphones: {error}. Playing through the speakers.	耳機：{error}。改由喇叭播放。

@@ -4977,3 +4977,9 @@
 	DNx Coding	DNx 인코딩
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg 호환(FFmpeg 기반 도구용)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	끔: SMPTE ST 2019-1에 따라 인코딩합니다. 켬: FFmpeg가 DNx를 쓰는 방식으로 인코딩합니다(FFmpeg 기반 도구용).
+	Loading HRTF…	HRTF 불러오는 중…
+	Headphones (Binaural)	헤드폰(바이노럴)
+	Binaural	바이노럴
+	{layout} · binaural	{layout} · 바이노럴
+	{source} · {n} objects · binaural	{source} · 오브젝트 {n}개 · 바이노럴
+	Headphones: {error}. Playing through the speakers.	헤드폰: {error}. 스피커로 재생합니다.

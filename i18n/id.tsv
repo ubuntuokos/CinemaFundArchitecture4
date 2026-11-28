@@ -4991,3 +4991,9 @@
 	DNx Coding	Pengodean DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Kompatibel dengan FFmpeg (untuk alat berbasis FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Mati: dienkode menurut SMPTE ST 2019-1. Nyala: dienkode seperti FFmpeg menulis DNx, untuk alat yang dibangun di atas FFmpeg.
+	Loading HRTF…	Memuat HRTF…
+	Headphones (Binaural)	Headphone (binaural)
+	Binaural	Binaural
+	{layout} · binaural	{layout} · binaural
+	{source} · {n} objects · binaural	{source} · {n} objek · binaural
+	Headphones: {error}. Playing through the speakers.	Headphone: {error}. Suara diputar lewat speaker.

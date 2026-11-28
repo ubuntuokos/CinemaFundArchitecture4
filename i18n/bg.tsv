@@ -4986,3 +4986,9 @@ export.summary	Low	ниско
 	DNx Coding	Кодиране на DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Съвместимо с FFmpeg (за инструменти на базата на FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Изкл.: кодиране по SMPTE ST 2019-1. Вкл.: кодиране както FFmpeg записва DNx, за инструменти, изградени върху FFmpeg.
+	Loading HRTF…	Зареждане на HRTF…
+	Headphones (Binaural)	Слушалки (бинаурално)
+	Binaural	Бинаурално
+	{layout} · binaural	{layout} · бинаурално
+	{source} · {n} objects · binaural	{source} · {n} обекта · бинаурално
+	Headphones: {error}. Playing through the speakers.	Слушалки: {error}. Звукът е през високоговорителите.

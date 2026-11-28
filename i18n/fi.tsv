@@ -4985,3 +4985,9 @@ export.summary	Low	matala
 	DNx Coding	DNx-koodaus
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-yhteensopiva (FFmpeg-pohjaisille työkaluille)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Pois: koodattu SMPTE ST 2019-1:n mukaan. Päällä: koodattu niin kuin FFmpeg kirjoittaa DNx:n, FFmpegiin perustuville työkaluille.
+	Loading HRTF…	Ladataan HRTF:ää…
+	Headphones (Binaural)	Kuulokkeet (binauraalinen)
+	Binaural	Binauraalinen
+	{layout} · binaural	{layout} · binauraalinen
+	{source} · {n} objects · binaural	{source} · {n} objektia · binauraalinen
+	Headphones: {error}. Playing through the speakers.	Kuulokkeet: {error}. Ääni kuuluu kaiuttimista.
