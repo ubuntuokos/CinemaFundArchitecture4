@@ -495,6 +495,7 @@ graph LR
 | `cfa4-export/raster.rs` | `cfa4-time` | `FrameRate`, `Tick`, `frames_to_fields` |
 | `cfa4-export/settings.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-export/smart_cut.rs` | `cfa4-smart-edit` | `av1_index`, `capabilities`, `media_index`, `plan`, `timestamp` |
+| `cfa4-export/smart_cut_mkv.rs` | `cfa4-smart-edit` | `audio_index`, `av1_index`, `capabilities`, `media_index`, `plan`, `timestamp` |
 | `cfa4-export/smart_cut_mpeg.rs` | `cfa4-smart-edit` | `capabilities`, `media_index`, `mpeg2_index`, `plan`, `timestamp` |
 | `cfa4-export/still.rs` | `cfa4-color` | `linear_to_srgb` |
 | `cfa4-export/still.rs` | `cfa4-media` | `still` |
@@ -845,7 +846,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 660 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 661 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (32)
 
@@ -930,7 +931,7 @@ A többi 660 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-smart-edit` | `media_index.rs` | enum | `DependencyStatus` |
 | `cfa4-testkit` | `fixtures.rs` | enum | `Status` |
 
-### Hang (53)
+### Hang (55)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -961,6 +962,8 @@ A többi 660 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-export` | `settings.rs` | struct | `AudioSettings` |
 | `cfa4-export` | `settings.rs` | struct | `LoudnessNormalization` |
 | `cfa4-export` | `settings.rs` | enum | `SampleFormat` |
+| `cfa4-export` | `smart_cut_mkv.rs` | struct | `MkvAudio` |
+| `cfa4-export` | `smart_cut_mkv.rs` | struct | `MkvAudioCopy` |
 | `cfa4-export` | `smart_cut_mpeg.rs` | struct | `MpegAudioDrop` |
 | `cfa4-export` | `smart_cut_mpeg.rs` | struct | `MpegAudioReport` |
 | `cfa4-export` | `smart_cut_mpeg.rs` | struct | `MpegAudioTrack` |
@@ -1011,7 +1014,7 @@ A többi 660 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-gpu` | `lut.rs` | struct | `GpuLut` |
 | `cfa4-project` | `lib.rs` | struct | `ProjectLut` |
 
-### Render, kompozíció, előnézet, proxy (65)
+### Render, kompozíció, előnézet, proxy (66)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -1034,6 +1037,7 @@ A többi 660 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-export` | `settings.rs` | struct | `ExportEffects` |
 | `cfa4-export` | `settings.rs` | enum | `GpuRendering` |
 | `cfa4-export` | `smart_cut.rs` | struct | `Mp4CopySource` |
+| `cfa4-export` | `smart_cut_mkv.rs` | struct | `MkvCopySource` |
 | `cfa4-export` | `smart_cut_mpeg.rs` | struct | `MpegCopySource` |
 | `cfa4-export` | `timeline_render.rs` | struct | `RenderedPicture` |
 | `cfa4-export` | `timeline_render.rs` | struct | `TimelineSource` |
