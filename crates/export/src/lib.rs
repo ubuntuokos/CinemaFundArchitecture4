@@ -51,6 +51,7 @@ pub mod presets;
 mod raster;
 pub mod settings;
 pub mod smart_cut;
+pub mod smart_cut_cross;
 pub mod smart_cut_mkv;
 pub mod smart_cut_mpeg;
 pub mod still;
@@ -3762,6 +3763,8 @@ mod mpeg2_tests;
 mod mxf_tests;
 #[cfg(test)]
 mod smart_cut_av1_tests;
+#[cfg(test)]
+mod smart_cut_cross_tests;
 #[cfg(test)]
 mod smart_cut_edge_tests;
 #[cfg(test)]

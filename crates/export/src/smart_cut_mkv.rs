@@ -82,10 +82,10 @@ pub struct MkvCopyReport {
 }
 
 /// The source video frames a lossless plan copies, checked against the index and the track.
-struct VideoRange<'a> {
-    track: &'a Track,
-    first: usize,
-    last: usize,
+pub(crate) struct VideoRange<'a> {
+    pub track: &'a Track,
+    pub first: usize,
+    pub last: usize,
 }
 
 /// The output container must carry the codec: WebM only takes AV1 video (of the codecs Smart Cut
@@ -103,6 +103,17 @@ fn video_range<'a, S: ByteSource + ?Sized>(
     index: &StreamIndex,
     source: &MkvCopySource<'a, S>,
 ) -> Result<VideoRange<'a>, SmartCutError> {
+    mkv_video_range(plan, index, source, output_doc_type(plan.codec, plan.output_container).is_some())
+}
+
+/// [`video_range`] for any output: `output_ok` says whether the executor writes the plan's
+/// output container (Matroska / WebM here, MP4 / MOV for the cross-container copy).
+pub(crate) fn mkv_video_range<'a, S: ByteSource + ?Sized>(
+    plan: &ExportExecutionPlan,
+    index: &StreamIndex,
+    source: &MkvCopySource<'a, S>,
+    output_ok: bool,
+) -> Result<VideoRange<'a>, SmartCutError> {
     if plan.plan_version != PLAN_VERSION {
         return Err(SmartCutError::PlanVersion { found: plan.plan_version });
     }
@@ -113,11 +124,7 @@ fn video_range<'a, S: ByteSource + ?Sized>(
         return Err(SmartCutError::TimelinePlan);
     }
     let unsupported = SmartCutError::Unsupported { codec: plan.codec, source: plan.source_container, output: plan.output_container };
-    if !matches!(plan.source_container, Container::Matroska | Container::WebM)
-        || output_doc_type(plan.codec, plan.output_container).is_none()
-        || index.codec != plan.codec
-        || source.video.codec != plan.codec
-    {
+    if !matches!(plan.source_container, Container::Matroska | Container::WebM) || !output_ok || index.codec != plan.codec || source.video.codec != plan.codec {
         return Err(unsupported);
     }
     let track = source.file.tracks.get(source.video.track).ok_or(SmartCutError::NoTrack { track: source.video.track })?;
@@ -195,6 +202,13 @@ pub fn plan_mkv_audio<S: ByteSource + ?Sized>(file: &MkvFile, bytes: &S, output:
         };
         if output == Container::WebM {
             plan.dropped.push(drop(format!("WebM carries only Opus and Vorbis audio, not {}", t.codec_id)));
+            continue;
+        }
+        // into MP4 / MOV the track needs a sample entry built from the Matroska track (R2-05)
+        if matches!(output, Container::Mp4 | Container::Mov)
+            && let Err(reason) = crate::smart_cut_cross::mp4_audio_entry(t)
+        {
+            plan.dropped.push(drop(reason));
             continue;
         }
         if !t.frames_readable() {
@@ -289,7 +303,9 @@ pub fn mkv_cut_interval<S: ByteSource + ?Sized>(
     index: &StreamIndex,
     source: &MkvCopySource<'_, S>,
 ) -> Result<(i64, i64), SmartCutError> {
-    let r = video_range(plan, index, source)?;
+    // a Matroska / WebM output, or MP4 / MOV through the cross-container copy (R2-05)
+    let output_ok = output_doc_type(plan.codec, plan.output_container).is_some() || crate::smart_cut_cross::mp4_video_output(plan);
+    let r = mkv_video_range(plan, index, source, output_ok)?;
     let (start, end) = video_span(&r);
     // a track without frame durations: the plan's duration ends the cut
     let d = plan.expected_duration;

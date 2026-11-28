@@ -4173,6 +4173,13 @@
    "class": "other",
    "crate": "cfa4-export",
    "kind": "struct",
+   "module": "smart_cut_cross.rs",
+   "name": "CrossReport"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-export",
+   "kind": "struct",
    "module": "smart_cut_mkv.rs",
    "name": "MkvCopyReport"
   },
@@ -11675,6 +11682,26 @@
   {
    "from": "cfa4-export/smart_cut.rs",
    "item": "timestamp",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/smart_cut_cross.rs",
+   "item": "av1_index",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/smart_cut_cross.rs",
+   "item": "capabilities",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/smart_cut_cross.rs",
+   "item": "media_index",
+   "to": "cfa4-smart-edit"
+  },
+  {
+   "from": "cfa4-export/smart_cut_cross.rs",
+   "item": "plan",
    "to": "cfa4-smart-edit"
   },
   {
