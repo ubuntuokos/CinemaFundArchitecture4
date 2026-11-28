@@ -28,6 +28,7 @@ cfa4-cfb = { path = "../crates/cfb" }
 cfa4-cineform = { path = "../crates/cineform" }
 cfa4-credits = { path = "../crates/credits" }
 cfa4-dcp = { path = "../crates/dcp" }
+cfa4-dvd = { path = "../crates/dvd" }
 cfa4-dng = { path = "../crates/dng" }
 cfa4-dnx = { path = "../crates/dnx" }
 cfa4-dts = { path = "../crates/dts" }
@@ -734,6 +735,13 @@ bench = false
 [[bin]]
 name = "indeo"
 path = "fuzz_targets/indeo.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dvd"
+path = "fuzz_targets/dvd.rs"
 test = false
 doc = false
 bench = false

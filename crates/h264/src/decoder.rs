@@ -493,6 +493,9 @@ impl Decoder {
             self.prev_ref_frame_num = 0;
         } else {
             let max = sps.max_frame_num();
+            // A new SPS may have a smaller MaxFrameNum than the one the previous reference picture was
+            // decoded under; wrap it so the gap arithmetic below cannot underflow (a fuzz finding).
+            self.prev_ref_frame_num %= max;
             if sh.frame_num != self.prev_ref_frame_num && sh.frame_num != (self.prev_ref_frame_num + 1) % max {
                 let gap = (sh.frame_num + max - self.prev_ref_frame_num - 1) % max;
                 if gap > MAX_INFERRED_GAP_FRAMES {

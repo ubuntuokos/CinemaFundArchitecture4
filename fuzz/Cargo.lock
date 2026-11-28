@@ -333,6 +333,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-dvd"
+version = "0.10.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "cfa4-evc"
 version = "0.10.0"
 dependencies = [
@@ -395,6 +402,7 @@ dependencies = [
  "cfa4-dnx",
  "cfa4-dts",
  "cfa4-dv",
+ "cfa4-dvd",
  "cfa4-evc",
  "cfa4-ffv1",
  "cfa4-flic",
@@ -637,6 +645,7 @@ dependencies = [
  "cfa4-jxl",
  "cfa4-realaudio",
  "cfa4-time",
+ "cfa4-truehd",
  "cfa4-truespeech",
  "cfa4-twinvq",
  "cfa4-yamaha-oki",

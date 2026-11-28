@@ -433,7 +433,12 @@ impl Sps {
         };
         if let Some((l, rr, t, b)) = sps.frame_crop {
             let (cx, cy) = sps.crop_unit();
-            ensure!((l + rr) * cx < sps.width() && (t + b) * cy < sps.height(), "frame cropping exceeds picture size");
+            // ue(v) offsets reach 2^32 - 2, so the sums and products are made in u64 (a fuzz finding).
+            let (l, rr, t, b) = (u64::from(l), u64::from(rr), u64::from(t), u64::from(b));
+            ensure!(
+                (l + rr) * u64::from(cx) < u64::from(sps.width()) && (t + b) * u64::from(cy) < u64::from(sps.height()),
+                "frame cropping exceeds picture size"
+            );
         }
         Ok(sps)
     }
