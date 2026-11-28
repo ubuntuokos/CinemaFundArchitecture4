@@ -603,6 +603,49 @@ fn legacy_marker1_reads_its_range() {
 // `CFA4_OTIO_SAMPLES_DIR` is set (relative paths are taken from the workspace root).
 // ---------------------------------------------------------------------------------------------
 
+/// OTIO-2.6 (H7): a transition another program wrote, of a type CFA4 does not know, is read as a
+/// dissolve but keeps its type, name and metadata, and writes them back, also after a second trip.
+#[test]
+fn foreign_transitions_keep_their_type_and_metadata() {
+    let rt = |v: i64| format!(r#"{{"OTIO_SCHEMA": "RationalTime.1", "rate": 25, "value": {v}}}"#);
+    let tr = |s: i64, d: i64| format!(r#"{{"OTIO_SCHEMA": "TimeRange.1", "start_time": {}, "duration": {}}}"#, rt(s), rt(d));
+    let clip = |n: &str| {
+        format!(
+            r#"{{"OTIO_SCHEMA": "Clip.2", "name": "{n}", "source_range": {}, "media_references": {{"DEFAULT_MEDIA": {{"OTIO_SCHEMA": "ExternalReference.1", "target_url": "/m/{n}.mov", "available_range": {}}}}}, "active_media_reference_key": "DEFAULT_MEDIA"}}"#,
+            tr(50, 100),
+            tr(0, 500)
+        )
+    };
+    let doc = format!(
+        r#"{{"OTIO_SCHEMA": "Timeline.1", "name": "Tx", "tracks": {{"OTIO_SCHEMA": "Stack.1", "children": [
+            {{"OTIO_SCHEMA": "Track.1", "kind": "Video", "name": "V1", "children": [{}, {{"OTIO_SCHEMA": "Transition.1", "name": "Starburst", "transition_type": "Vendor_Wipe",
+              "in_offset": {}, "out_offset": {}, "metadata": {{"vendor": {{"k": 1}}}}}}, {}]}}]}}}}"#,
+        clip("a"),
+        rt(5),
+        rt(5),
+        clip("b"),
+    );
+    let check = |text: &str| {
+        let out: serde_json::Value = serde_json::from_str(text).unwrap();
+        let t = out["tracks"]["children"][0]["children"].as_array().unwrap().iter().find(|c| c["OTIO_SCHEMA"] == "Transition.1").unwrap().clone();
+        assert_eq!(t["transition_type"], "Vendor_Wipe");
+        assert_eq!(t["name"], "Starburst");
+        assert_eq!(t["metadata"]["vendor"]["k"], 1);
+        assert!(t["metadata"]["cfa4"].is_object());
+        assert!(t["metadata"].get("transition").is_none(), "the kept type is not written as metadata");
+    };
+    let (imp, rep) = import(doc.as_bytes(), Format::Otio, None).unwrap();
+    assert!(rep.to_string().contains("Starburst") || rep.to_string().contains("Vendor_Wipe"), "reported: {rep}");
+    let sid = only_seq(&imp);
+    let trn = &imp.project.sequence(sid).unwrap().tracks(TrackKind::Video)[0].transitions[0];
+    assert_eq!(trn.interchange["vendor"]["k"], 1);
+    let export = |p: &Project, s| String::from_utf8(cfa4_interchange::export(p, s, Format::Otio, &ExportOptions::default()).unwrap().0).unwrap();
+    let text = export(&imp.project, sid);
+    check(&text);
+    let (again, _) = import(text.as_bytes(), Format::Otio, None).unwrap();
+    check(&export(&again.project, only_seq(&again)));
+}
+
 /// Differences between what the import of one sample gave and what `samples.json` expects.
 fn sample_problems(imp: &cfa4_interchange::Imported, report: &cfa4_interchange::Report, want: &serde_json::Value) -> Vec<String> {
     // OTIO stores floating-point frame counts: 1 µs is far below one audio sample at 48 kHz.
