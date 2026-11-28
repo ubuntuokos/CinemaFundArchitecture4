@@ -1,7 +1,7 @@
 # CFA4-SCE-001 P2a, 1. szelet: MpegTsProfile és SDT
 
 **Dátum:** 2026-11-27
-**Státusz:** tervezet, tulajdonosi jóváhagyásra vár
+**Státusz:** végleges, a tulajdonos jóváhagyta (2026-11-28)
 **Szülőterv:** [CFA4-SCE-001 v1.5](CFA4-SCE-001-STREAM-COPY-EXPORT-2026-10-27.md), 12.6/2 (profilmodell) és 12.6/4 (SDT) · **Audit:** [SCE-001-P0-AUDIT-2026-11-08](../audit/SCE-001-P0-AUDIT-2026-11-08.md), 4.2/4–5
 **Ütemezési kivétel:** a tulajdonos 2026-11-27-én a Qt6-kapu előtt (qt-parity 77/80 ✅) engedélyezte a P2a profil- és SDT-részének indítását, a P2-höz hasonlóan (2026-11-08).
 
@@ -57,4 +57,4 @@ Egy PR (`SCE-001 P2a.1`), CodeRabbit: kell (a `cfa4-mpegts` konténer-crate). K�
 
 ## 6. Kérdés a tulajdonosnak
 
-Nincs nyitott döntés: a fenti alapértékek a szülőterv 12.6/2 pontját követik. Ha a 2. szelet idejére a #1857 még nyitva van, ezt jelzem, és nem építek az ágára.
+Nincs nyitott döntés (jóváhagyva 2026-11-28): a fenti alapértékek a szülőterv 12.6/2 pontját követik. Ha a 2. szelet idejére a #1857 még nyitva van, ezt jelzem, és nem építek az ágára.
