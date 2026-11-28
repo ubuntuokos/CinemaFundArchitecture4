@@ -123,7 +123,7 @@ SUBCOMMANDS
                                 optional render plan; prints the cfa4-qc-report/1 JSON, or saves
                                 it with --out; --contact-sheet writes the frame overview PNG.
                                 Exit code: 0 PASS, 3 WARN, 4 FAIL, 5 INCOMPLETE
-  bench-decode <media> [--frames N]
+  bench-decode <media> [--frames N] [--hash]
   settings schema [category]    the Settings schema (groups, categories, fields, values) as JSON
   settings get [key]            the saved preferences of the data directory, or one key
   settings set '<json>'         set preferences (a JSON object of key: value); validated and saved
@@ -335,6 +335,38 @@ fn register_gstreamer() {
     }
 }
 
+/// A decoded picture's samples into `hash`, plane by plane (16-bit samples little-endian), with
+/// its size and format, so two decoders' outputs compare bit for bit.
+fn hash_samples(hash: &mut sha2::Sha256, frame: &cfa4_frame::VideoFrame) {
+    use cfa4_frame::PixelData;
+    use sha2::Digest;
+    hash.update(frame.width.to_le_bytes());
+    hash.update(frame.height.to_le_bytes());
+    let wide = |hash: &mut sha2::Sha256, plane: &[u16]| plane.iter().for_each(|s| hash.update(s.to_le_bytes()));
+    match &frame.data {
+        PixelData::Rgba8(p) => {
+            hash.update(b"rgba8");
+            hash.update(p.as_slice());
+        }
+        PixelData::RgbaF32(p) => {
+            hash.update(b"rgbaf32");
+            p.iter().for_each(|s| hash.update(s.to_le_bytes()));
+        }
+        PixelData::Yuv8 { planes, chroma, alpha } => {
+            hash.update(format!("yuv8 {chroma:?} alpha={}", alpha.is_some()));
+            planes.iter().chain(alpha).for_each(|p| hash.update(p.as_slice()));
+        }
+        PixelData::Yuv16 { planes, chroma, bits, alpha } => {
+            hash.update(format!("yuv16 {chroma:?} bits={bits} alpha={}", alpha.is_some()));
+            planes.iter().chain(alpha).for_each(|p| wide(hash, p));
+        }
+        PixelData::Rgb16 { planes, bits, alpha } => {
+            hash.update(format!("rgb16 bits={bits} alpha={}", alpha.is_some()));
+            planes.iter().chain(alpha).for_each(|p| wide(hash, p));
+        }
+    }
+}
+
 fn register_hardware_decoders() -> cfa4_platform::Availability {
     cfa4_platform::register()
 }
@@ -409,14 +441,38 @@ async fn cli() {
         "bench-decode" => {
             let path = a.pos(1).unwrap_or_else(|| usage("bench-decode <media>"));
             let n: i64 = a.opt("--frames").and_then(|v| v.parse().ok()).unwrap_or(120);
+            // `--hash`: SHA-256 over every decoded picture's samples, to compare decoders bit for bit
+            let mut hash = a.flag("--hash").then(sha2::Sha256::default);
             let src = cfa4_codecs::open_bytes(path, read_file(path).await.unwrap_or_else(|e| fail(e)).into()).unwrap_or_else(|e| fail(e));
             let rate = src.info().frame_rate();
+            let (hw_before, (_, arrays_before)) = (cfa4_codecs::hw::hw_stats(), cfa4_platform::nvdec_cuda_array_output());
             let t0 = std::time::Instant::now();
             for f in 0..n {
-                src.video_frame(cfa4_media::FrameRequest::full(rate.tick_of(f))).unwrap_or_else(|e| fail(e));
+                let frame = src.video_frame(cfa4_media::FrameRequest::full(rate.tick_of(f))).unwrap_or_else(|e| fail(e));
+                if let Some(h) = hash.as_mut() {
+                    hash_samples(h, &frame);
+                }
             }
             let dt = t0.elapsed().as_secs_f64();
             outln!("{n} frames in {dt:.2}s → {:.1} fps (sequential, via Mp4Source)", n as f64 / dt);
+            // which decoder actually ran during the measurement (CFA4-NVDEC-CUARRAY-001 compares the
+            // NVDEC outputs): the counters' change, not the backend registered at startup
+            let hw = cfa4_codecs::hw::hw_stats();
+            let (on, arrays) = cfa4_platform::nvdec_cuda_array_output();
+            outln!(
+                "hardware decoder: {} ({} hardware pictures, {} fallbacks to software, {} declined); NVDEC CUDA-array output: {} ({} pictures)",
+                cfa4_codecs::hw::hw_backend().unwrap_or("none"),
+                hw.frames - hw_before.frames,
+                hw.fallbacks - hw_before.fallbacks,
+                hw.declined - hw_before.declined,
+                if on { "on" } else { "off" },
+                arrays - arrays_before
+            );
+            if let Some(h) = hash {
+                use sha2::Digest;
+                let digest: String = h.finalize().iter().map(|b| format!("{b:02x}")).collect();
+                outln!("decoded samples sha256: {digest}");
+            }
             let t1 = std::time::Instant::now();
             let f = src.video_frame(cfa4_media::FrameRequest::full(rate.tick_of(n / 2))).unwrap_or_else(|e| fail(e));
             let (w, h, _) = f.to_linear_f32_decimated(2);

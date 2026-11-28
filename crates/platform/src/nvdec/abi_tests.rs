@@ -132,3 +132,47 @@ fn constants_match_the_header() {
     assert_eq!(7u8, 7);
     assert_eq!(1u8 << 3, 8);
 }
+/// The CUDA-array output (Video Codec SDK 13.1, CFA4-NVDEC-CUARRAY-001): layouts and constants from
+/// GCC over nv-codec-headers n13.1.15.0 (`dynlink_cuviddec.h`, `dynlink_cuda.h`).
+#[test]
+fn cuda_array_layouts_match_the_header() {
+    assert_eq!((size_of::<CUVIDREGISTERDECODESURFACESINFO>(), align_of::<CUVIDREGISTERDECODESURFACESINFO>()), (384, 8));
+    assert_eq!(offset_of!(CUVIDREGISTERDECODESURFACESINFO, ulNumDecodeSurfaces), 0);
+    assert_eq!(offset_of!(CUVIDREGISTERDECODESURFACESINFO, reserved), 4);
+    assert_eq!(offset_of!(CUVIDREGISTERDECODESURFACESINFO, pDecodeSurfaces), 128);
+    assert_eq!(offset_of!(CUVIDREGISTERDECODESURFACESINFO, pDecodeStatsSurfaces), 136);
+    assert_eq!(offset_of!(CUVIDREGISTERDECODESURFACESINFO, pReserved), 144);
+    assert_eq!((size_of::<CUDA_ARRAY3D_DESCRIPTOR>(), align_of::<CUDA_ARRAY3D_DESCRIPTOR>()), (40, 8));
+    assert_eq!(offset_of!(CUDA_ARRAY3D_DESCRIPTOR, Width), 0);
+    assert_eq!(offset_of!(CUDA_ARRAY3D_DESCRIPTOR, Height), 8);
+    assert_eq!(offset_of!(CUDA_ARRAY3D_DESCRIPTOR, Depth), 16);
+    assert_eq!(offset_of!(CUDA_ARRAY3D_DESCRIPTOR, Format), 24);
+    assert_eq!(offset_of!(CUDA_ARRAY3D_DESCRIPTOR, NumChannels), 28);
+    assert_eq!(offset_of!(CUDA_ARRAY3D_DESCRIPTOR, Flags), 32);
+    assert_eq!((size_of::<CUDA_MEMCPY2D>(), align_of::<CUDA_MEMCPY2D>()), (128, 8));
+    for (offset, expected) in [
+        (offset_of!(CUDA_MEMCPY2D, srcXInBytes), 0),
+        (offset_of!(CUDA_MEMCPY2D, srcY), 8),
+        (offset_of!(CUDA_MEMCPY2D, srcMemoryType), 16),
+        (offset_of!(CUDA_MEMCPY2D, srcHost), 24),
+        (offset_of!(CUDA_MEMCPY2D, srcDevice), 32),
+        (offset_of!(CUDA_MEMCPY2D, srcArray), 40),
+        (offset_of!(CUDA_MEMCPY2D, srcPitch), 48),
+        (offset_of!(CUDA_MEMCPY2D, dstXInBytes), 56),
+        (offset_of!(CUDA_MEMCPY2D, dstY), 64),
+        (offset_of!(CUDA_MEMCPY2D, dstMemoryType), 72),
+        (offset_of!(CUDA_MEMCPY2D, dstHost), 80),
+        (offset_of!(CUDA_MEMCPY2D, dstDevice), 88),
+        (offset_of!(CUDA_MEMCPY2D, dstArray), 96),
+        (offset_of!(CUDA_MEMCPY2D, dstPitch), 104),
+        (offset_of!(CUDA_MEMCPY2D, WidthInBytes), 112),
+        (offset_of!(CUDA_MEMCPY2D, Height), 120),
+    ] {
+        assert_eq!(offset, expected);
+    }
+    assert_eq!((cudaVideoSurfaceFormat_NV12_Opaque, cudaVideoSurfaceFormat_P016_Opaque), (6, 7));
+    assert_eq!((CU_AD_FORMAT_NV12, CU_AD_FORMAT_P016), (0xb0, 0xa1));
+    assert_eq!((CUDA_ARRAY3D_SURFACE_LDST, CUDA_ARRAY3D_VIDEO_ENCODE_DECODE), (0x02, 0x100));
+    assert_eq!((CU_MEMORYTYPE_HOST, CU_MEMORYTYPE_ARRAY), (1, 3));
+    assert_eq!(MAX_NUM_REGISTERED_DECODE_SURFACES, 32);
+}

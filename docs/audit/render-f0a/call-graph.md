@@ -118,6 +118,7 @@ graph LR
 | `cfa4-cli/main.rs` | `cfa4-engine` | `Session`, `autosave`, `media_pool`, `render` |
 | `cfa4-cli/main.rs` | `cfa4-export` | `FrameRenderer`, `register_frame_renderer` |
 | `cfa4-cli/main.rs` | `cfa4-ffmpeg` | `register`, `register_status` |
+| `cfa4-cli/main.rs` | `cfa4-frame` | `PixelData`, `VideoFrame` |
 | `cfa4-cli/main.rs` | `cfa4-gpu` | `ExportRenderer` |
 | `cfa4-cli/main.rs` | `cfa4-gstreamer` | `register`, `register_status` |
 | `cfa4-cli/main.rs` | `cfa4-media` | `FrameRequest` |

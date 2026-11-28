@@ -183,6 +183,29 @@ pub fn vaapi_factory(entry: &cfa4_isobmff::SampleEntry) -> Option<cfa4_codecs::R
     }
 }
 
+/// NVDEC output into CUDA arrays (CFA4-NVDEC-CUARRAY-001): whether it is switched on for new
+/// decoders, and how many pictures this process's decoders have read out of CUDA arrays so far.
+/// `(false, 0)` where NVDEC does not exist.
+pub fn nvdec_cuda_array_output() -> (bool, u64) {
+    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+    {
+        (nvdec::opaque::enabled(), nvdec::opaque::array_frames())
+    }
+    #[cfg(not(all(target_os = "linux", target_pointer_width = "64")))]
+    {
+        (false, 0)
+    }
+}
+
+/// Switch NVDEC output into CUDA arrays on or off for decoders created afterwards; it is used only
+/// where the driver (610 or newer) and the stream allow it. A no-op where NVDEC does not exist.
+pub fn set_nvdec_cuda_array_output(on: bool) {
+    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+    nvdec::opaque::set_enabled(on);
+    #[cfg(not(all(target_os = "linux", target_pointer_width = "64")))]
+    let _ = on;
+}
+
 /// The NVDEC factory: a [`HybridDecoder`] around [`nvdec::NvDecoder`] for H.264 and HEVC streams
 /// this system's NVIDIA GPU decodes, `None` otherwise (VA-API and the software decoders keep those).
 #[cfg(all(target_os = "linux", target_pointer_width = "64"))]

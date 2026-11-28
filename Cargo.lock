@@ -1308,6 +1308,7 @@ dependencies = [
  "cfa4-tts",
  "log",
  "serde_json",
+ "sha2 0.11.1",
  "tokio",
  "wgpu",
 ]
