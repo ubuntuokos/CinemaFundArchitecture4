@@ -21,6 +21,7 @@
 //! - [`SceneRenderer`] (B-02): a scene of beds and moving objects with timed updates, with size,
 //!   Dolby's headphone render modes and a room; [`atmos`] feeds it from Dolby TrueHD Atmos and
 //!   IAB.
+//! - [`ChannelMonitor`] (B-03): a monitor's channel mix through headphones, block after block.
 //!
 //! Positions are in metres in the listener's frame: x to the right, y up, -z straight ahead.
 //! Nothing here allocates once a renderer is made (a scene may when an update is scheduled), and
@@ -30,6 +31,7 @@ pub mod atmos;
 mod binaural;
 mod dsp;
 mod file;
+pub mod monitor;
 mod near_field;
 mod near_field_table;
 mod resample;
@@ -38,6 +40,7 @@ mod set;
 mod speakers;
 
 pub use binaural::{Binaural, BinauralConfig};
+pub use monitor::{ChannelMonitor, MonitorConfig, ObjectMonitor};
 pub use near_field::{NearFieldFilter, ear_direction, near_field};
 pub use scene::{HeadphoneMode, Placement, SceneConfig, SceneRenderer, SceneState};
 pub use set::{HrtfSet, Neighbours};
