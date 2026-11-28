@@ -2353,6 +2353,13 @@
    "class": "other",
    "crate": "cfa4-cli",
    "kind": "struct",
+   "module": "binaural_cmd.rs",
+   "name": "Options"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-cli",
+   "kind": "struct",
    "module": "serve.rs",
    "name": "Reply"
   },
@@ -6978,6 +6985,31 @@
   }
  ],
  "use_edges": [
+  {
+   "from": "cfa4-cli/binaural_cmd.rs",
+   "item": "channels",
+   "to": "cfa4-audio-dsp"
+  },
+  {
+   "from": "cfa4-cli/binaural_cmd.rs",
+   "item": "SampleFormat",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-cli/binaural_cmd.rs",
+   "item": "write_wav",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-cli/binaural_cmd.rs",
+   "item": "MediaSource",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-cli/binaural_cmd.rs",
+   "item": "open_with_fallback",
+   "to": "cfa4-media"
+  },
   {
    "from": "cfa4-cli/codecs_cmd.rs",
    "item": "Format",

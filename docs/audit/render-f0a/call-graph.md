@@ -113,6 +113,9 @@ graph LR
 
 | Modul | Hivatkozott crate | Elemek |
 |---|---|---|
+| `cfa4-cli/binaural_cmd.rs` | `cfa4-audio-dsp` | `channels` |
+| `cfa4-cli/binaural_cmd.rs` | `cfa4-export` | `SampleFormat`, `write_wav` |
+| `cfa4-cli/binaural_cmd.rs` | `cfa4-media` | `MediaSource`, `open_with_fallback` |
 | `cfa4-cli/codecs_cmd.rs` | `cfa4-export` | `Format`, `available` |
 | `cfa4-cli/codecs_cmd.rs` | `cfa4-gstreamer` | `compiled_in`, `probe` |
 | `cfa4-cli/main.rs` | `cfa4-engine` | `Session`, `autosave`, `media_pool`, `render` |
@@ -842,7 +845,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 658 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 659 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (32)
 

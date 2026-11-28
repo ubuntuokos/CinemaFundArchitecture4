@@ -201,3 +201,34 @@ fn full_scale_32_bit_stereo_round_trips() {
     let mut enc = Encoder::new(EncoderConfig::new(48_000, 2, 32)).unwrap();
     assert!(enc.encode(&[&[i32::MIN, i32::MAX], &[0, -1]]).is_ok());
 }
+
+#[test]
+fn comments_are_read_back_and_the_audio_is_unchanged() {
+    let Some(ffmpeg) = ffmpeg() else { return };
+    let planar = [signal("music", 10_000, 24, 7), signal("sweep", 10_000, 24, 8)];
+    let mut enc = Encoder::new(EncoderConfig::new(48_000, 2, 24)).unwrap();
+    let comments = ["COMMENT=binaural, HRTF: SADIE II KU100".to_owned(), "TITLE=árvíztűrő".to_owned()];
+    let mut file = enc.header_with_comments(&comments);
+    let parts: Vec<&[i32]> = planar.iter().map(Vec::as_slice).collect();
+    file.extend(enc.encode(&parts).unwrap());
+    file.extend(enc.finish());
+    let o = STREAMINFO_OFFSET as usize;
+    file[o..o + 34].copy_from_slice(&enc.streaminfo());
+    let path = cfa4_testkit::fixtures_dir("flac").join("comments.flac");
+    std::fs::write(&path, &file).unwrap();
+    let (meta, err) = run(&ffmpeg, &["-f", "ffmetadata", "-"], &path);
+    assert!(err.is_empty(), "decoder errors: {err}");
+    let meta = String::from_utf8_lossy(&meta).to_lowercase();
+    assert!(meta.contains("comment=binaural, hrtf: sadie ii ku100"), "{meta}");
+    assert!(meta.contains("title=árvíztűrő"), "{meta}");
+    let (raw, _) = run(&ffmpeg, &["-f", "s32le", "-c:a", "pcm_s32le", "-"], &path);
+    let decoded: Vec<i32> = raw.as_chunks::<4>().0.iter().map(|b| i32::from_le_bytes(*b) >> 8).collect();
+    let expected: Vec<i32> = (0..10_000).flat_map(|i| [planar[0][i], planar[1][i]]).collect();
+    assert_eq!(decoded, expected);
+    // no comments is the plain header
+    assert_eq!(Encoder::new(EncoderConfig::new(48_000, 2, 24)).unwrap().header_with_comments(&[]), enc_header());
+}
+
+fn enc_header() -> Vec<u8> {
+    Encoder::new(EncoderConfig::new(48_000, 2, 24)).unwrap().header()
+}

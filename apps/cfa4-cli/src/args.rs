@@ -26,6 +26,11 @@ const VALUED: &[&str] = &[
     "--profile",
     "--expect",
     "--contact-sheet",
+    "--hrtf",
+    "--room",
+    "--lfe-db",
+    "--rate",
+    "--gain-db",
 ];
 
 #[derive(Debug, Default)]
