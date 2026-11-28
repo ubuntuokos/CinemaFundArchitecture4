@@ -101,6 +101,7 @@ fn transitions_are_their_own_segments() {
         to: Some(b),
         align: Default::default(),
         reverse: false,
+        interchange: Default::default(),
     };
     p.sequence_mut(seq).unwrap().video_tracks[0].transitions.push(tr);
     let s = video_segments(&p, seq);

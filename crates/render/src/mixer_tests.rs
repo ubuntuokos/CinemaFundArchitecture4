@@ -431,6 +431,7 @@ fn audio_transition_on_a_cut_crossfades_through_the_handles() {
         to: Some(b.id),
         align: Default::default(),
         reverse: false,
+        interchange: Default::default(),
     };
     r.track(1).items.clear();
     let t0 = r.track(0);

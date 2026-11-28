@@ -829,6 +829,11 @@ pub struct Transition {
     pub align: TransitionAlign,
     #[serde(default)]
     pub reverse: bool,
+    /// Metadata other programs stored on this transition in an interchange file (the OTIO
+    /// `metadata` keys other than CFA4's own), written back unchanged on export. Empty for CFA4's
+    /// own work, and then not written to the project file.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub interchange: BTreeMap<String, serde_json::Value>,
 }
 
 impl Transition {

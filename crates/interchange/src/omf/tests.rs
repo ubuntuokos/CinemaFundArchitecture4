@@ -63,6 +63,7 @@ fn project() -> (Project, ItemId) {
         to: Some(ids[1]),
         align: TransitionAlign::CenterAtCut,
         reverse: false,
+        interchange: Default::default(),
     });
     q.audio_tracks[0].items[0].gain_db = 6.0;
     (p, s)

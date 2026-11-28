@@ -5388,7 +5388,17 @@ pub fn preview_transition(s: &Session, p: &Value, kind: TrackKind) -> Result<(Tr
     } else {
         cut - dur
     };
-    let tr = Transition { id: TransitionId(0), effect: instance, start: rate.snap(start), duration: dur, from, to, align: Default::default(), reverse };
+    let tr = Transition {
+        id: TransitionId(0),
+        effect: instance,
+        start: rate.snap(start),
+        duration: dur,
+        from,
+        to,
+        align: Default::default(),
+        reverse,
+        interchange: Default::default(),
+    };
     Ok((track, tr))
 }
 

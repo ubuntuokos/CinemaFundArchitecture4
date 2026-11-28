@@ -760,7 +760,17 @@ impl Imp<'_, '_> {
                 TransitionAlign::CenterAtCut
             });
             let reverse = meta.and_then(|m| m.get("reverse")).and_then(Value::as_bool).unwrap_or(false);
-            track.transitions.push(Transition { id: TransitionId(self.b.alloc()), effect, start: cut - inn, duration: inn + out, from, to, align, reverse });
+            track.transitions.push(Transition {
+                id: TransitionId(self.b.alloc()),
+                effect,
+                start: cut - inn,
+                duration: inn + out,
+                from,
+                to,
+                align,
+                reverse,
+                interchange: Default::default(),
+            });
         }
         track.sort();
         seq.tracks_mut(kind).push(track);

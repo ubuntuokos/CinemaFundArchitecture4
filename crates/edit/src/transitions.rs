@@ -256,6 +256,7 @@ mod tests {
             to: to.map(ClipId),
             align: TransitionAlign::CenterAtCut,
             reverse: false,
+            interchange: Default::default(),
         }
     }
 

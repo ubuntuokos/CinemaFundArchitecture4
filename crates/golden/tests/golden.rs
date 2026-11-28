@@ -129,6 +129,7 @@ impl Builder {
             to: Some(b),
             align: Default::default(),
             reverse: false,
+            interchange: Default::default(),
         };
         self.p.sequence_mut(self.seq).unwrap().video_tracks[track].transitions.push(tr);
     }

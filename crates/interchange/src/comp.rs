@@ -934,6 +934,7 @@ fn build_track(b: &mut Builder, track: &mut Track, kind: TrackKind, t: &CTrack, 
             to: next.map(|c| clips[c].id),
             align,
             reverse: false,
+            interchange: Default::default(),
         });
     }
     clips.retain(|c| c.duration > Tick::ZERO);

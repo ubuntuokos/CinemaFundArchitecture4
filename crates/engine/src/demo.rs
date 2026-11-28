@@ -175,6 +175,7 @@ fn build_demo(pool: &MediaPool) -> Option<(Project, ItemId)> {
         to,
         align: Default::default(),
         reverse: false,
+        interchange: Default::default(),
     };
     let cut = |i: usize| placed[i].2;
     let trs = vec![
@@ -193,6 +194,7 @@ fn build_demo(pool: &MediaPool) -> Option<(Project, ItemId)> {
         to: Some(placed[1].1),
         align: Default::default(),
         reverse: false,
+        interchange: Default::default(),
     });
     let end = t;
     // Markers
