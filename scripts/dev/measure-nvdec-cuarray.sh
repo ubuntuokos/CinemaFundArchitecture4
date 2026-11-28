@@ -47,26 +47,38 @@ version="$("$FFMPEG" -version | awk 'NR == 1 { print $3 }')"
 RUNS="${CFA4_MEASURE_RUNS:-3}"
 FRAMES="${CFA4_MEASURE_FRAMES:-240}"
 [[ "$RUNS" =~ ^[1-9][0-9]{0,2}$ ]] || die "CFA4_MEASURE_RUNS must be 1..999, not '$RUNS'"
-[[ "$FRAMES" =~ ^[1-9][0-9]{0,4}$ ]] || die "CFA4_MEASURE_FRAMES must be 1..99999, not '$FRAMES'"
-REPORT="${1:-docs/audit/nvdec-cuarray-$(date -u +%Y%m%d).md}"
+# the fixtures are 12 s at 25 fps: 300 pictures
+[[ "$FRAMES" =~ ^[1-9][0-9]{0,2}$ && "$FRAMES" -le 300 ]] || die "CFA4_MEASURE_FRAMES must be 1..300 (the fixtures' length), not '$FRAMES'"
+if [[ "$IDENTITY_ONLY" == 1 ]]; then kind=identity; else kind=measure; fi
+REPORT="${1:-docs/audit/nvdec-cuarray-$kind-$(date -u +%Y%m%dT%H%M%SZ).md}"
 
 # The compute card: the first GPU whose name has A4000, else GPU 0 (named in the report).
-gpu_line="$(nvidia-smi --query-gpu=index,name,driver_version --format=csv,noheader | awk -F', ' '$2 ~ /A4000/ { print; exit }')"
-[[ -n "$gpu_line" ]] || gpu_line="$(nvidia-smi --query-gpu=index,name,driver_version --format=csv,noheader | head -n 1)"
-IFS=',' read -r gpu_index gpu_name driver <<<"$gpu_line"
+# CUDA_VISIBLE_DEVICES takes the GPU's UUID: nvidia-smi's index need not be CUDA's device order.
+gpu_line="$(nvidia-smi --query-gpu=index,name,driver_version,uuid --format=csv,noheader | awk -F', ' '$2 ~ /A4000/ { print; exit }')"
+[[ -n "$gpu_line" ]] || gpu_line="$(nvidia-smi --query-gpu=index,name,driver_version,uuid --format=csv,noheader | head -n 1)"
+IFS=',' read -r gpu_index gpu_name driver gpu_uuid <<<"$gpu_line"
 gpu_name="${gpu_name# }"
 driver="${driver# }"
-export CUDA_VISIBLE_DEVICES="$gpu_index"
+gpu_uuid="${gpu_uuid# }"
+[[ "$gpu_uuid" == GPU-* ]] || die "no GPU UUID from nvidia-smi: '$gpu_line'"
+export CUDA_VISIBLE_DEVICES="$gpu_uuid"
 kernel_module="$(head -n 1 /proc/driver/nvidia/version)"
 
-FIX="target/fixtures/nvdec-cuarray"
+# per FFmpeg version: a new pinned FFmpeg encodes its own fixtures
+FIX="target/fixtures/nvdec-cuarray/ffmpeg-$CFA4_FFMPEG_VERSION"
 mkdir -p "$FIX"
 make_fixture() { # name size encoder extra...
-    local name="$1" size="$2" encoder="$3"
+    local name="$1" size="$2" encoder="$3" partial
     shift 3
     [[ -s "$FIX/$name" ]] && return 0
-    "$FFMPEG" -hide_banner -loglevel error -y -f lavfi -i "testsrc2=size=$size:rate=25" -t 12 \
-        -c:v "$encoder" "$@" -an "$FIX/$name" || die "cannot encode $name with $encoder"
+    # into a temporary file, renamed only when FFmpeg finished: an interrupted encode is never reused
+    partial="$(mktemp "$FIX/.partial-XXXXXX.mp4")"
+    if ! "$FFMPEG" -hide_banner -loglevel error -y -f lavfi -i "testsrc2=size=$size:rate=25" -t 12 \
+        -c:v "$encoder" "$@" -an "$partial"; then
+        rm -f "$partial"
+        die "cannot encode $name with $encoder"
+    fi
+    mv -f "$partial" "$FIX/$name"
 }
 make_fixture h264_1080p.mp4 1920x1080 h264_nvenc -profile:v high -pix_fmt yuv420p -b:v 20M
 make_fixture h264_2160p.mp4 3840x2160 h264_nvenc -profile:v high -pix_fmt yuv420p -b:v 60M
@@ -116,6 +128,7 @@ for file in "${FILES[@]}"; do
 done
 
 rows=()
+speed_ok=1
 if [[ "$IDENTITY_ONLY" == 0 ]]; then
     for file in "${FILES[@]}"; do
         for run in $(seq 1 "$RUNS"); do
@@ -127,7 +140,11 @@ if [[ "$IDENTITY_ONLY" == 0 ]]; then
                 fps="$(field 's/.*→ \([0-9.]*\) fps.*/\1/p')"
                 counters="$(field 's/^hardware decoder: //p')"
                 read -r _ user sys rss < <(grep '^TIME ' <<<"$OUT")
-                rows+=("| $file | $mode | $run | $((position + 1)) of 2 | ${fps:-?} | $user | $sys | $((rss / 1024)) | ${counters:-?} |")
+                # a run outside its path (array mode decoding pitch-linear, a software fallback) is
+                # kept and marked, and the measurement does not pass
+                path=ok
+                check_counters "$mode" || { path="NOT THE EXPECTED PATH"; speed_ok=0; }
+                rows+=("| $file | $mode | $run | $((position + 1)) of 2 | ${fps:-?} | $user | $sys | $((rss / 1024)) | $path | ${counters:-?} |")
             done
         done
     done
@@ -138,7 +155,7 @@ mkdir -p "$(dirname -- "$REPORT")"
     echo "# NVDEC: pitch-linear surfaces vs CUDA-array output (CFA4-NVDEC-CUARRAY-001)"
     echo
     echo "- Date (UTC): $(date -u +%Y-%m-%dT%H:%MZ); CFA4 $(git rev-parse --short HEAD)"
-    echo "- GPU: $gpu_name (index $gpu_index, CUDA_VISIBLE_DEVICES); driver $driver"
+    echo "- GPU: $gpu_name (nvidia-smi index $gpu_index, CUDA_VISIBLE_DEVICES=$gpu_uuid); driver $driver"
     echo "- Kernel module: \`$kernel_module\`"
     echo "- Method: \`cfa4-cli bench-decode --frames $FRAMES\`; CPU times and peak RSS from \`/usr/bin/time\`."
     echo
@@ -151,10 +168,11 @@ mkdir -p "$(dirname -- "$REPORT")"
     if [[ "$IDENTITY_ONLY" == 0 ]]; then
         echo "## N4 – speed ($RUNS runs per file and mode, the order alternating run by run)"
         echo
-        echo "| File | Output | Run | Order | fps | user s | sys s | peak MiB | Decoder counters of the run |"
-        echo "|------|--------|-----|-------|-----|--------|-------|----------|-----------------------------|"
+        echo "| File | Output | Run | Order | fps | user s | sys s | peak MiB | Path | Decoder counters of the run |"
+        echo "|------|--------|-----|-------|-----|--------|-------|----------|------|-----------------------------|"
         printf '%s\n' "${rows[@]}"
     fi
 } >"$REPORT"
 echo "report: $REPORT"
 [[ "$identity_ok" == 1 ]] || die "N3: the outputs differ or a run left the expected path (see $REPORT)"
+[[ "$speed_ok" == 1 ]] || die "N4: a run left the expected path; its row is marked (see $REPORT)"

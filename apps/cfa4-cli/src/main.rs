@@ -352,12 +352,16 @@ fn hash_samples(hash: &mut sha2::Sha256, frame: &cfa4_frame::VideoFrame) {
             hash.update(b"rgbaf32");
             p.iter().for_each(|s| hash.update(s.to_le_bytes()));
         }
-        PixelData::Yuv8 { planes, alpha, .. } => {
-            hash.update(b"yuv8");
+        PixelData::Yuv8 { planes, chroma, alpha } => {
+            hash.update(format!("yuv8 {chroma:?} alpha={}", alpha.is_some()));
             planes.iter().chain(alpha).for_each(|p| hash.update(p.as_slice()));
         }
-        PixelData::Yuv16 { planes, alpha, .. } | PixelData::Rgb16 { planes, alpha, .. } => {
-            hash.update(b"16");
+        PixelData::Yuv16 { planes, chroma, bits, alpha } => {
+            hash.update(format!("yuv16 {chroma:?} bits={bits} alpha={}", alpha.is_some()));
+            planes.iter().chain(alpha).for_each(|p| wide(hash, p));
+        }
+        PixelData::Rgb16 { planes, bits, alpha } => {
+            hash.update(format!("rgb16 bits={bits} alpha={}", alpha.is_some()));
             planes.iter().chain(alpha).for_each(|p| wide(hash, p));
         }
     }

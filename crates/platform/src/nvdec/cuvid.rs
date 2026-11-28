@@ -769,7 +769,14 @@ impl Drop for Session {
         if self.parser.is_null() {
             // SAFETY: the pointer came from `Box::into_raw` in `new`, is freed only here, and no parser
             // holds it any more (destroyed above), so nothing can reach it afterwards.
-            drop(unsafe { Box::from_raw(self.state.as_ptr()) });
+            let mut state = unsafe { Box::from_raw(self.state.as_ptr()) };
+            // CUDA arrays still here mean the decoder was not destroyed (or the context could not be
+            // made current): the driver may still use them, so they are leaked, not freed
+            if let Some(arrays) = state.arrays.take() {
+                log::warn!("NVDEC CUDA arrays outlive their decoder: leaking them");
+                std::mem::forget(arrays);
+            }
+            drop(state);
         } else {
             log::warn!("NVDEC parser could not be destroyed: leaking its state");
         }
