@@ -974,7 +974,7 @@ pub fn cinepak(data: &[u8]) {
 /// packs in place; the first bytes of the input pick the title set so every audio kind, both video
 /// systems and chapter lists are reached.
 pub fn dvd(data: &[u8]) {
-    use cfa4_dvd::{Audio, AudioKind, TitleSetSpec, Timing};
+    use cfa4_dvd::{Audio, AudioKind, Timing, TitleSetSpec};
     let mut i = Input::new(data);
     let (a, b) = (i.byte(), i.byte());
     let audio = (0..usize::from(a & 3))
