@@ -96,6 +96,41 @@ attribution and original copyright/licence requirements remain in force.
   (§0), the licence rules above, the media-backend routing (`cfa4-route`), vendor neutrality, and the
   `cfa4-restricted-extras` model for patent-encumbered components
   ([docs/licensing.md](docs/licensing.md) §7).
+- **Conditionally excluded technologies: the performance gate** (owner decision, 2026-11-28;
+  [CFA4-RULE-PERF-GATE-001](docs/plans/CFA4-RULE-PERF-GATE-001.md)). A technology CFA4 earlier
+  excluded or did not prefer is not banned outright: it may be used if it provably does not degrade CFA4's operation, performance,
+  stability or user experience. An excluded technology is not an automatically rejected donor:
+  the agent must examine whether integration, optimisation, isolation or optional background
+  processing makes it usable without slowing CFA4 down.
+  - **Check before bringing it in:** performance (no measurable slow-down of core operation);
+    resources (no unjustified CPU, RAM, VRAM, storage or I/O load); responsiveness (GUI,
+    timeline, preview, media import, search and interactive work stay as fast); concurrency (it
+    does not block CFA4's concurrent modules and jobs); stability (no unacceptable rise in errors,
+    hangs, crashes or data loss, §0); integration (no needless new processes, services,
+    dependencies or separate infrastructure); scalability (no unacceptable bottleneck with large
+    projects, long videos, several concurrent jobs or large media libraries); fallback (where
+    reasonable, an alternative mode for when it overloads or underperforms).
+  - **Decision:** it may be used if its effect on CFA4 is acceptable and its benefits justify it.
+    If it slows CFA4 down: (1) optimise the integration; (2) if needed, move it to isolated,
+    background or scheduled processing; (3) where possible, use adaptive resource management;
+    (4) if the slow-down cannot be brought to an acceptable level, it does not go into that
+    operating path.
+  - **Evidence:** performance claims rest on measurement, benchmarks, profiling or other
+    verifiable technical evidence, taken on the reference machine
+    ([`docs/development/reference-machine.md`](docs/development/reference-machine.md)) and
+    recorded in the plan or ADR that brings the technology in. Without measured evidence,
+    suitability may only be marked as a preliminary proposal, never as verified compliance.
+  - **Priority:** the performance of CFA4's core operation comes before adding supplementary
+    technologies.
+  - **Scope:** this gate decides performance only. It does not lift the licence rules above
+    (GPL-2.0-only, AGPL in-process, proprietary code and plug-ins, closed protocols), vendor
+    neutrality, the `cfa4-restricted-extras` model, the security layer (CFA4-SECURITY-001) or
+    §0–§2; a technology excluded for one of those reasons stays excluded unless the owner
+    decides otherwise.
+  - **Excluded outright, the gate does not apply** (owner decision, 2026-11-28): Conda and its
+    family (Anaconda, Miniconda, Miniforge, Mamba, micromamba, conda-forge environments) are never
+    used in CFA4: not in the product, the packages, CI, development tooling or AI workers. Python
+    dependencies come from Ubuntu's packages or a `venv`/`pip` environment.
 - **Translations live in `i18n/`** (owner decision, 2026-11-09). Every interface translation of
   every CFA4 part (the Qt GUI, engine command and menu labels, credits, live graphics and the live
   studio, and every part still to come) goes in the top-level `i18n/` directory, one catalog per
