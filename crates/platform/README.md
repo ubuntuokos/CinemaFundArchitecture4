@@ -45,6 +45,19 @@ let availability = cfa4_platform::register(); // Available("NVDEC") or Available
   stream as Annex B access units, so there is no host-side DPB: `cuvid::Session` creates the decoder
   in the parser's sequence callback, decodes in its picture callback, and reads each displayed
   picture back (NV12 / P016) through the CUDA driver into the same planes as the other backends.
+  **CUDA-array output** (`nvdec/opaque.rs`, CFA4-NVDEC-CUARRAY-001): with
+  Settings ▸ Playback ▸ "NVDEC output into CUDA arrays" (`playback.nvdecCudaArray`, the engine
+  sets `cfa4_codecs::hw::set_nvdec_cuda_array`), `set_nvdec_cuda_array_output(true)` (both also
+  switch it off), or `CFA4_NVDEC_CUDA_ARRAY=1` where nothing set the switch (the CLI's
+  `bench-decode`), a decoder writes into CUDA
+  arrays it registered (Video Codec SDK 13.1 opaque output: `cuvidRegisterDecodeSurfaces`,
+  `cuvidDecodePictureAsync`) and each picture is copied out of its array's two planes. It is used
+  only on a driver of 610 or newer (`/proc/driver/nvidia/version`) whose decoder offers the opaque
+  NV12 / P016 output for the stream, with at most 32 surfaces; otherwise, and on any failure while
+  setting it up, the pitch-linear surfaces are used. Off by default until the measurement on the
+  reference machine (`scripts/dev/measure-nvdec-cuarray.sh`) shows it is faster;
+  `nvdec_cuda_array_output()` counts the pictures read out of CUDA arrays; `cfa4-cli bench-decode`
+  prints the decoder counters of its run, and `--hash` the SHA-256 of the decoded samples.
   The factory goes in front of VA-API's: what NVDEC declines still reaches VA-API (another GPU),
   then the software decoders. With both registered, `perf.stats` names NVDEC as the hardware
   backend, also for the streams VA-API decodes. The callback state is a `Box::into_raw` allocation

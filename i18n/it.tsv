@@ -5005,3 +5005,5 @@
 	DNx Coding	Codifica DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Compatibile con FFmpeg (per strumenti basati su FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Disattivato: codificato secondo SMPTE ST 2019-1. Attivato: codificato come FFmpeg scrive il DNx, per strumenti basati su FFmpeg.
+	NVDEC output into CUDA arrays (NVIDIA driver 610 or newer)	Uscita NVDEC in array CUDA (driver NVIDIA 610 o successivo)
+	NVDEC output into CUDA arrays: NVIDIA's decoder writes each picture straight into a CUDA array. It is used only where the driver (610 or newer) and the stream allow it; otherwise, and if setting it up fails, NVDEC works as before.	Uscita NVDEC in array CUDA: il decodificatore NVIDIA scrive ogni immagine direttamente in un array CUDA. Viene usata solo dove il driver (610 o successivo) e il flusso lo consentono; altrimenti, e se la configurazione non riesce, NVDEC funziona come prima.

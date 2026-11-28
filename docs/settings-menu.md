@@ -60,7 +60,8 @@ Removed from the schema in phase 1 (keys still load from old files): `media.hard
 ## Decoding & Encoding (phase 2)
 
 The page holds the decoding settings that work today, moved here from Playback in the Qt window
-(same keys, `playback.hardwareDecoding` and `playback.draftDecode`), and a read-only "On this
+(same keys, `playback.hardwareDecoding`, `playback.nvdecCudaArray` (NVDEC output into CUDA arrays,
+CFA4-NVDEC-CUARRAY-001; off by default) and `playback.draftDecode`), and a read-only "On this
 machine" table with the hardware decoder, the GStreamer backend and one row per codec. When no
 hardware decoder is found the page says which vendor driver to install; CFA4 never installs
 drivers itself. Reset Page is off on the Qt-only pages: their keys belong to engine categories

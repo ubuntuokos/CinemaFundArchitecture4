@@ -5007,3 +5007,5 @@ export.summary	Low	niska
 	DNx Coding	DNx kodiranje
 	FFmpeg-compatible (for FFmpeg-based tools)	Kompatibilno s FFmpegom (za alate temeljene na FFmpegu)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Isključeno: kodirano prema SMPTE ST 2019-1. Uključeno: kodirano kako FFmpeg zapisuje DNx, za alate izgrađene na FFmpegu.
+	NVDEC output into CUDA arrays (NVIDIA driver 610 or newer)	Izlaz NVDEC-a u CUDA polja (NVIDIA upravljački program 610 ili noviji)
+	NVDEC output into CUDA arrays: NVIDIA's decoder writes each picture straight into a CUDA array. It is used only where the driver (610 or newer) and the stream allow it; otherwise, and if setting it up fails, NVDEC works as before.	Izlaz NVDEC-a u CUDA polja: NVIDIA dekoder svaku sliku zapisuje izravno u CUDA polje. Koristi se samo gdje to upravljački program (610 ili noviji) i tok dopuštaju; inače, i ako postavljanje ne uspije, NVDEC radi kao prije.

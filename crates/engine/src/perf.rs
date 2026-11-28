@@ -44,6 +44,12 @@ pub fn decode_json() -> Value {
             "sessions": hw.sessions,
             "declined": hw.declined,
             "fallbacks": hw.fallbacks,
+            // Settings ▸ Playback ▸ NVDEC output into CUDA arrays: the switch, and the pictures
+            // read out of CUDA arrays so far (CFA4-NVDEC-CUARRAY-001)
+            "nvdecCudaArray": {
+                "enabled": cfa4_codecs::hw::nvdec_cuda_array().unwrap_or(false),
+                "frames": cfa4_codecs::hw::nvdec_cuda_array_frames(),
+            },
         },
     })
 }

@@ -31,6 +31,35 @@ pub fn hardware_decoding() -> bool {
     ENABLED.load(Ordering::Relaxed)
 }
 
+/// 0: not set (the platform's environment default decides), 1: off, 2: on.
+static NVDEC_CUDA_ARRAY: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+static NVDEC_CUDA_ARRAY_FRAMES: AtomicU64 = AtomicU64::new(0);
+
+/// Settings ▸ Playback ▸ NVDEC output into CUDA arrays (CFA4-NVDEC-CUARRAY-001): new NVDEC
+/// decoders write into CUDA arrays where the driver (610 or newer) and the stream allow it.
+pub fn set_nvdec_cuda_array(on: bool) {
+    NVDEC_CUDA_ARRAY.store(if on { 2 } else { 1 }, Ordering::Relaxed);
+}
+
+/// The CUDA-array choice ([`set_nvdec_cuda_array`]); `None` until something set it.
+pub fn nvdec_cuda_array() -> Option<bool> {
+    match NVDEC_CUDA_ARRAY.load(Ordering::Relaxed) {
+        1 => Some(false),
+        2 => Some(true),
+        _ => None,
+    }
+}
+
+/// An NVDEC decoder read a picture out of a CUDA array.
+pub fn note_nvdec_cuda_array_frame() {
+    NVDEC_CUDA_ARRAY_FRAMES.fetch_add(1, Ordering::Relaxed);
+}
+
+/// Pictures NVDEC decoders have read out of CUDA arrays so far.
+pub fn nvdec_cuda_array_frames() -> u64 {
+    NVDEC_CUDA_ARRAY_FRAMES.load(Ordering::Relaxed)
+}
+
 static BACKEND: std::sync::Mutex<Option<&'static str>> = std::sync::Mutex::new(None);
 
 /// Record the OS decoder backend `cfa4_platform::register` put in front of our decoders

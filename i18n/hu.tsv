@@ -5037,3 +5037,5 @@ export.summary	Low	alacsony
 	DNx Coding	DNx-kódolás
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibilis (FFmpeg-alapú eszközökhöz)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Ki: SMPTE ST 2019-1 szerinti kódolás. Be: úgy kódol, ahogy az FFmpeg írja a DNx-et, FFmpeg-re épülő eszközökhöz.
+	NVDEC output into CUDA arrays (NVIDIA driver 610 or newer)	NVDEC-kimenet CUDA-tömbökbe (NVIDIA-meghajtó 610 vagy újabb)
+	NVDEC output into CUDA arrays: NVIDIA's decoder writes each picture straight into a CUDA array. It is used only where the driver (610 or newer) and the stream allow it; otherwise, and if setting it up fails, NVDEC works as before.	NVDEC-kimenet CUDA-tömbökbe: az NVIDIA dekódere minden képet közvetlenül egy CUDA-tömbbe ír. Csak ott működik, ahol a meghajtó (610 vagy újabb) és a folyam ezt lehetővé teszi; egyébként, és ha a beállítása nem sikerül, az NVDEC a korábbi módon dolgozik.

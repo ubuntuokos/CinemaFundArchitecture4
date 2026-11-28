@@ -1,6 +1,6 @@
 //! Synchronous NVDEC parser callbacks and CUDA readback. All driver handles stay here.
 use std::cell::Cell;
-use std::ffi::c_void;
+use std::ffi::{c_uint, c_void};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::ptr;
 
@@ -8,6 +8,7 @@ use cfa4_codecs::hw::NalCodec;
 use cfa4_frame::VideoFrame;
 
 use super::ffi::*;
+use super::opaque;
 use crate::biplanar::{Biplanar, Geometry, to_frame};
 use crate::nvenc::device::Device;
 
@@ -97,6 +98,135 @@ fn check_caps(caps: &CUVIDDECODECAPS, coded: (u32, u32), bits: u32) -> Result<()
     Ok(())
 }
 
+// CUDA-array output (CFA4-NVDEC-CUARRAY-001): the driver calls; the switch and the checks are in `opaque`.
+/// The SDK 13.1 NVDEC functions and the CUDA array functions the opaque path calls.
+#[derive(Clone, Copy)]
+pub(super) struct OpaqueApi {
+    register: RegisterDecodeSurfaces,
+    decode_async: DecodePictureAsync,
+    create: Array3DCreate,
+    destroy: ArrayDestroy,
+    plane: ArrayGetPlane,
+    copy: Memcpy2D,
+}
+
+impl OpaqueApi {
+    /// The functions from the already loaded `libnvcuvid` and from `libcuda`, which the caller keeps
+    /// loaded (the returned library) as long as any of them may be called.
+    fn load(nvcuvid: &libloading::Library) -> Result<(Self, libloading::Library), String> {
+        // SAFETY: the symbols have the signatures of NVIDIA's public headers (`super::ffi`). The
+        // caller retains both libraries until every handle using these pointers is destroyed.
+        unsafe {
+            let cuda = libloading::Library::new("libcuda.so.1").map_err(|e| format!("no CUDA driver library: {e}"))?;
+            let missing = |e: libloading::Error| format!("the driver lacks a Video Codec SDK 13.1 function: {e}");
+            let api = Self {
+                register: *nvcuvid.get(b"cuvidRegisterDecodeSurfaces\0").map_err(missing)?,
+                decode_async: *nvcuvid.get(b"cuvidDecodePictureAsync\0").map_err(missing)?,
+                create: *cuda.get(b"cuArray3DCreate_v2\0").map_err(missing)?,
+                destroy: *cuda.get(b"cuArrayDestroy\0").map_err(missing)?,
+                plane: *cuda.get(b"cuArrayGetPlane\0").map_err(missing)?,
+                copy: *cuda.get(b"cuMemcpy2D_v2\0").map_err(missing)?,
+            };
+            Ok((api, cuda))
+        }
+    }
+}
+
+/// Decode surfaces as CUDA arrays, one per decoder picture index. Created, registered, read and
+/// destroyed with the CUDA context current on the calling thread.
+struct Arrays {
+    api: OpaqueApi,
+    list: Vec<*mut c_void>,
+    coded: (u32, u32),
+    bits: u32,
+}
+
+impl Arrays {
+    /// `count` arrays for `coded`-sized pictures of `bits` depth.
+    fn allocate(api: OpaqueApi, coded: (u32, u32), bits: u32, count: u32) -> Result<Self, String> {
+        if count == 0 || count > MAX_NUM_REGISTERED_DECODE_SURFACES {
+            return Err(format!("{count} decode surfaces cannot be registered (at most {MAX_NUM_REGISTERED_DECODE_SURFACES})"));
+        }
+        let mut arrays = Self { api, list: Vec::new(), coded, bits };
+        arrays.list.try_reserve_exact(count as usize).map_err(|e| format!("NVDEC array list allocation failed: {e}"))?;
+        let desc = CUDA_ARRAY3D_DESCRIPTOR {
+            Width: coded.0 as usize,
+            Height: coded.1 as usize,
+            Depth: 0,
+            Format: opaque::array_format(bits),
+            NumChannels: 3,
+            Flags: CUDA_ARRAY3D_SURFACE_LDST | CUDA_ARRAY3D_VIDEO_ENCODE_DECODE,
+        };
+        for _ in 0..count {
+            let mut array = ptr::null_mut();
+            // SAFETY: desc and the out-pointer are live; the context is current (caller). An array
+            // created here is owned by `arrays` and destroyed in its Drop, also on an early return.
+            status(unsafe { (api.create)(&mut array, &desc) }, "cuArray3DCreate")?;
+            if array.is_null() {
+                return Err("cuArray3DCreate returned a null array".into());
+            }
+            arrays.list.push(array);
+        }
+        Ok(arrays)
+    }
+
+    /// Hand the arrays to `decoder` as its decode surfaces.
+    fn register(&mut self, decoder: *mut c_void) -> Result<(), String> {
+        // SAFETY: plain C data (integers and nullable pointers) permits an all-zero value.
+        let mut info: CUVIDREGISTERDECODESURFACESINFO = unsafe { std::mem::zeroed() };
+        info.ulNumDecodeSurfaces = u32::try_from(self.list.len()).map_err(|_| "NVDEC surface count overflows")?;
+        info.pDecodeSurfaces = self.list.as_mut_ptr();
+        // SAFETY: the live decoder and the array list (owned by self, unchanged while registered)
+        // outlive the call; the context is current (caller).
+        status(unsafe { (self.api.register)(decoder, &mut info) }, "cuvidRegisterDecodeSurfaces")
+    }
+
+    /// Copy picture `index` into `host`: the luma rows, then the interleaved chroma rows, each
+    /// [`opaque::row_bytes`] long with no padding, the layout `Biplanar` reads with that stride.
+    fn read(&self, index: i32, host: &mut [u8]) -> Result<(), String> {
+        let array = usize::try_from(index).ok().and_then(|i| self.list.get(i)).copied().ok_or("NVDEC picture index has no CUDA array")?;
+        let row = opaque::row_bytes(self.coded.0, self.bits)?;
+        let rows = self.coded.1 as usize;
+        let luma = row.checked_mul(rows).ok_or("NVDEC luma size overflows")?;
+        let chroma = row.checked_mul(rows / 2).ok_or("NVDEC chroma size overflows")?;
+        if luma.checked_add(chroma) != Some(host.len()) {
+            return Err("NVDEC host buffer does not fit the picture".into());
+        }
+        let (luma_host, chroma_host) = host.split_at_mut(luma);
+        for (plane, (dst, rows)) in [(luma_host, rows), (chroma_host, rows / 2)].into_iter().enumerate() {
+            let mut source = ptr::null_mut();
+            // SAFETY: `array` is a live multi-planar array owned by self; the out-pointer is live.
+            status(unsafe { (self.api.plane)(&mut source, array, plane as c_uint) }, "cuArrayGetPlane")?;
+            // SAFETY: plain C data (integers and nullable pointers) permits an all-zero value.
+            let mut copy: CUDA_MEMCPY2D = unsafe { std::mem::zeroed() };
+            copy.srcMemoryType = CU_MEMORYTYPE_ARRAY;
+            copy.srcArray = source;
+            copy.dstMemoryType = CU_MEMORYTYPE_HOST;
+            copy.dstHost = dst.as_mut_ptr().cast();
+            copy.dstPitch = row;
+            copy.WidthInBytes = row;
+            copy.Height = rows;
+            // SAFETY: the synchronous copy writes `row * rows` bytes, exactly `dst`'s length, into
+            // the live slice; it is ordered after the asynchronous decode on the legacy default
+            // stream. The context is current (caller).
+            status(unsafe { (self.api.copy)(&copy) }, "cuMemcpy2D")?;
+        }
+        Ok(())
+    }
+}
+
+impl Drop for Arrays {
+    fn drop(&mut self) {
+        for array in self.list.drain(..) {
+            // SAFETY: each array was created by this object and is no longer used by a decoder: the
+            // owner drops the arrays only after destroying the decoder, with the context current.
+            if let Err(e) = status(unsafe { (self.api.destroy)(array) }, "cuArrayDestroy") {
+                log::warn!("{e}");
+            }
+        }
+    }
+}
+
 /// Slices per picture the driver's offset list is read for.
 const MAX_SLICES: u32 = 8192;
 
@@ -114,6 +244,11 @@ struct State {
     pending: Vec<CUVIDPARSERDISPINFO>,
     ready: Vec<(i64, VideoFrame)>,
     error: Option<String>,
+    /// The CUDA-array output functions when the driver and the stream allow that output
+    /// (CFA4-NVDEC-CUARRAY-001); `None` keeps the pitch-linear surfaces.
+    opaque: Option<OpaqueApi>,
+    /// The decoder's registered CUDA arrays while it decodes into them.
+    arrays: Option<Arrays>,
 }
 impl State {
     fn sequence(&mut self, format: &CUVIDEOFORMAT) -> Result<i32, String> {
@@ -143,6 +278,55 @@ impl State {
             }
             return i32::try_from(self.surfaces).map_err(|_| "NVDEC surface count overflows".into());
         }
+        if let Some(api) = self.opaque.filter(|_| surfaces <= MAX_NUM_REGISTERED_DECODE_SURFACES) {
+            match self.create_into_arrays(api, surfaces) {
+                Ok(()) => {
+                    self.surfaces = surfaces;
+                    return i32::try_from(surfaces).map_err(|_| "NVDEC surface count overflows".into());
+                }
+                Err(e) => {
+                    log::info!("NVDEC CUDA-array output is not available ({e}); using pitch-linear surfaces");
+                    self.opaque = None;
+                }
+            }
+        }
+        let mut info = self.create_info(surfaces, output_format(self.geometry.bits), 1)?;
+        // SAFETY: the context is current throughout the parser call; info and the out-pointer
+        // are live. The decoder is owned by Session until explicitly destroyed.
+        status(unsafe { (self.api.create_decoder)(&mut self.decoder, &mut info) }, "cuvidCreateDecoder")?;
+        if self.decoder.is_null() {
+            return Err("NVDEC returned a null decoder".into());
+        }
+        self.surfaces = surfaces;
+        i32::try_from(surfaces).map_err(|_| "NVDEC surface count overflows".into())
+    }
+    /// A decoder that writes into registered CUDA arrays (opaque output, SDK 13.1). On any failure
+    /// nothing of it is left: no decoder, no arrays.
+    fn create_into_arrays(&mut self, api: OpaqueApi, surfaces: u32) -> Result<(), String> {
+        let mut arrays = Arrays::allocate(api, self.coded, self.geometry.bits, surfaces)?;
+        let mut info = self.create_info(surfaces, opaque::surface_format(self.geometry.bits), 0)?;
+        let mut decoder = ptr::null_mut();
+        // SAFETY: as for the pitch-linear decoder; `ulNumOutputSurfaces` is 0 as the opaque output
+        // requires, and the decoder is destroyed below unless it is kept.
+        status(unsafe { (self.api.create_decoder)(&mut decoder, &mut info) }, "cuvidCreateDecoder (CUDA-array output)")?;
+        if decoder.is_null() {
+            return Err("NVDEC returned a null decoder".into());
+        }
+        if let Err(e) = arrays.register(decoder) {
+            // SAFETY: the decoder was created above and is used by nothing else; the context is current.
+            if let Err(destroy) = status(unsafe { (self.api.destroy_decoder)(decoder) }, "cuvidDestroyDecoder") {
+                // the arrays may still be referenced by the driver: leak them rather than free them
+                log::warn!("{destroy}");
+                std::mem::forget(arrays);
+            }
+            return Err(e);
+        }
+        self.decoder = decoder;
+        self.arrays = Some(arrays);
+        log::info!("NVDEC decodes into CUDA arrays ({}x{}, {} surfaces)", self.coded.0, self.coded.1, surfaces);
+        Ok(())
+    }
+    fn create_info(&self, surfaces: u32, format: i32, outputs: u64) -> Result<CUVIDDECODECREATEINFO, String> {
         // SAFETY: plain C data (integers and pointers) permits an all-zero initialization.
         let mut info: CUVIDDECODECREATEINFO = unsafe { std::mem::zeroed() };
         info.ulWidth = u64::from(self.coded.0);
@@ -159,19 +343,12 @@ impl State {
         // Explicit full coded rectangles prevent the parser's display crop being applied twice.
         info.display_area = ShortRect { left: 0, top: 0, right, bottom };
         info.target_rect = info.display_area;
-        info.OutputFormat = output_format(self.geometry.bits);
+        info.OutputFormat = format;
         info.DeinterlaceMode = cudaVideoDeinterlaceMode_Weave;
         info.ulTargetWidth = info.ulWidth;
         info.ulTargetHeight = info.ulHeight;
-        info.ulNumOutputSurfaces = 1;
-        // SAFETY: the context is current throughout the parser call; info and the out-pointer
-        // are live. The decoder is owned by Session until explicitly destroyed.
-        status(unsafe { (self.api.create_decoder)(&mut self.decoder, &mut info) }, "cuvidCreateDecoder")?;
-        if self.decoder.is_null() {
-            return Err("NVDEC returned a null decoder".into());
-        }
-        self.surfaces = surfaces;
-        i32::try_from(surfaces).map_err(|_| "NVDEC surface count overflows".into())
+        info.ulNumOutputSurfaces = outputs;
+        Ok(info)
     }
     fn display(&mut self, info: &CUVIDPARSERDISPINFO) -> Result<i32, String> {
         if self.decoder.is_null()
@@ -197,6 +374,13 @@ impl State {
         Ok(())
     }
     fn map_picture(&mut self, info: &CUVIDPARSERDISPINFO) -> Result<(), String> {
+        if self.arrays.is_some() {
+            let frame = self.read_array(info.picture_index)?;
+            self.ready.try_reserve(1).map_err(|e| format!("NVDEC output allocation failed: {e}"))?;
+            self.ready.push((info.timestamp, frame));
+            opaque::note_array_frame();
+            return Ok(());
+        }
         // SAFETY: this C struct contains integers and nullable pointers only.
         let mut proc: CUVIDPROCPARAMS = unsafe { std::mem::zeroed() };
         proc.progressive_frame = 1;
@@ -214,11 +398,8 @@ impl State {
         self.ready.push((info.timestamp, frame));
         Ok(())
     }
-    fn readback(&self, address: u64, pitch: u32) -> Result<VideoFrame, String> {
-        if address == 0 {
-            return Err("NVDEC returned a null mapped address".into());
-        }
-        let (luma_size, total) = mapped_layout(self.coded, self.geometry.bits, pitch)?;
+    /// The output queue may take one more picture.
+    fn room_for_one(&self) -> Result<(), String> {
         let picture_bytes = (self.coded.0 as usize)
             .checked_mul(self.coded.1 as usize)
             .and_then(|n| n.checked_mul(if self.geometry.bits == 10 { 3 } else { 2 }))
@@ -228,6 +409,35 @@ impl State {
         {
             return Err("NVDEC output queue exceeds its memory limit".into());
         }
+        Ok(())
+    }
+    /// Picture `index` out of its CUDA array (opaque output): the planes copied without padding.
+    fn read_array(&self, index: i32) -> Result<VideoFrame, String> {
+        let arrays = self.arrays.as_ref().ok_or("NVDEC has no CUDA arrays")?;
+        if index < 0 || u32::try_from(index).is_ok_and(|i| i >= self.surfaces) {
+            return Err("NVDEC picture index is out of range".into());
+        }
+        self.room_for_one()?;
+        let row = opaque::row_bytes(self.coded.0, self.geometry.bits)?;
+        let luma_size = row.checked_mul(self.coded.1 as usize).ok_or("NVDEC luma size overflows")?;
+        let total = luma_size.checked_add(luma_size / 2).ok_or("NVDEC frame size overflows")?;
+        if total > MAX_FRAME_BYTES {
+            return Err("NVDEC frame exceeds its memory limit".into());
+        }
+        let mut host = Vec::new();
+        host.try_reserve_exact(total).map_err(|e| format!("NVDEC readback allocation failed: {e}"))?;
+        host.resize(total, 0);
+        arrays.read(index, &mut host)?;
+        let luma = host.get(..luma_size).ok_or("NVDEC luma range is invalid")?;
+        let chroma = host.get(luma_size..).ok_or("NVDEC chroma range is invalid")?;
+        to_frame(&Biplanar { luma, chroma, stride: row, rows: self.coded.1 as usize }, &self.geometry)
+    }
+    fn readback(&self, address: u64, pitch: u32) -> Result<VideoFrame, String> {
+        if address == 0 {
+            return Err("NVDEC returned a null mapped address".into());
+        }
+        let (luma_size, total) = mapped_layout(self.coded, self.geometry.bits, pitch)?;
+        self.room_for_one()?;
         address.checked_add(u64::try_from(total).map_err(|_| "NVDEC mapped size overflows")?).ok_or("NVDEC mapped address overflows")?;
         let mut host = Vec::new();
         host.try_reserve_exact(total).map_err(|e| format!("NVDEC readback allocation failed: {e}"))?;
@@ -329,7 +539,12 @@ unsafe extern "C" fn decode(data: *mut c_void, picture: *mut CUVIDPICPARAMS) -> 
                 return Err("NVDEC parser returned a picture without valid bitstream data".into());
             }
             state.drain()?;
-            status((state.api.decode)(state.decoder, picture), "cuvidDecodePicture")?;
+            match &state.arrays {
+                // into the picture's CUDA array, ordered on the legacy default stream before the
+                // synchronous copy that reads it
+                Some(arrays) => status((arrays.api.decode_async)(state.decoder, picture, ptr::null_mut()), "cuvidDecodePictureAsync")?,
+                None => status((state.api.decode)(state.decoder, picture), "cuvidDecodePicture")?,
+            }
             Ok(1)
         })
     }
@@ -350,6 +565,8 @@ pub struct Session {
     device: Box<Device>,
     // Dropped after device/context release, and after all cuvid handles have been destroyed.
     _library: libloading::Library,
+    // `libcuda` for the CUDA-array functions; dropped last, after the arrays are destroyed.
+    _cuda: Option<libloading::Library>,
 }
 // SAFETY: no callbacks or GPU-memory references outlive an operation. The state allocation and
 // boxed device retain stable addresses across moves; every driver call pushes the context on its
@@ -367,13 +584,15 @@ impl Session {
         };
         let (api, library) = Api::load()?;
         let device = Box::new(Device::new()?);
-        {
+        let output_mask = {
             let _current = device.push_current()?;
             let mut capabilities = caps(codec, geometry.bits);
             // SAFETY: capabilities is a live writable C struct, and the CUDA context is current.
             status(unsafe { (api.caps)(&mut capabilities) }, "cuvidGetDecoderCaps")?;
             check_caps(&capabilities, coded, geometry.bits)?;
-        }
+            capabilities.nOutputFormatMask
+        };
+        let (opaque, cuda) = cuda_array_output(&library, output_mask, geometry.bits);
         let state = ptr::NonNull::new(Box::into_raw(Box::new(State {
             api,
             device: ptr::from_ref(device.as_ref()),
@@ -387,10 +606,12 @@ impl Session {
             pending: Vec::new(),
             ready: Vec::new(),
             error: None,
+            opaque,
+            arrays: None,
         })))
         .ok_or("NVDEC state allocation is null")?;
         // From here on `Drop` frees the state, also when creating the parser fails.
-        let mut session = Self { state, parser: ptr::null_mut(), device, _library: library };
+        let mut session = Self { state, parser: ptr::null_mut(), device, _library: library, _cuda: cuda };
         session.create_parser()?;
         Ok(session)
     }
@@ -498,8 +719,12 @@ impl Session {
                     state.decoder = ptr::null_mut();
                     state.surfaces = 0;
                     state.mapped.set(None);
+                    // the decoder is gone: its CUDA arrays are freed (context current)
+                    state.arrays = None;
                 }
                 Err(e) => {
+                    // the driver may still use the arrays: leak them rather than free them
+                    std::mem::forget(state.arrays.take());
                     error.get_or_insert(e);
                 }
             }
@@ -544,10 +769,40 @@ impl Drop for Session {
         if self.parser.is_null() {
             // SAFETY: the pointer came from `Box::into_raw` in `new`, is freed only here, and no parser
             // holds it any more (destroyed above), so nothing can reach it afterwards.
-            drop(unsafe { Box::from_raw(self.state.as_ptr()) });
+            let mut state = unsafe { Box::from_raw(self.state.as_ptr()) };
+            // CUDA arrays still here mean the decoder was not destroyed (or the context could not be
+            // made current): the driver may still use them, so they are leaked, not freed
+            if let Some(arrays) = state.arrays.take() {
+                log::warn!("NVDEC CUDA arrays outlive their decoder: leaking them");
+                std::mem::forget(arrays);
+            }
+            drop(state);
         } else {
             log::warn!("NVDEC parser could not be destroyed: leaking its state");
         }
+    }
+}
+/// The CUDA-array output functions (and `libcuda`, which must stay loaded) when it is switched on,
+/// the driver is new enough and the decoder offers it for this stream; otherwise `None` and the
+/// reason in the log (CFA4-NVDEC-CUARRAY-001).
+fn cuda_array_output(nvcuvid: &libloading::Library, output_mask: u16, bits: u32) -> (Option<OpaqueApi>, Option<libloading::Library>) {
+    if !opaque::enabled() {
+        return (None, None);
+    }
+    let result = opaque::eligible(opaque::driver_version(), output_mask, bits).and_then(|()| OpaqueApi::load(nvcuvid));
+    match result {
+        Ok((api, cuda)) => (Some(api), Some(cuda)),
+        Err(e) => {
+            log::info!("NVDEC CUDA-array output is not used: {e}");
+            (None, None)
+        }
+    }
+}
+impl Session {
+    /// Whether the decoder writes into CUDA arrays (opaque output) rather than pitch-linear
+    /// surfaces. Known once the first sequence header has been decoded.
+    pub fn cuda_array_output(&mut self) -> bool {
+        self.state().arrays.is_some()
     }
 }
 /// Load both drivers and retain a primary context; does not create a decoder or parse video.
@@ -651,6 +906,8 @@ mod tests {
             pending: Vec::new(),
             ready: Vec::new(),
             error: None,
+            opaque: None,
+            arrays: None,
         }
     }
     #[test]

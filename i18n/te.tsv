@@ -5007,3 +5007,5 @@ export.summary	Low	తక్కువ
 	DNx Coding	DNx ఎన్‌కోడింగ్
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg అనుకూలం (FFmpeg ఆధారిత సాధనాల కోసం)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	ఆఫ్: SMPTE ST 2019-1 ప్రకారం ఎన్‌కోడ్ అవుతుంది. ఆన్: FFmpeg DNx ను రాసే విధంగా ఎన్‌కోడ్ అవుతుంది, FFmpeg ఆధారిత సాధనాల కోసం.
+	NVDEC output into CUDA arrays (NVIDIA driver 610 or newer)	CUDA శ్రేణులలోకి NVDEC అవుట్‌పుట్ (NVIDIA డ్రైవర్ 610 లేదా కొత్తది)
+	NVDEC output into CUDA arrays: NVIDIA's decoder writes each picture straight into a CUDA array. It is used only where the driver (610 or newer) and the stream allow it; otherwise, and if setting it up fails, NVDEC works as before.	CUDA శ్రేణులలోకి NVDEC అవుట్‌పుట్: NVIDIA డీకోడర్ ప్రతి చిత్రాన్ని నేరుగా CUDA శ్రేణిలోకి రాస్తుంది. డ్రైవర్ (610 లేదా కొత్తది) మరియు స్ట్రీమ్ అనుమతించిన చోట మాత్రమే ఇది ఉపయోగించబడుతుంది; లేకపోతే, సెటప్ విఫలమైనా, NVDEC మునుపటిలాగే పనిచేస్తుంది.

@@ -1407,8 +1407,12 @@ static CATEGORIES: &[Category] = &[
             b("playback.disableVideoInBackground", "Disable video output when in the background", false),
             b("playback.draftDecode", "Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)", true),
             f("playback.hardwareDecoding", "Hardware decoding", Kind::Choice(HW_DECODE), true),
+            b("playback.nvdecCudaArray", "NVDEC output into CUDA arrays (NVIDIA driver 610 or newer)", true),
             Row::Note(
                 "Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.",
+            ),
+            Row::Note(
+                "NVDEC output into CUDA arrays: NVIDIA's decoder writes each picture straight into a CUDA array. It is used only where the driver (610 or newer) and the stream allow it; otherwise, and if setting it up fails, NVDEC works as before.",
             ),
         ],
     },
@@ -1682,6 +1686,7 @@ impl crate::autosave::Preferences {
             return;
         }
         cfa4_codecs::hw::set_hardware_decoding(self.playback.hardware_decoding != "off");
+        cfa4_codecs::hw::set_nvdec_cuda_array(self.playback.nvdec_cuda_array);
         self.apply_media_backends();
     }
 

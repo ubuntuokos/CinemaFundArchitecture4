@@ -17,6 +17,7 @@ for script in \
   scripts/dev/verify-linux.sh \
   scripts/dev/audit-gpu-hardware.sh \
   scripts/dev/audit-ffmpeg-hwaccel.sh \
+  scripts/dev/measure-nvdec-cuarray.sh \
   scripts/dev/recheck-libplacebo.sh \
   scripts/dev/audit-native-media-e2e.sh \
   scripts/dev/setup-dcp-inspect.sh \
@@ -106,6 +107,13 @@ assert "sed -n 's/^FFmpeg SHA256" not in recheck_lp
 assert "hwdownload,format=nv12" in ffmpeg_hw
 assert "cargo build" not in ffmpeg_hw and "apt-get" not in ffmpeg_hw
 assert "audit-ffmpeg-hwaccel.sh" not in workflow, "do not run physical NVENC on hosted CI"
+# CFA4-NVDEC-CUARRAY-001: the NVDEC measurement runs on the reference machine only.
+nvdec_measure = (root / "scripts/dev/measure-nvdec-cuarray.sh").read_text()
+assert "measure-nvdec-cuarray.sh" not in workflow, "do not run the physical NVDEC measurement on hosted CI"
+for marker in ("CFA4_NVDEC_CUDA_ARRAY=1", "env -u CFA4_NVDEC_CUDA_ARRAY", "/proc/driver/nvidia/version", "A4000",
+               "bench-decode", "CFA4_FFMPEG_VERSION", "target/fixtures/nvdec-cuarray"):
+    assert marker in nvdec_measure, f"NVDEC CUDA-array measurement missing {marker}"
+assert not re.search(r"^\s*(cargo|apt-get|sudo)\b", nvdec_measure.split("set -euo pipefail", 1)[1], re.M), "the measurement builds and installs nothing"
 native = (root / "python/cfa4_devtools/native_media_e2e.py").read_text()
 nvenc = (root / "crates/platform/src/nvenc/export.rs").read_text()
 platform = (root / "crates/platform/src/lib.rs").read_text()

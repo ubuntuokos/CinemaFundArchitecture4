@@ -5014,3 +5014,5 @@
 	DNx Coding	DNx のエンコード
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg 互換 (FFmpeg ベースのツール向け)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	オフ: SMPTE ST 2019-1 に従ってエンコードします。オン: FFmpeg が DNx を書き出す方法でエンコードします (FFmpeg ベースのツール向け)。
+	NVDEC output into CUDA arrays (NVIDIA driver 610 or newer)	NVDEC の出力を CUDA 配列へ (NVIDIA ドライバー 610 以降)
+	NVDEC output into CUDA arrays: NVIDIA's decoder writes each picture straight into a CUDA array. It is used only where the driver (610 or newer) and the stream allow it; otherwise, and if setting it up fails, NVDEC works as before.	NVDEC の出力を CUDA 配列へ: NVIDIA のデコーダーが各ピクチャを直接 CUDA 配列に書き込みます。ドライバー (610 以降) とストリームが対応している場合にのみ使用され、それ以外の場合や設定に失敗した場合は NVDEC は従来どおり動作します。
