@@ -4973,3 +4973,6 @@
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 文件夹 (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 变形宽银幕, 6 Mbps, GOP 15, AC-3 192 kbps, 章节来自序列的章节标记
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 文件夹 (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 变形宽银幕, 6 Mbps, GOP 18, AC-3 192 kbps, 章节来自序列的章节标记
+	Average	平均
+	Preserve Luminance	保留亮度
+	Spill Suppress	溢色抑制

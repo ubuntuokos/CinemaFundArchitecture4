@@ -4976,3 +4976,6 @@ export.summary	Low	düşük
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video klasörü (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfik, 6 Mbps, GOP 15, AC-3 192 kbps, bölümler dizinin Bölüm işaretçilerinden
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video klasörü (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfik, 6 Mbps, GOP 18, AC-3 192 kbps, bölümler dizinin Bölüm işaretçilerinden
+	Average	Ortalama
+	Preserve Luminance	Parlaklığı Koru
+	Spill Suppress	Yansıma Bastırma
