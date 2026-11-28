@@ -2,8 +2,8 @@
 
 HRTF sets and binaural (headphone) rendering for the CFA4 monitor: plan
 [`CFA4-BINAURAL-MONITOR-001`](../../docs/plans/CFA4-BINAURAL-MONITOR-001.md), work packages B-01
-(HRTF sets, binaural core, virtual loudspeakers) and B-02 (the spatial scene and its object audio
-adapters). Layer L1; depends on `cfa4-truehd` and `cfa4-iab` (L0) for the adapters and on
+(HRTF sets, binaural core, virtual loudspeakers), B-02 (the spatial scene and its object audio
+adapters) and B-03 (the monitor's channel mix through headphones). Layer L1; depends on `cfa4-truehd` and `cfa4-iab` (L0) for the adapters and on
 `cfa4-audio-dsp` (same layer, allowed in `xtask` `SAME_LAYER`) for the room's Surround Reverb. No
 `unsafe`, no allocation while rendering (scheduling a scene update may allocate), no panics on any
 input.
@@ -35,6 +35,12 @@ room.process(&channels, &mut left, &mut right);                   // 12 channels
   field. Size spreads an object over four decorrelated directions; Dolby's headphone render modes:
   off (plain stereo pan), near (dry), mid and far (small and larger room: the Surround Reverb fed
   with the binaural signal; can be turned off). The LFE as in `VirtualSpeakers`.
+- `ChannelMonitor` (`monitor`, B-03): the blocks a monitor plays, each a mix in one of the mixer's
+  layouts (1, 2, 6, 8, 10 or 12 channels), as scene beds; it keeps its history while the blocks
+  follow each other and starts over on a jump or a layout change. `MonitorConfig::room` 0 is dry,
+  up to 0.5 the small room, above the larger one. `cfa4-cli serve` plays `audio.render {monitor}`
+  through it (`docs/qt-gui.md`). One second of 7.1.4 with the room takes about 50–65 ms of one
+  core (release, the CI container), so a monitor uses some 6 % of a core.
 - `atmos`: `schedule_truehd` / `truehd_state` turn the events of `cfa4_truehd::cfa4::ObjectDecoder`
   into scene updates (bed labels to loudspeaker directions, snap to the nearest 7.1.4 loudspeaker,
   elevation off to ear height; the OAMD headphone element's mode is not mapped, see the module
