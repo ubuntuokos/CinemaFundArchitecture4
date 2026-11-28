@@ -5007,3 +5007,5 @@
 	DNx Coding	Pengodean DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Kompatibel dengan FFmpeg (untuk alat berbasis FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Mati: dienkode menurut SMPTE ST 2019-1. Nyala: dienkode seperti FFmpeg menulis DNx, untuk alat yang dibangun di atas FFmpeg.
+	NVDEC output into CUDA arrays (NVIDIA driver 610 or newer)	Keluaran NVDEC ke larik CUDA (driver NVIDIA 610 atau lebih baru)
+	NVDEC output into CUDA arrays: NVIDIA's decoder writes each picture straight into a CUDA array. It is used only where the driver (610 or newer) and the stream allow it; otherwise, and if setting it up fails, NVDEC works as before.	Keluaran NVDEC ke larik CUDA: dekoder NVIDIA menulis setiap gambar langsung ke larik CUDA. Hanya digunakan jika driver (610 atau lebih baru) dan aliran mengizinkannya; jika tidak, dan jika penyiapannya gagal, NVDEC bekerja seperti sebelumnya.

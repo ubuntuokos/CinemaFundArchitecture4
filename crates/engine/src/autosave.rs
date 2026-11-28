@@ -100,6 +100,10 @@ pub struct PlaybackPrefs {
     /// or `off` (always CFA4's own decoders). Media already open keeps its decoder until it
     /// is reopened.
     pub hardware_decoding: String,
+    /// "NVDEC output into CUDA arrays" (CFA4-NVDEC-CUARRAY-001): new NVDEC decoders write into
+    /// CUDA arrays (Video Codec SDK 13.1) where the NVIDIA driver (610 or newer) and the stream
+    /// allow it, otherwise into the usual surfaces. Off by default until it is measured faster.
+    pub nvdec_cuda_array: bool,
 }
 
 impl Default for PlaybackPrefs {
@@ -113,6 +117,7 @@ impl Default for PlaybackPrefs {
             disable_video_in_background: true,
             draft_decode: false,
             hardware_decoding: "auto".into(),
+            nvdec_cuda_array: false,
         }
     }
 }

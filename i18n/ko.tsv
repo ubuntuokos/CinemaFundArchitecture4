@@ -4993,3 +4993,5 @@
 	DNx Coding	DNx 인코딩
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg 호환(FFmpeg 기반 도구용)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	끔: SMPTE ST 2019-1에 따라 인코딩합니다. 켬: FFmpeg가 DNx를 쓰는 방식으로 인코딩합니다(FFmpeg 기반 도구용).
+	NVDEC output into CUDA arrays (NVIDIA driver 610 or newer)	CUDA 배열로 NVDEC 출력(NVIDIA 드라이버 610 이상)
+	NVDEC output into CUDA arrays: NVIDIA's decoder writes each picture straight into a CUDA array. It is used only where the driver (610 or newer) and the stream allow it; otherwise, and if setting it up fails, NVDEC works as before.	CUDA 배열로 NVDEC 출력: NVIDIA 디코더가 각 그림을 CUDA 배열에 바로 씁니다. 드라이버(610 이상)와 스트림이 허용하는 경우에만 사용되며, 그렇지 않거나 설정에 실패하면 NVDEC는 이전처럼 동작합니다.

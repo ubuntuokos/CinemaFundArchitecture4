@@ -12,40 +12,32 @@
 //! SDK 13.1 functions. Anything else, or any failure while setting it up, keeps the pitch-linear
 //! path: an older driver never loses NVDEC.
 use std::ffi::{c_int, c_uint};
-use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 
 use super::ffi::*;
 
 /// The NVIDIA driver Video Codec SDK 13.1 requires.
 pub const MIN_DRIVER: u32 = 610;
 
-/// 0: not set (the environment decides), 1: off, 2: on.
-static SWITCH: AtomicU8 = AtomicU8::new(0);
-static ARRAY_FRAMES: AtomicU64 = AtomicU64::new(0);
-
-/// Switch CUDA-array output on or off for decoders created afterwards (process-wide). It
-/// overrides `CFA4_NVDEC_CUDA_ARRAY`.
+/// Switch CUDA-array output on or off for decoders created afterwards (process-wide; the same
+/// switch as Settings ▸ Playback, `cfa4_codecs::hw::set_nvdec_cuda_array`). It overrides
+/// `CFA4_NVDEC_CUDA_ARRAY`.
 pub fn set_enabled(on: bool) {
-    SWITCH.store(if on { 2 } else { 1 }, Ordering::Relaxed);
+    cfa4_codecs::hw::set_nvdec_cuda_array(on);
 }
 
-/// Whether new decoders try CUDA-array output: what [`set_enabled`] chose, else
+/// Whether new decoders try CUDA-array output: the switch ([`set_enabled`], the setting), else
 /// `CFA4_NVDEC_CUDA_ARRAY=1` (for measurements), else off.
 pub fn enabled() -> bool {
-    match SWITCH.load(Ordering::Relaxed) {
-        1 => false,
-        2 => true,
-        _ => std::env::var("CFA4_NVDEC_CUDA_ARRAY").is_ok_and(|v| v == "1"),
-    }
+    cfa4_codecs::hw::nvdec_cuda_array().unwrap_or_else(|| std::env::var("CFA4_NVDEC_CUDA_ARRAY").is_ok_and(|v| v == "1"))
 }
 
 /// Pictures this process's decoders have read out of CUDA arrays.
 pub fn array_frames() -> u64 {
-    ARRAY_FRAMES.load(Ordering::Relaxed)
+    cfa4_codecs::hw::nvdec_cuda_array_frames()
 }
 
 pub(super) fn note_array_frame() {
-    ARRAY_FRAMES.fetch_add(1, Ordering::Relaxed);
+    cfa4_codecs::hw::note_nvdec_cuda_array_frame();
 }
 
 /// The kernel module version from `/proc/driver/nvidia/version`'s first line: major and minor
@@ -136,13 +128,12 @@ mod tests {
 
     #[test]
     fn the_switch_overrides_the_environment() {
-        // the only test of this binary that touches the switch
+        // the only test of this binary that touches the switch (it stays set afterwards)
         let from_env = std::env::var("CFA4_NVDEC_CUDA_ARRAY").is_ok_and(|v| v == "1");
         assert_eq!(enabled(), from_env, "unset: the environment decides (off without it)");
         set_enabled(true);
         assert!(enabled());
         set_enabled(false);
         assert!(!enabled(), "off wins over CFA4_NVDEC_CUDA_ARRAY=1 too");
-        SWITCH.store(0, Ordering::Relaxed);
     }
 }

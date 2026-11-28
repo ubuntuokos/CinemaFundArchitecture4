@@ -27,7 +27,7 @@ RESTRICTED_INSTALL = "sudo apt install {package}"
 # The Qt-only page of Media & Playback: the codec table (`cfa4-cli codecs`) and the decoding
 # settings, which move here from the Playback page.
 DECODING_PAGE = "decoding"
-DECODING_FIELDS = ("playback.hardwareDecoding", "playback.draftDecode")
+DECODING_FIELDS = ("playback.hardwareDecoding", "playback.nvdecCudaArray", "playback.draftDecode")
 # Pages the window adds itself: no engine category, so no `settings reset` for them.
 QT_ONLY_PAGES = (ACCELERATORS_PAGE, DECODING_PAGE)
 # Bounded read of the system PCI id database (hwdata / pciutils) for device names.

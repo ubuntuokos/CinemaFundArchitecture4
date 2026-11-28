@@ -5000,3 +5000,5 @@ export.summary	Low	düşük
 	DNx Coding	DNx kodlama
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg uyumlu (FFmpeg tabanlı araçlar için)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Kapalı: SMPTE ST 2019-1'e göre kodlanır. Açık: FFmpeg'in DNx yazdığı biçimde kodlanır, FFmpeg tabanlı araçlar için.
+	NVDEC output into CUDA arrays (NVIDIA driver 610 or newer)	NVDEC çıktısı CUDA dizilerine (NVIDIA sürücüsü 610 veya üzeri)
+	NVDEC output into CUDA arrays: NVIDIA's decoder writes each picture straight into a CUDA array. It is used only where the driver (610 or newer) and the stream allow it; otherwise, and if setting it up fails, NVDEC works as before.	NVDEC çıktısı CUDA dizilerine: NVIDIA'nın kod çözücüsü her resmi doğrudan bir CUDA dizisine yazar. Yalnızca sürücünün (610 veya üzeri) ve akışın izin verdiği yerde kullanılır; aksi halde ve kurulumu başarısız olursa NVDEC eskisi gibi çalışır.

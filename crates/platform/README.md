@@ -46,8 +46,10 @@ let availability = cfa4_platform::register(); // Available("NVDEC") or Available
   in the parser's sequence callback, decodes in its picture callback, and reads each displayed
   picture back (NV12 / P016) through the CUDA driver into the same planes as the other backends.
   **CUDA-array output** (`nvdec/opaque.rs`, CFA4-NVDEC-CUARRAY-001): with
-  `set_nvdec_cuda_array_output(true)` (which also overrides it off) or `CFA4_NVDEC_CUDA_ARRAY=1`
-  when the setter was not called, a decoder writes into CUDA
+  Settings ▸ Playback ▸ "NVDEC output into CUDA arrays" (`playback.nvdecCudaArray`, the engine
+  sets `cfa4_codecs::hw::set_nvdec_cuda_array`), `set_nvdec_cuda_array_output(true)` (both also
+  switch it off), or `CFA4_NVDEC_CUDA_ARRAY=1` where nothing set the switch (the CLI's
+  `bench-decode`), a decoder writes into CUDA
   arrays it registered (Video Codec SDK 13.1 opaque output: `cuvidRegisterDecodeSurfaces`,
   `cuvidDecodePictureAsync`) and each picture is copied out of its array's two planes. It is used
   only on a driver of 610 or newer (`/proc/driver/nvidia/version`) whose decoder offers the opaque

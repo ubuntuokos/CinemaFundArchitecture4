@@ -325,6 +325,8 @@ MEDIA_SCHEMA = {
             {"key": "playback.preroll", "label": "Preroll", "wired": True, "value": 2, "kind": {"type": "int"}},
             {"key": "playback.hardwareDecoding", "label": "Hardware decoding", "wired": True, "value": "auto",
              "kind": {"type": "choice", "choices": [{"value": "auto", "label": "Auto"}, {"value": "off", "label": "Off"}]}},
+            {"key": "playback.nvdecCudaArray", "label": "NVDEC output into CUDA arrays", "wired": True, "value": False,
+             "kind": {"type": "bool"}},
         ]},
     ],
 }
@@ -347,7 +349,7 @@ class DecodingPage(unittest.TestCase):
         schema = Schema.parse(MEDIA_SCHEMA)
         self.assertEqual([p.id for p in schema.groups[0].pages], ["audio", "media", DECODING_PAGE, "playback"])
         self.assertEqual([f.key for f in page(schema, DECODING_PAGE).fields],
-                         ["playback.hardwareDecoding", "playback.draftDecode"])
+                         ["playback.hardwareDecoding", "playback.nvdecCudaArray", "playback.draftDecode"])
         self.assertEqual([f.key for f in page(schema, "playback").fields], ["playback.preroll"])
         # the moved keys are still saved values of the window
         self.assertIn("playback.hardwareDecoding", schema.values({}))

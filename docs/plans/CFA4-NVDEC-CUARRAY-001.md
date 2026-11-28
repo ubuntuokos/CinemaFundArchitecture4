@@ -77,3 +77,9 @@ zárja ki. A B később külön döntéssel jöhet, ha a mérés szerint az FFmp
 | P0 | Ez a terv, és a CFA4-FFMPEG-9.1-001 D10 sorának frissítése | nem |
 | P1 | M0 + M1 | igen (platform/FFI) |
 | P2 | M2 jelentés + M3 | igen |
+
+**Megvalósítás (2026-11-28).** P1: M0 + M1 (#1956). P2 előre az M3-mal (a mérési jelentés nélkül, mert
+az a referenciagépen fut): beállítás `playback.nvdecCudaArray` (Settings ▸ Media & Playback ▸ Decoding &
+Encoding a Qt6 GUI-ban, automation id `settings.playback.nvdecCudaArray`), a `perf.stats`
+`decode.hardware.nvdecCudaArray` (`enabled`, `frames`), fordítások. Az alapérték a mérésig ki; a mérés
+(N3, N4) után külön lépés dönt az alapértékről (E2).

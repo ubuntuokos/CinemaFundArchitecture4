@@ -674,6 +674,17 @@ fn hardware_decoding_setting_drives_the_decoder_switch() {
     set(&mut s, "playback.hardwareDecoding", json!("auto"));
     assert!(cfa4_codecs::hw::hardware_decoding());
     assert!(settings::field("playback.hardwareDecoding").is_some_and(|f| f.wired && matches!(f.kind, Kind::Choice(_))));
+    // NVDEC output into CUDA arrays (CFA4-NVDEC-CUARRAY-001): off by default, and the setting
+    // is the switch new NVDEC decoders consult; perf.stats reports it
+    assert!(!s.prefs.playback.nvdec_cuda_array, "off by default");
+    assert_eq!(cfa4_codecs::hw::nvdec_cuda_array(), Some(false), "the session applied the default");
+    set(&mut s, "playback.nvdecCudaArray", json!(true));
+    assert_eq!(cfa4_codecs::hw::nvdec_cuda_array(), Some(true));
+    assert_eq!(s.execute("perf.stats", json!({})).unwrap()["decode"]["hardware"]["nvdecCudaArray"]["enabled"], true);
+    assert!(s.execute("prefs.set", json!({"key": "playback.nvdecCudaArray", "value": "yes"})).is_err());
+    set(&mut s, "playback.nvdecCudaArray", json!(false));
+    assert_eq!(cfa4_codecs::hw::nvdec_cuda_array(), Some(false));
+    assert!(settings::field("playback.nvdecCudaArray").is_some_and(|f| f.wired && matches!(f.kind, Kind::Bool)));
 }
 
 /// Settings ▸ Timeline ▸ "Place files dropped onto the Timeline directly on the Timeline": on by default.
