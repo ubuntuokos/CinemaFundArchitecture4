@@ -30,7 +30,7 @@ Design principles:
  L3  render · render-contracts (cfa4-render-contracts) · gpu · export · smart-edit · qc · golden (test-only)
      DCP validation: dcp-validate · dcp-inspect · DCP mastering: dcpomatic · downloads: fetch-client
  L2  tasks (cfa4-tasks) · edit · objtrack · codecs · interchange · captions · credits · speech · tts · tts-text
- L1  frame · io-core · media · project · audio-dsp · text · route (cfa4-route) · audit (cfa4-audit) · tcsync · surface-model · metrics · live · sandbox · surface-catalog
+ L1  frame · io-core · media · project · audio-dsp · hrtf · text · route (cfa4-route) · audit (cfa4-audit) · tcsync · surface-model · metrics · live · sandbox · surface-catalog
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
      codecs/containers: isobmff · matroska · mxf · cfb · mpegts · st2110 · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · dv · lcevc · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
      documents: dcp
@@ -129,6 +129,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV (PCM, G.711, G.722, ADPCM) |
 | `project` | L1 | document model, effect definitions, keyframes |
 | `audio-dsp` | L1 | loudness metering (BS.1770 / R128), audio effects, channel layouts (BS.775 up/downmix, 5.1 panner), music remix analysis; no dependencies |
+| `hrtf` | L1 | HRTF sets (`.maudhrtf`, built-in SADIE II KU100) and binaural rendering for the headphone monitor: moving sources with near field, virtual loudspeakers 2.0…7.1.4 (port of Maul Audio, MIT; `CFA4-BINAURAL-MONITOR-001`); the spatial scene renderer with TrueHD Atmos and IAB adapters (depends on truehd, iab and, same layer, audio-dsp for its room) |
 | `tcsync` | L1 | external timecode sync: SMPTE LTC frame, biphase-mark encoder and decoder (either direction, varying speed); MIDI Timecode quarter-frame / full-frame generation and parsing; chase state machine (locate, lock, drift re-seek, freewheel, scrub) ([plan](plans/TIMECODE-SYNC-LTC-MTC-2026-11-11.md)); depends only on `time` |
 | `surface-catalog` | L1 | `cfa4-surface-catalog`: hardware control surface catalogue (TOML, one family per file), hardware test reports (`docs/audit/hw/*.yaml`) and the computed support status and editor gate of CFA4-HW-CONTROL-SURFACES-001; no device I/O ([README](../crates/surface-catalog/README.md), [integration annex](plans/CFA4-HW-CONTROL-SURFACES-001-FINAL-1.1-CFA4-ILLESZTES.md)) |
 | `surface-model` | L1 | `cfa4-surface-model`: control surface types shared by the engine and the device I/O: `SurfaceEvent` / `SurfaceInput` (button, absolute 7/14-bit, relative with its encoding, jog, shuttle, touch, program change, pitch bend, SysEx, raw), `SurfaceFeedback`, `DeviceId`, device state and counters; serde only ([ADR 0012](adr/ADR-0012-control-surface.md)) |
@@ -186,7 +187,7 @@ are exempt):
 |---|---|
 | Every crate has a layer | A new crate fails the check until it is added to `LAYERS`. |
 | Only downward edges | A crate may not depend on a crate in a higher layer. |
-| Same-layer edges are listed | From L1 up, a same-layer edge must be in `SAME_LAYER`: `media→frame`, `project→media`, `project→frame`, `gpu→render`, `export→render`, `export→smart-edit`, `cli→cfa4`, plus a few reserved for planned crates. |
+| Same-layer edges are listed | From L1 up, a same-layer edge must be in `SAME_LAYER`: `media→frame`, `hrtf→audio-dsp`, `project→media`, `project→frame`, `gpu→render`, `export→render`, `export→smart-edit`, `cli→cfa4`, plus a few reserved for planned crates. |
 | L0 codecs stay standalone | L0 crates other than `time`, `geom`, `color`, `bitstream`, `testkit` may depend on no workspace crate except `cfa4-bitstream`. External crates such as `thiserror` and `rayon` are allowed. |
 | No UI/OS crates below L5 | `egui`, `eframe`, `egui-wgpu`, `winit`, `rfd`, `cpal`, `muda` are allowed only in L5 and L6. |
 
