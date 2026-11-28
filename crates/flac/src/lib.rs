@@ -123,17 +123,35 @@ impl Encoder {
     /// `fLaC`, the STREAMINFO block (sizes and MD5 unknown yet: see [`Encoder::streaminfo`]) and a
     /// VORBIS_COMMENT block with the vendor string.
     pub fn header(&self) -> Vec<u8> {
+        self.header_with_comments(&[])
+    }
+
+    /// [`Encoder::header`] with `comments` (`NAME=value`, e.g. `COMMENT=binaural, HRTF: KU100`) in
+    /// the VORBIS_COMMENT block. Comments that would overflow the block's 24-bit length are left
+    /// out, so the header is always valid.
+    pub fn header_with_comments(&self, comments: &[String]) -> Vec<u8> {
         let mut v = b"fLaC".to_vec();
         v.extend_from_slice(&[0, 0, 0, 34]);
         v.extend_from_slice(&self.streaminfo_with(0, 0, 0, [0; 16]));
         let vendor = concat!("cfa4-flac ", env!("CARGO_PKG_VERSION"));
-        let len = 4 + vendor.len() + 4;
+        let mut kept: Vec<&str> = Vec::new();
+        let mut len = 4 + vendor.len() + 4;
+        for c in comments {
+            if len + 4 + c.len() < 1 << 24 {
+                len += 4 + c.len();
+                kept.push(c);
+            }
+        }
         // last metadata block, type 4 (VORBIS_COMMENT), little-endian lengths inside
         v.push(0x84);
         v.extend_from_slice(&(len as u32).to_be_bytes()[1..]);
         v.extend_from_slice(&(vendor.len() as u32).to_le_bytes());
         v.extend_from_slice(vendor.as_bytes());
-        v.extend_from_slice(&0u32.to_le_bytes());
+        v.extend_from_slice(&(kept.len() as u32).to_le_bytes());
+        for c in kept {
+            v.extend_from_slice(&(c.len() as u32).to_le_bytes());
+            v.extend_from_slice(c.as_bytes());
+        }
         v
     }
 

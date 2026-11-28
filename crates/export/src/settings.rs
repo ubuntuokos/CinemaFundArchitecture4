@@ -289,11 +289,36 @@ pub struct AudioSettings {
     pub float: bool,
     /// FLAC compression level, 0 (fastest) to 8 (smallest). Every level is lossless.
     pub flac_level: u8,
+    /// Channels ▸ Binaural stereo (for headphones): the Mix heard through the headphone monitor
+    /// (two channels, whatever `channels` says). None: the usual fold.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub binaural: Option<BinauralAudio>,
 }
 
 impl Default for AudioSettings {
     fn default() -> Self {
-        AudioSettings { codec: AudioCodec::Auto, sample_rate: None, channels: 2, bitrate_kbps: 320, bits: 16, float: false, flac_level: 5 }
+        AudioSettings { codec: AudioCodec::Auto, sample_rate: None, channels: 2, bitrate_kbps: 320, bits: 16, float: false, flac_level: 5, binaural: None }
+    }
+}
+
+/// Binaural stereo export (`docs/plans/CFA4-BINAURAL-MONITOR-001.md` §3.5, B-05): the sequence's
+/// Mix in its own layout through `cfa4_hrtf::ChannelMonitor`, exactly as the Program monitor plays
+/// it with headphones on (Settings ▸ Audio Hardware ▸ Headphones).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct BinauralAudio {
+    /// `""` or `"builtin"` (SADIE II KU100), or a `.maudhrtf` / `.sofa` file.
+    pub hrtf: String,
+    /// 0 (no room) to 1, as `cfa4_hrtf::MonitorConfig::room`.
+    pub room: f32,
+    /// LFE level, −30 to 0 dB.
+    pub lfe_db: f32,
+}
+
+impl Default for BinauralAudio {
+    fn default() -> Self {
+        let m = cfa4_hrtf::MonitorConfig::default();
+        BinauralAudio { hrtf: String::new(), room: m.room, lfe_db: m.lfe_db }
     }
 }
 
@@ -656,6 +681,7 @@ impl ExportSettings {
         // the Opus encoder codes 48 kHz mono or stereo only
         let opus = self.audio_codec() == AudioCodec::Opus;
         let channels = match self.audio.channels {
+            _ if self.audio.binaural.is_some() => 2,
             0 | 1 => 1,
             6.. if !opus => 6,
             _ => 2,

@@ -39,6 +39,16 @@ const FL32_NAME: &[u8] = b"\x1532-bit floating point";
 /// 3306), with the 64-bit sizes in a `ds64` chunk. AIFF has no 64-bit form, so a longer AIFF is
 /// an error naming WAV instead.
 pub fn header(container: PcmContainer, channels: u16, sample_rate: u32, format: SampleFormat, frames: u64) -> Result<Vec<u8>, String> {
+    header_with_tail(container, channels, sample_rate, format, frames, 0)
+}
+
+/// [`header`] of a WAV followed, after the samples and their pad byte, by `tail` more bytes of
+/// whole chunks (a `LIST/INFO` from [`info_list`]), which the RIFF / RF64 size then counts. AIFF
+/// takes no tail (`tail` must be 0).
+pub fn header_with_tail(container: PcmContainer, channels: u16, sample_rate: u32, format: SampleFormat, frames: u64, tail: u64) -> Result<Vec<u8>, String> {
+    if tail != 0 && container == PcmContainer::Aiff {
+        return Err("an AIFF takes no trailing chunks".into());
+    }
     let too_long = || "the audio is too long to write".to_string();
     let bits = format.bits();
     let bps = bits / 8;
@@ -61,7 +71,7 @@ pub fn header(container: PcmContainer, channels: u16, sample_rate: u32, format: 
             let fact_len: u64 = if float { 12 } else { 0 };
             let padded = data.checked_add(data & 1).ok_or_else(too_long)?;
             // "WAVE" + fmt chunk + fact chunk + data chunk header + samples
-            let riff = (4 + 8 + u64::from(fmt_len) + fact_len + 8).checked_add(padded).ok_or_else(too_long)?;
+            let riff = (4 + 8 + u64::from(fmt_len) + fact_len + 8).checked_add(padded).and_then(|n| n.checked_add(tail)).ok_or_else(too_long)?;
             let rf64 = riff > u64::from(u32::MAX);
             let mut v = Vec::with_capacity(100);
             if rf64 {
@@ -145,6 +155,31 @@ pub fn header(container: PcmContainer, channels: u16, sample_rate: u32, format: 
             Ok(v)
         }
     }
+}
+
+/// A RIFF `LIST` chunk of type `INFO` holding `items` (four-character id such as `ICMT`, `INAM`,
+/// `ISFT`, and text), each a NUL-terminated string padded to an even length. Empty texts are left
+/// out; no items, no chunk.
+pub fn info_list(items: &[([u8; 4], &str)]) -> Vec<u8> {
+    let mut body = b"INFO".to_vec();
+    for (id, text) in items.iter().filter(|(_, t)| !t.is_empty()) {
+        let mut z = text.as_bytes().iter().copied().filter(|&b| b != 0).collect::<Vec<u8>>();
+        z.push(0);
+        let Ok(len) = u32::try_from(z.len()) else { continue };
+        body.extend_from_slice(id);
+        body.extend_from_slice(&len.to_le_bytes());
+        body.extend_from_slice(&z);
+        if z.len() & 1 == 1 {
+            body.push(0);
+        }
+    }
+    if body.len() == 4 {
+        return Vec::new();
+    }
+    let mut v = b"LIST".to_vec();
+    v.extend_from_slice(&(body.len() as u32).to_le_bytes());
+    v.extend_from_slice(&body);
+    v
 }
 
 /// Append interleaved samples in `format` (little-endian for WAV, big-endian for AIFF).

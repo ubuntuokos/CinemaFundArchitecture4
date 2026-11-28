@@ -40,6 +40,8 @@ pub(crate) struct AudioOut {
     /// End of the range (samples); input past it is silence.
     end: i64,
     pub loudness: Option<LoudnessReport>,
+    /// Channels ▸ Binaural stereo: the Mix through the headphone monitor (`binaural`).
+    pub binaural: Option<crate::binaural::Binaural>,
 }
 
 impl AudioOut {
@@ -57,8 +59,10 @@ impl AudioOut {
             (crate::Format::Dcp, crate::dcp_iab::DcpImmersive::Bed, Some(n @ (8 | 10))) => n,
             // MXF OP1a (XDCAM HD422, D-10) carries up to eight channels: a 7.1 mix when 8 are set
             (crate::Format::MxfOp1a, _, _) if settings.audio.channels == 8 => 8,
+            _ if settings.audio.binaural.is_some() => 2,
             _ => r.channels as usize,
         };
+        let binaural = settings.audio.binaural.as_ref().map(|b| crate::binaural::Binaural::new(b, sr)).transpose()?;
         let ln = &settings.effects.loudness;
         let limiter = ln.enabled.then(|| {
             let mut l = Limiter::new(sr as f32, channels);
@@ -69,7 +73,7 @@ impl AudioOut {
             l
         });
         let latency = limiter.as_ref().map(|l| l.latency() as i64).unwrap_or(0);
-        Ok(AudioOut { project, seq, sr, channels, gain: 1.0, limiter, latency, next_in: start, out: start, end, loudness: None })
+        Ok(AudioOut { project, seq, sr, channels, gain: 1.0, limiter, latency, next_in: start, out: start, end, loudness: None, binaural })
     }
 
     /// The loudness pass: measure the integrated loudness of the whole range and set the gain
@@ -153,8 +157,18 @@ impl AudioOut {
     /// Stereo output of a 5.1 Mix is the ITU-R BS.775 downmix; 5.1 output of a stereo Mix places it
     /// on L and R; 5.1 is in L, R, C, LFE, Ls, Rs order, 7.1 / 7.1.2 (a DCP's IAB bed) in L, R, C,
     /// LFE, Lss, Rss, Lrs, Rrs (, Lts, Rts) order.
-    fn mix(&self, pos: i64, n: usize, sources: &dyn SourceProvider) -> Vec<Vec<f32>> {
+    fn mix(&mut self, pos: i64, n: usize, sources: &dyn SourceProvider) -> Vec<Vec<f32>> {
         let real = (self.end - pos).clamp(0, n as i64) as usize;
+        if let Some(b) = self.binaural.as_mut() {
+            if real == 0 {
+                return vec![vec![0.0; n]; 2];
+            }
+            // past the range end the Mix is silence, as below; the ears are padded to `n`
+            let mix = cfa4_render::mixer::mix_graph(&self.project, &self.seq, pos, real, sources, None);
+            // the mixer's layouts are the monitor's, so this does not fail; if it ever did, the
+            // block is silence rather than a crash or a wrong fold
+            return b.ears(pos, mix, n).unwrap_or_else(|_| vec![vec![0.0; n]; 2]);
+        }
         let out_ch = if matches!(self.channels, 6 | 8 | 10) { self.channels } else { 2 };
         let mut st = if real > 0 {
             let layout = cfa4_audio_dsp::channels::Layout::from_channels(out_ch);

@@ -31,6 +31,7 @@ macro_rules! out {
 }
 
 mod args;
+mod binaural_cmd;
 mod codecs_cmd;
 mod probe;
 mod qc;
@@ -116,6 +117,15 @@ SUBCOMMANDS
   probe <media> [--image-sequence]
                                 media info as JSON, with MXF / Ogg / BWF details; with
                                 --image-sequence <media> is the first numbered still of a sequence
+  binaural <media> <out.flac> [--hrtf builtin|set.sofa|set.maudhrtf] [--room 0-1]
+           [--lfe-db -30-0] [--rate Hz] [--gain-db -30-12]
+                                the file heard through headphones, as a 24-bit stereo FLAC: object
+                                audio (TrueHD Atmos, IAB) object by object, any other layout as
+                                virtual loudspeakers, exactly as the Source monitor plays it with
+                                headphones on (docs/plans/CFA4-BINAURAL-MONITOR-001.md §3.5); the
+                                FLAC's COMMENT names the HRTF set; --gain-db scales it before
+                                rounding (a dense mix can pass full scale); prints a JSON summary
+                                with the peak and the samples clipped
   qc <media> [--profile ID|file.toml] [--expect plan.json] [--out report.json]
      [--contact-sheet sheet.png] [--no-decode]
                                 media QC (docs/media-qc.md): input, integrity, audio and picture
@@ -388,6 +398,24 @@ async fn cli() {
             let path = a.pos(1).unwrap_or_else(|| usage("probe <media> [--image-sequence]"));
             match probe::probe(path, a.flag("--image-sequence")) {
                 Ok(v) => print(&a, &v),
+                Err(e) => fail(e),
+            }
+        }
+        "binaural" => {
+            let usage_line = "binaural <media> <out.flac> [--hrtf builtin|set.sofa|set.maudhrtf] [--room 0-1] [--lfe-db -30-0] [--rate Hz] [--gain-db -30-12]";
+            let (Some(input), Some(output)) = (a.pos(1), a.pos(2)) else { usage(usage_line) };
+            let number = |key: &str| -> Option<f64> { a.opt(key).map(|v| v.parse().unwrap_or_else(|_| usage(usage_line))) };
+            let opt = binaural_cmd::Options {
+                hrtf: a.opt("--hrtf").map(str::to_owned),
+                room: number("--room"),
+                lfe_db: number("--lfe-db"),
+                rate: a.opt("--rate").map(|v| v.parse().unwrap_or_else(|_| usage(usage_line))),
+                gain_db: number("--gain-db"),
+            };
+            let (input, output) = (input.to_owned(), output.to_owned());
+            match tokio::task::spawn_blocking(move || binaural_cmd::run(&input, &output, &opt)).await {
+                Ok(Ok(v)) => print(&a, &v),
+                Ok(Err(e)) => fail(e),
                 Err(e) => fail(e),
             }
         }

@@ -24,6 +24,7 @@ pub mod as02_share;
 pub mod atomic;
 pub mod audio_copy;
 mod audio_out;
+pub mod binaural;
 pub mod boundary_reencode;
 mod boundary_reencode_hevc;
 #[cfg(test)]
@@ -3590,9 +3591,15 @@ fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, s
                 Format::Wav => AudioWriter::Pcm(pcm::PcmContainer::Wav),
                 _ => AudioWriter::Pcm(pcm::PcmContainer::Aiff),
             };
+            // a binaural file says so: WAV LIST/INFO ICMT, FLAC COMMENT (AIFF has no such field here)
+            let note = a.binaural.as_ref().map(|b| b.note.clone());
+            let tail = match (&writer, &note) {
+                (AudioWriter::Pcm(pcm::PcmContainer::Wav), Some(note)) => pcm::info_list(&[(*b"ICMT", note.as_str())]),
+                _ => Vec::new(),
+            };
             let head = match &writer {
-                AudioWriter::Pcm(c) => pcm::header(*c, ch, sr, fmt, frames).map_err(ExportError::Unsupported)?,
-                AudioWriter::Flac(enc) => enc.header(),
+                AudioWriter::Pcm(c) => pcm::header_with_tail(*c, ch, sr, fmt, frames, tail.len() as u64).map_err(ExportError::Unsupported)?,
+                AudioWriter::Flac(enc) => enc.header_with_comments(&note.iter().map(|n| format!("COMMENT={n}")).collect::<Vec<_>>()),
             };
             // one second per chunk: memory stays flat however long the range is
             let chunk = i64::from(sr.max(1));
@@ -3625,7 +3632,10 @@ fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, s
                 }
             }
             match &mut writer {
-                AudioWriter::Pcm(_) => out.write_all(pcm::pad(frames, ch, fmt)).map_err(io)?,
+                AudioWriter::Pcm(_) => {
+                    out.write_all(pcm::pad(frames, ch, fmt)).map_err(io)?;
+                    out.write_all(&tail).map_err(io)?;
+                }
                 AudioWriter::Flac(enc) => {
                     out.write_all(&enc.finish()).map_err(io)?;
                     // the frame sizes and MD5 are known now: fill them into STREAMINFO
@@ -3741,6 +3751,8 @@ mod tests;
 #[cfg(test)]
 mod settings_tests;
 
+#[cfg(test)]
+mod binaural_tests;
 #[cfg(test)]
 mod surround_tests;
 

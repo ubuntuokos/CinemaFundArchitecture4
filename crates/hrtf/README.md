@@ -43,6 +43,18 @@ room.process(&channels, &mut left, &mut right);                   // 12 channels
   (`cfa4_media::MediaSource::object_audio`: the block's object signals, each object's current state
   and the block's updates), through `atmos::truehd_state`. One second of 7.1.4 with the room takes about 50–65 ms of one
   core (release, the CI container), so a monitor uses some 6 % of a core.
+- `cfa4-cli binaural <media> <out.flac> [--hrtf builtin|set.sofa|set.maudhrtf] [--room 0-1]
+  [--lfe-db -30-0] [--rate Hz] [--gain-db -30-12]` (B-05) renders a whole file through the same
+  monitor path (`apps/cfa4-cli/src/binaural_cmd.rs`): objects object by object, other layouts as
+  virtual loudspeakers, into a 24-bit stereo FLAC whose `COMMENT` names the set
+  (`binaural, HRTF: <set>`); the file is the monitor's sound sample for sample before rounding.
+  A dense object mix can pass full scale (the Altitude16 Atmos sample peaks at +3.8 dBFS and
+  0.16 % of its samples clip; `--gain-db -4` keeps it under): the summary gives `peakDb` and
+  `clippedSamples`. 87 s of that sample (16 objects, room on) take 34 s on the CI container.
+- Export ▸ Audio ▸ Binaural stereo (`ExportSettings.audio.binaural {hrtf, room, lfe_db}`, B-05):
+  `cfa4-export`'s `binaural` module plays the sequence's Mix through `ChannelMonitor` exactly as
+  the Program monitor does, in every format with sound; the file names the set (WAV `LIST/INFO`
+  `ICMT`, FLAC `COMMENT`, MP4 / QuickTime `©cmt`).
 - `atmos`: `schedule_truehd` / `truehd_state` turn the events of `cfa4_truehd::cfa4::ObjectDecoder`
   into scene updates (bed labels to loudspeaker directions, snap to the nearest 7.1.4 loudspeaker,
   elevation off to ear height; the OAMD headphone element's mode is not mapped, see the module

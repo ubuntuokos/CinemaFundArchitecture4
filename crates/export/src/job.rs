@@ -663,7 +663,7 @@ impl Exporter {
         }
         let file = Out::create(&self.settings)?;
         let mut opts = WriterOptions::new(self.brand);
-        opts.metadata = self.settings.metadata.udta();
+        opts.metadata = crate::binaural::udta(&self.settings);
         opts.chapters = self.chapters.clone();
         let mut mux = Mp4Writer::new(file, opts).map_err(|e| ExportError::Io(e.to_string()))?;
         let mut vcfg = TrackConfig::new(self.venc.sample_entry(), self.venc.timescale());

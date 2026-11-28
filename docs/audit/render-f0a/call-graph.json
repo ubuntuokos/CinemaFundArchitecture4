@@ -1164,6 +1164,13 @@
    "crate": "cfa4-export",
    "kind": "struct",
    "module": "settings.rs",
+   "name": "BinauralAudio"
+  },
+  {
+   "class": "audio",
+   "crate": "cfa4-export",
+   "kind": "struct",
+   "module": "settings.rs",
    "name": "LoudnessNormalization"
   },
   {
@@ -2383,6 +2390,13 @@
    "kind": "struct",
    "module": "args.rs",
    "name": "Args"
+  },
+  {
+   "class": "other",
+   "crate": "cfa4-cli",
+   "kind": "struct",
+   "module": "binaural_cmd.rs",
+   "name": "Options"
   },
   {
    "class": "other",
@@ -7014,6 +7028,31 @@
  ],
  "use_edges": [
   {
+   "from": "cfa4-cli/binaural_cmd.rs",
+   "item": "channels",
+   "to": "cfa4-audio-dsp"
+  },
+  {
+   "from": "cfa4-cli/binaural_cmd.rs",
+   "item": "SampleFormat",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-cli/binaural_cmd.rs",
+   "item": "write_wav",
+   "to": "cfa4-export"
+  },
+  {
+   "from": "cfa4-cli/binaural_cmd.rs",
+   "item": "MediaSource",
+   "to": "cfa4-media"
+  },
+  {
+   "from": "cfa4-cli/binaural_cmd.rs",
+   "item": "open_with_fallback",
+   "to": "cfa4-media"
+  },
+  {
    "from": "cfa4-cli/codecs_cmd.rs",
    "item": "Format",
    "to": "cfa4-export"
@@ -11225,8 +11264,28 @@
   },
   {
    "from": "cfa4-export/audio_out.rs",
+   "item": "mixer",
+   "to": "cfa4-render"
+  },
+  {
+   "from": "cfa4-export/audio_out.rs",
    "item": "TimeRange",
    "to": "cfa4-time"
+  },
+  {
+   "from": "cfa4-export/binaural.rs",
+   "item": "channels",
+   "to": "cfa4-audio-dsp"
+  },
+  {
+   "from": "cfa4-export/binaural.rs",
+   "item": "AudioBuffer",
+   "to": "cfa4-frame"
+  },
+  {
+   "from": "cfa4-export/binaural.rs",
+   "item": "audio",
+   "to": "cfa4-render"
   },
   {
    "from": "cfa4-export/boundary_reencode.rs",
