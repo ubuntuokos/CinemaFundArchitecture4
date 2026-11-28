@@ -52,7 +52,17 @@ from .. import theme
 from ..i18n import N_, fmt, tr
 from .gesture_settings import gesture_page
 from .settings_hardware import ACCELERATORS_PAGE, DECODING_PAGE, QT_ONLY_PAGES, HardwarePages, arrange
-from .settings_devices import DISPLAYS_PAGE, DISPLAYS_TITLE, STORAGE_PAGE, STORAGE_TITLE, DisplaysPage, StoragePage
+from .settings_devices import (
+    DISPLAYS_PAGE,
+    DISPLAYS_TITLE,
+    FULLSCREEN_KEY,
+    LOW_SPACE_KEY,
+    STORAGE_PAGE,
+    STORAGE_TITLE,
+    DisplaysPage,
+    StoragePage,
+    fullscreen_choices,
+)
 from .settings_overview import OVERVIEW_PAGE, OverviewPage
 from .settings_system import SYSTEM_PAGE, SystemPage
 
@@ -395,7 +405,9 @@ class PreferencesDialog(QDialog):
                                      lambda p: any(c.get("id") == p for c in self.categories), self.select_page)
         # Displays and Storage Devices (HW-004): Qt's screen and volume lists, read-only
         self.displays = DisplaysPage(self.select_page, lambda: bool(get(self.values, "color.displayColorManagement")))
-        self.storage = StoragePage(engine, lambda: self._hardware_changed(STORAGE_PAGE), self.select_page)
+        self.storage = StoragePage(engine, lambda: self._hardware_changed(STORAGE_PAGE), self.select_page,
+                                   lambda: number(get(self.values, LOW_SPACE_KEY), 0))
+        self._device_rows: list[dict[str, Any]] = []
         self.overview.extra = [(DISPLAYS_PAGE, DISPLAYS_TITLE, self.displays.summary), (STORAGE_PAGE, STORAGE_TITLE, self.storage.summary)]
         app = QGuiApplication.instance()
         if isinstance(app, QGuiApplication):
@@ -562,8 +574,9 @@ class PreferencesDialog(QDialog):
         b = self.list_box.findChild(QPushButton, f"settings.category.{page}")
         if b is not None:
             b.setChecked(True)
-        # the Qt-only pages' keys belong to other categories (Playback), which reset them
-        self.reset_button.setEnabled(page not in QT_ONLY_PAGES)
+        # the Qt-only pages' keys belong to other categories (Playback), which reset them; the
+        # engine's Displays / Storage Devices categories reset their own keys
+        self.reset_button.setEnabled(page not in QT_ONLY_PAGES or isinstance(self.category().get("defaults"), dict))
         self.hardware.load(page)
         if page == SYSTEM_PAGE:
             self.system.load()
@@ -647,7 +660,13 @@ class PreferencesDialog(QDialog):
         col = QVBoxLayout(page)
         col.setContentsMargins(0, 0, 8, 0)
         col.setSpacing(6)
-        self._rows(page, col, [r for r in self.category().get("rows") or [] if isinstance(r, dict)])
+        rows = [r for r in self.category().get("rows") or [] if isinstance(r, dict)]
+        self._device_rows = []
+        if self.page in (DISPLAYS_PAGE, STORAGE_PAGE):
+            # the device page draws its own settings on its Settings tab
+            self._device_rows = [r for r in rows if r.get("type") != "custom"]
+            rows = [r for r in rows if r.get("type") == "custom"]
+        self._rows(page, col, rows)
         if self.message:
             col.addWidget(self._note(page, self.message, "settings.message"))
         col.addStretch(1)
@@ -709,6 +728,11 @@ class PreferencesDialog(QDialog):
         key = str(f.get("key") or "")
         label = str(f.get("label") or "")
         k = f.get("kind") if isinstance(f.get("kind"), dict) else {}
+        if key == FULLSCREEN_KEY:
+            # a text key in the schema; here one of the displays Qt sees now (and Auto)
+            current = get(self.values, key)
+            choices = fullscreen_choices(self.displays.displays(), current if isinstance(current, str) else "")
+            k = {"type": "choice", "choices": [{"value": v, "label": label} for v, label in choices]}
         t = str(k.get("type") or "")
         cur = get(self.values, key)
         row = QWidget(parent)
@@ -915,10 +939,24 @@ class PreferencesDialog(QDialog):
             return self.system.page(parent)
         if name == OVERVIEW_PAGE:
             return self.overview.page(parent)
-        if name == DISPLAYS_PAGE:
-            return self.displays.page(parent)
-        if name == STORAGE_PAGE:
-            return self.storage.page(parent)
+        if name in (DISPLAYS_PAGE, STORAGE_PAGE):
+            device_rows = list(self._device_rows)
+
+            def rows(p: QWidget, v: QVBoxLayout) -> None:
+                # the tab is narrower than a page: shorter labels, as beside Label Colors
+                self.label_w = 170
+                try:
+                    self._rows(p, v, device_rows)
+                finally:
+                    self.label_w = LABEL_W
+                for c in p.findChildren(QComboBox):
+                    c.setMinimumContentsLength(12)
+                    c.setMaximumWidth(200)
+                for w, by in self._enablers:
+                    w.setEnabled(get(self.values, by) is not False)
+
+            page = self.displays if name == DISPLAYS_PAGE else self.storage
+            return page.page(parent, rows if device_rows else None)
         if name == "labelPresets":
             return self._label_presets(parent)
         if name == "memoryInfo":

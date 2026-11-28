@@ -5100,3 +5100,8 @@
 	{time} Detected {count} display(s).	{time} Знайдено дисплеїв: {count}.
 	{time} Detected {count} storage device(s).	{time} Знайдено накопичувачів: {count}.
 	{w} × {h} mm	{w} × {h} мм
+	Full-screen playback display	Дисплей для повноекранного відтворення
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Авто: дисплей, на якому розташоване вікно. Непідключений дисплей вважається Авто.
+	Warn when free space falls below	Попереджати, коли вільного місця менше ніж
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = автоматично: 10 ГБ або 5% диска, що більше.
+	{name} (not connected)	{name} (не підключено)

@@ -5119,3 +5119,8 @@ export.summary	Low	төмен
 	{time} Detected {count} display(s).	{time} Табылған дисплейлер: {count}.
 	{time} Detected {count} storage device(s).	{time} Табылған сақтау құрылғылары: {count}.
 	{w} × {h} mm	{w} × {h} мм
+	Full-screen playback display	Толық экранда ойнату дисплейі
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Авто: терезе тұрған дисплей. Қосылмаған дисплей Авто деп есептеледі.
+	Warn when free space falls below	Бос орын осыдан азайғанда ескерту
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = автоматты: 10 ГБ немесе дискінің 5%-ы, қайсысы үлкен болса.
+	{name} (not connected)	{name} (қосылмаған)

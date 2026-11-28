@@ -5117,3 +5117,8 @@ export.summary	Low	низак
 	{time} Detected {count} display(s).	{time} Пронађени екрани: {count}.
 	{time} Detected {count} storage device(s).	{time} Пронађени уређаји за складиштење: {count}.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Екран за репродукцију преко целог екрана
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Аутоматски: екран на којем је прозор. Неповезани екран рачуна се као Аутоматски.
+	Warn when free space falls below	Упозори када слободан простор падне испод
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = аутоматски: 10 GB или 5% диска, шта је веће.
+	{name} (not connected)	{name} (није повезан)

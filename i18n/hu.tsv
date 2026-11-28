@@ -5151,3 +5151,8 @@ export.summary	Low	alacsony
 	{time} Detected {count} display(s).	{time} {count} kijelző felismerve.
 	{time} Detected {count} storage device(s).	{time} {count} tárolóeszköz felismerve.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Teljes képernyős lejátszás kijelzője
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Auto: az a kijelző, amelyen az ablak van. A nem csatlakoztatott kijelző Auto-nak számít.
+	Warn when free space falls below	Figyelmeztetés, ha a szabad hely ez alá csökken
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = automatikus: 10 GB vagy a lemez 5%-a, amelyik nagyobb.
+	{name} (not connected)	{name} (nincs csatlakoztatva)

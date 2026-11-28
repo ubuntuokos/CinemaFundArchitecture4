@@ -4,7 +4,9 @@
 (``crates/engine/src/settings.rs`` ``groups()``) and adds two pages the engine schema does not
 carry: Hardware & Devices ▸ **Overview** first in its group (``settings_overview``), then
 **Accelerators (GPU / NPU)** (on the shared device page, ``device_page``), Hardware & Devices ▸
-**System Settings (root)**, last in it (``settings_system``, CFA4-SETTINGS-HW-003 R3), and Media &
+**System Settings (root)**, last in it (``settings_system``, CFA4-SETTINGS-HW-003 R3), Displays and
+Storage Devices after Accelerators (``settings_devices``, HW-004; the engine's categories of the same
+ids when it sends them, so their keys reset and apply as usual), and Media &
 Playback ▸ **Decoding & Encoding**, after Media. An engine that sends no ``groups`` keeps the flat list.
 
 ``HardwarePages`` asks the engine for ``hardware.inventory`` / ``codecs.capabilities`` once per
@@ -119,7 +121,12 @@ def arrange(schema: Any) -> list[tuple[dict[str, Any] | None, list[dict[str, Any
     for g in groups:
         members = [c for c in cats if group_of(c) == g["id"]]
         if g["id"] == "hardware":
-            members[:0] = [_overview_page(), _accelerators_page(), _qt_page(DISPLAYS_PAGE, DISPLAYS_TITLE), _qt_page(STORAGE_PAGE, STORAGE_TITLE)]
+            # Displays and Storage Devices: the engine's categories (their keys, HW-004 R4) when it
+            # sends them, else the read-only Qt pages
+            own = {str(c["id"]): c for c in members if c.get("id") in (DISPLAYS_PAGE, STORAGE_PAGE)}
+            members = [c for c in members if c.get("id") not in own]
+            members[:0] = [_overview_page(), _accelerators_page(), own.get(DISPLAYS_PAGE) or _qt_page(DISPLAYS_PAGE, DISPLAYS_TITLE),
+                           own.get(STORAGE_PAGE) or _qt_page(STORAGE_PAGE, STORAGE_TITLE)]
             members.append(_system_page())
         if g["id"] == "media" and playback is not None:
             after = next((i + 1 for i, c in enumerate(members) if c.get("id") == "media"), len(members))

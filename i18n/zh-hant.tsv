@@ -5116,3 +5116,8 @@ export.summary	Low	低
 	{time} Detected {count} display(s).	{time} 偵測到 {count} 個顯示器。
 	{time} Detected {count} storage device(s).	{time} 偵測到 {count} 個儲存裝置。
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	全螢幕播放顯示器
+	Auto: the display the window is on. A display that is not connected counts as Auto.	自動：視窗所在的顯示器。未連接的顯示器視為自動。
+	Warn when free space falls below	可用空間低於此值時警告
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = 自動：10 GB 或磁碟的 5%，取較大者。
+	{name} (not connected)	{name}（未連接）

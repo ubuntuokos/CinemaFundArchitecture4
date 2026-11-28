@@ -100,6 +100,8 @@ fn categories_follow_premiere_order() {
             "mediaAnalysis",
             "mediaCache",
             "memory",
+            "displays",
+            "storage",
             "playback",
             "plugins",
             "timecodeSync",
@@ -990,4 +992,43 @@ fn a_batch_applies_duration_units_before_their_values() {
 
 fn updated_category(s: &mut Session, id: &str) -> Value {
     s.execute("prefs.schema", json!({"category": id})).unwrap()["categories"][0].clone()
+}
+
+#[test]
+fn displays_and_storage_settings_round_trip_and_repair() {
+    // CFA4-SETTINGS-HW-004 R4: the full-screen display and the low-space threshold
+    let mut s = Session::default();
+    assert_eq!(s.prefs.get("displays.fullscreenPlayback"), Some(json!("auto")));
+    assert_eq!(s.prefs.get("storage.lowSpaceGb"), Some(json!(0)));
+    for id in ["displays", "storage"] {
+        assert_eq!(settings::category(id).map(|c| c.group), Some("hardware"), "{id}");
+    }
+    assert!(settings::field("displays.fullscreenPlayback").is_some_and(|f| f.wired));
+    assert!(settings::field("storage.lowSpaceGb").is_some_and(|f| f.wired));
+
+    set(&mut s, "displays.fullscreenPlayback", json!("  DP-1 "));
+    assert_eq!(s.prefs.get("displays.fullscreenPlayback"), Some(json!("DP-1")));
+    // blank or overlong names are not screens
+    set(&mut s, "displays.fullscreenPlayback", json!("   "));
+    assert_eq!(s.prefs.get("displays.fullscreenPlayback"), Some(json!("auto")));
+    set(&mut s, "displays.fullscreenPlayback", json!("x".repeat(settings::DisplayPrefs::MAX_NAME + 1)));
+    assert_eq!(s.prefs.get("displays.fullscreenPlayback"), Some(json!("auto")));
+    assert!(s.execute("prefs.set", json!({"key": "displays.fullscreenPlayback", "value": 3})).is_err());
+
+    set(&mut s, "storage.lowSpaceGb", json!(25));
+    assert_eq!(s.prefs.get("storage.lowSpaceGb"), Some(json!(25)));
+    set(&mut s, "storage.lowSpaceGb", json!(5_000_000));
+    assert_eq!(s.prefs.get("storage.lowSpaceGb"), Some(json!(100_000)));
+    assert!(s.execute("prefs.set", json!({"key": "storage.lowSpaceGb", "value": "lots"})).is_err());
+
+    // an old preferences file without the two categories loads with the defaults; a broken one is repaired
+    let old = Preferences::from_value(json!({"version": 2, "memory": {"frameCacheMb": 512}}));
+    assert_eq!((old.displays.fullscreen_playback.as_str(), old.storage.low_space_gb), ("auto", 0));
+    let broken = Preferences::from_value(json!({"version": 2, "displays": {"fullscreenPlayback": ""}, "storage": {"lowSpaceGb": -4}}));
+    assert_eq!((broken.displays.fullscreen_playback.as_str(), broken.storage.low_space_gb), ("auto", 0));
+
+    // prefs.schema lists both pages with their defaults
+    let cat = updated_category(&mut s, "storage");
+    assert_eq!(cat["defaults"], json!({"lowSpaceGb": 0}));
+    assert_eq!(updated_category(&mut s, "displays")["defaults"], json!({"fullscreenPlayback": "auto"}));
 }

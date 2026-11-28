@@ -5119,3 +5119,8 @@ export.summary	Low	låg
 	{time} Detected {count} display(s).	{time} {count} skärm(ar) hittades.
 	{time} Detected {count} storage device(s).	{time} {count} lagringsenhet(er) hittades.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Skärm för uppspelning i helskärm
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Auto: skärmen som fönstret ligger på. En skärm som inte är ansluten räknas som Auto.
+	Warn when free space falls below	Varna när ledigt utrymme understiger
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = automatiskt: 10 GB eller 5 % av disken, det som är störst.
+	{name} (not connected)	{name} (inte ansluten)

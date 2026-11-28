@@ -5117,3 +5117,8 @@ export.summary	Low	laag
 	{time} Detected {count} display(s).	{time} {count} beeldscherm(en) gevonden.
 	{time} Detected {count} storage device(s).	{time} {count} opslagapparaat/-apparaten gevonden.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Beeldscherm voor afspelen op volledig scherm
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Auto: het beeldscherm waarop het venster staat. Een niet-aangesloten beeldscherm telt als Auto.
+	Warn when free space falls below	Waarschuwen als de vrije ruimte daalt onder
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = automatisch: 10 GB of 5% van de schijf, wat het grootst is.
+	{name} (not connected)	{name} (niet aangesloten)

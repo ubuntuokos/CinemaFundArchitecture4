@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QByteArray, QElapsedTimer, QEvent, QPoint, QRect, QSettings, Qt, QTimer, QUrl
-from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QCursor, QDesktopServices, QKeyEvent, QKeySequence
+from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QCursor, QDesktopServices, QGuiApplication, QKeyEvent, QKeySequence
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
     QApplication,
@@ -88,6 +88,7 @@ from .panels.reference import ReferenceMonitor
 from .panels.remix import RemixPropertiesDialog
 from .panels.scopes import ScopesPanel
 from .panels.sequence_settings import Draft as SeqDraft
+from .panels.settings_devices import FULLSCREEN_KEY, fullscreen_target, screens
 from .panels.sequence_settings import SequenceSettingsDialog, count_sequences
 from .panels.sequence_settings import draft_from as seq_draft_from
 from .panels.settings import MENU as SETTINGS_MENU
@@ -314,6 +315,8 @@ class MainWindow(QMainWindow):
         # egui's Darkest until the engine says which theme Settings ▸ Appearance selects
         theme.apply(theme.DARKEST)
         self.appearance: dict[str, Any] = {}
+        # Settings ▸ Displays ▸ full-screen playback display (`auto` or a connector name)
+        self.fullscreen_display = "auto"
         self.monitor = ProgramMonitor(engine, self)
         self.source_monitor = SourceMonitor(engine, self)
         self.timeline = TimelinePanel(self)
@@ -1162,6 +1165,7 @@ class MainWindow(QMainWindow):
         self.engine.call("engine.commands", on_reply=self._on_commands)
         self.engine.execute("effects.list", {}, on_reply=self._on_effects_list)
         self.load_appearance()
+        self.load_display_settings()
         self.refresh_timecode_devices()
         self.timecode_sync.report()  # a restarted engine knows nothing of the player
         self.load_audio_output()
@@ -1364,11 +1368,29 @@ class MainWindow(QMainWindow):
         self.effects.search.setFocus(Qt.FocusReason.OtherFocusReason)
 
     def toggle_full_screen(self) -> None:
-        """The header's Full screen: the window full screen, or back."""
+        """The header's Full screen: the window full screen, or back. It goes full screen on the
+        display chosen in Settings ▸ Displays, or where it is (Auto, or that display is not
+        connected)."""
         if self.isFullScreen():
             self.showNormal()
-        else:
-            self.showFullScreen()
+            return
+        target = fullscreen_target(self.fullscreen_display, screens())
+        screen = next((s for s in QGuiApplication.screens() if target is not None and s.name() == target.name), None)
+        if screen is not None and screen is not self.screen():
+            self.move(screen.geometry().topLeft())
+            handle = self.windowHandle()
+            if handle is not None:
+                handle.setScreen(screen)
+        self.showFullScreen()
+
+    def load_display_settings(self) -> None:
+        """Take the full-screen display from the engine's Settings ▸ Displays."""
+
+        def got(result: Any, _data: bytes | None) -> None:
+            value = result.get("value", result) if isinstance(result, dict) else result
+            self.fullscreen_display = value if isinstance(value, str) and value else "auto"
+
+        self.engine.execute("prefs.get", {"key": FULLSCREEN_KEY}, on_reply=got, on_error=lambda _m: None)
 
     def _update_appearance_button(self) -> None:
         button = getattr(self, "appearance_button", None)
@@ -1775,6 +1797,7 @@ class MainWindow(QMainWindow):
 
     def _settings_applied(self, changes: dict[str, Any]) -> None:
         self.load_appearance()
+        self.load_display_settings()
         self.load_audio_output()
         lang = changes.get("general.interfaceLanguage")
         if isinstance(lang, str):

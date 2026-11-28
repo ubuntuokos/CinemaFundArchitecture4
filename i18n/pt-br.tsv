@@ -5127,3 +5127,8 @@
 	{time} Detected {count} display(s).	{time} {count} tela(s) detectada(s).
 	{time} Detected {count} storage device(s).	{time} {count} dispositivo(s) de armazenamento detectado(s).
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Tela da reprodução em tela cheia
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Auto: a tela em que a janela está. Uma tela não conectada conta como Auto.
+	Warn when free space falls below	Avisar quando o espaço livre ficar abaixo de
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = automático: 10 GB ou 5% do disco, o que for maior.
+	{name} (not connected)	{name} (não conectada)

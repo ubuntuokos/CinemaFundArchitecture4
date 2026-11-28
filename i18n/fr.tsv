@@ -5122,3 +5122,8 @@
 	{time} Detected {count} display(s).	{time} {count} écran(s) détecté(s).
 	{time} Detected {count} storage device(s).	{time} {count} périphérique(s) de stockage détecté(s).
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Écran de lecture plein écran
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Auto : l'écran sur lequel se trouve la fenêtre. Un écran non connecté compte comme Auto.
+	Warn when free space falls below	Avertir lorsque l'espace libre descend sous
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = automatique : 10 Go ou 5 % du disque, la plus grande valeur.
+	{name} (not connected)	{name} (non connecté)

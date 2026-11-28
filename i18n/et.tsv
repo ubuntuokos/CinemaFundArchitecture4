@@ -5119,3 +5119,8 @@ export.summary	Low	madal
 	{time} Detected {count} display(s).	{time} Leiti {count} kuvarit.
 	{time} Detected {count} storage device(s).	{time} Leiti {count} salvestusseadet.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Täisekraanil taasesituse kuvar
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Auto: kuvar, millel aken asub. Ühendamata kuvar loetakse Autoks.
+	Warn when free space falls below	Hoiata, kui vaba ruum langeb alla
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = automaatne: 10 GB või 5% kettast, kumb on suurem.
+	{name} (not connected)	{name} (pole ühendatud)

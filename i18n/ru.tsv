@@ -5100,3 +5100,8 @@
 	{time} Detected {count} display(s).	{time} Найдено дисплеев: {count}.
 	{time} Detected {count} storage device(s).	{time} Найдено накопителей: {count}.
 	{w} × {h} mm	{w} × {h} мм
+	Full-screen playback display	Дисплей для полноэкранного воспроизведения
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Авто: дисплей, на котором находится окно. Неподключённый дисплей считается Авто.
+	Warn when free space falls below	Предупреждать, когда свободного места меньше
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = автоматически: 10 ГБ или 5% диска, что больше.
+	{name} (not connected)	{name} (не подключён)

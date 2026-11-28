@@ -5120,3 +5120,8 @@ export.summary	Low	ниско
 	{time} Detected {count} display(s).	{time} Намерени дисплеи: {count}.
 	{time} Detected {count} storage device(s).	{time} Намерени устройства за съхранение: {count}.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Екран за възпроизвеждане на цял екран
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Авто: екранът, на който е прозорецът. Несвързан екран се приема за Авто.
+	Warn when free space falls below	Предупреждение, когато свободното място падне под
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = автоматично: 10 GB или 5% от диска, което е по-голямо.
+	{name} (not connected)	{name} (не е свързан)

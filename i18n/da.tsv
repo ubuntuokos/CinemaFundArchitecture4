@@ -5119,3 +5119,8 @@ export.summary	Low	lav
 	{time} Detected {count} display(s).	{time} {count} skærm(e) fundet.
 	{time} Detected {count} storage device(s).	{time} {count} lagerenhed(er) fundet.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Skærm til afspilning i fuld skærm
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Auto: den skærm, vinduet er på. En skærm, der ikke er tilsluttet, tæller som Auto.
+	Warn when free space falls below	Advar, når ledig plads falder under
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = automatisk: 10 GB eller 5 % af disken, alt efter hvad der er størst.
+	{name} (not connected)	{name} (ikke tilsluttet)

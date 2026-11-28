@@ -5124,3 +5124,8 @@
 	{time} Detected {count} display(s).	{time} {count} Bildschirm(e) erkannt.
 	{time} Detected {count} storage device(s).	{time} {count} Speichergerät(e) erkannt.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Bildschirm für die Vollbildwiedergabe
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Auto: der Bildschirm, auf dem das Fenster liegt. Ein nicht angeschlossener Bildschirm gilt als Auto.
+	Warn when free space falls below	Warnen, wenn der freie Speicher unter diesen Wert fällt
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = automatisch: 10 GB oder 5 % des Datenträgers, je nachdem, was größer ist.
+	{name} (not connected)	{name} (nicht angeschlossen)

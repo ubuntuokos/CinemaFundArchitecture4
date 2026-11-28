@@ -5120,3 +5120,8 @@ export.summary	Low	nizka
 	{time} Detected {count} display(s).	{time} Najdeni zasloni: {count}.
 	{time} Detected {count} storage device(s).	{time} Najdene naprave za shranjevanje: {count}.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Zaslon za predvajanje v celozaslonskem načinu
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Samodejno: zaslon, na katerem je okno. Nepovezan zaslon šteje kot Samodejno.
+	Warn when free space falls below	Opozori, ko prosti prostor pade pod
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = samodejno: 10 GB ali 5 % diska, kar je več.
+	{name} (not connected)	{name} (ni povezan)

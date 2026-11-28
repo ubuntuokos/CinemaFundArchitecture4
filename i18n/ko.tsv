@@ -5111,3 +5111,8 @@
 	{time} Detected {count} display(s).	{time} 디스플레이 {count}개를 찾았습니다.
 	{time} Detected {count} storage device(s).	{time} 저장 장치 {count}개를 찾았습니다.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	전체 화면 재생 디스플레이
+	Auto: the display the window is on. A display that is not connected counts as Auto.	자동: 창이 있는 디스플레이. 연결되지 않은 디스플레이는 자동으로 간주됩니다.
+	Warn when free space falls below	여유 공간이 다음보다 적으면 경고
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = 자동: 10GB 또는 디스크의 5% 중 큰 값.
+	{name} (not connected)	{name}(연결 안 됨)

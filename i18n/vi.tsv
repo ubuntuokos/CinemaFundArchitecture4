@@ -5117,3 +5117,8 @@ export.summary	Low	thấp
 	{time} Detected {count} display(s).	{time} Đã phát hiện {count} màn hình.
 	{time} Detected {count} storage device(s).	{time} Đã phát hiện {count} thiết bị lưu trữ.
 	{w} × {h} mm	{w} × {h} mm
+	Full-screen playback display	Màn hình phát toàn màn hình
+	Auto: the display the window is on. A display that is not connected counts as Auto.	Tự động: màn hình đang chứa cửa sổ. Màn hình không được kết nối được tính là Tự động.
+	Warn when free space falls below	Cảnh báo khi dung lượng trống xuống dưới
+	0 = automatic: 10 GB or 5% of the disk, whichever is larger.	0 = tự động: 10 GB hoặc 5% ổ đĩa, lấy giá trị lớn hơn.
+	{name} (not connected)	{name} (không được kết nối)
