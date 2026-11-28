@@ -4984,3 +4984,19 @@ export.summary	Low	düşük
 	DNx Coding	DNx kodlama
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg uyumlu (FFmpeg tabanlı araçlar için)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Kapalı: SMPTE ST 2019-1'e göre kodlanır. Açık: FFmpeg'in DNx yazdığı biçimde kodlanır, FFmpeg tabanlı araçlar için.
+	Loading HRTF…	HRTF yükleniyor…
+	Headphones (Binaural)	Kulaklık (binaural)
+	Binaural	Binaural
+	{layout} · binaural	{layout} · binaural
+	{source} · {n} objects · binaural	{source} · {n} nesne · binaural
+	Headphones: {error}. Playing through the speakers.	Kulaklık: {error}. Ses hoparlörlerden çalıyor.
+	Headphones	Kulaklık
+	Monitoring	İzleme
+	Speakers	Hoparlörler
+	HRTF set	HRTF seti
+	Built-in (SADIE II KU100)	Yerleşik (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF setleri (*.sofa *.maudhrtf)
+	Room	Oda
+	Little	Az
+	LFE level	LFE düzeyi
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Kulaklık, karışımı veya bir klibin Dolby Atmos ya da IAB nesnelerini HRTF setiyle çevrenizdeki yerlerinden çalar. Dışa aktarımlar değişmez.

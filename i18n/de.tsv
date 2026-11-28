@@ -4990,3 +4990,19 @@
 	DNx Coding	DNx-Codierung
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibel (für FFmpeg-basierte Werkzeuge)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Aus: codiert nach SMPTE ST 2019-1. Ein: codiert, wie FFmpeg DNx schreibt, für Werkzeuge auf FFmpeg-Basis.
+	Loading HRTF…	HRTF wird geladen…
+	Headphones (Binaural)	Kopfhörer (binaural)
+	Binaural	Binaural
+	{layout} · binaural	{layout} · binaural
+	{source} · {n} objects · binaural	{source} · {n} Objekte · binaural
+	Headphones: {error}. Playing through the speakers.	Kopfhörer: {error}. Der Ton läuft über die Lautsprecher.
+	Headphones	Kopfhörer
+	Monitoring	Abhören
+	Speakers	Lautsprecher
+	HRTF set	HRTF-Satz
+	Built-in (SADIE II KU100)	Integriert (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF-Sätze (*.sofa *.maudhrtf)
+	Room	Raum
+	Little	Wenig
+	LFE level	LFE-Pegel
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Kopfhörer spielen den Mix oder die Dolby-Atmos- bzw. IAB-Objekte eines Clips über den HRTF-Satz von ihren Plätzen um dich herum. Exporte ändern sich nicht.

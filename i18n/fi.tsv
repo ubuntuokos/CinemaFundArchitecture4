@@ -4985,3 +4985,19 @@ export.summary	Low	matala
 	DNx Coding	DNx-koodaus
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-yhteensopiva (FFmpeg-pohjaisille työkaluille)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Pois: koodattu SMPTE ST 2019-1:n mukaan. Päällä: koodattu niin kuin FFmpeg kirjoittaa DNx:n, FFmpegiin perustuville työkaluille.
+	Loading HRTF…	Ladataan HRTF:ää…
+	Headphones (Binaural)	Kuulokkeet (binauraalinen)
+	Binaural	Binauraalinen
+	{layout} · binaural	{layout} · binauraalinen
+	{source} · {n} objects · binaural	{source} · {n} objektia · binauraalinen
+	Headphones: {error}. Playing through the speakers.	Kuulokkeet: {error}. Ääni kuuluu kaiuttimista.
+	Headphones	Kuulokkeet
+	Monitoring	Tarkkailu
+	Speakers	Kaiuttimet
+	HRTF set	HRTF-sarja
+	Built-in (SADIE II KU100)	Sisäänrakennettu (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF-sarjat (*.sofa *.maudhrtf)
+	Room	Huone
+	Little	Vähän
+	LFE level	LFE-taso
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Kuulokkeet toistavat miksauksen tai leikkeen Dolby Atmos- tai IAB-objektit niiden paikoilta ympäriltäsi HRTF-sarjan avulla. Vienteihin tämä ei vaikuta.

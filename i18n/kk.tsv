@@ -4985,3 +4985,19 @@ export.summary	Low	төмен
 	DNx Coding	DNx кодтау
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-пен үйлесімді (FFmpeg негізіндегі құралдар үшін)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Өшірулі: SMPTE ST 2019-1 бойынша кодталады. Қосулы: FFmpeg DNx-ті қалай жазса, солай кодталады, FFmpeg негізіндегі құралдар үшін.
+	Loading HRTF…	HRTF жүктелуде…
+	Headphones (Binaural)	Құлаққап (бинауралды)
+	Binaural	Бинауралды
+	{layout} · binaural	{layout} · бинауралды
+	{source} · {n} objects · binaural	{source} · {n} нысан · бинауралды
+	Headphones: {error}. Playing through the speakers.	Құлаққап: {error}. Дыбыс динамиктерден шығады.
+	Headphones	Құлаққап
+	Monitoring	Тыңдау
+	Speakers	Динамиктер
+	HRTF set	HRTF жинағы
+	Built-in (SADIE II KU100)	Кірістірілген (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF жинақтары (*.sofa *.maudhrtf)
+	Room	Бөлме
+	Little	Аз
+	LFE level	LFE деңгейі
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	Құлаққап HRTF жинағы арқылы миксті немесе клиптің Dolby Atmos не IAB нысандарын сіздің айналаңыздағы өз орындарынан ойнатады. Экспорт өзгермейді.

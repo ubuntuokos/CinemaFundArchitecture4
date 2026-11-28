@@ -41,6 +41,7 @@ PROGRAM_BUTTONS: tuple[TransportDef, ...] = (
     TransportDef("exportFrame", "exportFrame", "camera", N_("Export Frame")),
     TransportDef("proxies", "media.toggleProxies", "proxy", N_("Toggle Proxies")),
     TransportDef("loop", "playback.loop", "loop", N_("Loop")),
+    TransportDef("headphones", "monitor.headphones", "headphones", N_("Headphones (Binaural)")),
 )
 SOURCE_BUTTONS: tuple[TransportDef, ...] = (
     TransportDef("marker", "markers.add", "marker", N_("Add Marker (M)")),
@@ -55,6 +56,7 @@ SOURCE_BUTTONS: tuple[TransportDef, ...] = (
     TransportDef("overwrite", "source.overwrite", "overwrite", N_("Overwrite (.)")),
     TransportDef("exportFrame", "exportFrame", "camera", N_("Export Frame")),
     TransportDef("proxies", "media.toggleProxies", "proxy", N_("Toggle Proxies")),
+    TransportDef("headphones", "monitor.headphones", "headphones", N_("Headphones (Binaural)")),
 )
 
 
@@ -129,6 +131,11 @@ def _icon_path(name: str) -> tuple[QPainterPath, QPainterPath]:
         line.moveTo(14.5, 9)
         line.arcTo(QRectF(3.5, 3.5, 11, 11), 0, 270)
         poly((14.5, 5.2), (14.5, 9.2), (11, 7.6), filled=True)
+    elif name == "headphones":  # a headband over two ear cups
+        line.moveTo(3.5, 11)
+        line.arcTo(QRectF(3.5, 3, 11, 13), 180, -180)
+        line.addRoundedRect(QRectF(2.5, 10, 3, 5.5), 1.2, 1.2)
+        line.addRoundedRect(QRectF(12.5, 10, 3, 5.5), 1.2, 1.2)
     elif name == "wrench":
         line.addEllipse(QPointF(12, 6), 3.2, 3.2)
         poly((9.7, 8.3), (3, 15), closed=False)

@@ -5015,3 +5015,19 @@ export.summary	Low	alacsony
 	DNx Coding	DNx-kódolás
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibilis (FFmpeg-alapú eszközökhöz)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Ki: SMPTE ST 2019-1 szerinti kódolás. Be: úgy kódol, ahogy az FFmpeg írja a DNx-et, FFmpeg-re épülő eszközökhöz.
+	Headphones	Fejhallgató
+	Monitoring	Előhallgatás
+	Speakers	Hangszórók
+	Headphones (Binaural)	Fejhallgató (binaurális)
+	HRTF set	HRTF-készlet
+	Built-in (SADIE II KU100)	Beépített (SADIE II KU100)
+	HRTF sets (*.sofa *.maudhrtf)	HRTF-készletek (*.sofa *.maudhrtf)
+	Room	Szoba
+	Little	Kevés
+	LFE level	LFE-szint
+	Headphones play the mix, or a clip's Dolby Atmos or IAB objects, from their places around you through the HRTF set. Exports are not changed.	A fejhallgató a keverést, illetve a klip Dolby Atmos vagy IAB objektumait a helyükről, Ön körül szólaltatja meg a HRTF-készlettel. Az exportokat ez nem változtatja meg.
+	Loading HRTF…	HRTF betöltése…
+	Binaural	Binaurális
+	Headphones: {error}. Playing through the speakers.	Fejhallgató: {error}. A hang a hangszórókon szól.
+	{source} · {n} objects · binaural	{source} · {n} objektum · binaurális
+	{layout} · binaural	{layout} · binaurális
