@@ -74,7 +74,7 @@ fn probe(fp: &Path, file: &Path) -> Vec<(i64, bool)> {
 }
 
 /// The WP-02 index of the video track of an MP4, as the MP4 Smart Cut builds it.
-fn index_mp4(file: &Mp4File, bytes: &[u8]) -> StreamIndex {
+pub(crate) fn index_mp4(file: &Mp4File, bytes: &[u8]) -> StreamIndex {
     let i = file.tracks.iter().position(|t| t.kind == cfa4_isobmff::TrackKind::Video).unwrap();
     let t = &file.tracks[i];
     let data: Vec<Vec<u8>> = (0..t.samples.len()).map(|k| file.read_sample(bytes, i, k).unwrap()).collect();
