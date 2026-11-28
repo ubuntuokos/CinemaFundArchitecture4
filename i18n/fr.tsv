@@ -4980,3 +4980,6 @@
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Dossier DVD-Vidéo (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorphique, 6 Mbps, GOP 15, AC-3 192 kbps, chapitres issus des marqueurs de chapitre de la séquence
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Dossier DVD-Vidéo (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorphique, 6 Mbps, GOP 18, AC-3 192 kbps, chapitres issus des marqueurs de chapitre de la séquence
+	Average	Moyenne
+	Preserve Luminance	Conserver la luminance
+	Spill Suppress	Suppression des reflets

@@ -352,6 +352,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
             });
         }
         "color_key" => key(img, e, cx),
+        "spill_suppress" => spill_suppress(img, e, cx),
         "luma_key" => {
             let th = f(e, "threshold", cx) / 100.0;
             let cut = f(e, "cutoff", cx) / 100.0;
@@ -635,6 +636,48 @@ pub(crate) fn key(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
         p[1] = lo[1] * a;
         p[2] = lo[2] * a;
         p[3] = a;
+    });
+}
+
+/// Spill Suppress: removes the key colour's cast from the foreground without touching alpha. The
+/// key colour's dominant channel is limited to the average (or the maximum) of the other two, in
+/// the display-encoded signal like the keyers; `Preserve Luminance` adds back the luma that the
+/// limiting took away. Own implementation of the standard colour-difference despill (no donor code).
+pub(crate) fn spill_suppress(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
+    let kc = color(e, "key_color", cx);
+    let dom = if kc[1] >= kc[0] && kc[1] >= kc[2] {
+        1
+    } else if kc[2] >= kc[0] {
+        2
+    } else {
+        0
+    };
+    let maximum = choice(e, "method") == 1;
+    let amount = (f(e, "amount", cx) / 100.0).clamp(0.0, 1.0);
+    let keep = (f(e, "luma", cx) / 100.0).clamp(0.0, 1.0);
+    if amount <= 0.0 {
+        return;
+    }
+    let lum = |c: [f32; 3]| luma709(c[0], c[1], c[2]);
+    img.px.par_chunks_mut(4).for_each(|p| {
+        let a = p[3];
+        if a <= 0.0 {
+            return;
+        }
+        let mut v = enc([p[0] / a, p[1] / a, p[2] / a]);
+        let (o1, o2) = (v[(dom + 1) % 3], v[(dom + 2) % 3]);
+        let limit = if maximum { o1.max(o2) } else { (o1 + o2) * 0.5 };
+        let excess = (v[dom] - limit).max(0.0);
+        if excess > 0.0 {
+            let l0 = lum(v);
+            v[dom] -= excess * amount;
+            let comp = (l0 - lum(v)) * keep;
+            v = v.map(|q| (q + comp).max(0.0));
+        }
+        let o = dec(v);
+        p[0] = o[0] * a;
+        p[1] = o[1] * a;
+        p[2] = o[2] * a;
     });
 }
 
