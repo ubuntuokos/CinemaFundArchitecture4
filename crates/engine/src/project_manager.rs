@@ -249,7 +249,7 @@ pub fn run(s: &mut Session, p: &Value) -> Result<Value> {
     if bool_p(p, "wait").unwrap_or(false) || cfg!(target_arch = "wasm32") {
         run();
     } else {
-        std::thread::Builder::new().name("cfa4-project-manager".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+        crate::background::start(s, id, crate::background::Need::background(1024, 2), "cfa4-project-manager", run)?;
     }
     let mut out = summary;
     out["job"] = json!(id);

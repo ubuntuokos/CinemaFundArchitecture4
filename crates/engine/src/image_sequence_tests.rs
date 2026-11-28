@@ -8,8 +8,8 @@ use cfa4_project::{ClipId, ItemId};
 use cfa4_time::FrameRate;
 use serde_json::{Value, json};
 
-use crate::Session;
 use crate::media_test_util::tmp_dir;
+use crate::{Event, Session};
 
 #[test]
 fn import_accepts_uppercase_extensions() {
@@ -93,6 +93,13 @@ fn check_image_sequence_with_missing_frames(prefix: &str) {
     let id = item_of(&r);
     assert_eq!(r["imageSequences"][0]["frames"], 6);
     assert_eq!(r["imageSequences"][0]["missing"], json!([3]));
+    // the gap is also told to the user: a toast and a warning in the Events panel
+    let toast = s.drain_events().into_iter().find_map(|e| match e {
+        Event::Toast { message, error: false } if message.contains("missing frame") => Some(message),
+        _ => None,
+    });
+    let toast = toast.expect("a toast about the missing frame");
+    assert!(toast.contains("1 missing frame(s) of 6") && toast.contains("no. 4"), "{toast}");
     let m = s.project.item(id).unwrap().as_media().unwrap().clone();
     assert_eq!(m.info.kind, MediaKind::ImageSequence);
     assert_eq!(m.info.frame_rate(), FrameRate::FPS_25, "Indeterminate Media Timebase");

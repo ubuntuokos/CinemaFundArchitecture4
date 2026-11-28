@@ -35,7 +35,7 @@ from PySide6.QtWidgets import (
 from .. import theme
 from ..hot_number import HotSpin
 from ..i18n import N_, fmt, tr
-from .effect_controls import GESTURE_GAP_MS, SEND_DELAY_MS
+from .effect_controls import GESTURE_GAP_MS, SEND_DELAY_MS, eyedropper_icon
 
 LABEL_W = 112  # egui's label column
 VALUE_W = 58
@@ -552,6 +552,7 @@ class SectionHeader(QWidget):
 
 class LumetriColorPanel(QWidget):
     command = Signal(str, dict)
+    eyedropper_armed = Signal(object)  # the White Balance Selector's target (effects.eyedropper) or None
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -564,6 +565,8 @@ class LumetriColorPanel(QWidget):
         self.playhead: int | None = None
         self.program: Any = None  # the Program monitor (Comparison View)
         self._shape: tuple[Any, ...] | None = None
+        self.wb_target: dict[str, Any] | None = None  # the armed White Balance Selector
+        self.wb_button: QToolButton | None = None
         self._pending: dict[tuple[int, int, str, int | None], Any] = {}
         self._send_timer = QTimer(self, singleShot=True, interval=SEND_DELAY_MS)
         self._send_timer.timeout.connect(self.flush)
@@ -643,7 +646,7 @@ class LumetriColorPanel(QWidget):
         self.bodies[title] = box
         return v
 
-    def _sub(self, v: QVBoxLayout, text: str, name: str = "") -> QLabel:
+    def _sub(self, v: QVBoxLayout | None, text: str, name: str = "") -> QLabel:
         label = QLabel(tr(text))
         font = label.font()
         font.setBold(True)
@@ -652,7 +655,8 @@ class LumetriColorPanel(QWidget):
         label.setContentsMargins(4, 4, 0, 0)
         if name:
             label.setObjectName(name)
-        v.addWidget(label)
+        if v is not None:
+            v.addWidget(label)
         return label
 
     def _slider(self, v: QVBoxLayout, pid: str, label: str, gradient: str | None = None) -> Slider:
@@ -684,7 +688,18 @@ class LumetriColorPanel(QWidget):
         # Basic Correction
         v = self._section("Basic Correction")
         self._combo(v, "input_lut", N_("Input LUT")).activated.connect(lambda i: self._lut("input_lut", i))
-        self._sub(v, N_("Color"))
+        color_row = QHBoxLayout()
+        color_row.setContentsMargins(0, 0, 0, 0)
+        color_row.addWidget(self._sub(None, N_("Color")), 1)
+        self.wb_button = QToolButton(self.body)
+        self.wb_button.setObjectName("lumetri.wbSelector")
+        self.wb_button.setIcon(eyedropper_icon())
+        self.wb_button.setCheckable(True)
+        self.wb_button.setAutoRaise(True)
+        self.wb_button.setToolTip(tr("White Balance Selector (click a neutral point in the Program monitor; Esc cancels)"))
+        self.wb_button.clicked.connect(self._toggle_wb_selector)
+        color_row.addWidget(self.wb_button)
+        v.addLayout(color_row)
         self._slider(v, "temperature", N_("Temperature"), "temp")
         self._slider(v, "tint", N_("Tint"), "tint")
         self._slider(v, "saturation", N_("Saturation"))
@@ -839,6 +854,7 @@ class LumetriColorPanel(QWidget):
         data = data if isinstance(data, dict) else {}
         if (data.get("clip"), data.get("effect")) != (self.data.get("clip"), self.data.get("effect")):
             self.flush()  # edits made so far go to the clip they were made on
+            self.arm_eyedropper(None)  # a pick armed for the old clip must not land on the new one
         self.data = data
         raw = data.get("params")
         self.params = {str(k): v for k, v in raw.items() if isinstance(v, dict)} if isinstance(raw, dict) else {}
@@ -921,6 +937,30 @@ class LumetriColorPanel(QWidget):
             b.setChecked(i == n)
         pid, color = CHANNELS[n]
         self.rgb_curve.set_curve(pid, color, self.params.get(pid) or {})
+
+    def _toggle_wb_selector(self, on: bool) -> None:
+        """Arm (or disarm) the White Balance Selector: the Program monitor's next click on a neutral
+        point sets Temperature and Tint (``effects.eyedropper`` with ``mode: whiteBalance``)."""
+        if on and self.clip_id is not None and self.effect is not None:
+            self.arm_eyedropper({"clip": self.clip_id, "effect": self.effect, "mode": "whiteBalance"})
+        else:
+            self.arm_eyedropper(None)
+
+    def arm_eyedropper(self, target: dict[str, Any] | None) -> None:
+        """Arm the selector for ``target`` (or with None disarm it); the overlay does the picking."""
+        if target is None and self.wb_target is None and not (self.wb_button and self.wb_button.isChecked()):
+            return
+        self.wb_target = target
+        if self.wb_button is not None:
+            self.wb_button.setChecked(target is not None)
+        self.eyedropper_armed.emit(target)
+
+    def release_eyedropper(self, target: Any) -> None:
+        """Another eyedropper (Effect Controls) was armed: this one lets go without disarming it."""
+        if target is not None and target != self.wb_target:
+            self.wb_target = None
+            if self.wb_button is not None:
+                self.wb_button.setChecked(False)
 
     def _toggle_fx(self) -> None:
         if self.clip_id is not None and self.effect is not None:

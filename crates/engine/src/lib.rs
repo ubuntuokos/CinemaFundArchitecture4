@@ -11,16 +11,24 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 pub mod aaf_omf;
+pub mod as02_import;
 mod atrac_convert;
 pub mod autosave;
+pub mod background;
 pub mod beat_markers;
+pub mod camera_proxies;
 pub mod captions;
+pub mod captions_titles;
 pub mod clip_ops;
 pub mod color;
 pub mod commands;
+pub mod contact_sheet;
 pub mod control_surfaces;
 pub mod credits;
+pub mod dcp_export;
 pub mod dcp_import;
+pub mod dcp_package;
+pub mod dcp_validation;
 mod dcpomatic;
 pub mod delivery_check;
 pub mod demo;
@@ -30,6 +38,8 @@ pub mod essential_sound;
 pub mod export_tools;
 mod eyedropper;
 mod fx_editor;
+pub mod gesture_runtime;
+pub mod gesture_ui;
 pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;
@@ -40,6 +50,7 @@ pub mod legibility;
 pub mod live;
 pub mod ltc_read;
 mod marker_export;
+pub mod marker_exports;
 pub mod masks;
 pub mod media_browser;
 pub mod media_pool;
@@ -48,6 +59,7 @@ pub mod media_watch;
 pub mod mixer;
 pub mod multicam;
 pub mod narration;
+pub mod objects_track;
 mod opatom;
 pub mod panels;
 pub mod paste_media;
@@ -62,27 +74,33 @@ pub mod proxies;
 pub mod qc;
 pub mod relink;
 pub mod remix;
+pub mod render_job;
 pub mod scene_detect;
 pub mod scopes;
 pub mod security;
 pub mod sequence_extras;
 pub mod sequence_tools;
 pub mod settings;
+pub mod short_clips;
 pub mod shortcut_presets;
 pub mod shortcuts;
+pub mod silence;
 pub mod smart_cut;
 mod smart_cut_mpeg;
 mod smart_render;
 pub mod social;
 pub mod source_monitor;
 pub mod studio;
+pub mod surface_feedback;
 pub mod surface_profile;
 pub mod surface_runtime;
 pub mod sync;
+pub mod task_host;
 pub mod timecode_sync;
 pub mod transcript;
 pub mod trim;
 pub mod variants;
+pub mod vdb;
 pub mod voiceover;
 
 use std::sync::Arc;
@@ -521,6 +539,8 @@ pub struct Session {
     pub media_jobs: Vec<proxies::PendingJob>,
     /// Mask tracking jobs whose keyframes are still being written.
     pub mask_jobs: Vec<masks::PendingTrack>,
+    /// Object tracking jobs whose samples are still being written.
+    pub object_jobs: Vec<objects_track::PendingObjectTrack>,
     /// Scene Edit Detection jobs whose results are applied when they finish.
     pub scene_jobs: Vec<scene_detect::PendingScene>,
     /// Effect presets (built-in + the user's, persisted in the data directory).
@@ -529,8 +549,15 @@ pub struct Session {
     pub export_presets: export_tools::ExportPresetLibrary,
     /// The export queue (session state, not saved with the project).
     pub export_queue: export_tools::ExportQueue,
+    /// The CFA4-wide task queue and resource manager this session's heavy work goes through
+    /// (ACS-6; the export queue is its first client).
+    pub tasks: task_host::TaskHost,
+    /// Background jobs waiting for, or holding, their resources ([`background`]).
+    pub background: background::Background,
     /// Media QC jobs whose results are still to be applied (`qc.*` commands).
     pub qc: qc::QcSession,
+    /// DCP validation jobs and the latest report of each package (`dcp.validate*` commands).
+    pub dcp_validation: dcp_validation::DcpValidationSession,
     /// Exports run a batch at a time by [`Session::pump_jobs`] (hosts without threads: web).
     pub stepped: Vec<SteppedJob>,
     /// Speech recogniser for `transcript.generate` (None = the Whisper model named by the command,
@@ -630,11 +657,15 @@ impl Session {
             offline: Default::default(),
             media_jobs: Vec::new(),
             mask_jobs: Vec::new(),
+            object_jobs: Vec::new(),
             scene_jobs: Vec::new(),
             presets: Default::default(),
             export_presets: Default::default(),
             export_queue: Default::default(),
+            tasks: Default::default(),
+            background: Default::default(),
             qc: Default::default(),
+            dcp_validation: Default::default(),
             stepped: Vec::new(),
             transcriber: None,
             log: Default::default(),
@@ -649,6 +680,7 @@ impl Session {
     /// whether jobs remain. A job whose media is still loading waits for the next call.
     pub fn pump_jobs(&mut self, budget: std::time::Duration) -> bool {
         export_tools::pump_queue(self, false);
+        background::pump(self);
         let t0 = web_time::Instant::now();
         while let Some(j) = self.stepped.first_mut() {
             match j.exporter.step(&j.provider, &j.progress) {
@@ -670,7 +702,7 @@ impl Session {
                 break;
             }
         }
-        !self.stepped.is_empty() || self.export_queue.is_active() || !self.qc.pending.is_empty()
+        !self.stepped.is_empty() || self.export_queue.is_active() || !self.qc.pending.is_empty() || !self.dcp_validation.pending.is_empty()
     }
 
     /// Start auto-save and the crash-recovery journal (native frontends). Loads preferences from
@@ -727,11 +759,14 @@ impl Session {
     /// Apply worker notifications (call regularly, e.g. once per UI frame). Also applies the
     /// results of finished proxy / ingest jobs.
     pub fn poll_persistence(&mut self) {
+        background::pump(self);
         proxies::poll(self);
         masks::poll(self);
+        objects_track::poll(self);
         scene_detect::poll(self);
         export_tools::pump_queue(self, false);
         qc::poll(self);
+        dcp_validation::poll(self);
         panels::log_jobs(self);
         let Some(p) = self.persistence.as_mut() else { return };
         for ev in p.drain_events() {
@@ -1177,6 +1212,13 @@ impl Session {
         self.events.push(Event::Toast { message, error: false });
     }
 
+    /// A warning for the user (a toast, and a warning entry in the Events panel from `source`).
+    pub fn warn_toast(&mut self, source: &str, msg: impl Into<String>) {
+        let message = msg.into();
+        self.log.push(panels::Level::Warning, source, message.clone());
+        self.events.push(Event::Toast { message, error: false });
+    }
+
     /// An error message for the user (a toast, and an Events panel entry from `source`).
     pub fn error_toast(&mut self, source: &str, msg: impl Into<String>) {
         let message = msg.into();
@@ -1350,7 +1392,7 @@ pub fn media_duration(p: &Project, _pool: &MediaPool, id: ItemId) -> Option<Tick
                 id = *parent;
                 continue;
             }
-            cfa4_project::ItemKind::AdjustmentLayer { .. } | cfa4_project::ItemKind::Graphic { .. } => None,
+            cfa4_project::ItemKind::AdjustmentLayer { .. } | cfa4_project::ItemKind::Graphic { .. } | cfa4_project::ItemKind::Volume(_) => None,
         };
     }
     None
@@ -1364,6 +1406,8 @@ mod aaf_omf_tests;
 #[cfg(test)]
 mod animated_image_tests;
 #[cfg(test)]
+mod as02_import_tests;
+#[cfg(test)]
 mod audio_effects_tests;
 #[cfg(test)]
 mod audio_placement_tests;
@@ -1376,11 +1420,21 @@ mod avi_import_tests;
 #[cfg(test)]
 mod beat_markers_tests;
 #[cfg(test)]
+mod camera_proxies_tests;
+#[cfg(test)]
+mod captions_titles_tests;
+#[cfg(test)]
 mod clip_ops_tests;
 #[cfg(test)]
 mod color_tests;
 #[cfg(test)]
+mod contact_sheet_tests;
+#[cfg(test)]
 mod dcp_import_tests;
+#[cfg(test)]
+mod dnx_conventions_tests;
+#[cfg(test)]
+mod effect_toggle_tests;
 #[cfg(test)]
 mod effects_inspect_tests;
 #[cfg(test)]
@@ -1412,7 +1466,9 @@ mod linked_trim_tests;
 #[cfg(test)]
 mod locked_clip_edits_tests;
 #[cfg(test)]
-mod masks_tests;
+mod marker_exports_tests;
+#[cfg(test)]
+pub(crate) mod masks_tests;
 #[cfg(test)]
 mod media_browser_tests;
 #[cfg(test)]
@@ -1421,6 +1477,8 @@ mod media_test_util;
 mod media_watch_tests;
 #[cfg(test)]
 mod mixer_tests;
+#[cfg(test)]
+mod mlt_import_tests;
 #[cfg(test)]
 mod multicam_tests;
 #[cfg(test)]
@@ -1431,6 +1489,8 @@ mod nest_editing_tests;
 mod nest_fidelity_tests;
 #[cfg(test)]
 mod nesting_tests;
+#[cfg(test)]
+mod objects_track_tests;
 #[cfg(test)]
 mod opatom_tests;
 #[cfg(test)]
@@ -1476,7 +1536,11 @@ mod sequence_tools_tests;
 #[cfg(test)]
 mod settings_tests;
 #[cfg(test)]
+mod short_clips_tests;
+#[cfg(test)]
 mod shortcuts_tests;
+#[cfg(test)]
+mod silence_tests;
 #[cfg(test)]
 mod smart_cut_mpeg_tests;
 #[cfg(test)]
@@ -1499,6 +1563,8 @@ mod track_params_tests;
 mod transcript_tests;
 #[cfg(test)]
 mod trim_tests;
+#[cfg(test)]
+mod vdb_tests;
 #[cfg(test)]
 mod vfx_tests;
 #[cfg(test)]

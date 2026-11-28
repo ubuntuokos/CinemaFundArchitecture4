@@ -1,4 +1,4 @@
-//! Interchange documents (CMX 3600 EDL, FCP7 XML, FCPXML, OTIO, AAF, OMF) ↔ the session's project.
+//! Interchange documents (CMX 3600 EDL, FCP7 XML, FCPXML, OTIO, AAF, OMF, and Kdenlive / Shotcut MLT XML on import) ↔ the session's project.
 
 use std::path::Path;
 
@@ -12,7 +12,7 @@ use crate::{EngineError, Result, Session};
 /// The interchange format of a file, if it is one (by content, with the extension as a hint).
 pub fn detect(path: &str, bytes: &[u8]) -> Option<Format> {
     let ext = std::path::Path::new(path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
-    if !matches!(ext.as_deref(), Some("edl" | "xml" | "fcpxml" | "otio" | "aaf" | "omf" | "omfi")) {
+    if !matches!(ext.as_deref(), Some("edl" | "xml" | "fcpxml" | "otio" | "aaf" | "omf" | "omfi" | "kdenlive" | "mlt")) {
         return None;
     }
     cfa4_interchange::detect(bytes, ext.as_deref())
@@ -187,10 +187,13 @@ pub fn export(s: &mut Session, p: &Value) -> Result<Value> {
     // else, so the error can list exactly what is accepted.
     let format = match p.get("format") {
         None | Some(Value::Null) => Format::Fcp7Xml,
-        Some(v) => v.as_str().and_then(|name| Format::ALL.into_iter().find(|f| f.extension().eq_ignore_ascii_case(name))).ok_or_else(|| {
-            let names: Vec<&str> = Format::ALL.iter().map(|f| f.extension()).collect();
-            crate::commands::bad("file.exportInterchange", format!("unknown format {v}: use one of {}", names.join(", ")))
-        })?,
+        Some(v) => v
+            .as_str()
+            .and_then(|name| Format::ALL.into_iter().filter(|f| f.can_export()).find(|f| f.extension().eq_ignore_ascii_case(name)))
+            .ok_or_else(|| {
+                let names: Vec<&str> = Format::ALL.iter().filter(|f| f.can_export()).map(|f| f.extension()).collect();
+                crate::commands::bad("file.exportInterchange", format!("unknown format {v}: use one of {}", names.join(", ")))
+            })?,
     };
     let path = p.get("path").and_then(Value::as_str).ok_or_else(|| EngineError::Other("need `path`".into()))?.to_string();
     let seq = p.get("sequence").and_then(Value::as_u64).map(ItemId).or(s.state.active_sequence).ok_or(EngineError::NoSequence)?;

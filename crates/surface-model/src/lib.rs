@@ -3,7 +3,8 @@
 //! Every physical input (HID, MIDI, later OSC) is normalised by the device I/O crate
 //! (`cfa4-surface`, L5) into a [`SurfaceEvent`]; the engine (L4) maps it to a command. Feedback
 //! flows the other way as [`SurfaceFeedback`]. This crate holds only the shared types and the pure
-//! [`midi`] byte-stream parser: no I/O, no clock, no threads, so L4 and L5 can both depend on it.
+//! [`midi`] byte-stream parser and the [`gesture`] recogniser: no I/O, no clock, no threads, so L4
+//! and L5 can both depend on it.
 //!
 //! Normalisation never drops what a device needs to work: MIDI channel, controller number,
 //! message kind, raw value and its resolution, press and release, the sign of a relative value and
@@ -12,6 +13,7 @@
 //!
 //! [ADR 0012]: ../../../docs/adr/ADR-0012-control-surface.md
 
+pub mod gesture;
 pub mod midi;
 
 use serde::{Deserialize, Serialize};
@@ -62,6 +64,9 @@ pub enum SurfaceProtocol {
     Hid,
     Midi,
     Osc,
+    /// Qt pointer, Wayland or X11. The device id is the fixed `pointer:seat`
+    /// ([`gesture::pointer_seat`]): a `wl_pointer` button event names no device.
+    Pointer,
 }
 
 impl SurfaceProtocol {
@@ -71,6 +76,7 @@ impl SurfaceProtocol {
             SurfaceProtocol::Hid => "hid",
             SurfaceProtocol::Midi => "midi",
             SurfaceProtocol::Osc => "osc",
+            SurfaceProtocol::Pointer => "pointer",
         }
     }
 }
@@ -133,6 +139,12 @@ pub enum ControlId {
     Osc {
         path: String,
     },
+    /// A recognised pointer gesture. `id` is a direction (`direction.right`) or a template id.
+    /// Bindings use this control. The input itself stays [`SurfaceInput::Gesture`], which has no
+    /// control of its own.
+    Gesture {
+        id: String,
+    },
 }
 
 impl ControlId {
@@ -193,6 +205,16 @@ pub enum SurfaceInput {
     Button {
         control: ControlId,
         pressed: bool,
+    },
+    /// A recognised pointer gesture (MG1). `id` is a direction name (`direction.right`, …) or a
+    /// template id. `context` is the panel the gesture was made in (`global` when empty). The
+    /// engine dispatches a bound gesture on the existing `surface.inject` path (MG2). This variant
+    /// has no [`ControlId`] of its own: the binding key is [`ControlId::Gesture`].
+    Gesture {
+        id: String,
+        /// Empty means the global context. Omitted from JSON when empty, so an MG1 gesture still parses.
+        #[serde(default, skip_serializing_if = "String::is_empty")]
+        context: String,
     },
     /// An absolute value with its resolution (7 or 14 bits); `value` is the raw value.
     Absolute {
@@ -261,13 +283,27 @@ impl SurfaceInput {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum FeedbackTarget {
-    Led { control: ControlId },
-    Fader { control: ControlId },
-    Ring { control: ControlId },
-    Display { index: u16 },
+    Led {
+        control: ControlId,
+    },
+    Fader {
+        control: ControlId,
+    },
+    Ring {
+        control: ControlId,
+    },
+    Display {
+        index: u16,
+    },
     Timecode,
-    Meter { index: u16 },
+    Meter {
+        index: u16,
+    },
     DeviceState,
+    /// The tally light of source or camera `index` (READY-V4.1).
+    Tally {
+        index: u16,
+    },
 }
 
 /// A feedback value; the I/O crate turns it into the device's own protocol.
@@ -281,6 +317,43 @@ pub enum FeedbackValue {
     Level(f32),
     /// `cfa4_time::Tick` units (254 016 000 000 per second).
     Tick(i64),
+    /// A tally light state (READY-V4.1).
+    Tally(TallyState),
+}
+
+/// Which tally lights a source has on. A source on air is `program`; one lined up is `preview`;
+/// `aux` is a third output (an isolated recording, an aux bus). Any combination can be set.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct TallyState {
+    pub program: bool,
+    pub preview: bool,
+    pub aux: bool,
+}
+
+/// What a tally light shows when only one thing can be shown at a time. Program beats preview,
+/// preview beats aux.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TallyLevel {
+    Program,
+    Preview,
+    Aux,
+}
+
+impl TallyState {
+    /// The one thing to show: program before preview before aux; `None` when all are off.
+    pub fn dominant(self) -> Option<TallyLevel> {
+        if self.program {
+            Some(TallyLevel::Program)
+        } else if self.preview {
+            Some(TallyLevel::Preview)
+        } else if self.aux {
+            Some(TallyLevel::Aux)
+        } else {
+            None
+        }
+    }
 }
 
 /// How urgently feedback goes out.
@@ -374,7 +447,7 @@ mod tests {
             assert!(stem.chars().all(|c| c.is_ascii_alphanumeric() || "-_.".contains(c)), "{stem}");
             assert!(!stem.contains('/') && !stem.contains('\\'), "{stem}");
         }
-        for p in [SurfaceProtocol::Hid, SurfaceProtocol::Midi, SurfaceProtocol::Osc] {
+        for p in [SurfaceProtocol::Hid, SurfaceProtocol::Midi, SurfaceProtocol::Osc, SurfaceProtocol::Pointer] {
             assert_eq!(serde_json::to_value(p).ok(), Some(serde_json::Value::String(p.as_str().into())));
         }
     }
@@ -410,5 +483,28 @@ mod tests {
         assert_eq!(fj["value"]["type"], "tick");
         let fb: Option<SurfaceFeedback> = serde_json::from_value(fj).ok();
         assert_eq!(fb, Some(f));
+    }
+
+    #[test]
+    fn tally_feedback_round_trips_and_program_beats_preview() {
+        let f = SurfaceFeedback {
+            device: DeviceId("midi:x:0".into()),
+            target: FeedbackTarget::Tally { index: 3 },
+            value: FeedbackValue::Tally(TallyState { program: true, preview: true, aux: false }),
+            priority: FeedbackPriority::Immediate,
+            at: MonoNs(7),
+        };
+        let j = serde_json::to_value(&f).unwrap_or_default();
+        assert_eq!(j["target"], serde_json::json!({"type": "tally", "index": 3}));
+        assert_eq!(j["value"], serde_json::json!({"type": "tally", "value": {"program": true, "preview": true, "aux": false}}));
+        assert_eq!(serde_json::from_value::<SurfaceFeedback>(j).ok(), Some(f));
+        // missing fields read as off
+        let t: Option<TallyState> = serde_json::from_value(serde_json::json!({"preview": true})).ok();
+        assert_eq!(t, Some(TallyState { program: false, preview: true, aux: false }));
+        let all = TallyState { program: true, preview: true, aux: true };
+        assert_eq!(all.dominant(), Some(TallyLevel::Program));
+        assert_eq!(TallyState { preview: true, aux: true, ..TallyState::default() }.dominant(), Some(TallyLevel::Preview));
+        assert_eq!(TallyState { aux: true, ..TallyState::default() }.dominant(), Some(TallyLevel::Aux));
+        assert_eq!(TallyState::default().dominant(), None);
     }
 }

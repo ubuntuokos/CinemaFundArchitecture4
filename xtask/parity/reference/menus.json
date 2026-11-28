@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "area": "menus",
+  "outOfScope": [],
+  "items": [
+    {
+      "path": "Clip ▸ Enable",
+      "source": "docs/keyboard.md"
+    },
+    {
+      "path": "Clip ▸ Synchronize",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Edit ▸ Clear",
+      "source": "docs/captions.md"
+    },
+    {
+      "path": "Edit ▸ Keyboard Shortcuts",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Edit ▸ Select All",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "File ▸ Export ▸ Captions",
+      "source": "docs/captions.md"
+    },
+    {
+      "path": "File ▸ Export ▸ Media",
+      "source": "docs/qt-gui.md"
+    },
+    {
+      "path": "File ▸ Import",
+      "source": "docs/captions.md"
+    },
+    {
+      "path": "File ▸ New ▸ Sequence",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "File ▸ Revert",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ Install Motion Graphics Template",
+      "source": "docs/graphics.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ New Layer ▸ Rectangle",
+      "source": "docs/graphics.md"
+    },
+    {
+      "path": "Graphics and Titles ▸ New Layer ▸ Text",
+      "source": "docs/graphics.md"
+    },
+    {
+      "path": "View ▸ Snap in Program Monitor",
+      "source": "docs/graphics.md"
+    },
+    {
+      "path": "Window ▸ Libraries",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Window ▸ Project",
+      "source": "docs/qt-parity.md"
+    },
+    {
+      "path": "Window ▸ Workspaces",
+      "source": "docs/qt-parity.md"
+    }
+  ]
+}

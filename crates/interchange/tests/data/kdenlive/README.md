@@ -1,7 +1,7 @@
 # Kdenlive OTIO test data
 
 OpenTimelineIO documents from Kdenlive's own OTIO export/import tests, used by
-`crates/interchange/tests/kdenlive_otio.rs` (Kdenlive parity K1, first step of `.kdenlive` import).
+`crates/interchange/tests/kdenlive_otio.rs` (Kdenlive parity KDN-1, first step of `.kdenlive` import).
 They are JSON timelines only; the media they name is not included.
 
 - **Source:** `tests/dataset/*.otio` in Kdenlive (https://invent.kde.org/multimedia/kdenlive), copied

@@ -41,7 +41,7 @@ pub use essential::{AudioType, EssentialSound};
 pub use find::{FindOp, FindQuery, FindRow, SearchBin};
 pub use graphic_design::{CharStyle, CreditsLink, GraphicMeta, LayerExtra, LayerStamp, Pin, PinTarget, Roll, RollMode, SourceGraphic, StyleRun};
 pub use keyframe::{Interpolation, Keyframe, Param, ParamValue};
-pub use mask::{Mask, MaskMode, MaskPath, MaskVertex, TrackMethod, Tracker};
+pub use mask::{Mask, MaskMode, MaskPath, MaskSource, MaskVertex, TrackMethod, Tracker};
 pub use mixer::{AutomationMode, InputMap, MixerStrip, TrackSend};
 pub use multicam::{Camera, MergedClip, MulticamAudio, MulticamSel, MulticamSource};
 pub use narration::{Narration, VocalPitch};
@@ -188,6 +188,38 @@ pub struct Interpretation {
     /// layout (#323).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub auro_as_carrier: bool,
+    /// Interpret Footage ▸ DNx conventions (CFA4-DNX-SPEC-001 R5, D2): decode the item's DNx
+    /// (VC-3) video by SMPTE ST 2019-1 or as FFmpeg does. None = as detected from the container
+    /// (FFmpeg's conventions for video FFmpeg encoded).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dnx_conventions: Option<DnxConventions>,
+}
+
+/// How DNx (VC-3) video is decoded: SMPTE ST 2019-1 (inverse quantisation by equation 8.1, the
+/// standard's 4:4:4 signalling) or FFmpeg's reading of it (CFA4-DNX-SPEC-001).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum DnxConventions {
+    Smpte,
+    Ffmpeg,
+}
+
+impl DnxConventions {
+    /// The id the commands use: `smpte` or `ffmpeg`.
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Smpte => "smpte",
+            Self::Ffmpeg => "ffmpeg",
+        }
+    }
+
+    pub fn parse(id: &str) -> Option<Self> {
+        match id {
+            "smpte" => Some(Self::Smpte),
+            "ffmpeg" => Some(Self::Ffmpeg),
+            _ => None,
+        }
+    }
 }
 
 /// Modify ▸ Audio Channels: the clip channel format and, per audio clip, the source channels it
@@ -270,6 +302,39 @@ impl MediaClip {
     }
 }
 
+/// A reference to OpenVDB data on disk. Only the reference is saved; the grids are read on demand.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct VolumeAsset {
+    /// The file, or the first file of a numbered sequence (`name.0001.vdb`).
+    pub path: String,
+    /// The paths of the sequence frames in order, `None` for a gap (so a missing frame is reported, not skipped);
+    /// empty for a single file.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub frames: Vec<Option<String>>,
+}
+
+impl VolumeAsset {
+    /// Whether this is a numbered sequence.
+    pub fn is_sequence(&self) -> bool {
+        !self.frames.is_empty()
+    }
+    /// The files that are missing on disk, as reported by `exists`: the relink report (N1-7).
+    pub fn missing(&self, exists: impl Fn(&str) -> bool) -> Vec<String> {
+        if self.frames.is_empty() {
+            return if exists(&self.path) { Vec::new() } else { vec![self.path.clone()] };
+        }
+        let mut gaps = Vec::new();
+        for (i, f) in self.frames.iter().enumerate() {
+            match f {
+                Some(p) if exists(p) => {}
+                Some(p) => gaps.push(p.clone()),
+                None => gaps.push(format!("frame #{} of {}", i + 1, self.path)),
+            }
+        }
+        gaps
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::large_enum_variant)]
 pub enum ItemKind {
@@ -292,6 +357,10 @@ pub enum ItemKind {
         rate: FrameRate,
         duration: Tick,
     },
+    /// An OpenVDB volume asset (`.vdb` file or numbered sequence), read by the separate worker (plan
+    /// CFA4-DNEG-TECHNOLOGY-ADAPTATION-001, N1). It carries no pixels: it is listed and inspected, never placed
+    /// on a timeline until a volume renders as plain media (N2).
+    Volume(VolumeAsset),
     /// The source of graphic clips: a transparent canvas of the sequence frame size. The clip's
     /// text and shape layers are effect instances on the track item (see [`graphic`]). Not shown
     /// in the Project panel; unlimited duration.
@@ -350,6 +419,8 @@ impl ProjectItem {
             ItemKind::Media(m) => m.info.has_video(),
             ItemKind::Sequence(_) | ItemKind::AdjustmentLayer { .. } | ItemKind::Graphic { .. } => true,
             ItemKind::Subclip { .. } => true,
+            // no pixels until a volume renders as plain media (N2)
+            ItemKind::Volume(_) => false,
         }
     }
     pub fn has_audio(&self) -> bool {
@@ -366,6 +437,7 @@ impl ProjectItem {
             ItemKind::Subclip { range, .. } => range.duration,
             ItemKind::AdjustmentLayer { duration, .. } => *duration,
             ItemKind::Graphic { .. } => Tick(3600 * TICKS_PER_SECOND),
+            ItemKind::Volume(_) => Tick(0),
         }
     }
     pub fn frame_rate(&self) -> FrameRate {
@@ -373,7 +445,7 @@ impl ProjectItem {
             ItemKind::Media(m) => m.frame_rate(),
             ItemKind::Sequence(s) => s.settings.frame_rate,
             ItemKind::AdjustmentLayer { rate, .. } | ItemKind::Graphic { rate, .. } => *rate,
-            ItemKind::Subclip { .. } => FrameRate::default(),
+            ItemKind::Subclip { .. } | ItemKind::Volume(_) => FrameRate::default(),
         }
     }
     /// Human-readable media type for the Project panel "Media Type" column.
@@ -392,6 +464,8 @@ impl ProjectItem {
             ItemKind::Subclip { .. } => "Subclip",
             ItemKind::AdjustmentLayer { .. } => "Adjustment Layer",
             ItemKind::Graphic { .. } => "Graphic",
+            ItemKind::Volume(v) if v.is_sequence() => "Volume Sequence (OpenVDB)",
+            ItemKind::Volume(_) => "Volume (OpenVDB)",
         }
     }
 }
@@ -1858,6 +1932,7 @@ impl Project {
                     id = *parent;
                     continue;
                 }
+                ItemKind::Volume(_) => None,
             };
         }
         None
@@ -1874,7 +1949,7 @@ impl Project {
             return match &self.item(id)?.kind {
                 ItemKind::Media(m) => Some(m.pixel_aspect()),
                 ItemKind::Sequence(q) => Some(sane_par(q.settings.par)),
-                ItemKind::AdjustmentLayer { .. } | ItemKind::Graphic { .. } => None,
+                ItemKind::AdjustmentLayer { .. } | ItemKind::Graphic { .. } | ItemKind::Volume(_) => None,
                 ItemKind::Subclip { parent, .. } => {
                     id = *parent;
                     continue;

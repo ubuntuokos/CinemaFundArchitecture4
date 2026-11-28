@@ -161,6 +161,14 @@ fn generate(s: &mut Session, p: &Value) -> Result<Value> {
         diarize: bool_p(p, "diarize").unwrap_or(ma.speaker_labeling != "off"),
         max_speakers: u64_p(p, "maxSpeakers").map(|n| n.clamp(1, 32) as usize).unwrap_or(Options::default().max_speakers),
     };
+    // `vadFilter`: only the stretches a speech detector calls voice go to the recogniser (off by default)
+    let filter = match p.get("vadFilter") {
+        None | Some(Value::Null) => "off",
+        Some(v) => v.as_str().ok_or_else(|| bad("transcript.generate", "`vadFilter` must be \"off\", \"energy\" or \"silero\""))?,
+    };
+    if !matches!(filter, "off" | "energy" | "silero") {
+        return Err(bad("transcript.generate", format!("`vadFilter` must be \"off\", \"energy\" or \"silero\", not `{filter}`")));
+    }
     let mut done: Vec<(ItemId, Transcript)> = Vec::new();
     let mut skipped = Vec::new();
     for item in items {
@@ -168,7 +176,13 @@ fn generate(s: &mut Session, p: &Value) -> Result<Value> {
             skipped.push(item.0);
             continue;
         };
-        let mut tr = t.transcribe(&audio, &opts, &mut |_, _| true).map_err(speech_err)?;
+        let mut tr = if filter == "off" {
+            t.transcribe(&audio, &opts, &mut |_, _| true).map_err(speech_err)?
+        } else {
+            let (voiced, frame) = crate::silence::voiced_frames(&audio, filter)?;
+            let segments = cfa4_speech::prefilter::speech_segments(&voiced, frame, audio.len(), &cfa4_speech::prefilter::Params::default());
+            cfa4_speech::prefilter::transcribe_segments(t.as_ref(), &audio, &segments, &opts, &mut |_, _| true).map_err(speech_err)?
+        };
         tr.normalize();
         done.push((item, tr));
     }
@@ -423,7 +437,8 @@ fn download_model(_: &mut Session, p: &Value) -> Result<Value> {
     let dir = models_dir().ok_or_else(|| EngineError::Other("no data directory for speech models".into()))?;
     #[cfg(feature = "speech-download")]
     {
-        cfa4_speech::models::download(&dir, m, &mut |_, _, _| true).map_err(speech_err)?;
+        let files = m.files.iter().map(|f| (f.name.to_string(), f.url.to_string(), f.sha256.to_string(), f.size));
+        crate::security::download(&cfa4_speech::models::model_dir(&dir, m), files, &mut |_, _, _| true).map_err(|e| speech_err(SpeechError::Download(e)))?;
         Ok(json!({"model": m.id, "dir": cfa4_speech::models::model_dir(&dir, m).to_string_lossy()}))
     }
     #[cfg(not(feature = "speech-download"))]
@@ -439,7 +454,7 @@ pub fn commands() -> Vec<CommandSpec> {
             "transcript.generate",
             "Transcribe…",
             &["Sequence", "Transcript"],
-            r#"{"items":[id]?,"model":"whisper-base"?,"language":"en|auto"?,"diarize":bool?,"maxSpeakers":n?}"#,
+            r#"{"items":[id]?,"model":"whisper-base"?,"language":"en|auto"?,"diarize":bool?,"maxSpeakers":n?,"vadFilter":"off"|"energy"|"silero"="off"}"#,
             can_transcribe,
             generate,
             true,

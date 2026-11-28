@@ -6,9 +6,18 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+#[rustfmt::skip]
+pub mod cdf_default;
+#[rustfmt::skip]
+pub mod block_tables;
+pub mod cdf_set;
+pub mod frame;
+pub mod intra_mode;
 pub mod obu;
+pub mod partition;
 pub mod seq;
 pub mod seq_tools;
+pub mod symbol;
 pub mod tile;
 
 use obu::{GLOBAL_XLAYER_ID, ObuType, annexb_obus};

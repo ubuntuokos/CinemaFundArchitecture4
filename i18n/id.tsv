@@ -49,6 +49,7 @@
 	Arrange	Susun
 	Assembly	Perakitan
 	Attach Proxies…	Lampirkan Proksi…
+	Find Camera Proxies	Cari Proksi Kamera
 	Audio Channels…	Kanal Audio…
 	Audio Clip Mixer	Mixer Klip Audio
 	Audio Gain…	Gain Audio…
@@ -4132,7 +4133,7 @@
 	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 pada 25 fps, 16:9 anamorfik, 6 Mbps, GOP 15, LPCM 16-bit 48 kHz, .mpg (aliran siap DVD; tanpa authoring VIDEO_TS)
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Video MPEG-2 (Main Profile 4:2:0, 0,4 bit per piksel) dengan ukuran dan laju bingkai sekuens, LPCM 16-bit 48 kHz, .mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Video MPEG-2 1920×1080, rata-rata 18 Mbps, AAC 192 kbps, .ts
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Gunakan FFmpeg untuk berkas yang tidak bisa dibuka mesin CFA4 (FFmpeg 9.0.2 atau lebih baru, build GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Gunakan FFmpeg untuk berkas yang tidak bisa dibuka mesin CFA4 (FFmpeg 9.1 atau lebih baru, build GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Gunakan GStreamer sistem untuk berkas yang tidak bisa dibuka mesin maupun FFmpeg
 
 # Language names in the language menu: the English variants keep their English names.
@@ -4821,3 +4822,172 @@
 	Encode Resolution	Resolusi Enkode
 	Half	Setengah
 	Quarter	Seperempat
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh Mekar
+	Start Time (seconds)	Waktu Mulai (detik)
+	Repeats	Pengulangan
+	Clean Blocks	Blok bersih
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Terapkan efek yang baru dipakai ke klip terpilih
+	Disable all effects	Nonaktifkan semua efek
+	Enable all effects	Aktifkan semua efek
+	No recent effects	Tidak ada efek terbaru
+	Recent effects	Efek terbaru
+	Switch every effect of the selected clips off	Menonaktifkan setiap efek pada klip terpilih
+	Switch every effect of the selected clips on	Mengaktifkan setiap efek pada klip terpilih
+	Merged	Gabungan
+	Per Channel	Per Kanal
+	Channel Zoom	Zoom Kanal
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Pemilih Keseimbangan Putih (klik titik netral di monitor Program; Esc membatalkan)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Pengelola Tugas
+	Background jobs	Tugas latar belakang
+	Exports	Ekspor
+	Shared task queue	Antrean tugas bersama
+	Task	Tugas
+	State	Status
+	Details	Detail
+	Time left	Sisa waktu
+	Scheduled	Dijadwalkan
+	Queued	Dalam antrean
+	Waiting for resources	Menunggu sumber daya
+	Blocked	Terblokir
+	Running	Berjalan
+	Paused	Dijeda
+	Cancelling	Membatalkan
+	Interactive	Interaktif
+	Speculative	Spekulatif
+	Final render	Render akhir
+	Show finished	Tampilkan yang selesai
+	Nothing is running.	Tidak ada yang berjalan.
+	Not reported by this engine yet.	Belum dilaporkan oleh mesin ini.
+	Not available: {why}	Tidak tersedia: {why}
+	{name} waits: {why}	{name} menunggu: {why}
+	{running} running · {waiting} waiting	{running} berjalan · {waiting} menunggu
+	{n} active	{n} aktif
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Memerlukan keputusan Anda
+	Run now	Jalankan sekarang
+	Next slot	Slot berikutnya
+	Missed its start	Awal terlewat
+	Missed its start at {time}	Awal pukul {time} terlewat
+	Starts at {time}	Mulai pukul {time}
+	Subtitle kind	Jenis subtitel
+	Subtitles	Subtitel
+	Captions for the hearing impaired	Teks untuk penyandang tunarungu
+	Forced narrative	Narasi paksa (forced narrative)
+	Silence	Hening
+	Detect Silence	Deteksi hening
+	Remove Silence	Hapus hening
+	Clear Silence Markers	Hapus penanda hening
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Pilih folder DCP.
+	DCP Validation	Validasi DCP
+	DCP folder	Folder DCP
+	DCP folder (the one holding ASSETMAP)	Folder DCP (yang berisi ASSETMAP)
+	Evidence	Bukti
+	How to fix	Cara memperbaiki
+	Interrupted	Terhenti
+	Not applicable	Tidak berlaku
+	Report	Laporan
+	Report saved: {path}	Laporan disimpan: {path}
+	Required	Wajib
+	Rule	Aturan
+	Rules	Aturan
+	Save JSON…	Simpan JSON…
+	Save Markdown…	Simpan Markdown…
+	Save report	Simpan laporan
+	Skipped	Dilewati
+	Standard: {standard}	Standar: {standard}
+	Validate	Validasi
+	Validate DCP…	Validasi DCP…
+	the engine sent no profiles	mesin tidak mengirim profil apa pun
+	{n} files checked	{n} berkas diperiksa
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Tulis paket AS-02 (jalurnya adalah folder)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Voksel aktif:
+	Bounds:	Batas:
+	Voxel attributes	Atribut voksel
+	Voxel size:	Ukuran voksel:
+	points	titik
+
+# WP3 DPX bit depth
+	Bit Depth	Kedalaman bit
+
+# AS-02 versions
+	AS-02 Versions	Versi AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Centang sekuens yang akan ditulis sebagai versi tambahan dalam paket AS-02
+	Delete Short Clips	Hapus Klip Pendek
+	A stored combination does not run a command yet.	Kombinasi yang tersimpan belum menjalankan perintah.
+	Action hint	Petunjuk tindakan
+	Add combination	Tambah kombinasi
+	Add mapping	Tambah pemetaan
+	Button Learn	Pelajari tombol
+	Button Test	Uji tombol
+	Button name	Nama tombol
+	Cancel feedback	Umpan batal
+	Combination editor	Penyunting kombinasi
+	Context	Konteks
+	Delete profile	Hapus profil
+	Detected buttons	Tombol terdeteksi
+	Draw the gesture with a button held.	Gambar gestur sambil menahan tombol.
+	Error feedback	Umpan galat
+	Evdev device	Perangkat evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev hanya membaca perangkat yang dipilih, dan hanya setelah fase berikutnya menyalakannya. Versi ini tetap di jalur Qt.
+	Execution feedback	Umpan eksekusi
+	Follow the system	Ikuti sistem
+	Gesture	Gestur
+	Gesture Learn	Pelajari gestur
+	Gesture editor	Penyunting gestur
+	Gesture profiles	Profil gestur
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gestur tetap mati sampai Anda menyalakannya. Menyalakannya tidak memblokir menu panel.
+	HUD	HUD
+	Hand	Tangan
+	High contrast	Kontras tinggi
+	Hold time	Waktu tahan
+	Input access	Akses masukan
+	Left-handed	Kidal
+	Mapping	Pemetaan
+	Maximum length	Panjang maksimum
+	Maximum time	Waktu maksimum
+	Minimum length	Panjang minimum
+	Mirror ergonomic gestures	Cerminkan gestur ergonomis
+	Mouse Gestures	Gestur tetikus
+	Mouse Gestures…	Gestur tetikus…
+	No buttons yet. Press one in Button Learn or Button Test.	Belum ada tombol. Tekan satu di Pelajari tombol atau Uji tombol.
+	Press	Tekan
+	Qt pointer (this application)	Penunjuk Qt (aplikasi ini)
+	Recognition preview	Pratinjau pengenalan
+	Reduced animation	Animasi dikurangi
+	Right-handed	Tangan kanan
+	Roles	Peran
+	Save gesture	Simpan gestur
+	Save profile	Simpan profil
+	Show the gesture HUD	Tampilkan HUD gestur
+	Slop	Kelonggaran
+	Spatial gesture	Gestur spasial
+	Thresholds	Ambang
+	Trail	Jejak
+	Use gestures in the window	Gunakan gestur di jendela
+	DVD-Video folder (VIDEO_TS)	Folder DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Folder DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfik, 6 Mbps, GOP 15, AC-3 192 kbps, bab dari penanda Chapter pada sequence
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Folder DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfik, 6 Mbps, GOP 18, AC-3 192 kbps, bab dari penanda Chapter pada sequence
+	DNx decoding:	Dekode DNx:
+	As detected from the file ({detected})	Sesuai deteksi dari berkas ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standar)
+	FFmpeg-compatible	Kompatibel dengan FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg membaca beberapa berkas DNx secara berbeda dari standar (warna 4:4:4, kuantisasi balik). Rekaman yang dienkode FFmpeg terdeteksi; pilih di sini jika deteksinya salah.
+	DNx Coding	Pengodean DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Kompatibel dengan FFmpeg (untuk alat berbasis FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Mati: dienkode menurut SMPTE ST 2019-1. Nyala: dienkode seperti FFmpeg menulis DNx, untuk alat yang dibangun di atas FFmpeg.

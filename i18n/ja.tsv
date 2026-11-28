@@ -44,6 +44,7 @@
 	Arrange	重ね順
 	Assembly	アセンブリ
 	Attach Proxies…	プロキシを関連付け…
+	Find Camera Proxies	カメラのプロキシを検索
 	Audio Channels…	オーディオチャンネル…
 	Audio Clip Mixer	オーディオクリップミキサー
 	Audio Gain…	オーディオゲイン…
@@ -3703,7 +3704,7 @@
 	Show Duplicate Frame Markers	重複フレームマーカーを表示
 # Settings ▸ Media & Playback ▸ Media Backends (ADR 0005)
 	Media Backends	メディアバックエンド
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	CFA4 エンジンで開けないファイルに FFmpeg を使用（FFmpeg 9.0.2 以降、GPL-3 ビルド）
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	CFA4 エンジンで開けないファイルに FFmpeg を使用（FFmpeg 9.1 以降、GPL-3 ビルド）
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	エンジンでも FFmpeg でも開けないファイルにシステムの GStreamer を使用
 	Work Area Bar	ワークエリアバー
 	Set Work Area Bar In Point	ワークエリアバーのインポイントを設定
@@ -4822,3 +4823,172 @@
 	Encode Resolution	エンコード解像度
 	Half	1/2
 	Quarter	1/4
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	データモッシュブルーム
+	Start Time (seconds)	開始時間 (秒)
+	Repeats	繰り返し回数
+	Clean Blocks	クリーンブロック
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	最近使ったエフェクトを選択したクリップに適用
+	Disable all effects	すべてのエフェクトをオフ
+	Enable all effects	すべてのエフェクトをオン
+	No recent effects	最近のエフェクトはありません
+	Recent effects	最近のエフェクト
+	Switch every effect of the selected clips off	選択したクリップのすべてのエフェクトをオフにします
+	Switch every effect of the selected clips on	選択したクリップのすべてのエフェクトをオンにします
+	Merged	統合
+	Per Channel	チャンネル別
+	Channel Zoom	チャンネルズーム
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	ホワイトバランスセレクター（プログラムモニターの無彩色の点をクリック。Esc でキャンセル）
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	タスクマネージャー
+	Background jobs	バックグラウンドジョブ
+	Exports	書き出し
+	Shared task queue	共有タスクキュー
+	Task	タスク
+	State	状態
+	Details	詳細
+	Time left	残り時間
+	Scheduled	予約済み
+	Queued	待機中
+	Waiting for resources	リソース待ち
+	Blocked	ブロック中
+	Running	実行中
+	Paused	一時停止中
+	Cancelling	キャンセル中
+	Interactive	対話型
+	Speculative	先行実行
+	Final render	最終レンダリング
+	Show finished	完了したものを表示
+	Nothing is running.	実行中のものはありません。
+	Not reported by this engine yet.	このエンジンはまだ報告していません。
+	Not available: {why}	利用できません: {why}
+	{name} waits: {why}	{name} は待機中: {why}
+	{running} running · {waiting} waiting	{running} 件実行中 · {waiting} 件待機中
+	{n} active	{n} 件が実行中
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	判断が必要です
+	Run now	今すぐ実行
+	Next slot	次のスロット
+	Missed its start	開始時刻を逃しました
+	Missed its start at {time}	{time} の開始を逃しました
+	Starts at {time}	{time} に開始
+	Subtitle kind	字幕の種類
+	Subtitles	字幕
+	Captions for the hearing impaired	聴覚障害者向けキャプション
+	Forced narrative	強制ナレーション (forced narrative)
+	Clear Silence Markers	無音マーカーを消去
+	Detect Silence	無音を検出
+	Remove Silence	無音を削除
+	Silence	無音
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	DCPフォルダーを選択してください。
+	DCP Validation	DCP検証
+	DCP folder	DCPフォルダー
+	DCP folder (the one holding ASSETMAP)	DCPフォルダー(ASSETMAPがあるもの)
+	Evidence	根拠
+	How to fix	修正方法
+	Interrupted	中断
+	Not applicable	該当なし
+	Report	レポート
+	Report saved: {path}	レポートを保存しました: {path}
+	Required	必須
+	Rule	ルール
+	Rules	ルール
+	Save JSON…	JSONを保存…
+	Save Markdown…	Markdownを保存…
+	Save report	レポートを保存
+	Skipped	スキップ
+	Standard: {standard}	規格: {standard}
+	Validate	検証
+	Validate DCP…	DCPを検証…
+	the engine sent no profiles	エンジンからプロファイルが送られませんでした
+	{n} files checked	{n} 個のファイルを確認しました
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	AS-02バンドルを書き出す(パスはフォルダー)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	アクティブなボクセル:
+	Bounds:	境界:
+	Voxel attributes	ボクセル属性
+	Voxel size:	ボクセルサイズ:
+	points	点
+
+# WP3 DPX bit depth
+	Bit Depth	ビット深度
+
+# AS-02 versions
+	AS-02 Versions	AS-02バージョン
+	Tick the sequences to write as further versions in the AS-02 bundle	AS-02バンドルに追加バージョンとして書き出すシーケンスにチェックを入れます
+	Delete Short Clips	短いクリップを削除
+	A stored combination does not run a command yet.	保存した組み合わせは、まだコマンドを実行しません。
+	Action hint	操作のヒント
+	Add combination	組み合わせを追加
+	Add mapping	割り当てを追加
+	Button Learn	ボタン学習
+	Button Test	ボタン試験
+	Button name	ボタン名
+	Cancel feedback	キャンセルの表示
+	Combination editor	組み合わせエディター
+	Context	コンテキスト
+	Delete profile	プロファイルを削除
+	Detected buttons	検出したボタン
+	Draw the gesture with a button held.	ボタンを押したままジェスチャーを描きます。
+	Error feedback	エラーの表示
+	Evdev device	evdev デバイス
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	evdev は選んだ装置だけを読み、後の段階がオンにするまで使いません。この版は Qt の経路のままです。
+	Execution feedback	実行の表示
+	Follow the system	システムに合わせる
+	Gesture	ジェスチャー
+	Gesture Learn	ジェスチャー学習
+	Gesture editor	ジェスチャーエディター
+	Gesture profiles	ジェスチャープロファイル
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	ジェスチャーはオンにするまで無効です。オンにしてもパネルメニューは止まりません。
+	HUD	HUD
+	Hand	利き手
+	High contrast	高コントラスト
+	Hold time	長押し時間
+	Input access	入力アクセス
+	Left-handed	左利き
+	Mapping	割り当て
+	Maximum length	最大の長さ
+	Maximum time	最大時間
+	Minimum length	最小の長さ
+	Mirror ergonomic gestures	人間工学ジェスチャーを左右反転
+	Mouse Gestures	マウスジェスチャー
+	Mouse Gestures…	マウスジェスチャー…
+	No buttons yet. Press one in Button Learn or Button Test.	ボタンはまだありません。ボタン学習かボタン試験で押してください。
+	Press	押下
+	Qt pointer (this application)	Qt ポインタ（このアプリケーション）
+	Recognition preview	認識のプレビュー
+	Reduced animation	アニメーションを減らす
+	Right-handed	右利き
+	Roles	役割
+	Save gesture	ジェスチャーを保存
+	Save profile	プロファイルを保存
+	Show the gesture HUD	ジェスチャー HUD を表示
+	Slop	遊び
+	Spatial gesture	空間ジェスチャー
+	Thresholds	しきい値
+	Trail	軌跡
+	Use gestures in the window	ウィンドウでジェスチャーを使う
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video フォルダー（VIDEO_TS）：MPEG-2 720×576、25 fps、16:9 アナモルフィック、6 Mbps、GOP 15、AC-3 192 kbps、シーケンスのチャプターマーカーからチャプターを作成
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video フォルダー（VIDEO_TS）：MPEG-2 720×480、29.97 fps、16:9 アナモルフィック、6 Mbps、GOP 18、AC-3 192 kbps、シーケンスのチャプターマーカーからチャプターを作成
+	DVD-Video folder (VIDEO_TS)	DVD-Video フォルダー（VIDEO_TS）
+	DNx decoding:	DNx のデコード:
+	As detected from the file ({detected})	ファイルから検出 ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (規格)
+	FFmpeg-compatible	FFmpeg 互換
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg は一部の DNx ファイルを規格とは異なる方法で読み込みます (4:4:4 の色、逆量子化)。FFmpeg でエンコードされた素材は検出されます。検出が誤っている場合はここで選択してください。
+	DNx Coding	DNx のエンコード
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg 互換 (FFmpeg ベースのツール向け)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	オフ: SMPTE ST 2019-1 に従ってエンコードします。オン: FFmpeg が DNx を書き出す方法でエンコードします (FFmpeg ベースのツール向け)。

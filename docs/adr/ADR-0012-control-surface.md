@@ -105,3 +105,9 @@ A meglévő keretek:
 |---|---|
 | 2026-11-13 | Első változat (F0, WP1). |
 | 2026-11-13 | Elfogadva; ADR-szám 0012; a `cfa4-tcsync-io` ALSA-kliens figyelembevétele; N-01 és N-12 eldöntve. |
+
+## Kiegészítés, 2026-11-23: gesztusvezérlés (tulajdonosi döntés 12.1/2)
+
+A tulajdonos 2026-11-23-án a 12.1 tábla 2. sorában (a 12. fejezet 2. kérdése) úgy döntött, hogy a gesztusvezérlés ennek az ADR-nek a kiegészítése, és új ADR nem készül. A szöveg az MG0 audit 11.5 bekezdése, változatlanul. Forrás: [CFA4-CONTROL-SURFACE-GESTURE-001 MG0 audit](../audit/CFA4-CONTROL-SURFACE-GESTURE-001-MG0.md). A terv MG0 kapuja ugyanezt az ADR-módosítást írja elő: [CFA4-CONTROL-SURFACE-GESTURE-001 1.1](../plans/CFA4-CONTROL-SURFACE-GESTURE-001-1.1.md).
+
+2026-11-23, MG0. A `crates/engine/src/surface/` könyvtár nem készült el; a leképezés, a Learn és a profil a `control_surfaces.rs`, a `surface_runtime.rs` és a `surface_profile.rs` fájl. A gesztus felismerője az L1 `cfa4-surface-model` I/O nélküli modulja. A `SurfaceProtocol` a `Pointer` változattal bővül (Qt-mutató, eszközazonosító nélkül). A felismert gesztus `SurfaceInput::Gesture`, nem új protokoll. Az evdev-egér csak az L5-ben, alapból kikapcsolva, `unsafe` és új crate nélkül. A Qt nem ismer fel és nem képez le. A `PROTOCOL` marad 1.

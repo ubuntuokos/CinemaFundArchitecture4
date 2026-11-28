@@ -9,6 +9,7 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+pub mod aea;
 pub mod animated;
 mod animated_webp;
 pub mod auro;
@@ -236,12 +237,49 @@ pub trait MediaSource: Send + Sync {
     fn carrier(&self) -> Option<SharedSource> {
         None
     }
+    /// Interpret Footage ▸ DNx conventions (CFA4-DNX-SPEC-001 R5, D2): decode DNx (VC-3) video
+    /// with FFmpeg's conventions (`Some(true)`), by SMPTE ST 2019-1 (`Some(false)`), or as the
+    /// source detects from its container (`None`). Decoders made afterwards use it: call it on a
+    /// freshly opened source, before its first frame. Sources without DNx video ignore it.
+    fn set_dnx_conventions(&self, _ffmpeg: Option<bool>) {}
+    /// What the source detects from its container for its DNx video, whatever
+    /// [`set_dnx_conventions`](Self::set_dnx_conventions) chose: `Some(true)` when FFmpeg encoded
+    /// it (FFmpeg's conventions), `Some(false)` for the standard's. `None` without DNx video.
+    fn dnx_ffmpeg_detected(&self) -> Option<bool> {
+        None
+    }
     /// The Key IDs (UUID text) of encrypted essence (ST 429-6) whose content key is not loaded:
     /// its picture is black and its sound silent until a KDM brings them (#1053). Read when
     /// asked, so it is empty once the keys are there. Empty for sources that are not encrypted.
     fn missing_keys(&self) -> Vec<String> {
         Vec::new()
     }
+    /// The object audio of the primary stream from sample `start` (at the stream's own rate,
+    /// media time), unrendered, for the headphone monitor
+    /// (`docs/plans/CFA4-BINAURAL-MONITOR-001.md` B-03): `None` for a stream without objects (Dolby TrueHD
+    /// Atmos and IAB have them), an error when this block's objects cannot be decoded (the
+    /// rendered channels of [`audio`](Self::audio) still play).
+    fn object_audio(&self, _start: i64, _frames: usize) -> Option<Result<ObjectAudio>> {
+        None
+    }
+}
+
+/// Unrendered object audio of one block (see [`MediaSource::object_audio`]).
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ObjectAudio {
+    /// The format's name, as a monitor shows it ("Dolby TrueHD Atmos", "IAB").
+    pub format: &'static str,
+    /// The stream's own rate.
+    pub sample_rate: u32,
+    /// The block's first sample.
+    pub start: i64,
+    /// One mono signal per object (beds first), each the block's length.
+    pub objects: Vec<Vec<f32>>,
+    /// Each object's last metadata update before `start` (offsets in media samples): its state
+    /// when playing starts here.
+    pub current: Vec<cfa4_truehd::render::Event>,
+    /// The updates within the block, in order (offsets in media samples).
+    pub events: Vec<cfa4_truehd::render::Event>,
 }
 
 pub type SharedSource = Arc<dyn MediaSource>;
@@ -251,11 +289,12 @@ pub const STILL_EXTENSIONS: &[&str] =
     &["png", "jpg", "jpeg", "gif", "webp", "heic", "heif", "hif", "tif", "tiff", "bmp", "tga", "dpx", "exr", "hdr", "jxl", "dng"];
 pub const AUDIO_EXTENSIONS: &[&str] = &[
     "wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "dts", "dtshd", "flac", "ogg", "opus", "spx", "amr", "awb", "tta", "at3", "at9", "oma",
-    "omg", "aa3", "tak", "g729", "lbc", "mpc", "shn",
+    "omg", "aa3", "aea", "tak", "acm", "g729", "lbc", "mpc", "shn", "adx", "hca", "vqf", "vql", "vqe", "omg", "aa3", "aea", "tak", "acm", "g729", "lbc", "mpc",
+    "shn", "adx", "hca", "brstm", "bfstm", "bcstm",
 ];
 pub const VIDEO_EXTENSIONS: &[&str] = &[
     "mp4", "m4v", "mov", "mkv", "webm", "avi", "mxf", "mts", "m2ts", "m2t", "ts", "mpg", "mpeg", "vob", "mod", "tod", "m2v", "m1v", "mpv", "3gp", "y4m", "apv",
-    "dv", "dif", "obu", "ivf", "rm", "rmvb",
+    "dv", "dif", "obu", "ivf", "rm", "rmvb", "bik", "thp", "moflex", "smk", "roq", "mve", "amv",
 ];
 
 pub use backends::{BackendEntry, BackendReport, RestrictedItem, backend_enabled, backend_reports, register_backend, set_backend_enabled};
@@ -307,6 +346,9 @@ pub(crate) fn open_bytes_plain(name: &str, bytes: Arc<[u8]>, extra: &[Opener]) -
     }
     if oma::sniff(&bytes) {
         return Ok(Arc::new(oma::open(name, Arc::new(reader::MemReader(bytes)))?));
+    }
+    if aea::sniff(&bytes) {
+        return Ok(Arc::new(aea::open(name, Arc::new(reader::MemReader(bytes)))?));
     }
     // APNG, animated GIF and animated WebP play as movies (#402, #87); single-frame files fall through to the stills
     if let Some(r) = animated::open(name, &bytes) {

@@ -182,6 +182,90 @@ pub fn read_version(src: &(impl ByteSource + ?Sized)) -> Result<VersionFile, Str
     Ok(VersionFile { material_umid, name: material.string(tag::PACKAGE_NAME), operational_pattern, tracks, components: components_out, problems })
 }
 
+/// One set of a component file's file descriptor, ready to be copied into a version file: the
+/// properties are kept by property UL (local tags differ from file to file).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CopiedSet {
+    /// The set key.
+    pub key: [u8; 16],
+    /// The instance UID in the component file.
+    pub uid: [u8; 16],
+    /// Properties as (property UL, value), without the instance UID, the locators and the
+    /// sub-descriptors.
+    pub props: Vec<([u8; 16], Vec<u8>)>,
+    /// The sub-descriptors (by their instance UID in the component file), in order.
+    pub sub: Vec<[u8; 16]>,
+}
+
+/// The most sets one copied descriptor may hold.
+pub const MAX_COPIED_SETS: usize = 64;
+
+/// The file descriptor (with its sub-descriptors) of a component file's top-level file package,
+/// for the version file's copy of that package (AS-02 4.3.5, 5.4). The first set is the
+/// descriptor itself. `umid` picks the file package; `None` takes the first one with a
+/// descriptor.
+pub fn copy_descriptor(src: &(impl ByteSource + ?Sized), umid: Option<[u8; 32]>) -> Result<Vec<CopiedSet>, String> {
+    use std::collections::HashMap;
+    let w = walk(src).map_err(|e| e.to_string())?;
+    let best = w
+        .metadata
+        .iter()
+        .filter(|m| !m.2.is_empty())
+        .max_by_key(|m| w.partitions.get(m.0).map(|p| (p.complete(), p.closed(), p.offset)))
+        .ok_or("no header metadata")?;
+    let (_, primer, raw) = best;
+    let mut by_uid: HashMap<[u8; 16], (&crate::Ul, &Vec<u8>)> = HashMap::new();
+    let mut pkg_desc: Option<[u8; 16]> = None;
+    for (k, v) in raw {
+        let set = Set::parse(*k, v, primer);
+        by_uid.insert(set.instance_uid, (k, v));
+        if set.kind() == Some(st::SOURCE_PACKAGE)
+            && pkg_desc.is_none()
+            && let Some(d) = set.reference(tag::SOURCE_PACKAGE_DESCRIPTOR)
+            && umid.is_none_or(|u| umid_of(&set, tag::PACKAGE_UID) == Some(u))
+        {
+            pkg_desc = Some(d);
+        }
+    }
+    let first = pkg_desc.ok_or("the component file has no file package with a descriptor")?;
+    let mut out: Vec<CopiedSet> = Vec::new();
+    let mut queue = vec![first];
+    while let Some(uid) = queue.first().copied() {
+        queue.remove(0);
+        if out.iter().any(|c| c.uid == uid) {
+            continue;
+        }
+        let &(key, value) = by_uid.get(&uid).ok_or("a descriptor refers to a set the file does not have")?;
+        if out.len() >= MAX_COPIED_SETS {
+            return Err("too many descriptor sets".into());
+        }
+        let mut c = CopiedSet { key: key.0, uid, props: Vec::new(), sub: Vec::new() };
+        let mut cur = crate::klv::Cur::new(value);
+        while cur.remaining() >= 4 {
+            let (Some(t), Some(len)) = (cur.u16(), cur.u16()) else { break };
+            let Some(val) = cur.bytes(len as usize) else { break };
+            match t {
+                0x3C0A | tag::LOCATORS => {}
+                tag::SUB_DESCRIPTORS => {
+                    for b in crate::klv::batch_of(val) {
+                        if let Ok(r) = <[u8; 16]>::try_from(b) {
+                            c.sub.push(r);
+                            queue.push(r);
+                        }
+                    }
+                }
+                _ => {
+                    if let Some(ul) = primer.0.get(&t) {
+                        c.props.push((ul.0, val.to_vec()));
+                    }
+                }
+            }
+        }
+        out.push(c);
+    }
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

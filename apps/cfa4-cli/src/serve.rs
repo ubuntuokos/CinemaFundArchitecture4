@@ -373,6 +373,7 @@ fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     if speed != 1.0 {
         return render_shuttle(s, p, frames, speed);
     }
+    let binaural = crate::serve_monitor::parse(p)?;
     if wants_source(p)? {
         let item = source_item(s, p)?;
         let media = media_of(s, item);
@@ -389,17 +390,26 @@ fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
             },
         };
         let has_audio = s.project.item(media).is_some_and(|i| i.has_audio());
-        let channels: Vec<Vec<f32>> = if has_audio && start >= 0 {
+        let (channels, heard_on) = if has_audio && start >= 0 {
             let provider = s.media.provider(s.project.clone(), s.services.clone());
             let source = cfa4_render::SourceProvider::source(&provider, media).ok_or("source audio is unavailable (offline media?)")?;
-            let sound = source.audio(start, frames, sr).map_err(|e| format!("source audio decoding failed: {e}"))?;
-            let sound = cfa4_render::audio::to_layout(sound, cfa4_audio_dsp::channels::Layout::Stereo, cfa4_audio_dsp::channels::Mixdown::default());
-            sound.channels
+            // Dolby Atmos through headphones: the objects from their own places
+            let objects = binaural.as_ref().and_then(|b| crate::serve_monitor::render_objects(media.0, sr, start, frames, source.as_ref(), b));
+            match objects {
+                Some((ears, m)) => (ears.into(), Some(m)),
+                None => {
+                    let sound = source.audio(start, frames, sr).map_err(|e| format!("source audio decoding failed: {e}"))?;
+                    heard("source", start, sound, frames, binaural.as_ref(), cfa4_audio_dsp::channels::Mixdown::default())
+                }
+            }
         } else {
-            vec![vec![0.0; frames]; 2]
+            (vec![vec![0.0; frames]; 2], None)
         };
         let bytes = interleave(&channels, frames);
         let mut meta = json!({"sampleRate": sr, "channels": channels.len(), "frames": frames, "start": start, "format": "f32le", "target": "source"});
+        if let Some(m) = heard_on {
+            meta["monitor"] = m;
+        }
         if wants_meter(p) {
             meta["meter"] = meter("source", sr, start, &channels, frames);
         }
@@ -417,26 +427,55 @@ fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let live = &s.previews.live;
     let _ = live.take_meters(); // what earlier mixes left
     let graph = cfa4_render::mixer::mix_graph(&s.project, seq, start, frames, &provider, Some(live));
-    let buf = cfa4_render::audio::to_layout(graph, cfa4_audio_dsp::channels::Layout::Stereo, cfa4_audio_dsp::channels::Mixdown::FrontRear);
-    let channels = buf.channels.len();
+    let rate = graph.sample_rate;
+    let (out, heard_on) = heard("program", start, graph, frames, binaural.as_ref(), cfa4_audio_dsp::channels::Mixdown::FrontRear);
+    let channels = out.len();
     let bytes = if s.voiceover.recording() {
         // a voice-over's countdown beeps are heard with the programme (not metered, as egui's)
-        let mut heard = buf.channels.clone();
-        cfa4_engine::voiceover::mix_cues(s, buf.sample_rate, start, &mut heard);
-        interleave(&heard, frames)
+        let mut with_cues = out.clone();
+        cfa4_engine::voiceover::mix_cues(s, rate, start, &mut with_cues);
+        interleave(&with_cues, frames)
     } else {
-        interleave(&buf.channels, frames)
+        interleave(&out, frames)
     };
-    let mut meta = json!({"sampleRate": buf.sample_rate, "channels": channels, "frames": frames, "start": start, "format": "f32le", "target": "program"});
+    let mut meta = json!({"sampleRate": rate, "channels": channels, "frames": frames, "start": start, "format": "f32le", "target": "program"});
+    if let Some(m) = heard_on {
+        meta["monitor"] = m;
+    }
     let strips = live.take_meters();
     if wants_meter(p) {
-        meta["meter"] = meter("program", buf.sample_rate, start, &buf.channels, frames);
+        meta["meter"] = meter("program", rate, start, &out, frames);
         // each mixer strip's peak (linear, post-fader, one per channel) over this block
         let mut strips: Vec<Value> = strips.into_iter().map(|(id, peaks)| json!({"id": id.0, "peaks": peaks})).collect();
         strips.sort_by_key(|v| v["id"].as_u64());
         meta["meter"]["strips"] = Value::Array(strips);
     }
     Ok((meta, bytes))
+}
+
+/// What a monitor plays of `sound` (a mix starting at sample `start` of `target`): its stereo fold,
+/// or with `binaural` the two ears of its channels as virtual loudspeakers (`serve_monitor`),
+/// and then the reply's `monitor` object. A layout the headphone monitor has none for (3, 4, 5,
+/// 7 … channels) is folded to stereo first; while the HRTF set is being made, or when it cannot
+/// be, the stereo fold plays.
+fn heard(
+    target: &'static str,
+    start: i64,
+    sound: cfa4_frame::AudioBuffer,
+    frames: usize,
+    binaural: Option<&crate::serve_monitor::Binaural>,
+    mixdown: cfa4_audio_dsp::channels::Mixdown,
+) -> (Vec<Vec<f32>>, Option<Value>) {
+    let stereo = |b| cfa4_render::audio::to_layout(b, cfa4_audio_dsp::channels::Layout::Stereo, mixdown).channels;
+    let Some(binaural) = binaural else { return (stereo(sound), None) };
+    let rate = sound.sample_rate;
+    let native =
+        if cfa4_hrtf::ChannelMonitor::supports(sound.channels.len()) { sound } else { cfa4_frame::AudioBuffer { sample_rate: rate, channels: stereo(sound) } };
+    let (ears, meta) = crate::serve_monitor::render(target, rate, start, &native.channels, frames, binaural);
+    match ears {
+        Some(ears) => (ears.into(), Some(meta)),
+        None => (stereo(native), Some(meta)),
+    }
 }
 
 thread_local! {
@@ -744,12 +783,17 @@ fn time_readout(s: &Session, p: &Value) -> Result<Value, String> {
 
 /// Most buckets one `media.peaks` returns.
 const MAX_PEAK_BUCKETS: usize = 20_000;
+/// Most channels a per-channel `media.peaks` returns (7.1.2 is ten); further channels are left out.
+const MAX_PEAK_CHANNELS: usize = 10;
 /// Longest media span one `media.peaks` reads (10 minutes at 48 kHz), so a request stays short.
 const MAX_PEAK_FRAMES: i64 = 48_000 * 600;
 
 /// `media.peaks {item, start, end, buckets}`: the waveform of a media item's sound between two
 /// media times (ticks), as `buckets` (min, max) pairs over all the channels, f32le. The
-/// timeline draws its audio clips from these.
+/// timeline draws its audio clips from these. With `"perChannel": true` the reply holds one
+/// (min, max) series per channel of the stream (at most `MAX_PEAK_CHANNELS`), channel after channel
+/// (`channels` x `buckets` x 2 values, the stream's own channel order, e.g. L R C LFE Ls Rs); a
+/// silent or missing sound gives one silent channel. Without it the reply is the merged series.
 fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let item = source_item(s, p)?;
     let media = media_of(s, item);
@@ -769,6 +813,11 @@ fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
         None | Some(Value::Null) => 0,
         Some(v) => v.as_u64().and_then(|n| usize::try_from(n).ok()).filter(|n| *n < 256).ok_or("`stream` must be an audio stream index")?,
     };
+    let per_channel = match p.get("perChannel") {
+        None | Some(Value::Null) => false,
+        Some(Value::Bool(b)) => *b,
+        Some(_) => return Err("`perChannel` must be true or false".into()),
+    };
     let sr: u32 = 48_000;
     let f0 = cfa4_time::Tick(t0).to_units_floor(i64::from(sr)).max(0);
     let f1 = cfa4_time::Tick(t1).to_units_floor(i64::from(sr)).max(f0 + 1);
@@ -777,6 +826,8 @@ fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     }
     let total = usize::try_from(f1 - f0).map_err(|_| "span too long")?;
     let mut out = vec![0f32; buckets * 2];
+    // per channel: the series of each channel, grown when the first decoded block shows how many
+    let mut per: Vec<Vec<f32>> = Vec::new();
     let has_audio = s.project.item(media).is_some_and(|i| i.has_audio());
     if has_audio {
         let provider = s.media.provider(s.project.clone(), s.services.clone());
@@ -788,6 +839,23 @@ fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
             let n = chunk.min(total - done);
             let start = f0 + i64::try_from(done).map_err(|_| "span too long")?;
             let sound = source.audio_stream(stream, start, n, sr).map_err(|e| format!("audio decoding failed: {e}"))?;
+            if per_channel {
+                let count = sound.channels.len().min(MAX_PEAK_CHANNELS);
+                while per.len() < count {
+                    per.push(vec![0f32; buckets * 2]);
+                }
+                for (series, samples) in per.iter_mut().zip(&sound.channels) {
+                    for i in 0..n {
+                        let b = ((done + i) as u128 * buckets as u128 / total as u128) as usize;
+                        if let (Some(pair), Some(v)) = (series.get_mut(b * 2..b * 2 + 2), samples.get(i).copied()) {
+                            pair[0] = pair[0].min(v);
+                            pair[1] = pair[1].max(v);
+                        }
+                    }
+                }
+                done += n;
+                continue;
+            }
             for i in 0..n {
                 let b = ((done + i) as u128 * buckets as u128 / total as u128) as usize;
                 if let Some(pair) = out.get_mut(b * 2..b * 2 + 2) {
@@ -801,11 +869,21 @@ fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
             done += n;
         }
     }
+    if per_channel {
+        if per.is_empty() {
+            per.push(out);
+        }
+        out = per.concat();
+    }
+    let channels = if per_channel { out.len() / (buckets * 2) } else { 1 };
     let mut bytes = Vec::with_capacity(out.len() * 4);
     for v in out {
         bytes.extend_from_slice(&v.to_le_bytes());
     }
-    Ok((json!({"item": media.0, "buckets": buckets, "start": t0, "end": t1, "hasAudio": has_audio, "format": "f32le min,max"}), bytes))
+    Ok((
+        json!({"item": media.0, "buckets": buckets, "start": t0, "end": t1, "hasAudio": has_audio, "channels": channels, "perChannel": per_channel, "format": "f32le min,max"}),
+        bytes,
+    ))
 }
 
 /// Handles one request. `Ok(None)` asks the loop to end the session.
@@ -1307,6 +1385,82 @@ mod tests {
     }
 
     #[test]
+    fn audio_render_plays_through_headphones_when_asked() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        let sr = s.active_sequence().map(|q| q.settings.sample_rate).expect("demo sequence");
+        let samples =
+            |r: &Reply| -> Vec<f32> { r.binary.as_deref().unwrap_or(&[]).chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect() };
+        let ask = |s: &mut Session, id: i64, p: Value| handle(s, json!(id), "audio.render", p).expect("reply");
+        let set = crate::serve_monitor::SetId::Builtin;
+        assert!(crate::serve_monitor::wait_for(&set, sr, 30), "the built-in set is made");
+        let at = 10 * i64::from(sr);
+        let speakers = ask(&mut s, 1, json!({"start": at, "frames": 4800}));
+        assert!(speakers.json["result"].get("monitor").is_none(), "the loudspeaker monitor is the default");
+        let monitor = json!({"mode": "binaural", "room": 0});
+        let mut ears = Vec::new();
+        for (i, start) in [at, at + 4800].into_iter().enumerate() {
+            let r = ask(&mut s, 2 + i as i64, json!({"start": start, "frames": 4800, "meter": true, "monitor": monitor}));
+            assert_eq!(r.json["ok"], json!(true), "{}", r.json);
+            let m = &r.json["result"];
+            assert_eq!(m["channels"], json!(2), "two ears");
+            assert_eq!(m["monitor"]["mode"], json!("binaural"), "{m}");
+            assert_eq!(m["monitor"]["hrtf"], json!("builtin"));
+            assert_eq!(m["meter"]["peaks"][0].as_array().map(Vec::len), Some(2), "the meters show the ears");
+            ears.extend(samples(&r));
+        }
+        assert!(ears.iter().all(|x| x.is_finite()));
+        let level = |v: &[f32]| v.iter().map(|x| f64::from(*x).powi(2)).sum::<f64>() / v.len().max(1) as f64;
+        let plain = samples(&speakers);
+        assert!(level(&plain) > 1e-8, "the demo plays sound at 10 s");
+        let ratio = level(&ears[..4800 * 2]) / level(&plain);
+        assert!(ratio > 0.05 && ratio < 20.0, "the ears are about as loud as the stereo fold: {ratio}");
+        assert_ne!(ears[..4800 * 2], plain[..], "the ears are not the stereo fold");
+        // the Source monitor too
+        let movie = s.project.items.values().find(|i| i.as_media().is_some_and(|m| !m.info.audio_streams.is_empty())).map(|i| i.id).expect("demo sound");
+        s.execute("source.open", json!({"item": movie.0})).expect("open source");
+        assert!(crate::serve_monitor::wait_for(&set, 48_000, 30));
+        let src = ask(&mut s, 5, json!({"target": "source", "start": 0, "frames": 4800, "monitor": monitor}));
+        assert_eq!(src.json["result"]["monitor"]["mode"], json!("binaural"), "{}", src.json);
+        assert!(samples(&src).iter().all(|x| x.is_finite()));
+        // a wrong monitor is refused, not guessed
+        let bad = ask(&mut s, 6, json!({"start": 0, "frames": 480, "monitor": {"mode": "binaural", "room": 7}}));
+        assert_eq!(bad.json["ok"], json!(false));
+    }
+
+    /// A real Dolby Atmos file (`CFA4_ATMOS_MKV`, never committed) in the Source monitor through
+    /// headphones: its objects from their own places; without the file the test passes.
+    #[test]
+    fn the_source_monitor_plays_atmos_objects_through_headphones() {
+        let Ok(path) = std::env::var("CFA4_ATMOS_MKV") else {
+            eprintln!("CFA4_ATMOS_MKV is not set: skipped");
+            return;
+        };
+        let mut s = Session::default();
+        let imported = s.execute("file.import", json!({"paths": [path]})).expect("import");
+        assert!(imported["errors"].as_array().is_none_or(Vec::is_empty), "{imported}");
+        let item = s.project.items.values().find(|i| i.as_media().is_some()).map(|i| i.id).expect("imported");
+        s.execute("source.open", json!({"item": item.0})).expect("open source");
+        assert!(crate::serve_monitor::wait_for(&crate::serve_monitor::SetId::Builtin, 48_000, 30));
+        let ask = |s: &mut Session, start: i64, room: f32| {
+            let p = json!({"target": "source", "start": start, "frames": 9_600, "monitor": {"mode": "binaural", "room": room}});
+            let r = handle(s, json!(1), "audio.render", p).expect("reply");
+            assert_eq!(r.json["ok"], json!(true), "{}", r.json);
+            let v: Vec<f32> = r.binary.as_deref().unwrap_or(&[]).chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect();
+            (r.json["result"].clone(), v)
+        };
+        let (meta, ears) = ask(&mut s, 480_000, 0.35);
+        assert_eq!(meta["monitor"]["format"], json!("Dolby TrueHD Atmos"), "{meta}");
+        assert!(meta["monitor"]["objects"].as_u64().is_some_and(|n| n >= 10), "{meta}");
+        assert!(ears.iter().all(|x| x.is_finite()) && ears.iter().any(|x| x.abs() > 1e-4));
+        // the next block goes on, a seek starts over
+        let (next, _) = ask(&mut s, 489_600, 0.35);
+        assert_eq!(next["monitor"]["format"], json!("Dolby TrueHD Atmos"));
+        let (back, _) = ask(&mut s, 96_000, 0.35);
+        assert_eq!(back["monitor"]["format"], json!("Dolby TrueHD Atmos"));
+    }
+
+    #[test]
     fn audio_render_plays_shuttling_at_its_speed() {
         let mut s = Session::default();
         let _ = s.execute("file.openDemoProject", json!({}));
@@ -1426,6 +1580,107 @@ mod tests {
         let t = &q.json["result"]["targeting"];
         assert!(t["targeted"].as_array().is_some_and(|a| !a.is_empty()), "{t}");
         assert!(t["videoDest"].is_u64() && t["audioDest"].is_u64(), "{t}");
+    }
+
+    #[test]
+    fn media_peaks_per_channel_split_the_merged_waveform() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        let music = s
+            .project
+            .items
+            .values()
+            .find(|i| i.as_media().is_some_and(|m| m.info.video.is_none() && !m.info.audio_streams.is_empty()))
+            .map(|i| i.id)
+            .expect("demo music");
+        let tps = cfa4_time::TICKS_PER_SECOND;
+        let floats = |b: &[u8]| -> Vec<f32> { b.chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect() };
+        let merged = handle(&mut s, json!(1), "media.peaks", json!({"item": music.0, "start": 0, "end": 2 * tps, "buckets": 50})).expect("reply");
+        assert_eq!(merged.json["result"]["channels"], json!(1));
+        assert_eq!(merged.json["result"]["perChannel"], json!(false));
+        let merged = floats(&merged.binary.expect("peaks"));
+        let r =
+            handle(&mut s, json!(2), "media.peaks", json!({"item": music.0, "start": 0, "end": 2 * tps, "buckets": 50, "perChannel": true})).expect("reply");
+        assert_eq!(r.json["ok"], json!(true), "{}", r.json);
+        let n = usize::try_from(r.json["result"]["channels"].as_u64().expect("channels")).expect("count");
+        assert!((1..=MAX_PEAK_CHANNELS).contains(&n));
+        let all = floats(&r.binary.expect("peaks"));
+        assert_eq!(all.len(), n * 50 * 2, "channel after channel");
+        assert!(all.iter().all(|v| v.is_finite()));
+        // the merged series is the envelope over the channels
+        for b in 0..50 {
+            let lo = (0..n).map(|c| all[c * 100 + b * 2]).fold(0.0_f32, f32::min);
+            let hi = (0..n).map(|c| all[c * 100 + b * 2 + 1]).fold(0.0_f32, f32::max);
+            assert!((lo - merged[b * 2]).abs() < 1e-6 && (hi - merged[b * 2 + 1]).abs() < 1e-6, "bucket {b}");
+        }
+        // hostile parameter
+        for bad in [json!("yes"), json!(1), json!([])] {
+            let r = handle(&mut s, json!(3), "media.peaks", json!({"item": music.0, "start": 0, "end": tps, "buckets": 10, "perChannel": bad})).expect("reply");
+            assert_eq!(r.json["ok"], json!(false), "{bad}");
+        }
+    }
+
+    /// SC-3: a 5.1 file whose channels carry different, known levels. Each channel's series is that
+    /// channel's own, in the stream's order (L R C LFE Ls Rs); a file with more channels than the
+    /// cap is cut at `MAX_PEAK_CHANNELS`; a stereo file keeps its left and right apart.
+    #[test]
+    fn media_peaks_per_channel_follow_the_channels_of_a_5_1_file() {
+        let dir = std::env::temp_dir().join(format!("cfa4-peaks-5-1-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        // channel c swings between -(c + 1) / 20 and +(c + 1) / 20 for a second: its own min and max
+        let write = |name: &str, channels: u16| -> String {
+            let mut pcm = Vec::new();
+            for i in 0..48_000 {
+                for c in 0..channels {
+                    pcm.push(if i % 2 == 0 { 1.0 } else { -1.0 } * f32::from(c + 1) / 20.0);
+                }
+            }
+            let path = dir.join(name);
+            std::fs::write(&path, cfa4_media::wav::write_wav16(&pcm, channels, 48_000)).expect("wav");
+            path.to_string_lossy().into_owned()
+        };
+        let mut s = Session::default();
+        let imported = s.execute("file.import", json!({"paths": [write("l6.wav", 6), write("l2.wav", 2), write("l12.wav", 12)]})).expect("import");
+        assert!(imported["errors"].as_array().is_none_or(Vec::is_empty), "{imported}");
+        let with_channels = |s: &Session, n: u32| {
+            s.project
+                .items
+                .values()
+                .find(|i| i.as_media().is_some_and(|m| m.info.audio_streams.first().is_some_and(|a| a.channels == n)))
+                .map(|i| i.id)
+                .expect("imported")
+        };
+        let tps = cfa4_time::TICKS_PER_SECOND;
+        let peaks = |s: &mut Session, item: cfa4_project::ItemId| {
+            let r = handle(s, json!(1), "media.peaks", json!({"item": item.0, "start": 0, "end": tps / 2, "buckets": 20, "perChannel": true})).expect("reply");
+            assert_eq!(r.json["ok"], json!(true), "{}", r.json);
+            let n = usize::try_from(r.json["result"]["channels"].as_u64().expect("channels")).expect("count");
+            let v: Vec<f32> = r.binary.expect("peaks").chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect();
+            assert_eq!(v.len(), n * 20 * 2, "channel after channel");
+            (n, v)
+        };
+        // 5.1: six series, each swinging to its own level, in channel order
+        let item = with_channels(&s, 6);
+        let (n, v) = peaks(&mut s, item);
+        assert_eq!(n, 6);
+        for c in 0..6 {
+            let level = (c + 1) as f32 / 20.0;
+            for b in 0..20 {
+                let (lo, hi) = (v[c * 40 + b * 2], v[c * 40 + b * 2 + 1]);
+                assert!((lo + level).abs() < 1e-3 && (hi - level).abs() < 1e-3, "channel {c} bucket {b}: {lo} {hi} want {level}");
+            }
+        }
+        // stereo: left and right stay apart
+        let item = with_channels(&s, 2);
+        let (n, v) = peaks(&mut s, item);
+        assert_eq!(n, 2);
+        assert!((v[1] - 0.05).abs() < 1e-3 && (v[41] - 0.10).abs() < 1e-3, "{} {}", v[1], v[41]);
+        // more channels than the cap: cut at the cap, the first ones kept
+        let item = with_channels(&s, 12);
+        let (n, v) = peaks(&mut s, item);
+        assert_eq!(n, MAX_PEAK_CHANNELS);
+        assert!((v[(MAX_PEAK_CHANNELS - 1) * 40 + 1] - MAX_PEAK_CHANNELS as f32 / 20.0).abs() < 1e-3);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

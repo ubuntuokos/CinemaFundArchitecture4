@@ -45,9 +45,17 @@ attribution and original copyright/licence requirements remain in force.
     FFmpeg (LGPL-2.1-or-later, optional GPL-2.0-or-later parts) and x264/x265 (GPL-2.0-or-later)
     still need a per-file header check before anything is reused.
   - NEVER reuse GPL-2.0-only (e.g. HandBrake), AGPL, unlicensed or proprietary code (Adobe,
-    DaVinci Resolve). Reimplement the capability or call the program as an external process.
+    DaVinci Resolve) in CFA4's own code. Reimplement the capability or call the program as an external process.
+  - **AGPL-3.0 as an optional worker** (owner decision 2026-11-22, lifts the blanket AGPL ban):
+    AGPL-3.0 code and models (e.g. Ultralytics YOLO) may run as a separately downloaded, optional
+    worker in its own sandboxed process, like non-commercial workers (CFA4-AI_modules ADR 0008 §8).
+    Never in the CFA4 process, never copied or ported into CFA4's code, and never a default.
+    The worker records its licence; its source, and the corresponding source of each AGPL-licensed
+    model or dataset component, is offered with it (AGPL-3.0 §13); the UI names
+    the licence. Details: [`docs/licensing.md`](docs/licensing.md) §3.
   - Dependencies must use GPL-3.0-compatible licences and pass `cargo deny check licenses`
-    (`deny.toml`); GPL-2.0-only and AGPL dependencies are not allowed.
+    (`deny.toml`); GPL-2.0-only and AGPL dependencies are not allowed in CFA4's own crates
+    (an AGPL worker is a separate program, not a dependency).
   - **No paid or commercial part** (owner decision 2026-11-08, replaces the 2026-10-24 paid-extras
     model): never add paid extras or editions, licence keys, trials, usage or resolution limits,
     watermarks or paid support tiers, in the core, AI workers, packages or plans. CFA4 is supported
@@ -62,14 +70,14 @@ attribution and original copyright/licence requirements remain in force.
   (`python/tests/test_independence.py` guards this). Retain the upstream MIT/Apache copyright
   notices in `LICENSE-MIT`, `NOTICE`, `vendor/*/*/NOTICE` and the `ATTRIBUTION.md` author columns.
 - **Media backends** ([ADR 0005](docs/adr/ADR-0005-media-backends.md)): our own Rust engine is the base. Supplementary
-  backends (FFmpeg ≥ 9.0.2, linked and shipped only through the `cfa4-ffmpeg` crate (`crates/ffmpeg`, no `unsafe`),
+  backends (FFmpeg ≥ `CFA4_FFMPEG_MIN_VERSION` (`packaging/ffmpeg-version.env`), linked and shipped only through the `cfa4-ffmpeg` crate (`crates/ffmpeg`, no `unsafe`),
   GPL-3 build only, never `--enable-nonfree`, no copied FFmpeg source; the GStreamer that Ubuntu ships in its repositories as the default, plus an
   isolated CFA4-owned runtime (`cfa4-gstreamer-runtime`, `/opt/cfa4/gstreamer`, no patent-restricted
   elements) only when a feature needs a newer version, never replacing the system one; further engines later)
   are registered with the automatic task router (`cfa4-route`, ADR 0004) and picked by its table,
   default order own hardware paths → own software codecs → FFmpeg → GStreamer (`crates/route/routing.toml`). Callers use only the engine's
   interfaces through the router, never a backend directly; order changes need tests and measurement.
-  The pinned ffmpeg/ffprobe 9.0.2 CLI stays a separate external test oracle and fixture generator.
+  The pinned ffmpeg/ffprobe CLI (version in `packaging/ffmpeg-version.env`) stays a separate external test oracle and fixture generator.
 - **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
   backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default in dev builds;
   release packages build with it and depend on Ubuntu's GStreamer packages: Depends for the core
@@ -112,6 +120,8 @@ attribution and original copyright/licence requirements remain in force.
 > **CFA4: read [`VISION.md`](VISION.md) first.** It defines the project goal (Qt6 GUI on every graphical Ubuntu flavour, combined media tools, local AI) and the priority order. If a plan, PR or audit contradicts it, report the conflict to the owner instead of resolving it silently.
 
 > **Always read [`docs/development/reference-machine.md`](docs/development/reference-machine.md) too** (owner decision, 2026-11-02). It records the owner's reference machine (hardware, OS, GPUs) and how to measure on it (minimum-spec limits, CPU-only runs). Take machine data from there; never ask the owner for it again.
+
+> **Skipped physical tests are recorded** (owner decision, 2026-11-22): every physical test the owner decides to skip (reference-machine measurement, real hardware, camera, display or network trial) gets a row in [`docs/development/deferred-physical-tests.md`](docs/development/deferred-physical-tests.md), with what to measure, the command, the substitute result and the reason ([`docs/coordination.md`](docs/coordination.md) §2.14).
 
 These rules apply to every human and AI contributor. `CLAUDE.md` holds the working instructions; this
 file holds the rules that must never be broken. When the two disagree, this file wins.

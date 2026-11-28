@@ -33,6 +33,7 @@ pub mod plan;
 pub mod preview;
 pub mod remix;
 pub mod scene;
+pub mod subspace;
 pub mod track;
 pub mod trajectories;
 pub mod transitions;
@@ -721,7 +722,8 @@ pub(crate) fn base_layer(
                 None => render_seq(project, nested, ft, RenderOptions { captions: true, ..sub }, sources),
             }
         }
-        ItemKind::AdjustmentLayer { .. } => return None,
+        // a volume has no pixels until it renders as plain media (N2)
+        ItemKind::AdjustmentLayer { .. } | ItemKind::Volume(_) => return None,
         ItemKind::Graphic { .. } => {
             // standard effects work on the graphic at source resolution, then Motion places it
             let (gw, gh) = (((src_size.0 as f32 * want).ceil() as usize).max(1), ((src_size.1 as f32 * want).ceil() as usize).max(1));
@@ -834,3 +836,10 @@ mod region_tests;
 #[cfg(test)]
 #[path = "par_tests.rs"]
 mod par_tests;
+
+#[cfg(test)]
+mod key_measure_tests;
+#[cfg(test)]
+mod key_synth;
+#[cfg(test)]
+mod key_tests;

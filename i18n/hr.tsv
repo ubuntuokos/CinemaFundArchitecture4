@@ -57,6 +57,7 @@
 	Apply Video Transition	Primijeni video prijelaz
 	Assembly	Montaža
 	Attach Proxies…	Priloži proxy datoteke…
+	Find Camera Proxies	Pronađi proxy datoteke kamere
 	Audio	Audio
 	Audio Channels…	Audio kanali…
 	Audio Clip Mixer	Mikser audio isječaka
@@ -3961,7 +3962,7 @@
 	Six-Point Pin	Pričvršćivanje u šest točaka
 	Upper Center	Gore u sredini
 	Lower Center	Dolje u sredini
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Koristi FFmpeg za datoteke koje pogon CFA4 ne može otvoriti (FFmpeg 9.0.2 ili noviji, GPL-3 verzija)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Koristi FFmpeg za datoteke koje pogon CFA4 ne može otvoriti (FFmpeg 9.1 ili noviji, GPL-3 verzija)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Koristi GStreamer sustava za datoteke koje ne mogu otvoriti ni pogon ni FFmpeg
 	Analyze Source for Smart Cut	Analiziraj izvor za pametni rez
 	Plan Smart Cut	Planiraj pametni rez
@@ -4815,3 +4816,172 @@ export.summary	Low	niska
 	Encode Resolution	Razlučivost kodiranja
 	Half	Pola
 	Quarter	Četvrtina
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh cvat
+	Start Time (seconds)	Vrijeme početka (sekunde)
+	Repeats	Ponavljanja
+	Clean Blocks	Čisti blokovi
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Primijeni nedavno korišteni efekt na odabrane klipove
+	Disable all effects	Isključi sve efekte
+	Enable all effects	Uključi sve efekte
+	No recent effects	Nema nedavnih efekata
+	Recent effects	Nedavni efekti
+	Switch every effect of the selected clips off	Isključuje svaki efekt odabranih klipova
+	Switch every effect of the selected clips on	Uključuje svaki efekt odabranih klipova
+	Merged	Spojeno
+	Per Channel	Po kanalu
+	Channel Zoom	Zumiranje kanala
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Birač balansa bijele (kliknite neutralnu točku na programskom monitoru; Esc otkazuje)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Upravitelj zadataka
+	Background jobs	Poslovi u pozadini
+	Exports	Izvozi
+	Shared task queue	Zajednički red zadataka
+	Task	Zadatak
+	State	Stanje
+	Details	Pojedinosti
+	Time left	Preostalo vrijeme
+	Scheduled	Zakazano
+	Queued	U redu čekanja
+	Waiting for resources	Čeka resurse
+	Blocked	Blokirano
+	Running	Radi
+	Paused	Pauzirano
+	Cancelling	Otkazivanje
+	Interactive	Interaktivno
+	Speculative	Spekulativno
+	Final render	Završni render
+	Show finished	Prikaži dovršeno
+	Nothing is running.	Ništa se ne izvodi.
+	Not reported by this engine yet.	Ovaj mehanizam to još ne izvješćuje.
+	Not available: {why}	Nije dostupno: {why}
+	{name} waits: {why}	{name} čeka: {why}
+	{running} running · {waiting} waiting	{running} se izvodi · {waiting} čeka
+	{n} active	{n} aktivnih
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Čeka vašu odluku
+	Run now	Pokreni sada
+	Next slot	Sljedeći termin
+	Missed its start	Propušten početak
+	Missed its start at {time}	Propušten početak u {time}
+	Starts at {time}	Počinje u {time}
+	Subtitle kind	Vrsta titlova
+	Subtitles	Titlovi
+	Captions for the hearing impaired	Titlovi za osobe oštećena sluha
+	Forced narrative	Prisilna naracija (forced narrative)
+	Silence	Tišina
+	Detect Silence	Otkrij tišinu
+	Remove Silence	Ukloni tišinu
+	Clear Silence Markers	Obriši oznake tišine
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Odaberite mapu DCP-a.
+	DCP Validation	Provjera DCP-a
+	DCP folder	Mapa DCP-a
+	DCP folder (the one holding ASSETMAP)	Mapa DCP-a (ona koja sadrži ASSETMAP)
+	Evidence	Dokaz
+	How to fix	Kako popraviti
+	Interrupted	Prekinuto
+	Not applicable	Nije primjenjivo
+	Report	Izvješće
+	Report saved: {path}	Izvješće spremljeno: {path}
+	Required	Obavezno
+	Rule	Pravilo
+	Rules	Pravila
+	Save JSON…	Spremi JSON…
+	Save Markdown…	Spremi Markdown…
+	Save report	Spremi izvješće
+	Skipped	Preskočeno
+	Standard: {standard}	Norma: {standard}
+	Validate	Provjeri
+	Validate DCP…	Provjeri DCP…
+	the engine sent no profiles	motor nije poslao nijedan profil
+	{n} files checked	Provjereno datoteka: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Zapiši paket AS-02 (putanja je mapa)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktivni voksel:
+	Bounds:	Granice:
+	Voxel attributes	Atributi voksela
+	Voxel size:	Veličina voksela:
+	points	točke
+
+# WP3 DPX bit depth
+	Bit Depth	Bitna dubina
+
+# AS-02 versions
+	AS-02 Versions	AS-02 verzije
+	Tick the sequences to write as further versions in the AS-02 bundle	Označite sekvence koje će se zapisati kao dodatne verzije u AS-02 paketu
+	Delete Short Clips	Izbriši kratke isječke
+	A stored combination does not run a command yet.	Spremljena kombinacija još ne pokreće naredbu.
+	Action hint	Natuknica radnje
+	Add combination	Dodaj kombinaciju
+	Add mapping	Dodaj pridruživanje
+	Button Learn	Učenje tipke
+	Button Test	Proba tipke
+	Button name	Naziv tipke
+	Cancel feedback	Signal odustajanja
+	Combination editor	Uređivač kombinacija
+	Context	Kontekst
+	Delete profile	Obriši profil
+	Detected buttons	Otkrivene tipke
+	Draw the gesture with a button held.	Nacrtajte gestu držeći tipku.
+	Error feedback	Signal greške
+	Evdev device	Evdev uređaj
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev čita samo odabrani uređaj, i tek kad ga kasnija faza uključi. Ova inačica ostaje na Qt putu.
+	Execution feedback	Signal izvršenja
+	Follow the system	Slijedi sustav
+	Gesture	Gesta
+	Gesture Learn	Učenje geste
+	Gesture editor	Uređivač gesti
+	Gesture profiles	Profili gesti
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Geste ostaju isključene dok ih ne uključite. Uključivanje ne blokira izbornik panela.
+	HUD	HUD
+	Hand	Ruka
+	High contrast	Visoki kontrast
+	Hold time	Vrijeme držanja
+	Input access	Pristup ulazu
+	Left-handed	Ljevoruk
+	Mapping	Pridruživanje
+	Maximum length	Najveća duljina
+	Maximum time	Najveće vrijeme
+	Minimum length	Najmanja duljina
+	Mirror ergonomic gestures	Zrcali ergonomske geste
+	Mouse Gestures	Geste miša
+	Mouse Gestures…	Geste miša…
+	No buttons yet. Press one in Button Learn or Button Test.	Još nema tipke. Pritisnite jednu u učenju ili u probi.
+	Press	Pritisak
+	Qt pointer (this application)	Qt pokazivač (ovaj program)
+	Recognition preview	Pretpregled prepoznavanja
+	Reduced animation	Smanjena animacija
+	Right-handed	Dešnjak
+	Roles	Uloge
+	Save gesture	Spremi gestu
+	Save profile	Spremi profil
+	Show the gesture HUD	Prikaži HUD gesti
+	Slop	Zazor
+	Spatial gesture	Prostorna gesta
+	Thresholds	Pragovi
+	Trail	Trag
+	Use gestures in the window	Koristi geste u prozoru
+	DVD-Video folder (VIDEO_TS)	DVD-Video mapa (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video mapa (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfno, 6 Mbps, GOP 15, AC-3 192 kbps, poglavlja iz oznaka poglavlja sekvence
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video mapa (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfno, 6 Mbps, GOP 18, AC-3 192 kbps, poglavlja iz oznaka poglavlja sekvence
+	DNx decoding:	DNx dekodiranje:
+	As detected from the file ({detected})	Prema prepoznavanju iz datoteke ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	Kompatibilno s FFmpegom
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg neke DNx datoteke čita drukčije od standarda (boje 4:4:4, inverzna kvantizacija). Snimka kodirana FFmpegom se prepoznaje; odaberite ovdje ako je prepoznavanje pogrešno.
+	DNx Coding	DNx kodiranje
+	FFmpeg-compatible (for FFmpeg-based tools)	Kompatibilno s FFmpegom (za alate temeljene na FFmpegu)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Isključeno: kodirano prema SMPTE ST 2019-1. Uključeno: kodirano kako FFmpeg zapisuje DNx, za alate izgrađene na FFmpegu.

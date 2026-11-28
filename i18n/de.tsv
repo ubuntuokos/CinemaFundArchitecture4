@@ -47,6 +47,7 @@
 	Arrange	Anordnen
 	Assembly	Montage
 	Attach Proxies…	Proxys anhängen…
+	Find Camera Proxies	Kamera-Proxys suchen
 	Audio	Audio
 	Audio Channels…	Audiokanäle…
 	Audio Clip Mixer	Audioclip-Mischpult
@@ -4131,7 +4132,7 @@
 	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 mit 25 fps, 16:9 anamorph, 6 Mbit/s, GOP 15, 16-Bit-LPCM mit 48 kHz, .mpg (DVD-tauglicher Strom; kein VIDEO_TS-Authoring)
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	MPEG-2-Video (Main Profile 4:2:0, 0,4 Bit pro Pixel) in Bildgröße und Bildrate der Sequenz, 16-Bit-LPCM mit 48 kHz, .mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2-Video 1920×1080, durchschnittlich 18 Mbit/s, AAC 192 kbit/s, .ts
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	FFmpeg für Dateien verwenden, die die CFA4-Engine nicht öffnen kann (FFmpeg 9.0.2 oder neuer, GPL-3-Build)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	FFmpeg für Dateien verwenden, die die CFA4-Engine nicht öffnen kann (FFmpeg 9.1 oder neuer, GPL-3-Build)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	GStreamer des Systems für Dateien verwenden, die weder die Engine noch FFmpeg öffnen kann
 
 # Language names in the language menu: the English variants keep their English names.
@@ -4820,3 +4821,172 @@
 	Encode Resolution	Kodierauflösung
 	Half	Halb
 	Quarter	Viertel
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-Blüte
+	Start Time (seconds)	Startzeit (Sekunden)
+	Repeats	Wiederholungen
+	Clean Blocks	Saubere Blöcke
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Zuletzt verwendeten Effekt auf die gewählten Clips anwenden
+	Disable all effects	Alle Effekte ausschalten
+	Enable all effects	Alle Effekte einschalten
+	No recent effects	Keine zuletzt verwendeten Effekte
+	Recent effects	Zuletzt verwendete Effekte
+	Switch every effect of the selected clips off	Schaltet jeden Effekt der gewählten Clips aus
+	Switch every effect of the selected clips on	Schaltet jeden Effekt der gewählten Clips ein
+	Merged	Zusammengefasst
+	Per Channel	Pro Kanal
+	Channel Zoom	Kanalzoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Weißabgleich-Pipette (auf einen neutralen Punkt im Programmmonitor klicken; Esc bricht ab)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Aufgabenverwaltung
+	Background jobs	Hintergrundjobs
+	Exports	Exporte
+	Shared task queue	Gemeinsame Aufgabenwarteschlange
+	Task	Aufgabe
+	State	Status
+	Details	Details
+	Time left	Verbleibende Zeit
+	Scheduled	Geplant
+	Queued	In der Warteschlange
+	Waiting for resources	Wartet auf Ressourcen
+	Blocked	Blockiert
+	Running	Läuft
+	Paused	Pausiert
+	Cancelling	Wird abgebrochen
+	Interactive	Interaktiv
+	Speculative	Spekulativ
+	Final render	Finales Rendern
+	Show finished	Abgeschlossene anzeigen
+	Nothing is running.	Es läuft nichts.
+	Not reported by this engine yet.	Von dieser Engine noch nicht gemeldet.
+	Not available: {why}	Nicht verfügbar: {why}
+	{name} waits: {why}	{name} wartet: {why}
+	{running} running · {waiting} waiting	{running} laufen · {waiting} warten
+	{n} active	{n} aktiv
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Braucht Ihre Entscheidung
+	Run now	Jetzt ausführen
+	Next slot	Nächster Slot
+	Missed its start	Start verpasst
+	Missed its start at {time}	Start um {time} verpasst
+	Starts at {time}	Startet um {time}
+	Subtitle kind	Untertitelart
+	Subtitles	Untertitel
+	Captions for the hearing impaired	Untertitel für Hörgeschädigte
+	Forced narrative	Erzwungene Untertitel (forced narrative)
+	Silence	Stille
+	Detect Silence	Stille erkennen
+	Remove Silence	Stille entfernen
+	Clear Silence Markers	Stille-Marker löschen
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Wähle den DCP-Ordner.
+	DCP Validation	DCP-Prüfung
+	DCP folder	DCP-Ordner
+	DCP folder (the one holding ASSETMAP)	DCP-Ordner (der Ordner mit der ASSETMAP)
+	Evidence	Nachweis
+	How to fix	So wird es behoben
+	Interrupted	Unterbrochen
+	Not applicable	Nicht zutreffend
+	Report	Bericht
+	Report saved: {path}	Bericht gespeichert: {path}
+	Required	Erforderlich
+	Rule	Regel
+	Rules	Regeln
+	Save JSON…	JSON speichern…
+	Save Markdown…	Markdown speichern…
+	Save report	Bericht speichern
+	Skipped	Übersprungen
+	Standard: {standard}	Standard: {standard}
+	Validate	Prüfen
+	Validate DCP…	DCP prüfen…
+	the engine sent no profiles	die Engine hat keine Profile gesendet
+	{n} files checked	{n} Dateien geprüft
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	AS-02-Bundle schreiben (der Pfad ist ein Ordner)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktive Voxel:
+	Bounds:	Grenzen:
+	Voxel attributes	Voxel-Attribute
+	Voxel size:	Voxelgröße:
+	points	Punkte
+
+# WP3 DPX bit depth
+	Bit Depth	Bittiefe
+
+# AS-02 versions
+	AS-02 Versions	AS-02-Versionen
+	Tick the sequences to write as further versions in the AS-02 bundle	Sequenzen ankreuzen, die als weitere Versionen im AS-02-Bundle geschrieben werden
+	Delete Short Clips	Kurze Clips löschen
+	A stored combination does not run a command yet.	Eine gespeicherte Kombination führt noch keinen Befehl aus.
+	Action hint	Aktionshinweis
+	Add combination	Kombination hinzufügen
+	Add mapping	Zuordnung hinzufügen
+	Button Learn	Taste lernen
+	Button Test	Tastentest
+	Button name	Tastenname
+	Cancel feedback	Abbruchrückmeldung
+	Combination editor	Kombinationseditor
+	Context	Kontext
+	Delete profile	Profil löschen
+	Detected buttons	Erkannte Tasten
+	Draw the gesture with a button held.	Zeichnen Sie die Geste bei gehaltener Taste.
+	Error feedback	Fehlerrückmeldung
+	Evdev device	Evdev-Gerät
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev liest nur das gewählte Gerät und erst, wenn eine spätere Phase es einschaltet. Diese Fassung bleibt auf dem Qt-Weg.
+	Execution feedback	Ausführungsrückmeldung
+	Follow the system	Dem System folgen
+	Gesture	Geste
+	Gesture Learn	Geste lernen
+	Gesture editor	Gesteneditor
+	Gesture profiles	Gestenprofile
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gesten bleiben aus, bis Sie sie einschalten. Das Einschalten blockiert das Panelmenü nicht.
+	HUD	HUD
+	Hand	Hand
+	High contrast	Hoher Kontrast
+	Hold time	Haltezeit
+	Input access	Eingangszugriff
+	Left-handed	Linkshändig
+	Mapping	Zuordnung
+	Maximum length	Höchstlänge
+	Maximum time	Höchstzeit
+	Minimum length	Mindestlänge
+	Mirror ergonomic gestures	Ergonomische Gesten spiegeln
+	Mouse Gestures	Mausgesten
+	Mouse Gestures…	Mausgesten…
+	No buttons yet. Press one in Button Learn or Button Test.	Noch keine Taste. Drücken Sie eine beim Lernen oder im Tastentest.
+	Press	Drücken
+	Qt pointer (this application)	Qt-Zeiger (diese Anwendung)
+	Recognition preview	Erkennungsvorschau
+	Reduced animation	Reduzierte Animation
+	Right-handed	Rechtshändig
+	Roles	Rollen
+	Save gesture	Geste speichern
+	Save profile	Profil speichern
+	Show the gesture HUD	Gesten-HUD anzeigen
+	Slop	Spiel
+	Spatial gesture	Räumliche Geste
+	Thresholds	Schwellen
+	Trail	Spur
+	Use gestures in the window	Gesten im Fenster verwenden
+	DVD-Video folder (VIDEO_TS)	DVD-Video-Ordner (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-Ordner (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorph, 6 Mbps, GOP 15, AC-3 192 kbps, Kapitel aus den Kapitelmarkern der Sequenz
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-Ordner (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorph, 6 Mbps, GOP 18, AC-3 192 kbps, Kapitel aus den Kapitelmarkern der Sequenz
+	DNx decoding:	DNx-Decodierung:
+	As detected from the file ({detected})	Wie aus der Datei erkannt ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (Standard)
+	FFmpeg-compatible	FFmpeg-kompatibel
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg liest manche DNx-Dateien anders als der Standard (4:4:4-Farben, inverse Quantisierung). Von FFmpeg codiertes Material wird erkannt; wählen Sie hier, wenn die Erkennung falsch ist.
+	DNx Coding	DNx-Codierung
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibel (für FFmpeg-basierte Werkzeuge)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Aus: codiert nach SMPTE ST 2019-1. Ein: codiert, wie FFmpeg DNx schreibt, für Werkzeuge auf FFmpeg-Basis.

@@ -54,6 +54,7 @@
 	Apply Video Transition	Прилагане на видео преход
 	Assembly	Монтаж
 	Attach Proxies…	Прикачване на проксита…
+	Find Camera Proxies	Търсене на проксита на камерата
 	Audio	Аудио
 	Audio Channels…	Аудио канали…
 	Audio Clip Mixer	Миксер на аудио клипове
@@ -3660,7 +3661,7 @@
 	Six-Point Pin	Закачване в шест точки
 	Upper Center	Горе в центъра
 	Lower Center	Долу в центъра
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Използване на FFmpeg за файлове, които двигателят на CFA4 не може да отвори (FFmpeg 9.0.2 или по-нов, GPL-3 компилация)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Използване на FFmpeg за файлове, които двигателят на CFA4 не може да отвори (FFmpeg 9.1 или по-нов, GPL-3 компилация)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Използване на системния GStreamer за файлове, които нито двигателят, нито FFmpeg могат да отворят
 	Analyze Source for Smart Cut	Анализиране на източника за интелигентен срез
 	Plan Smart Cut	Планиране на интелигентен срез
@@ -4816,3 +4817,172 @@ export.summary	Low	ниско
 	Encode Resolution	Резолюция на кодиране
 	Half	Половина
 	Quarter	Четвърт
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh разцъфване
+	Start Time (seconds)	Начално време (секунди)
+	Repeats	Повторения
+	Clean Blocks	Чисти блокове
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Прилагане на наскоро използван ефект към избраните клипове
+	Disable all effects	Изключване на всички ефекти
+	Enable all effects	Включване на всички ефекти
+	No recent effects	Няма скорошни ефекти
+	Recent effects	Скорошни ефекти
+	Switch every effect of the selected clips off	Изключва всеки ефект на избраните клипове
+	Switch every effect of the selected clips on	Включва всеки ефект на избраните клипове
+	Merged	Обединени
+	Per Channel	По канали
+	Channel Zoom	Мащаб на каналите
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Избор на баланс на бялото (щракнете върху неутрална точка в монитора Програма; Esc отказва)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Диспечер на задачите
+	Background jobs	Фонови задачи
+	Exports	Експорти
+	Shared task queue	Споделена опашка със задачи
+	Task	Задача
+	State	Състояние
+	Details	Подробности
+	Time left	Оставащо време
+	Scheduled	Планирана
+	Queued	На опашка
+	Waiting for resources	Чака ресурси
+	Blocked	Блокирана
+	Running	Изпълнява се
+	Paused	На пауза
+	Cancelling	Отказване
+	Interactive	Интерактивна
+	Speculative	Спекулативна
+	Final render	Окончателно рендиране
+	Show finished	Показване на завършените
+	Nothing is running.	Нищо не се изпълнява.
+	Not reported by this engine yet.	Все още не се съобщава от този енджин.
+	Not available: {why}	Не е налично: {why}
+	{name} waits: {why}	{name} чака: {why}
+	{running} running · {waiting} waiting	{running} се изпълняват · {waiting} чакат
+	{n} active	{n} активни
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Чака вашето решение
+	Run now	Изпълни сега
+	Next slot	Следващ слот
+	Missed its start	Пропуснат старт
+	Missed its start at {time}	Пропуснат старт в {time}
+	Starts at {time}	Стартира в {time}
+	Subtitle kind	Вид субтитри
+	Subtitles	Субтитри
+	Captions for the hearing impaired	Надписи за хора с увреден слух
+	Forced narrative	Принудителен разказ (forced narrative)
+	Silence	Тишина
+	Detect Silence	Откриване на тишина
+	Remove Silence	Премахване на тишина
+	Clear Silence Markers	Изчистване на маркерите за тишина
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Изберете папката на DCP.
+	DCP Validation	Проверка на DCP
+	DCP folder	Папка на DCP
+	DCP folder (the one holding ASSETMAP)	Папка на DCP (тази, която съдържа ASSETMAP)
+	Evidence	Доказателство
+	How to fix	Как да се поправи
+	Interrupted	Прекъснато
+	Not applicable	Неприложимо
+	Report	Отчет
+	Report saved: {path}	Отчетът е запазен: {path}
+	Required	Задължително
+	Rule	Правило
+	Rules	Правила
+	Save JSON…	Запиши JSON…
+	Save Markdown…	Запиши Markdown…
+	Save report	Запиши отчета
+	Skipped	Пропуснато
+	Standard: {standard}	Стандарт: {standard}
+	Validate	Провери
+	Validate DCP…	Провери DCP…
+	the engine sent no profiles	машината не изпрати профили
+	{n} files checked	Проверени файлове: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Запис на пакет AS-02 (пътят е папка)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Активни воксели:
+	Bounds:	Граници:
+	Voxel attributes	Атрибути на воксела
+	Voxel size:	Размер на воксела:
+	points	точки
+
+# WP3 DPX bit depth
+	Bit Depth	Битова дълбочина
+
+# AS-02 versions
+	AS-02 Versions	AS-02 версии
+	Tick the sequences to write as further versions in the AS-02 bundle	Отбележете секвенциите, които да се запишат като допълнителни версии в AS-02 пакета
+	Delete Short Clips	Изтриване на кратки клипове
+	A stored combination does not run a command yet.	Запазената комбинация все още не пуска команда.
+	Action hint	Подсказка за действие
+	Add combination	Добавяне на комбинация
+	Add mapping	Добавяне на назначение
+	Button Learn	Научаване на бутон
+	Button Test	Проба на бутон
+	Button name	Име на бутона
+	Cancel feedback	Сигнал за отказ
+	Combination editor	Редактор на комбинации
+	Context	Контекст
+	Delete profile	Изтриване на профил
+	Detected buttons	Открити бутони
+	Draw the gesture with a button held.	Начертайте жеста при натиснат бутон.
+	Error feedback	Сигнал за грешка
+	Evdev device	Evdev устройство
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev чете само избраното устройство и едва когато по-късна фаза го включи. Тази версия остава по пътя на Qt.
+	Execution feedback	Сигнал за изпълнение
+	Follow the system	Следвай системата
+	Gesture	Жест
+	Gesture Learn	Научаване на жест
+	Gesture editor	Редактор на жестове
+	Gesture profiles	Профили на жестове
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Жестовете остават изключени, докато не ги включите. Включването не блокира менюто на панела.
+	HUD	HUD
+	Hand	Ръка
+	High contrast	Висок контраст
+	Hold time	Време на задържане
+	Input access	Достъп до входа
+	Left-handed	Левичар
+	Mapping	Назначение
+	Maximum length	Най-голяма дължина
+	Maximum time	Най-голямо време
+	Minimum length	Най-малка дължина
+	Mirror ergonomic gestures	Огледални ергономични жестове
+	Mouse Gestures	Жестове с мишка
+	Mouse Gestures…	Жестове с мишка…
+	No buttons yet. Press one in Button Learn or Button Test.	Още няма бутон. Натиснете един при научаване или при проба.
+	Press	Натискане
+	Qt pointer (this application)	Qt показалец (това приложение)
+	Recognition preview	Преглед на разпознаването
+	Reduced animation	Намалена анимация
+	Right-handed	Десничар
+	Roles	Роли
+	Save gesture	Запазване на жеста
+	Save profile	Запазване на профил
+	Show the gesture HUD	Показване на HUD за жестове
+	Slop	Луфт
+	Spatial gesture	Пространствен жест
+	Thresholds	Прагове
+	Trail	Следа
+	Use gestures in the window	Жестове в прозореца
+	DVD-Video folder (VIDEO_TS)	Папка DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 анаморфно, 6 Mbps, GOP 15, AC-3 192 kbps, глави от маркерите за глави на последователността
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 анаморфно, 6 Mbps, GOP 18, AC-3 192 kbps, глави от маркерите за глави на последователността
+	DNx decoding:	Декодиране на DNx:
+	As detected from the file ({detected})	Както е разпознато от файла ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (стандарт)
+	FFmpeg-compatible	Съвместимо с FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg чете някои DNx файлове различно от стандарта (цветове 4:4:4, обратно квантуване). Материал, кодиран с FFmpeg, се разпознава; изберете тук, ако разпознаването е грешно.
+	DNx Coding	Кодиране на DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Съвместимо с FFmpeg (за инструменти на базата на FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Изкл.: кодиране по SMPTE ST 2019-1. Вкл.: кодиране както FFmpeg записва DNx, за инструменти, изградени върху FFmpeg.

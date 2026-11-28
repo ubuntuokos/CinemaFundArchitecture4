@@ -56,6 +56,7 @@
 	Arrange	Arranger
 	Assembly	Samling
 	Attach Proxies…	Tilknyt proxyer…
+	Find Camera Proxies	Find kameraproxyer
 	Audio	Lyd
 	Audio Channels…	Lydkanaler…
 	Audio Clip Mixer	Lydklipmixer
@@ -3759,7 +3760,7 @@
 	Six-Point Pin	Sekspunkts fastgørelse
 	Upper Center	Øverst i midten
 	Lower Center	Nederst i midten
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Brug FFmpeg til filer, som CFA4-motoren ikke kan åbne (FFmpeg 9.0.2 eller nyere, GPL-3-build)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Brug FFmpeg til filer, som CFA4-motoren ikke kan åbne (FFmpeg 9.1 eller nyere, GPL-3-build)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Brug systemets GStreamer til filer, som hverken motoren eller FFmpeg kan åbne
 	Analyze Source for Smart Cut	Analyser kilde til Smart Cut
 	Plan Smart Cut	Planlæg Smart Cut
@@ -4815,3 +4816,172 @@ export.summary	Low	lav
 	Encode Resolution	Kodningsopløsning
 	Half	Halv
 	Quarter	Kvart
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-blomstring
+	Start Time (seconds)	Starttid (sekunder)
+	Repeats	Gentagelser
+	Clean Blocks	Rene blokke
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Anvend en nyligt brugt effekt på de valgte klip
+	Disable all effects	Slå alle effekter fra
+	Enable all effects	Slå alle effekter til
+	No recent effects	Ingen nylige effekter
+	Recent effects	Seneste effekter
+	Switch every effect of the selected clips off	Slå alle effekter på de valgte klip fra
+	Switch every effect of the selected clips on	Slå alle effekter på de valgte klip til
+	Merged	Samlet
+	Per Channel	Pr. kanal
+	Channel Zoom	Kanalzoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Hvidbalancevælger (klik på et neutralt punkt i programmonitoren; Esc annullerer)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Jobstyring
+	Background jobs	Baggrundsjob
+	Exports	Eksporter
+	Shared task queue	Delt opgavekø
+	Task	Opgave
+	State	Tilstand
+	Details	Detaljer
+	Time left	Tid tilbage
+	Scheduled	Planlagt
+	Queued	I kø
+	Waiting for resources	Venter på ressourcer
+	Blocked	Blokeret
+	Running	Kører
+	Paused	Sat på pause
+	Cancelling	Annullerer
+	Interactive	Interaktiv
+	Speculative	Spekulativ
+	Final render	Endelig rendering
+	Show finished	Vis afsluttede
+	Nothing is running.	Intet kører.
+	Not reported by this engine yet.	Rapporteres endnu ikke af denne motor.
+	Not available: {why}	Ikke tilgængelig: {why}
+	{name} waits: {why}	{name} venter: {why}
+	{running} running · {waiting} waiting	{running} kører · {waiting} venter
+	{n} active	{n} aktive
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Kræver din beslutning
+	Run now	Kør nu
+	Next slot	Næste slot
+	Missed its start	Startede ikke til tiden
+	Missed its start at {time}	Startede ikke kl. {time}
+	Starts at {time}	Starter kl. {time}
+	Subtitle kind	Undertekststype
+	Subtitles	Undertekster
+	Captions for the hearing impaired	Tekstning for hørehæmmede
+	Forced narrative	Tvungen fortælling (forced narrative)
+	Silence	Stilhed
+	Detect Silence	Find stilhed
+	Remove Silence	Fjern stilhed
+	Clear Silence Markers	Ryd stilhedsmarkører
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Vælg DCP-mappen.
+	DCP Validation	DCP-validering
+	DCP folder	DCP-mappe
+	DCP folder (the one holding ASSETMAP)	DCP-mappe (den der indeholder ASSETMAP)
+	Evidence	Bevis
+	How to fix	Sådan rettes det
+	Interrupted	Afbrudt
+	Not applicable	Ikke relevant
+	Report	Rapport
+	Report saved: {path}	Rapport gemt: {path}
+	Required	Påkrævet
+	Rule	Regel
+	Rules	Regler
+	Save JSON…	Gem JSON…
+	Save Markdown…	Gem Markdown…
+	Save report	Gem rapport
+	Skipped	Sprunget over
+	Standard: {standard}	Standard: {standard}
+	Validate	Valider
+	Validate DCP…	Valider DCP…
+	the engine sent no profiles	motoren sendte ingen profiler
+	{n} files checked	{n} filer kontrolleret
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Skriv en AS-02-pakke (stien er en mappe)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktive voxels:
+	Bounds:	Grænser:
+	Voxel attributes	Voxelattributter
+	Voxel size:	Voxelstørrelse:
+	points	punkter
+
+# WP3 DPX bit depth
+	Bit Depth	Bitdybde
+
+# AS-02 versions
+	AS-02 Versions	AS-02-versioner
+	Tick the sequences to write as further versions in the AS-02 bundle	Markér de sekvenser, der skal skrives som yderligere versioner i AS-02-pakken
+	Delete Short Clips	Slet korte klip
+	A stored combination does not run a command yet.	En gemt kombination kører endnu ingen kommando.
+	Action hint	Handlingstip
+	Add combination	Tilføj kombination
+	Add mapping	Tilføj tildeling
+	Button Learn	Lær knap
+	Button Test	Knaptest
+	Button name	Knapnavn
+	Cancel feedback	Annulleringsfeedback
+	Combination editor	Kombinationseditor
+	Context	Kontekst
+	Delete profile	Slet profil
+	Detected buttons	Fundne knapper
+	Draw the gesture with a button held.	Tegn gestussen med en knap holdt nede.
+	Error feedback	Fejlfeedback
+	Evdev device	Evdev-enhed
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev læser kun den valgte enhed, og først når en senere fase tænder den. Denne udgave bliver på Qt-vejen.
+	Execution feedback	Udførelsesfeedback
+	Follow the system	Følg systemet
+	Gesture	Gestus
+	Gesture Learn	Lær gestus
+	Gesture editor	Gestuseditor
+	Gesture profiles	Gestusprofiler
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gestusser bliver slukket, indtil du tænder dem. At tænde dem blokerer ikke panelmenuen.
+	HUD	HUD
+	Hand	Hånd
+	High contrast	Høj kontrast
+	Hold time	Holdetid
+	Input access	Inputadgang
+	Left-handed	Venstrehåndet
+	Mapping	Tildeling
+	Maximum length	Største længde
+	Maximum time	Største tid
+	Minimum length	Mindste længde
+	Mirror ergonomic gestures	Spejl ergonomiske gestusser
+	Mouse Gestures	Musebevægelser
+	Mouse Gestures…	Musebevægelser…
+	No buttons yet. Press one in Button Learn or Button Test.	Ingen knapper endnu. Tryk på en i Lær knap eller Knaptest.
+	Press	Tryk
+	Qt pointer (this application)	Qt-markør (dette program)
+	Recognition preview	Genkendelsesforhåndsvisning
+	Reduced animation	Reduceret animation
+	Right-handed	Højrehåndet
+	Roles	Roller
+	Save gesture	Gem gestus
+	Save profile	Gem profil
+	Show the gesture HUD	Vis gestus-HUD
+	Slop	Slør
+	Spatial gesture	Rumlig gestus
+	Thresholds	Tærskler
+	Trail	Spor
+	Use gestures in the window	Brug gestusser i vinduet
+	DVD-Video folder (VIDEO_TS)	DVD-Video-mappe (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-mappe (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfisk, 6 Mbps, GOP 15, AC-3 192 kbps, kapitler fra sekvensens kapitelmarkører
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-mappe (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfisk, 6 Mbps, GOP 18, AC-3 192 kbps, kapitler fra sekvensens kapitelmarkører
+	DNx decoding:	DNx-afkodning:
+	As detected from the file ({detected})	Som registreret fra filen ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	FFmpeg-kompatibel
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg læser nogle DNx-filer anderledes end standarden (4:4:4-farver, invers kvantisering). Optagelser, som FFmpeg har kodet, registreres; vælg her, når registreringen er forkert.
+	DNx Coding	DNx-kodning
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibel (til FFmpeg-baserede værktøjer)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Fra: kodet efter SMPTE ST 2019-1. Til: kodet, som FFmpeg skriver DNx, til værktøjer bygget på FFmpeg.

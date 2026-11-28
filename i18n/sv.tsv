@@ -54,6 +54,7 @@
 	Apply Video Transition	Använd videoövergång
 	Assembly	Sammansättning
 	Attach Proxies…	Koppla proxyfiler…
+	Find Camera Proxies	Hitta kameraproxyfiler
 	Audio	Ljud
 	Audio Channels…	Ljudkanaler…
 	Audio Clip Mixer	Ljudklippsmixer
@@ -3686,7 +3687,7 @@
 	Six-Point Pin	Sexpunktsfästning
 	Upper Center	Uppe i mitten
 	Lower Center	Nere i mitten
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Använd FFmpeg för filer som CFA4-motorn inte kan öppna (FFmpeg 9.0.2 eller senare, GPL-3-version)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Använd FFmpeg för filer som CFA4-motorn inte kan öppna (FFmpeg 9.1 eller senare, GPL-3-version)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Använd systemets GStreamer för filer som varken motorn eller FFmpeg kan öppna
 	Analyze Source for Smart Cut	Analysera källan för smart klippning
 	Plan Smart Cut	Planera smart klippning
@@ -4815,3 +4816,172 @@ export.summary	Low	låg
 	Encode Resolution	Kodningsupplösning
 	Half	Halv
 	Quarter	Fjärdedel
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-blomning
+	Start Time (seconds)	Starttid (sekunder)
+	Repeats	Upprepningar
+	Clean Blocks	Rena block
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Använd en nyligen använd effekt på de valda klippen
+	Disable all effects	Stäng av alla effekter
+	Enable all effects	Slå på alla effekter
+	No recent effects	Inga senaste effekter
+	Recent effects	Senaste effekter
+	Switch every effect of the selected clips off	Stänger av varje effekt på de valda klippen
+	Switch every effect of the selected clips on	Slår på varje effekt på de valda klippen
+	Merged	Sammanslagen
+	Per Channel	Per kanal
+	Channel Zoom	Kanalzoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Vitbalansväljare (klicka på en neutral punkt i programmonitorn; Esc avbryter)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Aktivitetshanterare
+	Background jobs	Bakgrundsjobb
+	Exports	Exporter
+	Shared task queue	Delad uppgiftskö
+	Task	Uppgift
+	State	Tillstånd
+	Details	Detaljer
+	Time left	Återstående tid
+	Scheduled	Schemalagd
+	Queued	I kö
+	Waiting for resources	Väntar på resurser
+	Blocked	Blockerad
+	Running	Körs
+	Paused	Pausad
+	Cancelling	Avbryter
+	Interactive	Interaktiv
+	Speculative	Spekulativ
+	Final render	Slutlig rendering
+	Show finished	Visa slutförda
+	Nothing is running.	Inget körs.
+	Not reported by this engine yet.	Rapporteras ännu inte av den här motorn.
+	Not available: {why}	Inte tillgänglig: {why}
+	{name} waits: {why}	{name} väntar: {why}
+	{running} running · {waiting} waiting	{running} körs · {waiting} väntar
+	{n} active	{n} aktiva
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Behöver ditt beslut
+	Run now	Kör nu
+	Next slot	Nästa tidslucka
+	Missed its start	Missade starten
+	Missed its start at {time}	Missade starten kl. {time}
+	Starts at {time}	Startar kl. {time}
+	Subtitle kind	Typ av undertexter
+	Subtitles	Undertexter
+	Captions for the hearing impaired	Textning för hörselskadade
+	Forced narrative	Tvingad berättarröst (forced narrative)
+	Silence	Tystnad
+	Detect Silence	Identifiera tystnad
+	Remove Silence	Ta bort tystnad
+	Clear Silence Markers	Rensa tystnadsmarkörer
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Välj DCP-mappen.
+	DCP Validation	DCP-validering
+	DCP folder	DCP-mapp
+	DCP folder (the one holding ASSETMAP)	DCP-mapp (den som innehåller ASSETMAP)
+	Evidence	Belägg
+	How to fix	Så åtgärdar du det
+	Interrupted	Avbruten
+	Not applicable	Ej tillämpligt
+	Report	Rapport
+	Report saved: {path}	Rapport sparad: {path}
+	Required	Obligatoriskt
+	Rule	Regel
+	Rules	Regler
+	Save JSON…	Spara JSON…
+	Save Markdown…	Spara Markdown…
+	Save report	Spara rapport
+	Skipped	Hoppades över
+	Standard: {standard}	Standard: {standard}
+	Validate	Validera
+	Validate DCP…	Validera DCP…
+	the engine sent no profiles	motorn skickade inga profiler
+	{n} files checked	{n} filer kontrollerade
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Skriv ett AS-02-paket (sökvägen är en mapp)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktiva voxlar:
+	Bounds:	Gränser:
+	Voxel attributes	Voxelattribut
+	Voxel size:	Voxelstorlek:
+	points	punkter
+
+# WP3 DPX bit depth
+	Bit Depth	Bitdjup
+
+# AS-02 versions
+	AS-02 Versions	AS-02-versioner
+	Tick the sequences to write as further versions in the AS-02 bundle	Markera de sekvenser som ska skrivas som ytterligare versioner i AS-02-paketet
+	Delete Short Clips	Ta bort korta klipp
+	A stored combination does not run a command yet.	En sparad kombination kör inget kommando ännu.
+	Action hint	Åtgärdstips
+	Add combination	Lägg till kombination
+	Add mapping	Lägg till tilldelning
+	Button Learn	Lär knapp
+	Button Test	Knapptest
+	Button name	Knappnamn
+	Cancel feedback	Avbrottsåterkoppling
+	Combination editor	Kombinationsredigerare
+	Context	Sammanhang
+	Delete profile	Ta bort profil
+	Detected buttons	Upptäckta knappar
+	Draw the gesture with a button held.	Rita gesten med en knapp nedtryckt.
+	Error feedback	Felåterkoppling
+	Evdev device	Evdev-enhet
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev läser bara den valda enheten, och först när en senare fas slår på den. Den här versionen stannar på Qt-vägen.
+	Execution feedback	Körningsåterkoppling
+	Follow the system	Följ systemet
+	Gesture	Gest
+	Gesture Learn	Lär gest
+	Gesture editor	Gestredigerare
+	Gesture profiles	Gestprofiler
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gester är av tills du slår på dem. Att slå på dem blockerar inte panelmenyn.
+	HUD	HUD
+	Hand	Hand
+	High contrast	Hög kontrast
+	Hold time	Hålltid
+	Input access	Ingångsåtkomst
+	Left-handed	Vänsterhänt
+	Mapping	Tilldelning
+	Maximum length	Största längd
+	Maximum time	Största tid
+	Minimum length	Minsta längd
+	Mirror ergonomic gestures	Spegla ergonomiska gester
+	Mouse Gestures	Musgester
+	Mouse Gestures…	Musgester…
+	No buttons yet. Press one in Button Learn or Button Test.	Inga knappar ännu. Tryck på en i Lär knapp eller Knapptest.
+	Press	Tryck
+	Qt pointer (this application)	Qt-pekare (detta program)
+	Recognition preview	Igenkänningsförhandsvisning
+	Reduced animation	Minskad animering
+	Right-handed	Högerhänt
+	Roles	Roller
+	Save gesture	Spara gest
+	Save profile	Spara profil
+	Show the gesture HUD	Visa gest-HUD
+	Slop	Dödgång
+	Spatial gesture	Rumslig gest
+	Thresholds	Trösklar
+	Trail	Spår
+	Use gestures in the window	Använd gester i fönstret
+	DVD-Video folder (VIDEO_TS)	DVD-Video-mapp (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-mapp (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfisk, 6 Mbps, GOP 15, AC-3 192 kbps, kapitel från sekvensens kapitelmarkörer
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-mapp (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfisk, 6 Mbps, GOP 18, AC-3 192 kbps, kapitel från sekvensens kapitelmarkörer
+	DNx decoding:	DNx-avkodning:
+	As detected from the file ({detected})	Enligt identifiering från filen ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	FFmpeg-kompatibel
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg läser vissa DNx-filer annorlunda än standarden (4:4:4-färger, invers kvantisering). Material som FFmpeg har kodat identifieras; välj här om identifieringen är fel.
+	DNx Coding	DNx-kodning
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibel (för FFmpeg-baserade verktyg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Av: kodas enligt SMPTE ST 2019-1. På: kodas så som FFmpeg skriver DNx, för verktyg byggda på FFmpeg.

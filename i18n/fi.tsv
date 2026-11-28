@@ -55,6 +55,7 @@
 	Apply Video Transition	Käytä videosiirtymää
 	Assembly	Kokoonpano
 	Attach Proxies…	Liitä välityskopiot…
+	Find Camera Proxies	Etsi kameran välityskopiot
 	Audio	Ääni
 	Audio Channels…	Äänikanavat…
 	Audio Clip Mixer	Äänileikemikseri
@@ -3735,7 +3736,7 @@
 	Six-Point Pin	Kuuden pisteen kiinnitys
 	Upper Center	Ylhäällä keskellä
 	Lower Center	Alhaalla keskellä
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Käytä FFmpegiä tiedostoille, joita CFA4-moottori ei voi avata (FFmpeg 9.0.2 tai uudempi, GPL-3-käännös)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Käytä FFmpegiä tiedostoille, joita CFA4-moottori ei voi avata (FFmpeg 9.1 tai uudempi, GPL-3-käännös)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Käytä järjestelmän GStreameria tiedostoille, joita moottori tai FFmpeg ei voi avata
 	Analyze Source for Smart Cut	Analysoi lähde Smart Cutia varten
 	Plan Smart Cut	Suunnittele Smart Cut
@@ -4815,3 +4816,172 @@ export.summary	Low	matala
 	Encode Resolution	Koodaustarkkuus
 	Half	Puolikas
 	Quarter	Neljännes
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh-kukinta
+	Start Time (seconds)	Aloitusaika (sekuntia)
+	Repeats	Toistot
+	Clean Blocks	Puhtaat lohkot
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Käytä äskettäin käytettyä tehostetta valittuihin klippeihin
+	Disable all effects	Poista kaikki tehosteet käytöstä
+	Enable all effects	Ota kaikki tehosteet käyttöön
+	No recent effects	Ei viimeaikaisia tehosteita
+	Recent effects	Viimeaikaiset tehosteet
+	Switch every effect of the selected clips off	Poistaa valittujen klippien kaikki tehosteet käytöstä
+	Switch every effect of the selected clips on	Ottaa valittujen klippien kaikki tehosteet käyttöön
+	Merged	Yhdistetty
+	Per Channel	Kanavittain
+	Channel Zoom	Kanavien zoom
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Valkotasapainon valitsin (napsauta neutraalia pistettä ohjelmamonitorissa; Esc peruu)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Tehtävienhallinta
+	Background jobs	Taustatyöt
+	Exports	Viennit
+	Shared task queue	Jaettu tehtäväjono
+	Task	Tehtävä
+	State	Tila
+	Details	Tiedot
+	Time left	Aikaa jäljellä
+	Scheduled	Ajastettu
+	Queued	Jonossa
+	Waiting for resources	Odottaa resursseja
+	Blocked	Estetty
+	Running	Käynnissä
+	Paused	Keskeytetty
+	Cancelling	Peruutetaan
+	Interactive	Interaktiivinen
+	Speculative	Spekulatiivinen
+	Final render	Lopullinen renderöinti
+	Show finished	Näytä valmistuneet
+	Nothing is running.	Mitään ei ole käynnissä.
+	Not reported by this engine yet.	Tämä moottori ei vielä raportoi tätä.
+	Not available: {why}	Ei saatavilla: {why}
+	{name} waits: {why}	{name} odottaa: {why}
+	{running} running · {waiting} waiting	{running} käynnissä · {waiting} odottaa
+	{n} active	{n} aktiivista
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Tarvitsee päätöksesi
+	Run now	Suorita nyt
+	Next slot	Seuraava aikaväli
+	Missed its start	Alku jäi väliin
+	Missed its start at {time}	Alku klo {time} jäi väliin
+	Starts at {time}	Alkaa klo {time}
+	Subtitle kind	Tekstityksen laji
+	Subtitles	Tekstitykset
+	Captions for the hearing impaired	Tekstitykset kuulovammaisille
+	Forced narrative	Pakotettu selostus (forced narrative)
+	Silence	Hiljaisuus
+	Detect Silence	Tunnista hiljaisuus
+	Remove Silence	Poista hiljaisuus
+	Clear Silence Markers	Tyhjennä hiljaisuusmerkit
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Valitse DCP-kansio.
+	DCP Validation	DCP-validointi
+	DCP folder	DCP-kansio
+	DCP folder (the one holding ASSETMAP)	DCP-kansio (se, jossa ASSETMAP on)
+	Evidence	Todiste
+	How to fix	Korjausohje
+	Interrupted	Keskeytetty
+	Not applicable	Ei sovellettavissa
+	Report	Raportti
+	Report saved: {path}	Raportti tallennettu: {path}
+	Required	Pakollinen
+	Rule	Sääntö
+	Rules	Säännöt
+	Save JSON…	Tallenna JSON…
+	Save Markdown…	Tallenna Markdown…
+	Save report	Tallenna raportti
+	Skipped	Ohitettu
+	Standard: {standard}	Standardi: {standard}
+	Validate	Validoi
+	Validate DCP…	Validoi DCP…
+	the engine sent no profiles	moottori ei lähettänyt profiileja
+	{n} files checked	{n} tiedostoa tarkistettu
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Kirjoita AS-02-paketti (polku on kansio)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktiiviset vokselit:
+	Bounds:	Rajat:
+	Voxel attributes	Voksliattribuutit
+	Voxel size:	Vokselin koko:
+	points	pistettä
+
+# WP3 DPX bit depth
+	Bit Depth	Bittisyvyys
+
+# AS-02 versions
+	AS-02 Versions	AS-02-versiot
+	Tick the sequences to write as further versions in the AS-02 bundle	Valitse sekvenssit, jotka kirjoitetaan AS-02-pakettiin lisäversioina
+	Delete Short Clips	Poista lyhyet leikkeet
+	A stored combination does not run a command yet.	Tallennettu yhdistelmä ei vielä suorita komentoa.
+	Action hint	Toimintovihje
+	Add combination	Lisää yhdistelmä
+	Add mapping	Lisää määritys
+	Button Learn	Opettele painike
+	Button Test	Painikekoe
+	Button name	Painikkeen nimi
+	Cancel feedback	Peruutuksen palaute
+	Combination editor	Yhdistelmäeditori
+	Context	Konteksti
+	Delete profile	Poista profiili
+	Detected buttons	Havaitut painikkeet
+	Draw the gesture with a button held.	Piirrä ele painike painettuna.
+	Error feedback	Virheen palaute
+	Evdev device	Evdev-laite
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev lukee vain valitun laitteen, ja vasta kun myöhempi vaihe kytkee sen. Tämä versio pysyy Qt-polulla.
+	Execution feedback	Suorituksen palaute
+	Follow the system	Seuraa järjestelmää
+	Gesture	Ele
+	Gesture Learn	Opettele ele
+	Gesture editor	Ele-editori
+	Gesture profiles	Eleprofiilit
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Eleet pysyvät pois päältä, kunnes kytket ne. Kytkeminen ei estä paneelin valikkoa.
+	HUD	HUD
+	Hand	Käsi
+	High contrast	Suuri kontrasti
+	Hold time	Pitoaika
+	Input access	Syötteen käyttö
+	Left-handed	Vasenkätinen
+	Mapping	Määritys
+	Maximum length	Suurin pituus
+	Maximum time	Suurin aika
+	Minimum length	Pienin pituus
+	Mirror ergonomic gestures	Peilaa ergonomiset eleet
+	Mouse Gestures	Hiirieleet
+	Mouse Gestures…	Hiirieleet…
+	No buttons yet. Press one in Button Learn or Button Test.	Ei vielä painikkeita. Paina yhtä opetellessa tai kokeessa.
+	Press	Painallus
+	Qt pointer (this application)	Qt-osoitin (tämä sovellus)
+	Recognition preview	Tunnistuksen esikatselu
+	Reduced animation	Vähennetty animaatio
+	Right-handed	Oikeakätinen
+	Roles	Roolit
+	Save gesture	Tallenna ele
+	Save profile	Tallenna profiili
+	Show the gesture HUD	Näytä ele-HUD
+	Slop	Välys
+	Spatial gesture	Tilallinen ele
+	Thresholds	Kynnykset
+	Trail	Jälki
+	Use gestures in the window	Käytä eleitä ikkunassa
+	DVD-Video folder (VIDEO_TS)	DVD-Video-kansio (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-kansio (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfinen, 6 Mbps, GOP 15, AC-3 192 kbps, luvut sekvenssin lukumerkeistä
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video-kansio (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfinen, 6 Mbps, GOP 18, AC-3 192 kbps, luvut sekvenssin lukumerkeistä
+	DNx decoding:	DNx-purku:
+	As detected from the file ({detected})	Tiedostosta tunnistetun mukaan ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standardi)
+	FFmpeg-compatible	FFmpeg-yhteensopiva
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg lukee joitakin DNx-tiedostoja standardista poiketen (4:4:4-värit, käänteinen kvantisointi). FFmpegillä koodattu materiaali tunnistetaan; valitse tästä, jos tunnistus on väärä.
+	DNx Coding	DNx-koodaus
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-yhteensopiva (FFmpeg-pohjaisille työkaluille)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Pois: koodattu SMPTE ST 2019-1:n mukaan. Päällä: koodattu niin kuin FFmpeg kirjoittaa DNx:n, FFmpegiin perustuville työkaluille.

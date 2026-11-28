@@ -51,6 +51,7 @@
 	Apply Video Transition	Áp dụng chuyển cảnh video
 	Assembly	Lắp ghép
 	Attach Proxies…	Gắn proxy…
+	Find Camera Proxies	Tìm proxy máy ảnh
 	Audio	Âm thanh
 	Audio Channels…	Kênh âm thanh…
 	Audio Clip Mixer	Bộ trộn clip âm thanh
@@ -3547,7 +3548,7 @@
 	Six-Point Pin	Ghim sáu điểm
 	Upper Center	Giữa trên
 	Lower Center	Giữa dưới
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Dùng FFmpeg cho các tệp engine CFA4 không mở được (FFmpeg 9.0.2 trở lên, bản dựng GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Dùng FFmpeg cho các tệp engine CFA4 không mở được (FFmpeg 9.1 trở lên, bản dựng GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Dùng GStreamer của hệ thống cho các tệp mà cả engine lẫn FFmpeg đều không mở được
 	Analyze Source for Smart Cut	Phân tích nguồn để cắt thông minh
 	Plan Smart Cut	Lập kế hoạch cắt thông minh
@@ -4813,3 +4814,172 @@ export.summary	Low	thấp
 	Encode Resolution	Độ phân giải mã hóa
 	Half	Một nửa
 	Quarter	Một phần tư
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh nở rộ
+	Start Time (seconds)	Thời gian bắt đầu (giây)
+	Repeats	Số lần lặp lại
+	Clean Blocks	Khối sạch
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Áp dụng hiệu ứng dùng gần đây cho các clip đã chọn
+	Disable all effects	Tắt tất cả hiệu ứng
+	Enable all effects	Bật tất cả hiệu ứng
+	No recent effects	Không có hiệu ứng gần đây
+	Recent effects	Hiệu ứng gần đây
+	Switch every effect of the selected clips off	Tắt mọi hiệu ứng của các clip đã chọn
+	Switch every effect of the selected clips on	Bật mọi hiệu ứng của các clip đã chọn
+	Merged	Gộp
+	Per Channel	Theo kênh
+	Channel Zoom	Thu phóng kênh
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Bộ chọn cân bằng trắng (nhấp vào điểm trung tính trên màn hình Chương trình; Esc để hủy)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Trình quản lý tác vụ
+	Background jobs	Công việc nền
+	Exports	Xuất
+	Shared task queue	Hàng đợi tác vụ dùng chung
+	Task	Tác vụ
+	State	Trạng thái
+	Details	Chi tiết
+	Time left	Thời gian còn lại
+	Scheduled	Đã lên lịch
+	Queued	Trong hàng đợi
+	Waiting for resources	Đang chờ tài nguyên
+	Blocked	Bị chặn
+	Running	Đang chạy
+	Paused	Đã tạm dừng
+	Cancelling	Đang hủy
+	Interactive	Tương tác
+	Speculative	Chạy dự phòng
+	Final render	Kết xuất cuối cùng
+	Show finished	Hiện các mục đã xong
+	Nothing is running.	Không có gì đang chạy.
+	Not reported by this engine yet.	Công cụ này chưa báo cáo.
+	Not available: {why}	Không khả dụng: {why}
+	{name} waits: {why}	{name} đang chờ: {why}
+	{running} running · {waiting} waiting	{running} đang chạy · {waiting} đang chờ
+	{n} active	{n} đang hoạt động
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Cần quyết định của bạn
+	Run now	Chạy ngay
+	Next slot	Khung giờ tiếp theo
+	Missed its start	Bỏ lỡ thời điểm bắt đầu
+	Missed its start at {time}	Bỏ lỡ thời điểm bắt đầu lúc {time}
+	Starts at {time}	Bắt đầu lúc {time}
+	Subtitle kind	Loại phụ đề
+	Subtitles	Phụ đề
+	Captions for the hearing impaired	Phụ đề cho người khiếm thính
+	Forced narrative	Thuyết minh bắt buộc (forced narrative)
+	Silence	Im lặng
+	Detect Silence	Phát hiện khoảng lặng
+	Remove Silence	Xóa khoảng lặng
+	Clear Silence Markers	Xóa dấu khoảng lặng
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Chọn thư mục DCP.
+	DCP Validation	Kiểm tra DCP
+	DCP folder	Thư mục DCP
+	DCP folder (the one holding ASSETMAP)	Thư mục DCP (thư mục chứa ASSETMAP)
+	Evidence	Bằng chứng
+	How to fix	Cách khắc phục
+	Interrupted	Bị gián đoạn
+	Not applicable	Không áp dụng
+	Report	Báo cáo
+	Report saved: {path}	Đã lưu báo cáo: {path}
+	Required	Bắt buộc
+	Rule	Quy tắc
+	Rules	Các quy tắc
+	Save JSON…	Lưu JSON…
+	Save Markdown…	Lưu Markdown…
+	Save report	Lưu báo cáo
+	Skipped	Đã bỏ qua
+	Standard: {standard}	Tiêu chuẩn: {standard}
+	Validate	Kiểm tra
+	Validate DCP…	Kiểm tra DCP…
+	the engine sent no profiles	công cụ không gửi hồ sơ nào
+	{n} files checked	Đã kiểm tra {n} tệp
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Ghi gói AS-02 (đường dẫn là một thư mục)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Voxel hoạt động:
+	Bounds:	Giới hạn:
+	Voxel attributes	Thuộc tính voxel
+	Voxel size:	Kích thước voxel:
+	points	điểm
+
+# WP3 DPX bit depth
+	Bit Depth	Độ sâu bit
+
+# AS-02 versions
+	AS-02 Versions	Phiên bản AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Chọn các chuỗi sẽ được ghi thành phiên bản bổ sung trong gói AS-02
+	Delete Short Clips	Xóa clip ngắn
+	A stored combination does not run a command yet.	Tổ hợp đã lưu chưa chạy lệnh.
+	Action hint	Gợi ý thao tác
+	Add combination	Thêm tổ hợp
+	Add mapping	Thêm ánh xạ
+	Button Learn	Học nút
+	Button Test	Thử nút
+	Button name	Tên nút
+	Cancel feedback	Báo hủy
+	Combination editor	Trình sửa tổ hợp
+	Context	Ngữ cảnh
+	Delete profile	Xóa hồ sơ
+	Detected buttons	Nút đã nhận
+	Draw the gesture with a button held.	Vẽ cử chỉ trong khi giữ một nút.
+	Error feedback	Báo lỗi
+	Evdev device	Thiết bị evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev chỉ đọc thiết bị đã chọn, và chỉ sau khi giai đoạn sau bật nó. Bản này vẫn đi theo đường Qt.
+	Execution feedback	Báo thực hiện
+	Follow the system	Theo hệ thống
+	Gesture	Cử chỉ
+	Gesture Learn	Học cử chỉ
+	Gesture editor	Trình sửa cử chỉ
+	Gesture profiles	Hồ sơ cử chỉ
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Cử chỉ vẫn tắt cho đến khi bạn bật. Bật chúng không chặn menu của bảng.
+	HUD	HUD
+	Hand	Tay
+	High contrast	Tương phản cao
+	Hold time	Thời gian giữ
+	Input access	Truy cập đầu vào
+	Left-handed	Thuận tay trái
+	Mapping	Ánh xạ
+	Maximum length	Độ dài tối đa
+	Maximum time	Thời gian tối đa
+	Minimum length	Độ dài tối thiểu
+	Mirror ergonomic gestures	Phản chiếu cử chỉ công thái học
+	Mouse Gestures	Cử chỉ chuột
+	Mouse Gestures…	Cử chỉ chuột…
+	No buttons yet. Press one in Button Learn or Button Test.	Chưa có nút. Nhấn một nút trong Học nút hoặc Thử nút.
+	Press	Nhấn
+	Qt pointer (this application)	Con trỏ Qt (ứng dụng này)
+	Recognition preview	Xem trước nhận dạng
+	Reduced animation	Giảm hoạt ảnh
+	Right-handed	Thuận tay phải
+	Roles	Vai trò
+	Save gesture	Lưu cử chỉ
+	Save profile	Lưu hồ sơ
+	Show the gesture HUD	Hiện HUD cử chỉ
+	Slop	Độ rơ
+	Spatial gesture	Cử chỉ không gian
+	Thresholds	Ngưỡng
+	Trail	Vệt
+	Use gestures in the window	Dùng cử chỉ trong cửa sổ
+	DVD-Video folder (VIDEO_TS)	Thư mục DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Thư mục DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chương lấy từ các điểm đánh dấu Chương của chuỗi
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Thư mục DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chương lấy từ các điểm đánh dấu Chương của chuỗi
+	DNx decoding:	Giải mã DNx:
+	As detected from the file ({detected})	Theo nhận diện từ tệp ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (tiêu chuẩn)
+	FFmpeg-compatible	Tương thích FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg đọc một số tệp DNx khác với tiêu chuẩn (màu 4:4:4, lượng tử hóa ngược). Cảnh quay do FFmpeg mã hóa sẽ được nhận diện; hãy chọn tại đây nếu nhận diện sai.
+	DNx Coding	Mã hóa DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Tương thích FFmpeg (cho công cụ dựa trên FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Tắt: mã hóa theo SMPTE ST 2019-1. Bật: mã hóa theo cách FFmpeg ghi DNx, cho các công cụ xây dựng trên FFmpeg.

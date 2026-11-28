@@ -391,7 +391,8 @@ fn mpeg2_settings() {
     assert_eq!(Mpeg2Container::of(&settings("noext")), Mpeg2Container::Ps);
     for c in Mpeg2Container::ALL {
         assert_eq!(Mpeg2Container::from_name(c.id()), Some(c));
-        assert_eq!(Mpeg2Container::from_name(c.extension()), Some(c));
+        // a DVD-Video disc is a folder: no extension
+        assert_eq!(Mpeg2Container::from_name(c.extension()), (c != Mpeg2Container::Dvd).then_some(c));
     }
     let sum = settings("x.ts").summary(1920, 1080, FrameRate::new(25, 1), 48_000, Tick(10 * TICKS_PER_SECOND));
     assert_eq!(sum.format, "MPEG-2 (Transport Stream)");
@@ -552,4 +553,73 @@ fn program_and_transport_streams_carry_mp2() {
         bad.audio.sample_rate = Some(sr);
         assert!(matches!(export(&p, seq, &bad, &m, &Progress::default()), Err(ExportError::Unsupported(_))), "{ch} ch {sr} Hz");
     }
+}
+
+fn dvd_settings(path: &str) -> ExportSettings {
+    ExportSettings {
+        mpeg2_container: "dvd".into(),
+        frame_size: Some((720, 576)),
+        frame_rate: Some(FrameRate::new(25, 1)),
+        pixel_aspect: Some((64, 45)),
+        bitrate_kbps: 4000,
+        keyframe_distance: None,
+        ..settings(path)
+    }
+}
+
+#[test]
+fn a_dvd_video_folder_has_ifo_bup_and_vob_files_that_lsdvd_reads() {
+    let (p, seq, m) = project();
+    // a chapter marker at 0.7 s: it falls in the second GOP (0.6 s on)
+    let mut pr = (*p).clone();
+    pr.sequence_mut(seq).unwrap().markers.push(cfa4_project::Marker {
+        id: cfa4_project::MarkerId(1),
+        start: Tick(TICKS_PER_SECOND * 7 / 10),
+        duration: Tick::ZERO,
+        name: "Part 2".into(),
+        comment: String::new(),
+        kind: cfa4_project::MarkerKind::Chapter,
+        color: Label::Iris,
+    });
+    let p = Arc::new(pr);
+    let dir = tmp("disc");
+    let _ = std::fs::remove_dir_all(&dir);
+    let s = dvd_settings(&dir);
+    assert_eq!(s.audio_codec(), settings::AudioCodec::Ac3);
+    s.validate().unwrap();
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert_eq!(r.frames, 25);
+    let video_ts = Path::new(&dir).join("VIDEO_TS");
+    let mut names: Vec<String> = std::fs::read_dir(&video_ts).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+    names.sort();
+    assert_eq!(names, ["VIDEO_TS.BUP", "VIDEO_TS.IFO", "VTS_01_0.BUP", "VTS_01_0.IFO", "VTS_01_1.VOB"]);
+    assert!(!Path::new(&dir).join(".cfa4-dvd-stage.vob").exists());
+    let vob = std::fs::read(video_ts.join("VTS_01_1.VOB")).unwrap();
+    assert_eq!(vob.len() % 2048, 0);
+    assert_eq!(r.bytes, names.iter().map(|n| std::fs::metadata(video_ts.join(n)).unwrap().len()).sum::<u64>());
+    // lsdvd (libdvdread) reads the title: PAL, 16:9, AC-3, two chapters
+    let out = Command::new("lsdvd").args(["-x", &dir]).output();
+    let Ok(out) = out else { return };
+    let text = String::from_utf8_lossy(&out.stdout).to_string();
+    assert!(out.status.success(), "{text}{}", String::from_utf8_lossy(&out.stderr));
+    assert!(text.contains("Length: 00:00:01") || text.contains("Length: 00:00:00"), "{text}");
+    assert!(text.contains("Format: PAL") && text.contains("Aspect ratio: 16/9") && text.contains("Chapters: 02"), "{text}");
+    assert!(text.contains("Audio: 1, Language: ") && text.contains("Format: ac3"), "{text}");
+}
+
+#[test]
+fn dvd_video_refuses_what_a_disc_cannot_play() {
+    let (p, seq, m) = project();
+    let dir = tmp("refused");
+    let go = |f: &dyn Fn(&mut ExportSettings)| {
+        let mut s = dvd_settings(&dir);
+        f(&mut s);
+        export(&p, seq, &s, &m, &Progress::default()).unwrap_err().to_string()
+    };
+    assert!(go(&|s| s.frame_rate = Some(FrameRate::new(24, 1))).contains("25 fps"));
+    assert!(go(&|s| s.frame_size = Some((1280, 720))).contains("720, 704 or 352"));
+    assert!(go(&|s| s.bitrate_kbps = 9_500).contains("9000"));
+    assert!(go(&|s| s.keyframe_distance = Some(30)).contains("at most 15"));
+    assert!(go(&|s| s.mpeg2_422 = true).contains("4:2:0"));
+    assert!(go(&|s| s.audio.sample_rate = Some(44_100)).contains("kHz"));
 }

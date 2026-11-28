@@ -248,16 +248,19 @@ mod tests {
     fn media_backends_lists_the_engine_first_and_reads_the_switches() {
         let d = tmp("backends");
         settings("set", Some(r#"{"mediaBackends.ffmpeg": false}"#), Some(d.clone())).unwrap();
-        let v = media_backends(Some(d)).unwrap();
+        let v = media_backends(Some(d.clone())).unwrap();
+        // the switch is process-wide: put the default back at once for the other tests
+        cfa4_media::set_backend_enabled("ffmpeg", true);
         let list = v["backends"].as_array().unwrap();
         assert_eq!(list[0]["id"], "builtin");
         assert_eq!(list[0]["canDisable"], false);
         // the router's chain of the fallbacks comes with the list (ADR 0005 step 2)
         assert_eq!(v["route"]["task"], "media.fallback", "{v}");
         assert_eq!(v["route"]["routes"][0]["backend"], "software", "our engine first: {v}");
-        // the switch is read from the data directory, as the app does at startup
-        assert!(!cfa4_media::backend_enabled("ffmpeg"));
-        cfa4_media::set_backend_enabled("ffmpeg", true);
+        // the switch is read from the data directory, as the app does at startup. The check reads
+        // the preferences, not the process-wide switch: the other tests of this binary run in
+        // parallel, and every Session they create or `settings set` they call moves that switch.
+        assert!(!session(&d).prefs.media_backends.ffmpeg);
         assert!(media_backends(None).is_ok());
     }
 

@@ -59,6 +59,7 @@
 	Arrange	Išdėstyti
 	Assembly	Surinkimas
 	Attach Proxies…	Prijungti tarpines kopijas…
+	Find Camera Proxies	Rasti kameros tarpines kopijas
 	Audio	Garsas
 	Audio Channels…	Garso kanalai…
 	Audio Clip Mixer	Garso klipų maišiklis
@@ -3953,7 +3954,7 @@
 	Six-Point Pin	Šešių taškų prisegimas
 	Upper Center	Viršuje centre
 	Lower Center	Apačioje centre
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Naudoti FFmpeg failams, kurių CFA4 variklis negali atidaryti (FFmpeg 9.0.2 ar naujesnis, GPL-3 versija)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Naudoti FFmpeg failams, kurių CFA4 variklis negali atidaryti (FFmpeg 9.1 ar naujesnis, GPL-3 versija)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Naudoti sistemos GStreamer failams, kurių negali atidaryti nei variklis, nei FFmpeg
 	Analyze Source for Smart Cut	Analizuoti šaltinį išmaniajam karpymui
 	Plan Smart Cut	Planuoti išmanųjį karpymą
@@ -4816,3 +4817,172 @@ export.summary	Low	žema
 	Encode Resolution	Kodavimo raiška
 	Half	Pusė
 	Quarter	Ketvirtis
+# Datamosh Bloom (Glitch, DM2)
+	Datamosh Bloom	Datamosh žydėjimas
+	Start Time (seconds)	Pradžios laikas (sekundės)
+	Repeats	Pakartojimai
+	Clean Blocks	Švarūs blokai
+
+# Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
+	Apply a recently used effect to the selected clips	Taikyti neseniai naudotą efektą pasirinktiems klipams
+	Disable all effects	Išjungti visus efektus
+	Enable all effects	Įjungti visus efektus
+	No recent effects	Nėra naujausių efektų
+	Recent effects	Naujausi efektai
+	Switch every effect of the selected clips off	Išjungia kiekvieną pasirinktų klipų efektą
+	Switch every effect of the selected clips on	Įjungia kiekvieną pasirinktų klipų efektą
+	Merged	Sujungta
+	Per Channel	Pagal kanalus
+	Channel Zoom	Kanalų mastelis
+	White Balance Selector (click a neutral point in the Program monitor; Esc cancels)	Baltos spalvos balanso parinkiklis (spustelėkite neutralų tašką programos monitoriuje; Esc atšaukia)
+# Task Manager and subtitle kind (SC-2/3/4)
+	Task Manager	Užduočių tvarkytuvė
+	Background jobs	Foninės užduotys
+	Exports	Eksportai
+	Shared task queue	Bendra užduočių eilė
+	Task	Užduotis
+	State	Būsena
+	Details	Išsami informacija
+	Time left	Likęs laikas
+	Scheduled	Suplanuota
+	Queued	Eilėje
+	Waiting for resources	Laukia išteklių
+	Blocked	Užblokuota
+	Running	Vykdoma
+	Paused	Pristabdyta
+	Cancelling	Atšaukiama
+	Interactive	Interaktyvi
+	Speculative	Spekuliatyvi
+	Final render	Galutinis atvaizdavimas
+	Show finished	Rodyti baigtas
+	Nothing is running.	Nieko nevykdoma.
+	Not reported by this engine yet.	Šis variklis dar nepraneša.
+	Not available: {why}	Nepasiekiama: {why}
+	{name} waits: {why}	{name} laukia: {why}
+	{running} running · {waiting} waiting	{running} vykdoma · {waiting} laukia
+	{n} active	{n} aktyvių
+	{n} CPU	{n} CPU
+	{n} GiB	{n} GiB
+	{n} MiB	{n} MiB
+	Needs your decision	Laukia jūsų sprendimo
+	Run now	Vykdyti dabar
+	Next slot	Kitas laikotarpis
+	Missed its start	Praleistas pradžios laikas
+	Missed its start at {time}	Praleistas pradžios laikas {time}
+	Starts at {time}	Prasideda {time}
+	Subtitle kind	Subtitrų rūšis
+	Subtitles	Subtitrai
+	Captions for the hearing impaired	Subtitrai neprigirdintiesiems
+	Forced narrative	Priverstinis pasakojimas (forced narrative)
+	Silence	Tyla
+	Detect Silence	Aptikti tylą
+	Remove Silence	Pašalinti tylą
+	Clear Silence Markers	Išvalyti tylos žymeklius
+# DCP Validation window (DCP-12)
+	AS-03	AS-03
+	Choose the DCP folder.	Pasirinkite DCP aplanką.
+	DCP Validation	DCP patikra
+	DCP folder	DCP aplankas
+	DCP folder (the one holding ASSETMAP)	DCP aplankas (tas, kuriame yra ASSETMAP)
+	Evidence	Įrodymas
+	How to fix	Kaip ištaisyti
+	Interrupted	Nutraukta
+	Not applicable	Netaikoma
+	Report	Ataskaita
+	Report saved: {path}	Ataskaita išsaugota: {path}
+	Required	Privaloma
+	Rule	Taisyklė
+	Rules	Taisyklės
+	Save JSON…	Įrašyti JSON…
+	Save Markdown…	Įrašyti Markdown…
+	Save report	Įrašyti ataskaitą
+	Skipped	Praleista
+	Standard: {standard}	Standartas: {standard}
+	Validate	Patikrinti
+	Validate DCP…	Patikrinti DCP…
+	the engine sent no profiles	variklis nesiuntė jokių profilių
+	{n} files checked	Patikrinta failų: {n}
+
+# AS-02 export
+	Write an AS-02 bundle (the path is a folder)	Įrašyti AS-02 paketą (kelias yra aplankas)
+	AS-02	AS-02
+	AS-12	AS-12
+
+# N1 voxel panel
+	Active voxels:	Aktyvūs vokseliai:
+	Bounds:	Ribos:
+	Voxel attributes	Vokselių atributai
+	Voxel size:	Vokselio dydis:
+	points	taškai
+
+# WP3 DPX bit depth
+	Bit Depth	Bitų gylis
+
+# AS-02 versions
+	AS-02 Versions	AS-02 versijos
+	Tick the sequences to write as further versions in the AS-02 bundle	Pažymėkite sekas, kurios bus įrašytos kaip papildomos AS-02 paketo versijos
+	Delete Short Clips	Ištrinti trumpus klipus
+	A stored combination does not run a command yet.	Įrašytas derinys dar nevykdo komandos.
+	Action hint	Veiksmo užuomina
+	Add combination	Pridėti derinį
+	Add mapping	Pridėti priskyrimą
+	Button Learn	Mygtuko mokymasis
+	Button Test	Mygtuko bandymas
+	Button name	Mygtuko pavadinimas
+	Cancel feedback	Atšaukimo pranešimas
+	Combination editor	Derinių rengyklė
+	Context	Kontekstas
+	Delete profile	Šalinti profilį
+	Detected buttons	Aptikti mygtukai
+	Draw the gesture with a button held.	Pieškite gestą laikydami mygtuką.
+	Error feedback	Klaidos pranešimas
+	Evdev device	Evdev įrenginys
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev skaito tik pasirinktą įrenginį ir tik kai vėlesnis etapas jį įjungia. Ši laida lieka Qt kelyje.
+	Execution feedback	Vykdymo pranešimas
+	Follow the system	Sekti sistemą
+	Gesture	Gestas
+	Gesture Learn	Gesto mokymasis
+	Gesture editor	Gestų rengyklė
+	Gesture profiles	Gestų profiliai
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gestai lieka išjungti, kol jų neįjungsite. Įjungimas neužblokuoja skydelio meniu.
+	HUD	HUD
+	Hand	Ranka
+	High contrast	Didelis kontrastas
+	Hold time	Laikymo laikas
+	Input access	Įvesties prieiga
+	Left-handed	Kairiarankis
+	Mapping	Priskyrimas
+	Maximum length	Didžiausias ilgis
+	Maximum time	Didžiausias laikas
+	Minimum length	Mažiausias ilgis
+	Mirror ergonomic gestures	Veidrodinti ergonominius gestus
+	Mouse Gestures	Pelės gestai
+	Mouse Gestures…	Pelės gestai…
+	No buttons yet. Press one in Button Learn or Button Test.	Mygtukų dar nėra. Paspauskite vieną mokymesi arba bandyme.
+	Press	Paspaudimas
+	Qt pointer (this application)	Qt rodyklė (ši programa)
+	Recognition preview	Atpažinimo peržiūra
+	Reduced animation	Sumažinta animacija
+	Right-handed	Dešiniarankis
+	Roles	Vaidmenys
+	Save gesture	Įrašyti gestą
+	Save profile	Įrašyti profilį
+	Show the gesture HUD	Rodyti gestų HUD
+	Slop	Laisvumas
+	Spatial gesture	Erdvinis gestas
+	Thresholds	Slenksčiai
+	Trail	Pėdsakas
+	Use gestures in the window	Naudoti gestus lange
+	DVD-Video folder (VIDEO_TS)	DVD-Video aplankas (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video aplankas (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfinis, 6 Mbps, GOP 15, AC-3 192 kbps, skyriai iš sekos skyrių žymeklių
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video aplankas (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfinis, 6 Mbps, GOP 18, AC-3 192 kbps, skyriai iš sekos skyrių žymeklių
+	DNx decoding:	DNx dekodavimas:
+	As detected from the file ({detected})	Kaip aptikta faile ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standartas)
+	FFmpeg-compatible	Suderinama su FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg kai kuriuos DNx failus skaito kitaip nei standartas (4:4:4 spalvos, atvirkštinis kvantavimas). FFmpeg užkoduota medžiaga aptinkama; pasirinkite čia, jei aptikimas klaidingas.
+	DNx Coding	DNx kodavimas
+	FFmpeg-compatible (for FFmpeg-based tools)	Suderinama su FFmpeg (FFmpeg pagrįstiems įrankiams)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Išjungta: koduojama pagal SMPTE ST 2019-1. Įjungta: koduojama taip, kaip FFmpeg rašo DNx, FFmpeg pagrįstiems įrankiams.

@@ -3,12 +3,12 @@
 > **Állapot:** a tulajdonos 2026-10-27-én jóváhagyta (V1–V10, a 5. pont javaslataival) · **Készült:** 2026-10-27 ·
 > **Forrás:** [VenturiVideo/Venturi](https://github.com/VenturiVideo/Venturi) `main` @ `cdc1c0f`
 > (2026-10-26, v0.8.1, alfa) · **CFA4:** `main` @ `16debf9` · **Kapcsolódik:**
-> [`CFA4-KDENLIVE-PLAN-001`](plans/CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md) (K1–K62), [`gaps.md`](gaps.md) (G-számok),
+> [`CFA4-KDENLIVE-PLAN-001`](plans/CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md) (KDN-1–KDN-62), [`gaps.md`](gaps.md) (G-számok),
 > [ADR 0004](adr/ADR-0004-compute-routing.md), [ADR 0005](adr/ADR-0005-media-backends.md)
 
 Ez a dokumentum a Kdenlive-terv mintájára veti össze a Venturi képességeit és működési elveit a
 CFA4-gyel. A Kdenlive-tervben már szereplő tételeket **nem ismétli**, csak hivatkozik rájuk
-(K-szám), vagy kiegészíti őket. Az új teendők **V1–V10** számot kapnak.
+(KDN-szám), vagy kiegészíti őket. Az új teendők **V1–V10** számot kapnak.
 
 ## 0. Röviden
 
@@ -32,7 +32,7 @@ CFA4-gyel. A Kdenlive-tervben már szereplő tételeket **nem ismétli**, csak h
 | Rész | Licenc | Átvehető? | Megjegyzés |
 |---|---|:-:|---|
 | Venturi forráskód (`crates/*`) | GPL-3.0-or-later (`LICENSE`, `Cargo.toml` `license`) | ✅ | A fájlokban nincs SPDX-fejléc, ezért átvételkor **mi írjuk** a fejlécet: eredet (repó + commit), szerző (`morrolinux`, Venturi contributors), GPL-3.0-or-later. Bejegyzés a [`licensing.md` §5](licensing.md) nyilvántartásba ugyanabban a commitban |
-| Silero VAD modell (`vv-vad/model`) | MIT (`LICENSE-silero-vad`) | ✅ | Eszköz, ezért `.attribution` oldalfájl és `ATTRIBUTION.md`-sor kell (`cargo xtask assets`) |
+| Silero VAD modell (`vv-vad/model`) | MIT (`LICENSE-silero-vad`) | ✅ | A CFA4 a modellt **nem terjeszti és nem ágyazza be**: a felhasználó az első használatkor, a licenc megmutatása és egyszeri elfogadása után maga tölti le (V1-B, 2026-11-21; CFA4-AI_modules ADR 0008 F5). Ezért nem kerül modellfájl a repóba; a licenc a letöltőfelületen jelenik meg, a modell a közös modelltárba kerül |
 | `tract-onnx` (ONNX-futtató) | MIT OR Apache-2.0 | ✅ | Tiszta Rust, `cargo deny` szerint ellenőrizendő |
 | `vst3` crate, VST3 SDK | MIT (az SDK 2025 óta MIT) | ✅ | Csak V6-hoz, külön folyamatban; a Steinberg/VST logó nem kerülhet be |
 | Venturi név, logó, ikonok, képernyőképek | — | ❌ | Márka, nem vesszük át (ahogy a Kdenlive/KDE nevét sem) |
@@ -80,20 +80,22 @@ szűkíti. Szünettörlés csak átirattal van (`transcript.removePauses`), ehhe
 
 **Teendő:**
 1. `crates/speech`: `vad::silero` modul `tract-onnx`-szel, a Venturi `vv-vad` alapján
-   (fejléc + nyilvántartás), 16 kHz-re fagyasztott modell `.attribution` fájllal.
+   (fejléc + nyilvántartás). A modellt (16 kHz) a CFA4 nem szállítja és nem ágyazza be: a felhasználó az első
+   használatkor, a licenc (MIT) elfogadása után tölti le a közös modelltárba (V1-B, az MI-réteg után; V1-A a
+   megvalósítási tervben).
 2. Új parancs `audio.detectSpeech` / `clip.removeSilence` (paraméterek: küszöb, minimális
    szünet, megtartott ráhagyás, `Tick`-ben), átirat nélkül, bármilyen nyelven.
 3. A Whisper elé VAD-szűrő: csak a beszédes szakaszok mennek a modellbe. Ez gyorsít, és
-   csökkenti a csendben „hallucinált” szöveget. **Kiegészíti a K31–K35-öt** (nagyobb
+   csökkenti a csendben „hallucinált” szöveget. **Kiegészíti a KDN-31–KDN-35-öt** (nagyobb
    modellek, élő mikrofonos felirat: ott a VAD dönti el, mikor zárul egy mondat).
 4. Teszt: generált beszéd+zaj fixture (`target/fixtures/`), a VAD-határok tűrése ±1 ablak (32 ms).
-5. **Elfogadási feltételek bővítése** (tulajdonos, 2026-11-20; forrás:
+5. **Elfogadási feltételek bővítése** (tulajdonos, 2026-11-20; a megvalósítási terv: [`CFA4-V1-SILENCE-REMOVAL-001`](plans/CFA4-V1-SILENCE-REMOVAL-001.md); forrás:
    [`CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001`](plans/CFA4-SHOTCUT-CAPABILITY-ADAPTATION-001.md) 5.2):
    - **Régióelőnézet:** az észlelt csendes régiók előnézete és markerként megjelenítése, mielőtt bármi törlődne.
    - **Szerkeszthető kijelölés:** a régiók törlés előtt szerkeszthetők és kijelölhetők; nincs automatikus romboló törlés.
    - **Kötegelt elemzés:** több klip elemzése egy lépésben.
    - **Opcionális ripple-törlés** és **nem romboló mód** (a régiók törlés nélkül, jelölésként maradnak).
-   - Az elfogadási teszt (hangszinkron megmarad, undo/redo, render-ellenőrzés) a Shotcut-terv szerint javasolt; a tulajdonos név szerint még nem erősítette meg, a megvalósítás előtt tisztázandó.
+   - **Elfogadási teszt (a neve jóváhagyva, tulajdonos, 2026-11-21):** `v1_silence_removal_acceptance` (a V1 tesztjeinek mellé, `crates/speech` + `crates/engine`). Három ellenőrzés egy generált beszéd+csend fixture-ön: (a) a hangszinkron megmarad: a megmaradó klipek hang- és képoldala azonos időtartományú, a kötött (linked) hang nem csúszik el, a ripple-törlés után a sorozat hossza a törölt régiók összegével rövidül; (b) undo/redo: a törlés (és a kötegelt futás) egy-egy visszavonási lépés, az undo után a sorozat bájtra azonos az eredetivel, a redo után az eredménnyel; (c) render-ellenőrzés: a törlés előtti és utáni kimenet a megmaradt részeken azonos (golden összevetés), a törölt régiókban nincs hang. A V1 kódja nem része az SC-1…SC-4 tételeknek; erről külön döntés készül, addig ez dokumentált elfogadási feltétel.
 
 ### V2 · Hardveres kódoló önellenőrzése · P1 · 12–20 óra
 
@@ -110,7 +112,7 @@ FFmpeg/GStreamer kódolók (ADR 0005) pont ott hoznak kockázatot, ahol a Ventur
    színátmenet), visszadekódolás a saját dekóderrel, eltérés küszöb alatt → elérhető.
 2. Az eredmény gyorsítótárban (GPU + meghajtó verziója szerinti kulcs), így induláskor nem lassít.
 3. A bukott kódoló a `perf.stats` → `route.chains` „passed over” okai között jelenik meg
-   („rossz színt kódol”), és a felület a K-terv szerinti meghajtó-telepítési tippet mutatja.
+   („rossz színt kódol”), és a felület a KDN-terv szerinti meghajtó-telepítési tippet mutatja.
 4. A teszt `catch_unwind` alatt fut, időkorláttal: egy lefagyó meghajtó nem viheti magával a programot.
 
 ### V3 · Ügynökbiztos MCP-hoszt · P1 · 15–25 óra
@@ -163,7 +165,7 @@ A Venturi `RenderAhead` elvei, amelyeket a CFA4 `play_ahead.rs` / `frames.rs` me
 
 A Venturi VST3-hosztja a mixer effektláncában fut, natív szerkesztőablakkal (X11, macOS).
 A CFA4-ben ez a **G11** (bővítményhosztolás, tulajdonosi döntés) része. Ha igen:
-- **külön folyamatban** (mint a K-terv frei0r/LV2-hosztja, ADR 0003 A6–A7), mert a VST3
+- **külön folyamatban** (mint a KDN-terv frei0r/LV2-hosztja, ADR 0003 A6–A7), mert a VST3
   COM-felülete `unsafe`, és egy hibás bővítmény nem döntheti össze a CFA4-et;
 - a Venturi `vv-plugin` szkennelő, betöltő és valós idejű feldolgozó logikája mintának,
   a `vv-plugin-fixture` (gain-bővítmény) tesztbővítménynek átvehető;
@@ -176,17 +178,17 @@ végpontot hívja: ugyanaz a kliens szolgál ki helyi szervert (whisper.cpp `ser
 faster-whisper-server, LocalAI) és felhős szolgáltatót. Mono 16 kHz, tömörítve, darabolva,
 átfedéssel; a szóidők a médium idejére vannak átszámolva.
 
-A CFA4-ben a Whisper helyben fut (K2, K31–K35). Ez a tétel **opcionális kiegészítés**
+A CFA4-ben a Whisper helyben fut (KDN-2, KDN-31–KDN-35). Ez a tétel **opcionális kiegészítés**
 lenne: helyi szerver alapból, felhős csak kifejezett hozzájárulással és figyelmeztetéssel
 („a hang elhagyja a gépet”), kulcs környezeti változóból. Ez megválaszolja a nyitott „felhős MI
-hozzájárulással?” kérdést, ha a tulajdonos igent mond. A fordításra (K6) ugyanez a minta jó.
+hozzájárulással?” kérdést, ha a tulajdonos igent mond. A fordításra (KDN-6) ugyanez a minta jó.
 
 ### V8 · Hálózati (tablet/böngésző) kezelőfelület · P3 · ötlet · **tulajdonosi döntés**
 
 A Venturi `plans/WEB_FRONTEND.md` egy fejetlen asztali háttér + hálózati kliens felépítést
 ír le: dekódolás, kompozitálás, kódolás az asztali gépen, a tablet csak megjelenít és
 parancsot küld. A CFA4-ben az alap megvan (minden parancs, a felület állapota serde, a
-vezérlőcsatorna). Kapcsolódik a K7 hálózati renderhez és a `cfa4-render-node`-hoz. Most
+vezérlőcsatorna). Kapcsolódik a KDN-7 hálózati renderhez és a `cfa4-render-node`-hoz. Most
 csak rögzítjük, megvalósítás nem javasolt.
 
 ### V9 · Felhasználói telepítő sudo nélkül · P3 · 6–10 óra
@@ -207,7 +209,7 @@ audit, hogy a CFA4 klip-, sáv- és médiaazonosítói teljesítik-e ezt; ha nem
 
 | # | Teendő | Prioritás | Óra | Függ |
 |---|---|:-:|---:|---|
-| V1 | Silero VAD, szünettörlés átirat nélkül, Whisper-előszűrő | P1 | 20–35 | **MI-réteg üzembe helyezése** (K31–K35-öt erősíti) |
+| V1 | Silero VAD, szünettörlés átirat nélkül, Whisper-előszűrő | P1 | 20–35 | **MI-réteg üzembe helyezése** (KDN-31–KDN-35-öt erősíti) |
 | V2 | Hardveres kódoló önellenőrzése a `cfa4-route`-ban | P1 | 12–20 | ADR 0004, #39, #263 |
 | V3 | Ügynökbiztos MCP: Unix socket, visszatartás mozdulat alatt | P1 | 15–25 | ADR F8 CLI-híd |
 | V10 | Stabil azonosítók auditja | P2 | 4–8 | — |
@@ -218,17 +220,17 @@ audit, hogy a CFA4 klip-, sáv- és médiaazonosítói teljesítik-e ezt; ha nem
 | V9 | Felhasználói telepítő | P3 | 6–10 | F9 kiadás |
 | V8 | Hálózati kezelőfelület | P3 | — | ötlet |
 
-Összesen kb. **170–290 óra**, ebből a P1 **47–80 óra**. A Kdenlive-terv (K1–K35) mellett ez
+Összesen kb. **170–290 óra**, ebből a P1 **47–80 óra**. A Kdenlive-terv (KDN-1–KDN-35) mellett ez
 kis többlet, mert a Venturi tudásának nagy része a CFA4-ben már megvan.
 
 ## 5. Tulajdonosi döntések (2026-10-27)
 
 A tulajdonos a tervet a javasolt döntésekkel együtt jóváhagyta:
 
-1. **V6:** VST3 kell, **külön folyamatban**, az LV2-hoszt (K5) után. Ezzel a G11 hangbővítmény-része eldőlt.
+1. **V6:** VST3 kell, **külön folyamatban**, az LV2-hoszt (KDN-5) után. Ezzel a G11 hangbővítmény-része eldőlt.
 2. **V7:** átirat Whisper-kompatibilis HTTP-n át: **alapból csak helyi szerver**; felhős szolgáltató
    csak kifejezett, beállításonkénti hozzájárulással (opt-in), figyelmeztetéssel.
-3. **V8:** a hálózati kezelőfelület **ötlet marad**; a K7 hálózati render után újranézzük.
+3. **V8:** a hálózati kezelőfelület **ötlet marad**; a KDN-7 hálózati render után újranézzük.
 
 A megvalósítás a meglévő szabály szerint csak a tulajdonos kérésére indul, teendőnként.
 
@@ -255,3 +257,5 @@ kódrészhez sor a [`licensing.md` §5](licensing.md) nyilvántartásban.
 - 2026-10-27: első változat (V1–V10).
 - 2026-10-27: a tulajdonos jóváhagyta; 5. pont döntésekké alakítva.
 - 2026-10-27: MI-réteg szabály: V1 és V7 az MI-réteg után; javasolt kezdés V2, V3.
+- 2026-11-21: V1-A (energiaalapú csend-eltávolítás, `CFA4-V1-SILENCE-REMOVAL-001`) megvalósítva: `audio.detectSpeech`, `silence.regions`, `silence.keep`, `silence.clear`, `clip.removeSilence`, Qt6 párbeszéd; az elfogadási teszt `v1_silence_removal_acceptance` (`crates/engine/src/silence_tests.rs`). A V1-B (Silero) az MI-réteg után marad.
+- 2026-11-23: V1-B GUI-független része (István felmentette az F0 alól): `crates/speech` `vad::silero` (feature `silero`), `audio.detectSpeech {detector: "silero"}`, `speech.vadModel`, `speech.downloadVadModel`; a Qt6 „Speech model” érték és a Whisper-előszűrő (`transcript.generate {vadFilter}`) kész (2026-11-23, második szál); a ±1 ablakos igazolás valódi beszéddel és a `silero` acceptance a modellel hátra van ([`CFA4-V1-SILENCE-REMOVAL-001`](plans/CFA4-V1-SILENCE-REMOVAL-001.md) 13. pont).

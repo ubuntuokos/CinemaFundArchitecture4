@@ -31,7 +31,7 @@ const SEEDS: &[(&str, &str, &str, &str)] = &[
     ("hevc_fz_422_10", "libx265", "-x265-params log-level=error:keyint=6:min-keyint=6", "yuv422p10le"),
 ];
 
-/// Encoders a seed may use that the CFA4 CI's FFmpeg (9.0.2) is not built with: kvazaar, the only
+/// Encoders a seed may use that the CFA4 CI's pinned FFmpeg is not built with: kvazaar, the only
 /// one that writes HEVC tiles. Without it that seed is left out, not counted as a skipped oracle
 /// (`CFA4_REQUIRE_ORACLES=1` fails a skip).
 const OPTIONAL_ENCODERS: &[&str] = &["libkvazaar"];

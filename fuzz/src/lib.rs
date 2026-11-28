@@ -168,6 +168,35 @@ pub fn canopus(data: &[u8]) {
     }
 }
 
+/// Theora: an even first byte takes synthetic valid headers and decodes the rest as packets (a
+/// length byte, then that many bytes of packet); an odd one reads the rest as three header packets.
+pub fn theora(data: &[u8]) {
+    let Some((&pick, rest)) = data.split_first() else { return };
+    if pick & 1 == 1 {
+        let (a, b) = (rest.len() / 3, 2 * rest.len() / 3);
+        if let (Some(i), Some(c), Some(s)) = (rest.get(..a), rest.get(a..b), rest.get(b..)) {
+            if let Ok(mut d) = cfa4_theora::Decoder::new(i, c, s) {
+                std::hint::black_box(d.decode(&[]).ok());
+            }
+        }
+        return;
+    }
+    let seed = rest.iter().take(8).fold(0u64, |a, &b| a << 8 | u64::from(b));
+    let mut rng = cfa4_theora::synth::Rng::new(seed);
+    let (i, c, s) = (
+        cfa4_theora::synth::ident(48, 32, u64::from(pick >> 1) % 4 / 2 * 2 + u64::from(pick >> 3 & 1)),
+        cfa4_theora::synth::comment(),
+        cfa4_theora::synth::setup(&mut rng),
+    );
+    let Ok(mut d) = cfa4_theora::Decoder::new(&i, &c, &s) else { return };
+    let mut at = rest.get(8..).unwrap_or(&[]);
+    while let Some((&n, tail)) = at.split_first() {
+        let (packet, next) = tail.split_at(usize::from(n).min(tail.len()));
+        std::hint::black_box(d.decode(packet).ok());
+        at = next;
+    }
+}
+
 /// Dirac / VC-2: the sequence header probe and the decoder over the whole input.
 pub fn dirac(data: &[u8]) {
     std::hint::black_box((cfa4_dirac::sequence_header(data), cfa4_dirac::is_vc2(data)));
@@ -259,18 +288,28 @@ pub fn mpeg2v(data: &[u8]) {
     let _ = dec.decode(data, 0);
 }
 
+/// Only key frames set the VP8 picture size, so one larger than `MAX_SIDE` is skipped: a 1 KiB
+/// packet may ask for a 16383 × 16383 picture, valid but slow to decode (a 10 s timeout, not a bug).
 pub fn vp8(data: &[u8]) {
     let _ = cfa4_vp8::keyframe_info(data);
     let mut dec = cfa4_vp8::Decoder::new();
     for p in packets(data) {
+        if cfa4_vp8::keyframe_info(p).is_some_and(|k| k.width > MAX_SIDE || k.height > MAX_SIDE) {
+            continue;
+        }
         let _ = dec.decode(p, 0);
     }
 }
 
+/// A key frame larger than `MAX_SIDE` is skipped, as for VP8: an 824-byte packet may ask for a
+/// 3841 × 12336 picture, valid but slow to decode (a 10 s timeout under the sanitizer, not a bug).
 pub fn vp9(data: &[u8]) {
     let _ = cfa4_vp9::keyframe_info(data);
     let mut dec = cfa4_vp9::Decoder::new();
     for p in packets(data) {
+        if cfa4_vp9::keyframe_info(p).is_some_and(|k| k.width > MAX_SIDE || k.height > MAX_SIDE) {
+            continue;
+        }
         let _ = dec.decode(p, 0);
     }
 }
@@ -442,6 +481,515 @@ pub fn auro(data: &[u8]) {
     let _ = cfa4_auro::cfa4::unfold(&refs);
 }
 
+// ---------------------------------------------------------------- RealMedia, MPEG-4 SStP, EVC, AVS and lossless
+
+/// RealMedia: the header and every data packet (at most 256), with each audio stream's
+/// `.ra\xfd` header parsed and its packets deinterleaved, as the engine reads a `.rm` file.
+pub fn realmedia(data: &[u8]) {
+    let _ = cfa4_realmedia::probe(data);
+    let Ok(mut demux) = cfa4_realmedia::Demuxer::new(std::io::Cursor::new(data)) else { return };
+    let mut audio: Vec<Option<cfa4_realmedia::audio::Deinterleaver>> = demux
+        .header()
+        .streams
+        .iter()
+        .map(|s| match &s.kind {
+            cfa4_realmedia::StreamKind::Audio { codec_data } => {
+                cfa4_realmedia::audio::parse_audio_info(codec_data).ok().map(|i| cfa4_realmedia::audio::Deinterleaver::new(&i))
+            }
+            _ => None,
+        })
+        .collect();
+    for _ in 0..256 {
+        let Ok(Some(p)) = demux.next_packet() else { break };
+        if let Some(Some(d)) = audio.get_mut(p.stream) {
+            std::hint::black_box(d.push(&p));
+        }
+    }
+    let _ = demux.seek(0);
+}
+
+/// RealAudio: the first byte picks the codec (Cook, ATRAC3, ATRAC3plus, ATRAC9, 14.4, 28.8, SIPR),
+/// the next bytes the stream parameters, the rest is fed as frames of the block size.
+pub fn realaudio(data: &[u8]) {
+    use cfa4_realaudio::{atrac3, atrac3p, atrac9, cook, ra144, ra288, sipr};
+    let mut i = Input::new(data);
+    let pick = i.byte() % 7;
+    let channels = 1 + u16::from(i.byte() % 8);
+    let block_align = 1 + usize::from(i.u16() % 4096);
+    let extra_len = usize::from(i.byte() % 32);
+    let extradata: Vec<u8> = (0..extra_len).map(|_| i.byte()).collect();
+    let frames = || i.rest().chunks(block_align).take(64);
+    match pick {
+        0 => {
+            let p = cook::Params { channels, sample_rate: 44_100, block_align, extradata: extradata.clone() };
+            if let Ok(mut d) = cook::Decoder::new(&p) {
+                for f in frames() {
+                    let _ = d.decode(f);
+                }
+            }
+        }
+        1 => {
+            let p = atrac3::Params { channels, block_align, extradata: extradata.clone() };
+            if let Ok(mut d) = atrac3::Decoder::new(&p) {
+                for f in frames() {
+                    let _ = d.decode(f);
+                }
+            }
+        }
+        2 => {
+            if let Ok(mut d) = atrac3p::Decoder::new(channels, block_align) {
+                for f in frames() {
+                    let _ = d.decode(f);
+                }
+            }
+        }
+        3 => {
+            if let Ok(mut d) = atrac9::Decoder::new(&extradata, block_align) {
+                for f in frames() {
+                    let _ = d.decode(f);
+                }
+            }
+        }
+        4 => {
+            let mut d = ra144::Decoder::new();
+            for f in frames() {
+                let _ = d.decode(f);
+            }
+        }
+        5 => {
+            let mut d = ra288::Decoder::new();
+            for f in frames() {
+                let _ = d.decode(f);
+            }
+        }
+        _ => {
+            if let Ok(mut d) = sipr::Decoder::new(block_align) {
+                for f in frames() {
+                    let _ = d.decode(f);
+                }
+            }
+        }
+    }
+}
+
+/// RealVideo 1.0/2.0 and 3.0/4.0: the first byte picks the codec, then the coded size and
+/// 8–23 bytes of codec data, then length-prefixed packets; `flush` drains the held picture.
+pub fn realvideo(data: &[u8]) {
+    use cfa4_realvideo::{Codec, rv34};
+    let mut i = Input::new(data);
+    let pick = i.byte() % 4;
+    let (w, h) = (i.side(), i.side());
+    let extra_len = 8 + usize::from(i.byte() % 16);
+    let extradata: Vec<u8> = (0..extra_len).map(|_| i.byte()).collect();
+    if pick < 2 {
+        let codec = if pick == 0 { Codec::Rv10 } else { Codec::Rv20 };
+        if let Ok(mut d) = cfa4_realvideo::Decoder::new(codec, w, h, &extradata) {
+            for p in packets(i.rest()) {
+                let _ = cfa4_realvideo::picture_type(codec, p);
+                let _ = d.decode(p);
+            }
+            let _ = d.flush();
+        }
+    } else {
+        let codec = if pick == 2 { rv34::Codec::Rv30 } else { rv34::Codec::Rv40 };
+        if let Ok(mut d) = rv34::Decoder::new(codec, w, h, &extradata) {
+            for p in packets(i.rest()) {
+                let _ = rv34::picture_type(codec, p);
+                let _ = d.decode(p);
+            }
+            let _ = d.flush();
+        }
+    }
+}
+
+/// MPEG-4 Studio Profile: the access-unit scanner and probe over the whole input, then the
+/// first packet as configuration headers and the others as access units.
+pub fn sstp(data: &[u8]) {
+    let _ = cfa4_sstp::probe(data);
+    let mut starts = Vec::new();
+    cfa4_sstp::AccessUnits::new().feed(0, data, &mut starts);
+    std::hint::black_box(starts);
+    let mut d = cfa4_sstp::Decoder::new();
+    let mut ps = packets(data);
+    if let Some(head) = ps.next() {
+        let _ = d.parse_headers(head);
+    }
+    for p in ps {
+        let _ = d.decode(p);
+    }
+}
+
+/// EVC: the probe, the picture scanner and the decoder over the input's NAL units (at most 64).
+pub fn evc(data: &[u8]) {
+    let _ = cfa4_evc::probe(data);
+    let mut scanner = cfa4_evc::Scanner::new();
+    let mut d = cfa4_evc::Decoder::new();
+    for nal in cfa4_evc::split_nal_units(data).take(64) {
+        let _ = cfa4_evc::nal_type(nal);
+        let _ = scanner.push(nal);
+        let _ = d.decode_nal(nal);
+    }
+    std::hint::black_box(d.flush());
+}
+
+/// AVS (Chinese AVS1-P2 / CAVS): the probe and stream info, then the decoder over the packets.
+pub fn cavs(data: &[u8]) {
+    let _ = (cfa4_cavs::probe(data), cfa4_cavs::stream_info(data));
+    let mut d = cfa4_cavs::Decoder::new();
+    for p in cfa4_cavs::split_packets(data).into_iter().take(64) {
+        let _ = cfa4_cavs::picture_type(p);
+        let _ = d.decode(p);
+    }
+    let _ = d.flush();
+}
+
+pub fn bink(data: &[u8]) {
+    let _ = cfa4_bink::container::probe(data);
+    let Ok(b) = cfa4_bink::container::Bink::parse(data) else { return };
+    let Ok(mut v) = cfa4_bink::video::Decoder::new(b.width.min(256), b.height.min(256), b.tag, b.flags) else { return };
+    let mut a: Vec<_> = b.tracks.iter().filter_map(|t| cfa4_bink::audio::Decoder::new(t.sample_rate, t.channels, t.dct, b.tag[3]).ok()).collect();
+    for i in 0..b.frame_count().min(16) {
+        let Ok(f) = b.frame(i) else { continue };
+        let _ = v.decode(f.video);
+        for (t, pkt) in f.audio {
+            if let Some(d) = a.get_mut(t) {
+                let _ = d.decode(pkt);
+            }
+        }
+    }
+}
+
+pub fn lagarith(data: &[u8]) {
+    let mut i = Input::new(data);
+    let (w, h) = (i.side(), i.side());
+    let bits = [24u16, 32][usize::from(i.byte() & 1)];
+    if let Ok(mut d) = cfa4_lagarith::Decoder::new(w, h, bits) {
+        let _ = d.decode(i.rest());
+    }
+}
+
+pub fn svq3(data: &[u8]) {
+    let mut i = Input::new(data);
+    let n = usize::from(i.byte() % 64);
+    let extra: Vec<u8> = (0..n).map(|_| i.byte()).collect();
+    if let Ok(mut d) = cfa4_svq3::Decoder::new(0, 0, &extra) {
+        let _ = d.decode(i.rest(), 0);
+        let _ = d.decode(i.rest(), 1);
+        let _ = d.flush();
+    }
+}
+pub fn svq1(data: &[u8]) {
+    let mut d = cfa4_svq1::Decoder::new(16, 16, false);
+    let _ = d.decode(data);
+    let _ = d.decode(data);
+}
+pub fn indeo45(data: &[u8]) {
+    for codec in [cfa4_indeo45::Codec::Indeo4, cfa4_indeo45::Codec::Indeo5] {
+        let mut d = cfa4_indeo45::Decoder::new(codec);
+        let _ = d.decode(data);
+        let _ = d.decode(data);
+    }
+}
+pub fn msvideo(data: &[u8]) {
+    // the first bytes pick the codec and the layout, the rest is a run of packets
+    let (head, body) = data.split_at(data.len().min(4));
+    let &[sel, w, h, pal] = head else { return };
+    let (w, h) = (4 + u32::from(w) % 60, 4 + u32::from(h) % 60);
+    let palette: Vec<u8> = (0..1024).map(|i| (i as u8).wrapping_mul(pal | 1)).collect();
+    let (bits1, bits2) = ([8u16, 16][usize::from(sel & 1)], [1u16, 4, 8, 24][usize::from(sel >> 1 & 3)]);
+    let mut v1 = cfa4_msvideo::video1::Decoder::new(w, h, bits1, &palette);
+    let mut rle = cfa4_msvideo::rle::Decoder::new(w, h, bits2, &palette);
+    for pkt in body.chunks(1 + usize::from(sel >> 3) * 8 + 24) {
+        if let Ok(d) = &mut v1 {
+            let _ = d.decode(pkt);
+        }
+        if let Ok(d) = &mut rle {
+            let _ = d.decode(pkt);
+        }
+    }
+}
+pub fn indeo3(data: &[u8]) {
+    let mut d = cfa4_indeo3::Decoder::new();
+    let _ = d.decode(data);
+    let _ = d.decode(data);
+}
+
+pub fn magicyuv(data: &[u8]) {
+    let _ = cfa4_magicyuv::Decoder::new().decode(data);
+}
+
+pub fn g729(data: &[u8]) {
+    let _ = cfa4_g729::decode_file(data);
+}
+
+pub fn ilbc(data: &[u8]) {
+    let _ = cfa4_ilbc::parse_header(data);
+    let _ = cfa4_ilbc::decode_file(data);
+}
+
+pub fn musepack(data: &[u8]) {
+    let _ = cfa4_musepack::probe(data);
+    let _ = cfa4_musepack::decode_file(data);
+}
+
+pub fn acm(data: &[u8]) {
+    let _ = cfa4_acm::probe(data);
+    let _ = cfa4_acm::decode_file(data);
+}
+
+pub fn roq(data: &[u8]) {
+    let _ = cfa4_roq::probe(data);
+    let Ok(s) = cfa4_roq::parse(data) else { return };
+    if let Some(ch) = s.audio_channels {
+        for a in s.audio.iter().take(64) {
+            let _ = cfa4_roq::decode_audio(a.of(data), ch);
+        }
+    }
+    if s.width.saturating_mul(s.height) <= 1 << 20 {
+        if let Ok(mut d) = cfa4_roq::Decoder::new(s.width, s.height) {
+            for v in s.video.iter().take(16) {
+                let _ = d.decode(v.of(data));
+            }
+        }
+    }
+}
+
+pub fn mve(data: &[u8]) {
+    let _ = cfa4_mve::probe(data);
+    let Ok(m) = cfa4_mve::parse(data) else { return };
+    if let Some(a) = &m.audio {
+        for p in m.audio_packets.iter().take(64) {
+            let _ = cfa4_mve::decode_audio(a, p.of(data));
+        }
+    }
+    if m.width.saturating_mul(m.height) <= 1 << 20 {
+        if let Ok(mut d) = cfa4_mve::Decoder::new(m.width, m.height, m.bpp16) {
+            for v in m.video.iter().take(16) {
+                let input = cfa4_mve::Input {
+                    format: v.format,
+                    send_buffer: v.send_buffer,
+                    video: v.video.of(data),
+                    decode_map: v.decode_map.of(data),
+                    skip_map: v.skip_map.of(data),
+                    palette: v.palette.as_deref(),
+                };
+                let _ = d.decode(&input);
+            }
+        }
+    }
+}
+
+pub fn thp(data: &[u8]) {
+    let _ = cfa4_thp::probe(data);
+    let Ok(m) = cfa4_thp::parse(data) else { return };
+    for v in m.video.iter().take(4) {
+        let _ = cfa4_thp::jpeg::decode(v.of(data));
+    }
+    if let Some(a) = m.audio {
+        let mut d = cfa4_thp::AudioDecoder::new();
+        for p in m.audio_packets.iter().take(64) {
+            let _ = d.decode(p.of(data), a.channels);
+        }
+    }
+}
+
+pub fn mobiclip(data: &[u8]) {
+    let _ = cfa4_mobiclip::probe(data);
+    let Ok(m) = cfa4_mobiclip::parse(data) else { return };
+    if m.width.saturating_mul(m.height) <= 1 << 20 {
+        if let Ok(mut d) = cfa4_mobiclip::Decoder::new(m.width, m.height) {
+            for p in m.video.iter().take(8) {
+                let _ = d.decode(&p.data);
+            }
+        }
+    }
+    if let Some(a) = &m.audio {
+        let ch = a.channels as usize;
+        let mut fast = cfa4_mobiclip::FastAudio::new(ch.min(8));
+        for p in a.packets.iter().take(64) {
+            match a.codec {
+                cfa4_mobiclip::AudioCodec::FastAudio => drop(fast.decode(p)),
+                cfa4_mobiclip::AudioCodec::ImaMoflex => drop(cfa4_mobiclip::decode_ima(p, ch)),
+                cfa4_mobiclip::AudioCodec::PcmS16le => drop(cfa4_mobiclip::decode_pcm(p, ch)),
+            }
+        }
+    }
+}
+pub fn qdm2(data: &[u8]) {
+    // a configuration, and blocks decoded with a valid one built from the first bytes
+    let _ = cfa4_qdm2::Decoder::new(data);
+    let [ch, fft, block, rest @ ..] = data else { return };
+    let mut e = Vec::new();
+    e.extend_from_slice(&12u32.to_be_bytes());
+    e.extend_from_slice(b"frmaQDM2");
+    e.extend_from_slice(&44u32.to_be_bytes());
+    e.extend_from_slice(b"QDCA");
+    let fft = 128u32 << (fft % 3);
+    for v in [1, u32::from(ch % 2) + 1, 44100, 48000, fft * 16, fft, 256 + u32::from(*block) * 8] {
+        e.extend_from_slice(&v.to_be_bytes());
+    }
+    if let Ok(mut d) = cfa4_qdm2::Decoder::new(&e) {
+        for packet in rest.chunks(2048).take(4) {
+            let _ = d.decode(packet);
+        }
+    }
+}
+pub fn amv(data: &[u8]) {
+    // a file: its chunks decode, whatever they hold
+    if let Ok(a) = cfa4_amv::Amv::parse(data) {
+        if let Ok(d) = cfa4_amv::Decoder::new(a.width.min(64), a.height.min(64)) {
+            for c in a.video.iter().take(4) {
+                let _ = d.decode(data.get(c.offset..c.offset + c.len).unwrap_or(&[]));
+            }
+        }
+        for c in a.audio.iter().take(4) {
+            let _ = cfa4_amv::decode_audio(data.get(c.offset..c.offset + c.len).unwrap_or(&[]));
+        }
+    }
+    // a bare chunk
+    if let Ok(d) = cfa4_amv::Decoder::new(32, 24) {
+        let _ = d.decode(data);
+    }
+    let _ = cfa4_amv::decode_audio(data);
+}
+
+pub fn adx(data: &[u8]) {
+    let _ = cfa4_adx::decode_file(data);
+}
+
+pub fn hca(data: &[u8]) {
+    let _ = cfa4_hca::decode_file(data, None);
+    let _ = cfa4_hca::decode_file(data, Some(cfa4_hca::Key { key: 0xCF22_2F1F_E074_8978, subkey: 0x3B8E }));
+}
+
+pub fn twinvq(data: &[u8]) {
+    if let Ok(s) = cfa4_twinvq::parse(data) {
+        let _ = cfa4_twinvq::decode(data, &s);
+    }
+    // MetaSound: the first 16 bytes stand for the format extradata, the next two for the block size
+    if let (Some(extra), Some(a)) = (data.get(..16), data.get(16..18)) {
+        let align = usize::from(u16::from_le_bytes([a[0], a[1]]));
+        if let Ok(s) = cfa4_twinvq::parse_metasound(extra, align) {
+            let _ = cfa4_twinvq::decode(data.get(18..).unwrap_or(&[]), &s);
+        }
+    }
+}
+
+pub fn yamaha_oki(data: &[u8]) {
+    use cfa4_yamaha_oki::{Kind, State};
+    for kind in [Kind::Yamaha, Kind::Oki] {
+        for channels in 1..=2 {
+            if let Some(mut s) = State::new(kind, channels) {
+                let mut out = vec![Vec::new(); channels];
+                s.decode(data, &mut out);
+            }
+        }
+    }
+}
+pub fn nstream(data: &[u8]) {
+    if let Ok(s) = cfa4_nstream::parse(data) {
+        let _ = cfa4_nstream::decode(data, &s);
+    }
+}
+
+pub fn shorten(data: &[u8]) {
+    let _ = cfa4_shorten::probe(data);
+    let _ = cfa4_shorten::decode_file(data);
+}
+
+/// TAK: the whole-file decoder, and a STREAMINFO block followed by frames for the packet decoder.
+pub fn tak(data: &[u8]) {
+    let _ = cfa4_tak::probe(data);
+    let _ = cfa4_tak::decode_file(data);
+    let mut ps = packets(data);
+    let info = ps.next().and_then(|b| cfa4_tak::parse_streaminfo_block(b).ok());
+    let mut d = cfa4_tak::Decoder::new(info);
+    for p in ps {
+        let _ = d.decode(p);
+    }
+}
+
+/// Smacker: the whole file through the frame table, each frame's parts, the video decoder and
+/// every audio track.
+pub fn smacker(data: &[u8]) {
+    let _ = cfa4_smacker::probe(data);
+    let Ok(smk) = cfa4_smacker::Smk::parse(data) else { return };
+    let mut dec = cfa4_smacker::Decoder::new(&smk).ok();
+    for i in 0..smk.frames.min(64) {
+        let parts = smk.split(data, i);
+        for (slot, track) in smk.tracks.iter().enumerate() {
+            if let (Some(t), Some(chunk)) = (track, parts.audio.get(slot).copied().flatten()) {
+                let _ = cfa4_smacker::decode_audio(t, chunk);
+            }
+        }
+        match (dec.as_mut(), parts.video, parts.palette) {
+            (Some(d), Some(v), _) => {
+                let _ = d.decode(parts.palette, v);
+                std::hint::black_box(d.rgba());
+            }
+            // a frame whose video is lost keeps its palette update
+            (Some(d), None, Some(p)) => {
+                let _ = d.update_palette(p);
+            }
+            _ => {}
+        }
+    }
+}
+
+pub fn avs2(data: &[u8]) {
+    let _ = (cfa4_avs2::probe(data), cfa4_avs2::stream_info(data));
+    let _ = cfa4_avs2::SequenceHeader::parse(data);
+    let mut d = cfa4_avs2::Decoder::new();
+    for (tag, p) in cfa4_avs2::split_packets(data).into_iter().take(16).enumerate() {
+        let _ = d.decode(p, tag as i64);
+    }
+    let _ = d.flush();
+}
+
+pub fn avs3(data: &[u8]) {
+    let _ = (cfa4_avs3::probe(data), cfa4_avs3::stream_info(data));
+    let _ = cfa4_avs3::SequenceHeader::parse(data);
+    let mut d = cfa4_avs3::Decoder::new();
+    for (tag, p) in cfa4_avs3::split_packets(data).into_iter().take(16).enumerate() {
+        let _ = d.decode(p, tag as i64);
+    }
+    let _ = d.flush();
+}
+
+pub fn cinepak(data: &[u8]) {
+    let mut i = Input::new(data);
+    let (w, h) = (i.side(), i.side());
+    let bits = [8u16, 24][usize::from(i.byte() & 1)];
+    if let Ok(mut d) = cfa4_cinepak::Decoder::new(w, h, bits) {
+        d.set_palette_bgr0(&data[..data.len().min(1024)]);
+        for pkt in packets(i.rest()) {
+            if let Ok(p) = d.decode(pkt) {
+                std::hint::black_box(p.to_rgba());
+            }
+        }
+    }
+}
+
+pub fn flic(data: &[u8]) {
+    let _ = cfa4_flic::probe(data);
+    let Ok(h) = cfa4_flic::Header::parse(data) else { return };
+    let Ok(mut d) = cfa4_flic::Decoder::new(&h) else { return };
+    for pkt in packets(data.get(128..).unwrap_or_default()) {
+        let _ = d.decode(pkt);
+        std::hint::black_box(d.rgba());
+    }
+}
+
+pub fn indeo(data: &[u8]) {
+    let mut i = Input::new(data);
+    let (w, h) = (i.side(), i.side());
+    if let Ok(mut d) = cfa4_indeo::ir2::Decoder::new(w, h) {
+        for pkt in packets(i.rest()) {
+            let _ = d.decode(pkt);
+        }
+    }
+}
+
 // ---------------------------------------------------------------- projects and interchange (B5)
 
 pub fn project(data: &[u8]) {
@@ -488,9 +1036,11 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("ogg", "cfa4-ogg", ogg),
     ("st2110", "cfa4-st2110", st2110),
     ("tta", "cfa4-tta", tta),
+    ("twinvq", "cfa4-twinvq", twinvq),
     ("amr", "cfa4-amr", amr),
     ("av2", "cfa4-av2", av2),
     ("canopus", "cfa4-canopus", canopus),
+    ("theora", "cfa4-theora", theora),
     ("dirac", "cfa4-dirac", dirac),
     ("speex", "cfa4-speex", speex),
     ("cfb", "cfa4-cfb", cfb),
@@ -504,6 +1054,7 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("mpeg2v", "cfa4-mpeg2v", mpeg2v),
     ("vp8", "cfa4-vp8", vp8),
     ("vp9", "cfa4-vp9", vp9),
+    ("yamaha_oki", "cfa4-yamaha-oki", yamaha_oki),
     ("av1", "cfa4-av1", av1),
     ("prores", "cfa4-prores", prores),
     ("dnx", "cfa4-dnx", dnx),
@@ -524,6 +1075,43 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("opus", "cfa4-opus", opus),
     ("adpcm", "cfa4-adpcm", adpcm),
     ("auro", "cfa4-auro", auro),
+    ("realmedia", "cfa4-realmedia", realmedia),
+    ("realaudio", "cfa4-realaudio", realaudio),
+    ("realvideo", "cfa4-realvideo", realvideo),
+    ("sstp", "cfa4-sstp", sstp),
+    ("evc", "cfa4-evc", evc),
+    ("cavs", "cfa4-cavs", cavs),
+    ("lagarith", "cfa4-lagarith", lagarith),
+    ("svq3", "cfa4-svq3", svq3),
+    ("svq1", "cfa4-svq1", svq1),
+    ("indeo45", "cfa4-indeo45", indeo45),
+    ("indeo3", "cfa4-indeo3", indeo3),
+    ("bink", "cfa4-bink", bink),
+    ("magicyuv", "cfa4-magicyuv", magicyuv),
+    ("msvideo", "cfa4-msvideo", msvideo),
+    ("g729", "cfa4-g729", g729),
+    ("mace", "cfa4-mace", mace),
+    ("truespeech", "cfa4-truespeech", truespeech),
+    ("ilbc", "cfa4-ilbc", ilbc),
+    ("musepack", "cfa4-musepack", musepack),
+    ("shorten", "cfa4-shorten", shorten),
+    ("adx", "cfa4-adx", adx),
+    ("acm", "cfa4-acm", acm),
+    ("roq", "cfa4-roq", roq),
+    ("mve", "cfa4-mve", mve),
+    ("thp", "cfa4-thp", thp),
+    ("mobiclip", "cfa4-mobiclip", mobiclip),
+    ("nstream", "cfa4-nstream", nstream),
+    ("amv", "cfa4-amv", amv),
+    ("qdm2", "cfa4-qdm2", qdm2),
+    ("hca", "cfa4-hca", hca),
+    ("tak", "cfa4-tak", tak),
+    ("smacker", "cfa4-smacker", smacker),
+    ("avs2", "cfa4-avs2", avs2),
+    ("avs3", "cfa4-avs3", avs3),
+    ("cinepak", "cfa4-cinepak", cinepak),
+    ("flic", "cfa4-flic", flic),
+    ("indeo", "cfa4-indeo", indeo),
     ("project", "cfa4-project", project),
     ("interchange", "cfa4-interchange", interchange),
     ("captions", "cfa4-captions", captions),
@@ -533,3 +1121,23 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
 
 #[cfg(test)]
 mod smoke;
+
+/// MACE: random packets of random sizes through one decoder of each version and channel count.
+pub fn mace(data: &[u8]) {
+    let (head, body) = data.split_at(data.len().min(1));
+    let sel = head.first().copied().unwrap_or(0);
+    let version = if sel & 1 == 0 { cfa4_mace::Version::Mace3 } else { cfa4_mace::Version::Mace6 };
+    let Ok(mut d) = cfa4_mace::Decoder::new(version, 1 + usize::from(sel >> 1 & 1)) else { return };
+    for pkt in body.chunks(1 + usize::from(sel >> 2) % 64) {
+        let _ = d.decode(pkt);
+    }
+}
+/// TrueSpeech: random packets of random sizes through one decoder.
+pub fn truespeech(data: &[u8]) {
+    let mut d = cfa4_truespeech::Decoder::new();
+    let (head, body) = data.split_at(data.len().min(1));
+    let step = 1 + head.first().map_or(0, |&b| usize::from(b)) % 96;
+    for pkt in body.chunks(step) {
+        let _ = d.decode(pkt);
+    }
+}

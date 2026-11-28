@@ -36,11 +36,16 @@
 //! [`WriterConfig::iab`] the immersive audio track file of ST 429-18 (one IABitstream frame per
 //! data element, [`MxfWriter::push_data`]).
 
+mod as02_version;
 mod labels;
 #[cfg(test)]
 mod tests;
 mod timed_text;
 
+pub use as02_version::{
+    ComponentSpec, MAX_VERSION_CLIPS, MAX_VERSION_COMPONENTS, MAX_VERSION_TRACKS, VersionClipSpec, VersionConfig, VersionTrackKind, VersionTrackSpec,
+    write_version,
+};
 pub use timed_text::{MAX_TIMED_TEXT_RESOURCES, MIME_OPENTYPE, MIME_PNG, TimedTextConfig, TimedTextResource, write_timed_text};
 
 use std::collections::VecDeque;
@@ -668,6 +673,9 @@ pub struct WriterConfig {
     /// AMWA AS-11 descriptive metadata (OP1a): the Core framework, the programme parts and the UK
     /// DPP framework as DM tracks of the material package ([`crate::as11`]).
     pub as11: Option<crate::as11::As11>,
+    /// Further DM scheme labels to list in the preface's DMSchemes (e.g. the AS-07 core scheme
+    /// [`crate::as07::CORE_SCHEME`]); the AS-11 schemes are added from `as11`.
+    pub dm_schemes: Vec<[u8; 16]>,
 }
 
 /// One ST 377-4 multichannel audio label: a soundfield group (`channel` is `None`) or an audio
@@ -724,6 +732,7 @@ impl WriterConfig {
             reference_audio_alignment_level: None,
             anc: false,
             as11: None,
+            dm_schemes: Vec::new(),
         }
     }
 }
@@ -1879,7 +1888,12 @@ impl<W: Write + Seek> MxfWriter<W> {
             s.p(0x3B08, &self.uid(2000));
         }
         let ec: Vec<&[u8]> = containers.iter().map(|c| &c[..]).collect();
-        let schemes = self.as11.as_ref().map(crate::as11::Encoded::schemes).unwrap_or_default();
+        let mut schemes = self.as11.as_ref().map(crate::as11::Encoded::schemes).unwrap_or_default();
+        for l in &cfg.dm_schemes {
+            if !schemes.contains(l) {
+                schemes.push(*l);
+            }
+        }
         let schemes: Vec<&[u8]> = schemes.iter().map(|c| &c[..]).collect();
         s.p(0x3B0A, &batch(&ec, 16)).p(0x3B0B, &batch(&schemes, 16));
         s.write(&mut out);
@@ -1916,6 +1930,12 @@ impl<W: Write + Seek> MxfWriter<W> {
                 }
                 if !a.as10.is_empty() {
                     track_uids.push(self.uid(AS11_UID + 0x300));
+                }
+                if !a.as03.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x400));
+                }
+                if !a.as12.is_empty() {
+                    track_uids.push(self.uid(AS11_UID + 0x500));
                 }
             }
             let mut s = Set::new(if material { 0x36 } else { 0x37 }, self.uid(base));
@@ -2410,6 +2430,32 @@ impl<W: Write + Seek> MxfWriter<W> {
         }
         if !a.as10.is_empty() {
             static_track(out, AS11_UID + 0x300, crate::as11::AS10_TRACK, crate::as11::AS10_FRAMEWORK_KEY, &a.as10);
+        }
+        if !a.as03.is_empty() {
+            static_track(out, AS11_UID + 0x400, crate::as11::AS03_TRACK, crate::as11::AS03_FRAMEWORK_KEY, &a.as03);
+        }
+        if !a.as12.is_empty() {
+            // the framework holds the shim name and a strong reference to the Ad-ID slate
+            let base = AS11_UID + 0x500;
+            let (name, id) = crate::as11::AS12_TRACK;
+            let (t, q, g, f, slate) = (self.uid(base), self.uid(base + 1), self.uid(base + 2), self.uid(base + 3), self.uid(base + 4));
+            let mut s = Set::new(0x3A, t);
+            s.u32(0x4801, id).u32(0x4804, 0).p(0x4802, &utf16(name)).p(0x4803, &q);
+            s.write(out);
+            let mut s = Set::new(0x0F, q);
+            s.p(0x0201, &DEF_DESCRIPTIVE).refs(0x1001, &[g]);
+            s.write(out);
+            let mut s = Set::new(0x41, g);
+            s.p(0x0201, &DEF_DESCRIPTIVE).p(0x6101, &f);
+            s.write(out);
+            let mut s = Set { key: crate::as11::AS12_FRAMEWORK_KEY, v: Vec::new() };
+            s.p(0x3C0A, &f);
+            for (i, v) in &a.as12 {
+                s.p(tag(i), v);
+            }
+            s.p(tag(&crate::as11::AS12_SLATE), &slate);
+            s.write(out);
+            framework(out, crate::as11::ADID_SLATE_KEY, slate, &a.adid);
         }
     }
 
