@@ -2186,6 +2186,7 @@
 	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transzportfolyam (.m2ts, AAC hang)
 	Chroma	Króma
 	Elementary Stream (.m2v, no audio)	Elemi folyam (.m2v, hang nélkül)
+	DVD-Video folder (VIDEO_TS)	DVD-Video mappa (VIDEO_TS)
 	Key Frame Distance	Kulcskockák távolsága
 	None (I and P only)	Nincs (csak I és P)
 	Off (target bitrate)	Ki (célbitráta)
@@ -4651,6 +4652,12 @@ export.summary	Low	alacsony
 	software backend: {reason}	szoftveres háttér: {reason}
 	Start studio	Stúdió indítása
 	Stop studio	Stúdió leállítása
+	Live Studio	Élő stúdió
+	Live Studio…	Élő stúdió…
+	Scenes	Jelenetek
+	Sources	Források
+	Visible	Látható
+	Add a scene, then a source to it.	Adj hozzá egy jelenetet, majd egy forrást.
 	Task Manager	Feladatkezelő
 	Background jobs	Háttérfeladatok
 	Exports	Exportálások
@@ -5001,3 +5008,32 @@ export.summary	Low	alacsony
 	Thresholds	Küszöbök
 	Trail	Nyomvonal
 	Use gestures in the window	Gesztusok használata az ablakban
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video mappa (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorf, 6 Mbps, GOP 15, AC-3 192 kbps, fejezetek a szekvencia Fejezet jelölőiből
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video mappa (VIDEO_TS): MPEG-2 720×480, 29,97 fps, 16:9 anamorf, 6 Mbps, GOP 18, AC-3 192 kbps, fejezetek a szekvencia Fejezet jelölőiből
+	DVD-Video folder	DVD-Video mappa
+
+# DCP package views (DCP-23)
+	Package	Csomag
+	Composition	Kompozíció
+	Security	Biztonság
+	Save HTML…	HTML mentése…
+	Asset map	Eszköztérkép
+	Packing list	Csomaglista
+	Track file	Sávfájl
+	Not a file	Nem fájl
+	Unsafe path	Nem biztonságos útvonal
+	Reel {n}	{n}. tekercs
+	Signed documents	Aláírt dokumentumok
+	Encrypted assets	Titkosított eszközök
+	Key ID: {id}	Kulcsazonosító: {id}
+	Package structure unavailable: {error}	A csomag szerkezete nem érhető el: {error}
+	DNx decoding:	DNx-dekódolás:
+	As detected from the file ({detected})	A fájlból felismert módon ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (szabvány)
+	FFmpeg-compatible	FFmpeg-kompatibilis
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	Az FFmpeg egyes DNx-fájlokat a szabványtól eltérően olvas (4:4:4 színek, inverz kvantálás). Az FFmpeg-gel kódolt felvételt a program felismeri; itt válasszon, ha a felismerés téved.
+	DNx Coding	DNx-kódolás
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibilis (FFmpeg-alapú eszközökhöz)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Ki: SMPTE ST 2019-1 szerinti kódolás. Be: úgy kódol, ahogy az FFmpeg írja a DNx-et, FFmpeg-re épülő eszközökhöz.

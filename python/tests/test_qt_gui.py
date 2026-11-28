@@ -3026,6 +3026,12 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         dlg.container.setCurrentIndex(dlg.container.findData("ts"))
         assert dlg.path.text().endswith(".ts") and dlg.audio.isEnabled() and dlg.audio_codec.isEnabled()
         assert dlg.params()["mpeg2Container"] == "ts"
+        # a DVD-Video disc is a folder (no extension) and keeps its audio
+        dlg.container.setCurrentIndex(dlg.container.findData("dvd"))
+        assert dlg._package() and dlg._extension() == "" and dlg.audio.isEnabled()
+        assert dlg.params()["mpeg2Container"] == "dvd"
+        dlg.container.setCurrentIndex(dlg.container.findData("ts"))
+        assert not dlg._package() and dlg.path.text().endswith(".ts")
         # AC-3 instead of the container's own audio (#268)
         dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("ac3"))
         assert dlg.params()["audioCodec"] == "ac3"
@@ -4419,6 +4425,80 @@ def test_real_engine_program_monitor_crop_handles(app, tmp_path: Path):
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_interpret_footage_chooses_dnx_conventions(app):
+    """Interpret Footage shows the DNx conventions for DNx footage only (CFA4-DNX-SPEC-001 R5);
+    OK sends ``dnxConventions`` only when it changed, and leaves mixed settings alone."""
+    from cfa4_qt.dialogs import InterpretFootageDialog
+
+    sent: list = []
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    auto = d.findChild(QtWidgets.QRadioButton, "interpretFootage.dnx.auto")
+    smpte = d.findChild(QtWidgets.QRadioButton, "interpretFootage.dnx.smpte")
+    assert auto is not None and smpte is not None and auto.isHidden()
+    for answer in (None, {"dnx": False}, "x"):
+        d._dnx_info(answer)
+        assert auto.isHidden()
+    d._dnx_info({"dnx": True, "setting": "auto", "detected": "ffmpeg", "effective": "ffmpeg"})
+    assert not auto.isHidden() and auto.isChecked() and "FFmpeg-compatible" in auto.text()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7]})
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    d._dnx_info({"dnx": True, "setting": "auto", "detected": "ffmpeg", "effective": "ffmpeg"})
+    d.findChild(QtWidgets.QRadioButton, "interpretFootage.dnx.smpte").setChecked(True)
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "dnxConventions": "smpte", "items": [7]})
+    # mixed settings: nothing chosen and nothing sent, unless one value is picked
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    d._dnx_info({"dnx": True, "setting": "smpte", "detected": "smpte", "effective": "smpte"})
+    d._dnx_info({"dnx": True, "setting": "ffmpeg", "detected": "smpte", "effective": "ffmpeg"})
+    assert d.chosen_dnx() is None
+    assert "SMPTE" in d.dnx_choices["auto"].text() and "FFmpeg" not in d.dnx_choices["auto"].text()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7, 8]})
+    # items detected differently name both; a later reply keeps the user's pick
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    d._dnx_info({"dnx": True, "setting": "auto", "detected": "smpte", "effective": "smpte"})
+    d.dnx_choices["ffmpeg"].click()
+    d._dnx_info({"dnx": True, "setting": "auto", "detected": "ffmpeg", "effective": "ffmpeg"})
+    assert "SMPTE" in d.dnx_choices["auto"].text() and "FFmpeg-compatible" in d.dnx_choices["auto"].text()
+    assert d.chosen_dnx() == "ffmpeg"
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "dnxConventions": "ffmpeg", "items": [7, 8]})
+
+
+def test_export_dnx_ffmpeg_compat_switch_only_for_dnx(app):
+    """CFA4-DNX-SPEC-001 D3: the FFmpeg-compatible DNx switch shows for DNxHR (also in MXF) and is
+    sent as ``dnxFfmpegCompat`` once changed."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "dnxhr", "label": "DNxHR"}, {"id": "mxf-op1a", "label": "MXF OP1a"}], None)
+    box = dlg.findChild(QtWidgets.QCheckBox, "export.video.dnxFfmpegCompat")
+    assert box is dlg.dnx_ffmpeg
+    dlg.format.setCurrentIndex(dlg.format.findData("h264"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "dnxFfmpegCompat" not in dlg.params()
+    dlg.format.setCurrentIndex(dlg.format.findData("dnxhr"))
+    dlg._sync_format_rows()
+    assert not box.isHidden() and "dnxFfmpegCompat" not in dlg.params()
+    box.setChecked(True)
+    assert dlg.params()["dnxFfmpegCompat"] is True
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-op1a"))
+    dlg._sync_format_rows()
+    assert not box.isHidden()
+    codec = dlg.format_choices["mxfVideoCodec"]
+    codec.setCurrentIndex(codec.findData("proRes"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "dnxFfmpegCompat" not in dlg.params()
+    dlg.deleteLater()
 
 
 def test_interpret_footage_turns_auro_decoding_off(app):
@@ -15204,6 +15284,43 @@ def test_real_engine_live_window(app, tmp_path: Path):
         engine.stop()
 
 
+@pytest.mark.skipif(
+    REAL is None or not (os.environ.get("CFA4_STUDIO_HOST") or (REAL.parent / "cfa4-studio-host").exists()),
+    reason="needs cfa4-cli and cfa4-studio-host (cargo build -p cfa4-cli -p cfa4-studio-host)",
+)
+def test_real_engine_live_studio_workspace(app, tmp_path: Path):
+    """S1c: Graphics and Titles ▸ Live Studio… opens the workspace; a scene and a source made there
+    are engine commands (undoable from the main window) and the program picture shows them."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "live.studio.window" in win.registry.commands, 60_000)
+        win.invoke("live.studio.window")
+        ws = win.live_studio
+        assert ws is not None and ws.isVisible() and ws.isWindow()
+        ws.auto_start = False
+        ws.preview.backend.setCurrentIndex(ws.preview.backend.findData("software"))
+        ws.add_scene("Main")
+        assert wait_until(app, lambda: ws.scene_list.count() == 1, 30_000)
+        ws.add_source("color", {"color": "#ff0000"})
+        assert wait_until(app, lambda: ws.source_list.count() == 1 and ws.selected_source is not None, 30_000), ws.message.text()
+        ws.preview.start_button.click()
+        assert wait_until(app, lambda: ws.preview._frame is not None, 30_000), ws.preview.status.text()
+        assert wait_until(app, lambda: ws.preview._frame is not None and ws.preview._frame.pixelColor(10, 10).red() == 255, 30_000)
+        # the main window's Undo takes the source away; the workspace follows the project
+        win.invoke("edit.undo")
+        assert wait_until(app, lambda: ws.source_list.count() == 0, 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 def tr_(text: str) -> str:
     from cfa4_qt.i18n import tr
 
@@ -15742,6 +15859,111 @@ def test_dcp_validation_window_runs_shows_and_saves(app):
     finally:
         dlg.close()
 
+
+def test_dcp_validation_window_shows_package_structure(app):
+    """DCP-23: after a report the window asks the engine for the package structure and fills the
+    Package, Composition and Security views; a finding that names a file jumps to it; a reply for
+    an older check is dropped; HTML is a save format."""
+    from cfa4_qt.panels.dcp_validation import DcpValidationDialog
+
+    class Engine:
+        running = True
+
+        def __init__(self):
+            self.sent = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.sent.append((command, dict(params or {}), on_reply, on_error))
+            return 0
+
+    info = {
+        "assetMap": {"file": "ASSETMAP.xml"},
+        "files": [
+            {"id": "u1", "path": "cpl.xml", "state": "file", "size": 120, "packingList": False},
+            {"id": "u2", "path": "pcm_1.mxf", "state": "missing", "size": None, "packingList": False},
+            {"id": "u3", "path": "pkl.xml", "state": "file", "size": 90, "packingList": True},
+        ],
+        "compositions": [
+            {
+                "file": "cpl.xml",
+                "document": {
+                    "content_title": "Short",
+                    "reels": [
+                        {
+                            "assets": [
+                                {
+                                    "kind": "MainSound",
+                                    "file": "pcm_1.mxf",
+                                    "duration": 5,
+                                    "language": "en",
+                                    "markers": [{"label": "FFOC", "offset": 1}],
+                                }
+                            ]
+                        }
+                    ],
+                },
+            }
+        ],
+        "security": {
+            "signedDocuments": [{"document": "cpl.xml", "kind": "composition"}],
+            "encryptedAssets": [{"composition": "cpl.xml", "keyId": "urn:uuid:k"}],
+        },
+    }
+    engine = Engine()
+    dlg = DcpValidationDialog(engine)  # type: ignore[arg-type]
+    try:
+        assert dlg.save_html.objectName() == "dcpval.saveHtml" and not dlg.save_html.isEnabled()
+        dlg.root = "/dcp/a"
+        dlg._on_report(
+            {
+                "report": {
+                    "verdict": "FAIL",
+                    "profile": {"id": "quick-scan", "version": 1},
+                    "findings": [
+                        {"rule": "DCP.AM.005", "status": "FAIL", "message": "gone", "location": {"file": "pcm_1.mxf"}}
+                    ],
+                },
+                "markdown": "# r\n",
+            },
+            None,
+        )
+        assert dlg.save_html.isEnabled()
+        command, params, ok, _err = engine.sent[-1]
+        assert (command, params) == ("dcp.package.info", {"root": "/dcp/a"})
+
+        # a newer check replaced this one: its late reply is dropped
+        dlg._generation += 1
+        ok(info, None)
+        assert dlg.package.topLevelItemCount() == 0
+        dlg._generation -= 1
+        ok(info, None)
+
+        top = dlg.package.topLevelItem(0)
+        assert top.text(0) == "ASSETMAP.xml" and top.childCount() == 3
+        by_name = {top.child(i).text(0): top.child(i) for i in range(3)}
+        assert by_name["pcm_1.mxf"].text(3) != by_name["cpl.xml"].text(3)
+        assert by_name["pkl.xml"].text(1) != by_name["pcm_1.mxf"].text(1)
+        assert by_name["cpl.xml"].text(1) != by_name["pcm_1.mxf"].text(1)  # a composition is no track file
+        comp = dlg.composition.topLevelItem(0)
+        assert comp.text(0) == "Short"
+        asset = comp.child(0).child(0)
+        assert asset.text(0) == "pcm_1.mxf" and asset.text(1) == "MainSound" and asset.child(0).text(0) == "FFOC"
+        assert dlg.security.topLevelItem(0).childCount() == 1 and dlg.security.topLevelItem(1).childCount() == 1
+
+        # double-click on the finding: the package tree shows the file it names
+        dlg.tabs.setCurrentWidget(dlg.findings)
+        dlg._jump_to_finding(0, 0)
+        assert dlg.tabs.currentWidget() is dlg.package and dlg.package.currentItem().text(0) == "pcm_1.mxf"
+
+        # a failed structure read only says so
+        dlg._package_failed("boom")
+        assert "boom" in dlg.message.text()
+
+        # HTML goes to the engine as a save format
+        dlg.save_report("html", "/tmp/r.html")
+        assert engine.sent[-1][:2] == ("dcp.validate.save", {"root": "/dcp/a", "path": "/tmp/r.html", "format": "html"})
+    finally:
+        dlg.close()
 
 def test_export_mxf_as02_switch_only_for_op1a_without_interleaved_codecs(app):
     """#1477: the AS-02 bundle switch shows for MXF OP1a (not D-10, XDCAM HD422 or OP-Atom) and is

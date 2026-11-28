@@ -65,6 +65,7 @@ MPEG2_CONTAINERS = (
     ("ts", N_("Transport Stream (.ts, AAC audio)"), "ts"),
     ("m2ts", N_("BDAV Transport Stream (.m2ts, AAC audio)"), "m2ts"),
     ("es", N_("Elementary Stream (.m2v, no audio)"), "m2v"),
+    ("dvd", N_("DVD-Video folder (VIDEO_TS)"), ""),
 )
 # DCP choices (`DcpResolution`, `DcpAspect`, `DCP_CONTENT_KINDS` in crates/export): id, label
 DCP_RESOLUTIONS = (("2k", N_("2K")), ("4k", N_("4K")))
@@ -572,6 +573,10 @@ class ExportDialog(QDialog):
         # MXF OP1a: the caption track as closed captions in an ANC data track (ST 436-1, CEA-608/708)
         self.mxf_anc = QCheckBox(tr("Write the captions as ANC data (CEA-608/708)"), self)
         self.mxf_anc.setObjectName("export.video.mxfAncCaptions")
+        # DNx: SMPTE ST 2019-1 by default; FFmpeg's reading of it on request (CFA4-DNX-SPEC-001 D3)
+        self.dnx_ffmpeg = QCheckBox(tr("FFmpeg-compatible (for FFmpeg-based tools)"), self)
+        self.dnx_ffmpeg.setObjectName("export.video.dnxFfmpegCompat")
+        self.dnx_ffmpeg.setToolTip(tr("Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg."))
         # MXF OP1a: an AMWA AS-02 bundle (version file, manifest, mono components under media/)
         self.mxf_as02 = QCheckBox(tr("Write an AS-02 bundle (the path is a folder)"), self)
         self.mxf_as02.setObjectName("export.video.mxfAs02")
@@ -670,6 +675,7 @@ class ExportDialog(QDialog):
         QFormLayout(mux.body).addRow(tr("Multiplexer"), self.multiplexer)
         fv.addRow(tr("Alpha"), self.alpha)
         fv.addRow(tr("DASH Manifest"), self.dash_manifest)
+        fv.addRow(tr("DNx Coding"), self.dnx_ffmpeg)
         fv.addRow(tr("Closed Captions"), self.mxf_anc)
         fv.addRow(tr("AS-02"), self.mxf_as02)
         fv.addRow(tr("AS-02 Versions"), self.as02_versions)
@@ -891,7 +897,7 @@ class ExportDialog(QDialog):
         self.imf_lossless.toggled.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
-        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc), ("mxfAs02", self.mxf_as02)):
+        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc), ("mxfAs02", self.mxf_as02), ("dnxFfmpegCompat", self.dnx_ffmpeg)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
         self.mxf_as02.toggled.connect(lambda _on: self._sync_format_rows())
         self.as02_versions.itemChanged.connect(lambda _i: self._touch("mxfAs02Versions"))
@@ -1176,6 +1182,7 @@ class ExportDialog(QDialog):
         rows["quality"] = enc in QUALITY_FORMATS
         rows["dashManifest"] = fmt == "hls"
         rows["mxfAncCaptions"] = fmt == "mxf-op1a" and self._choice("mxfVideoCodec") != "d10"
+        rows["dnxFfmpegCompat"] = enc == "dnxhr"
         rows["mxfAs02"] = fmt == "mxf-op1a" and self._choice("mxfVideoCodec") not in ("d10", "xdcamHd422")
         rows["mxfAs02Versions"] = rows["mxfAs02"] and self.mxf_as02.isChecked() and self.as02_versions.count() > 0
         for key in self.as11_text:
@@ -1224,6 +1231,7 @@ class ExportDialog(QDialog):
             "quality": self.quality,
             "dashManifest": self.dash_manifest,
             "mxfAncCaptions": self.mxf_anc,
+            "dnxFfmpegCompat": self.dnx_ffmpeg,
             "mxfAs02": self.mxf_as02,
             "mxfAs02Versions": self.as02_versions,
             **self.as11_text,
@@ -1240,7 +1248,7 @@ class ExportDialog(QDialog):
                 c.blockSignals(True)
                 c.setCurrentIndex(i)
                 c.blockSignals(False)
-        for key, box in (("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc), ("mxfAs02", self.mxf_as02)):
+        for key, box in (("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc), ("mxfAs02", self.mxf_as02), ("dnxFfmpegCompat", self.dnx_ffmpeg)):
             if key not in self.touched and isinstance(settings.get(key), bool):
                 box.blockSignals(True)
                 box.setChecked(settings[key])
@@ -1418,8 +1426,8 @@ class ExportDialog(QDialog):
         return self.format.currentData() == "dcp"
 
     def _package(self) -> bool:
-        """A DCP or an IMF package: the output is a folder."""
-        return self.format.currentData() in ("dcp", "imf")
+        """A DCP or an IMF package, or a DVD-Video disc folder: the output is a folder."""
+        return self.format.currentData() in ("dcp", "imf") or (self.container.isEnabled() and self.container.currentData() == "dvd")
 
     def _extension(self) -> str:
         """The output file's extension: the MPEG-2 container's, QuickTime's for H.264 / H.265 in
@@ -1436,7 +1444,7 @@ class ExportDialog(QDialog):
             # the elementary stream has no audio
             has_audio = self.container.currentData() != "es"
             self.audio.setEnabled(has_audio)
-            # Automatic: LPCM in program streams, AAC in transport streams; or AC-3 or MP2 in either
+            # Automatic: LPCM in program streams, AAC in transport streams, AC-3 on a DVD; or AC-3 or MP2 in any
             self.audio_codec.setEnabled(has_audio)
         self._changed()  # the output path takes the new extension
 
@@ -1530,6 +1538,8 @@ class ExportDialog(QDialog):
             p["dashManifest"] = self.dash_manifest.isChecked()
         if rows["mxfAncCaptions"] and "mxfAncCaptions" in self.touched:
             p["mxfAncCaptions"] = self.mxf_anc.isChecked()
+        if rows["dnxFfmpegCompat"] and "dnxFfmpegCompat" in self.touched:
+            p["dnxFfmpegCompat"] = self.dnx_ffmpeg.isChecked()
         if rows["mxfAs02"] and "mxfAs02" in self.touched:
             p["mxfAs02"] = self.mxf_as02.isChecked()
         if rows["mxfAs02Versions"] and "mxfAs02Versions" in self.touched:

@@ -51,14 +51,19 @@ import tomllib
 root = Path.cwd()
 workflow = (root / ".github/workflows/ci-linux.yml").read_text()
 assert "  platform-scope:" in workflow
-assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 12
+assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 15
 assert "types: [opened, synchronize, reopened, labeled]" in workflow
 # Merge queue (owner decision 2026-11-07, #719): every full job also runs on merge_group.
 assert "\n  merge_group:\n" in workflow
-assert workflow.count("github.event_name == 'merge_group'") == 12
-assert workflow.count("    needs: platform-scope") == 11
-# Python 3.14 (owner decision 2026-11-14, CFA4-TITLE-CREDITS-001 Q6) is the 11th full job, non-blocking (not in the gate needs).
-assert workflow.count("    runs-on: ubuntu-26.04") == 14
+assert workflow.count("github.event_name == 'merge_group'") == 15
+# 15 full jobs: the 12 of main (Python 3.14 non-blocking, the measured-parity job G7.10 blocking) plus the
+# two PostgreSQL 18 store jobs (CFA4-DATA-PG-001 P15), both blocking. One of them waits for the other
+# (`needs: [platform-scope, rust-store-postgres]`), so only 13 jobs carry the single-line
+# `needs: platform-scope` the count below sees.
+assert workflow.count("    needs: platform-scope") == 13
+# The `cfa4-db-setup` idempotence job (owner decision 2026-11-26: non-blocking until its first green run,
+# which happened on 2026-11-27) is in the gate needs now.
+assert workflow.count("    runs-on: ubuntu-26.04") == 17
 # Required merge gate (owner decision 2026-10-31): fails unless every blocking full job succeeded.
 assert "  full-validation-gate:" in workflow and "    name: full-validation-gate" in workflow
 assert "if: always() && github.event_name != 'push'" in workflow

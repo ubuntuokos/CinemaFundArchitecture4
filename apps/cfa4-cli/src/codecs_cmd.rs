@@ -196,6 +196,7 @@ static ROWS: &[Row] = &[
 const NOT_CODECS: &[&str] = &[
     "vdb",
     "audio-dsp",
+    "hrtf",
     "audit",
     "automation",
     "avi",
@@ -230,6 +231,7 @@ const NOT_CODECS: &[&str] = &[
     "matroska",
     "media",
     "metrics",
+    "mi",
     "mpegts",
     "mxf",
     "objtrack",

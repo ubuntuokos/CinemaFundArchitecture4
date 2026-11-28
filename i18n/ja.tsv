@@ -4608,6 +4608,12 @@
 	software backend: {reason}	ソフトウェアバックエンド: {reason}
 	Start studio	スタジオを開始
 	Stop studio	スタジオを停止
+	Live Studio	ライブスタジオ
+	Live Studio…	ライブスタジオ…
+	Scenes	シーン
+	Sources	ソース
+	Visible	表示
+	Add a scene, then a source to it.	シーンを追加し、次にソースを追加してください。
 	Add Studio Scene	スタジオシーンを追加
 	Live	ライブ
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
@@ -4979,3 +4985,32 @@
 	Thresholds	しきい値
 	Trail	軌跡
 	Use gestures in the window	ウィンドウでジェスチャーを使う
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video フォルダー（VIDEO_TS）：MPEG-2 720×576、25 fps、16:9 アナモルフィック、6 Mbps、GOP 15、AC-3 192 kbps、シーケンスのチャプターマーカーからチャプターを作成
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video フォルダー（VIDEO_TS）：MPEG-2 720×480、29.97 fps、16:9 アナモルフィック、6 Mbps、GOP 18、AC-3 192 kbps、シーケンスのチャプターマーカーからチャプターを作成
+	DVD-Video folder (VIDEO_TS)	DVD-Video フォルダー（VIDEO_TS）
+
+# DCP package views (DCP-23)
+	Package	パッケージ
+	Composition	コンポジション
+	Security	セキュリティ
+	Save HTML…	HTMLを保存…
+	Asset map	アセットマップ
+	Packing list	パッキングリスト
+	Track file	トラックファイル
+	Not a file	ファイルではありません
+	Unsafe path	安全でないパス
+	Reel {n}	リール {n}
+	Signed documents	署名済みドキュメント
+	Encrypted assets	暗号化されたアセット
+	Key ID: {id}	キーID: {id}
+	Package structure unavailable: {error}	パッケージ構造を取得できません: {error}
+	DNx decoding:	DNx のデコード:
+	As detected from the file ({detected})	ファイルから検出 ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (規格)
+	FFmpeg-compatible	FFmpeg 互換
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg は一部の DNx ファイルを規格とは異なる方法で読み込みます (4:4:4 の色、逆量子化)。FFmpeg でエンコードされた素材は検出されます。検出が誤っている場合はここで選択してください。
+	DNx Coding	DNx のエンコード
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg 互換 (FFmpeg ベースのツール向け)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	オフ: SMPTE ST 2019-1 に従ってエンコードします。オン: FFmpeg が DNx を書き出す方法でエンコードします (FFmpeg ベースのツール向け)。

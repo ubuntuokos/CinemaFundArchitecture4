@@ -4599,6 +4599,12 @@ export.summary	Low	nízká
 	software backend: {reason}	softwarový backend: {reason}
 	Start studio	Spustit studio
 	Stop studio	Zastavit studio
+	Live Studio	Živé studio
+	Live Studio…	Živé studio…
+	Scenes	Scény
+	Sources	Zdroje
+	Visible	Viditelný
+	Add a scene, then a source to it.	Přidejte scénu a k ní zdroj.
 	Add Studio Scene	Přidat scénu studia
 	Live	Živě
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
@@ -4970,3 +4976,32 @@ export.summary	Low	nízká
 	Thresholds	Prahy
 	Trail	Stopa
 	Use gestures in the window	Používat gesta v okně
+	DVD-Video folder (VIDEO_TS)	Složka DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Složka DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfní, 6 Mbps, GOP 15, AC-3 192 kbps, kapitoly ze značek kapitol sekvence
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Složka DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfní, 6 Mbps, GOP 18, AC-3 192 kbps, kapitoly ze značek kapitol sekvence
+
+# DCP package views (DCP-23)
+	Package	Balíček
+	Composition	Kompozice
+	Security	Zabezpečení
+	Save HTML…	Uložit HTML…
+	Asset map	Mapa aktiv
+	Packing list	Balicí seznam
+	Track file	Soubor stopy
+	Not a file	Není soubor
+	Unsafe path	Nebezpečná cesta
+	Reel {n}	Role {n}
+	Signed documents	Podepsané dokumenty
+	Encrypted assets	Šifrovaná aktiva
+	Key ID: {id}	ID klíče: {id}
+	Package structure unavailable: {error}	Struktura balíčku není k dispozici: {error}
+	DNx decoding:	Dekódování DNx:
+	As detected from the file ({detected})	Podle rozpoznání ze souboru ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standard)
+	FFmpeg-compatible	Kompatibilní s FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg čte některé soubory DNx jinak než standard (barvy 4:4:4, inverzní kvantování). Záznam zakódovaný pomocí FFmpeg se rozpozná; zvolte zde, pokud je rozpoznání chybné.
+	DNx Coding	Kódování DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Kompatibilní s FFmpeg (pro nástroje založené na FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Vypnuto: kódování podle SMPTE ST 2019-1. Zapnuto: kódování tak, jak DNx zapisuje FFmpeg, pro nástroje postavené na FFmpeg.

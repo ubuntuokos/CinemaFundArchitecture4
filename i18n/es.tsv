@@ -4606,6 +4606,12 @@
 	software backend: {reason}	motor por software: {reason}
 	Start studio	Iniciar estudio
 	Stop studio	Detener estudio
+	Live Studio	Estudio en vivo
+	Live Studio…	Estudio en vivo…
+	Scenes	Escenas
+	Sources	Fuentes
+	Visible	Visible
+	Add a scene, then a source to it.	Añade una escena y luego una fuente.
 	Add Studio Scene	Añadir escena de estudio
 	Live	En directo
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
@@ -4977,3 +4983,32 @@
 	Thresholds	Umbrales
 	Trail	Rastro
 	Use gestures in the window	Usar gestos en la ventana
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Carpeta DVD-Video (VIDEO_TS): MPEG-2 720×576 a 25 fps, 16:9 anamórfico, 6 Mbps, GOP 15, AC-3 a 192 kbps, capítulos a partir de los marcadores de capítulo de la secuencia
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Carpeta DVD-Video (VIDEO_TS): MPEG-2 720×480 a 29,97 fps, 16:9 anamórfico, 6 Mbps, GOP 18, AC-3 a 192 kbps, capítulos a partir de los marcadores de capítulo de la secuencia
+	DVD-Video folder (VIDEO_TS)	Carpeta DVD-Video (VIDEO_TS)
+
+# DCP package views (DCP-23)
+	Package	Paquete
+	Composition	Composición
+	Security	Seguridad
+	Save HTML…	Guardar HTML…
+	Asset map	Mapa de activos
+	Packing list	Lista de empaquetado
+	Track file	Archivo de pista
+	Not a file	No es un archivo
+	Unsafe path	Ruta insegura
+	Reel {n}	Rollo {n}
+	Signed documents	Documentos firmados
+	Encrypted assets	Activos cifrados
+	Key ID: {id}	ID de clave: {id}
+	Package structure unavailable: {error}	Estructura del paquete no disponible: {error}
+	DNx decoding:	Descodificación DNx:
+	As detected from the file ({detected})	Según lo detectado en el archivo ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (estándar)
+	FFmpeg-compatible	Compatible con FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg lee algunos archivos DNx de forma distinta al estándar (colores 4:4:4, cuantificación inversa). Se detecta el material codificado con FFmpeg; elija aquí si la detección es incorrecta.
+	DNx Coding	Codificación DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Compatible con FFmpeg (para herramientas basadas en FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Desactivado: codificado según SMPTE ST 2019-1. Activado: codificado como FFmpeg escribe DNx, para herramientas basadas en FFmpeg.

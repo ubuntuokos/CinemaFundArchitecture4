@@ -773,16 +773,36 @@ pub(crate) fn native_entries() -> Vec<Entry> {
         row(k(Demux, Mpeg2Video, Mxf), Native, Supported, "cfa4-mxf MPEG-2 essence; crates/codecs/tests/mxf_oracle.rs"),
         row(k(Demux, H264, Mp4), Native, Supported, "cfa4-isobmff; crates/codecs/tests/mp4_oracle.rs"),
         row(k(Demux, H264, Mov), Native, Supported, "cfa4-isobmff; crates/codecs/tests/mp4_oracle.rs"),
-        row(k(Demux, H264, Matroska), Native, Experimental, "cfa4-matroska; synthetic tests in crates/codecs/src/mkv.rs, no oracle test yet"),
+        row(
+            k(Demux, H264, Matroska),
+            Native,
+            Supported,
+            "cfa4-matroska avcC; crates/export/src/smart_cut_mkv_tests.rs (ffprobe packets, index as from MP4, closed / open GOP)",
+        ),
         row(k(Demux, H264, MpegTs), Native, Supported, "cfa4-mpegts NAL units; crates/codecs/tests/mpeg_oracle.rs"),
         row(k(Demux, H264, Mxf), Native, Supported, "cfa4-mxf AVC essence; crates/codecs/tests/mxf_oracle.rs"),
         row(k(Demux, Hevc, Mp4), Native, Supported, "cfa4-isobmff hvcC; crates/codecs/tests/mp4_oracle.rs (x265 conformance window)"),
         row(k(Demux, Hevc, Mov), Native, Experimental, "cfa4-isobmff hvcC (same demuxer as MP4); no QuickTime HEVC oracle test yet"),
-        row(k(Demux, Hevc, Matroska), Native, Experimental, "cfa4-matroska; no oracle test yet"),
+        row(
+            k(Demux, Hevc, Matroska),
+            Native,
+            Supported,
+            "cfa4-matroska hvcC; crates/export/src/smart_cut_mkv_tests.rs (ffprobe packets, index as from MP4, IDR / CRA)",
+        ),
         row(k(Demux, Hevc, MpegTs), Native, Supported, "cfa4-mpegts NAL units; crates/codecs/tests/mpeg_oracle.rs (ts_hevc_latm.ts)"),
         row(k(Demux, Av1, Mp4), Native, Supported, "cfa4-isobmff av1C; crates/isobmff/tests/oracle_mux.rs (av1.mp4 remux)"),
-        row(k(Demux, Av1, Matroska), Native, Experimental, "cfa4-matroska V_AV1; no oracle test yet"),
-        row(k(Demux, Av1, WebM), Native, Experimental, "cfa4-matroska V_AV1; no oracle test yet"),
+        row(
+            k(Demux, Av1, Matroska),
+            Native,
+            Supported,
+            "cfa4-matroska V_AV1 av1C; crates/export/src/smart_cut_mkv_tests.rs (ffprobe packets, index as from MP4)",
+        ),
+        row(
+            k(Demux, Av1, WebM),
+            Native,
+            Supported,
+            "cfa4-matroska V_AV1 av1C; crates/export/src/smart_cut_mkv_tests.rs (WebM, ffprobe packets, index as from MP4)",
+        ),
         row(k(Demux, Aac, Mp4), Native, Supported, "cfa4-isobmff esds; crates/codecs/tests/aac_channels_oracle.rs"),
         row(k(Demux, Aac, Mov), Native, Supported, "cfa4-isobmff esds"),
         row(k(Demux, Aac, Matroska), Native, Supported, "cfa4-matroska; crates/codecs/tests/matroska_audio_oracle.rs"),
@@ -814,13 +834,40 @@ pub(crate) fn native_entries() -> Vec<Entry> {
         row(k(Mux, H264, Mp4), Native, Supported, "cfa4-isobmff Mp4Writer; crates/isobmff/tests/oracle_mux.rs (ffprobe)"),
         row(k(Mux, H264, Mov), Native, Supported, "cfa4-isobmff Mp4Writer; crates/isobmff/tests/oracle_mux.rs (ffprobe)"),
         row(k(Mux, H264, Mxf), Native, Supported, "cfa4-mxf OP1a AVC; crates/export/src/mxf_tests.rs"),
-        row(k(Mux, H264, Matroska), Native, Experimental, "cfa4-matroska MkvWriter exists; not reachable from export"),
+        row(
+            k(Mux, H264, Matroska),
+            Native,
+            Supported,
+            "cfa4-matroska MkvWriter; cfa4-export smart_cut_mkv (Matroska source), smart_cut_cross (MP4 / MOV source); crates/export/src/smart_cut_mkv_copy_tests.rs, smart_cut_cross_tests.rs (re-demux check, ffmpeg framemd5)",
+        ),
         row(k(Mux, Hevc, Mp4), Native, Supported, "cfa4-isobmff Mp4Writer; crates/isobmff/tests/oracle_mux.rs (remux_hevc.mp4)"),
         row(k(Mux, Hevc, Mov), Native, Supported, "cfa4-isobmff Mp4Writer (QuickTime brand); crates/export/src/smart_cut_hevc_tests.rs (ffmpeg framemd5)"),
-        row(k(Mux, Hevc, Matroska), Native, Experimental, "cfa4-matroska MkvWriter exists; not reachable from export"),
+        row(
+            k(Mux, Hevc, Matroska),
+            Native,
+            Supported,
+            "cfa4-matroska MkvWriter; cfa4-export smart_cut_mkv (Matroska source), smart_cut_cross (MP4 / MOV source); crates/export/src/smart_cut_mkv_copy_tests.rs, smart_cut_cross_tests.rs (re-demux check, ffmpeg framemd5)",
+        ),
         row(k(Mux, Av1, Mp4), Native, Supported, "cfa4-isobmff Mp4Writer; crates/isobmff/tests/oracle_mux.rs (remux_av1.mp4)"),
         row(k(Mux, Av1, Mov), Native, Supported, "cfa4-isobmff Mp4Writer (QuickTime brand); crates/export/src/smart_cut_av1_tests.rs (ffmpeg framemd5)"),
-        row(k(Mux, Av1, Matroska), Native, Experimental, "cfa4-matroska MkvWriter exists; not reachable from export"),
+        row(
+            k(Mux, Av1, Matroska),
+            Native,
+            Supported,
+            "cfa4-matroska MkvWriter; cfa4-export smart_cut_mkv (Matroska source), smart_cut_cross (MP4 / MOV source); crates/export/src/smart_cut_mkv_copy_tests.rs, smart_cut_cross_tests.rs (re-demux check, ffmpeg framemd5)",
+        ),
+        row(
+            k(Mux, Av1, WebM),
+            Native,
+            Supported,
+            "cfa4-matroska MkvWriter (WebM DocType); cfa4-export smart_cut_mkv (Matroska source), smart_cut_cross (MP4 / MOV source); crates/export/src/smart_cut_mkv_copy_tests.rs, smart_cut_cross_tests.rs (re-demux check, ffmpeg framemd5)",
+        ),
+        row(
+            k(Mux, Mpeg2Video, Matroska),
+            Native,
+            Supported,
+            "cfa4-matroska MkvWriter (V_MPEG2); cfa4-export smart_cut_mkv (Matroska source); crates/export/src/smart_cut_mkv_copy_tests.rs (re-demux check, ffmpeg framemd5)",
+        ),
         row(k(Mux, Mpeg2Video, MpegPs), Native, Supported, "cfa4-mpegts muxer; crates/export/src/mpeg2_tests.rs (ffmpeg_oracle_reads_every_container)"),
         row(k(Mux, Mpeg2Video, MpegTs), Native, Supported, "cfa4-mpegts muxer; crates/export/src/mpeg2_tests.rs (ffmpeg_oracle_reads_every_container)"),
         row(k(Mux, Mpeg2Video, Mp4), Native, Unsupported, "cfa4-isobmff has no MPEG-2 video sample entry"),
@@ -861,6 +908,9 @@ pub(crate) fn native_entries() -> Vec<Entry> {
             } else if codec == Av1 && matches!(container, Mp4 | Mov) {
                 let evidence = "cfa4-export smart_cut (MP4 / MOV source, av1C); crates/export/src/smart_cut_av1_tests.rs (payload check, ffmpeg framemd5)";
                 v.push(row(k(PacketCopy, codec, container), Native, Supported, evidence));
+            } else if (matches!(codec, H264 | Hevc | Av1 | Mpeg2Video) && container == Matroska) || (codec == Av1 && container == WebM) {
+                let evidence = "cfa4-export smart_cut_mkv (Matroska / WebM source, CodecPrivate kept, with AAC, AC-3, E-AC-3, DTS, TrueHD, FLAC, PCM audio); crates/export/src/smart_cut_mkv_copy_tests.rs (re-demux check, ffmpeg framemd5)";
+                v.push(row(k(PacketCopy, codec, container), Native, Supported, evidence));
             } else if codec == Mpeg2Video && matches!(container, MpegPs | MpegTs) {
                 let evidence = "cfa4-export smart_cut_mpeg (program / transport stream source, with MPEG audio, AC-3, AAC, LPCM); crates/export/src/smart_cut_mpeg_tests.rs (payload check, ffmpeg framemd5)";
                 v.push(row(k(PacketCopy, codec, container), Native, Supported, evidence));
@@ -869,7 +919,7 @@ pub(crate) fn native_entries() -> Vec<Entry> {
                     k(PacketCopy, codec, container),
                     Native,
                     Unsupported,
-                    "packet-copy export is implemented only for H.264, HEVC and AV1 into MP4 / MOV and MPEG-2 video into program / transport streams",
+                    "packet-copy export is implemented only for H.264, HEVC and AV1 into MP4 / MOV, H.264, HEVC, AV1 and MPEG-2 video into Matroska (AV1 also WebM) and MPEG-2 video into program / transport streams",
                 ));
             }
             if codec == H264 && matches!(container, Mp4 | Mov) {

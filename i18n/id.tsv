@@ -4607,6 +4607,12 @@
 	software backend: {reason}	backend perangkat lunak: {reason}
 	Start studio	Mulai studio
 	Stop studio	Hentikan studio
+	Live Studio	Studio Langsung
+	Live Studio…	Studio Langsung…
+	Scenes	Adegan
+	Sources	Sumber
+	Visible	Terlihat
+	Add a scene, then a source to it.	Tambahkan adegan, lalu sumber ke dalamnya.
 	Add Studio Scene	Tambah Adegan Studio
 	Live	Langsung
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
@@ -4978,3 +4984,32 @@
 	Thresholds	Ambang
 	Trail	Jejak
 	Use gestures in the window	Gunakan gestur di jendela
+	DVD-Video folder (VIDEO_TS)	Folder DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Folder DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfik, 6 Mbps, GOP 15, AC-3 192 kbps, bab dari penanda Chapter pada sequence
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Folder DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfik, 6 Mbps, GOP 18, AC-3 192 kbps, bab dari penanda Chapter pada sequence
+
+# DCP package views (DCP-23)
+	Package	Paket
+	Composition	Komposisi
+	Security	Keamanan
+	Save HTML…	Simpan HTML…
+	Asset map	Peta aset
+	Packing list	Daftar kemasan
+	Track file	File trek
+	Not a file	Bukan file
+	Unsafe path	Jalur tidak aman
+	Reel {n}	Gulungan {n}
+	Signed documents	Dokumen bertanda tangan
+	Encrypted assets	Aset terenkripsi
+	Key ID: {id}	ID kunci: {id}
+	Package structure unavailable: {error}	Struktur paket tidak tersedia: {error}
+	DNx decoding:	Dekode DNx:
+	As detected from the file ({detected})	Sesuai deteksi dari berkas ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standar)
+	FFmpeg-compatible	Kompatibel dengan FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg membaca beberapa berkas DNx secara berbeda dari standar (warna 4:4:4, kuantisasi balik). Rekaman yang dienkode FFmpeg terdeteksi; pilih di sini jika deteksinya salah.
+	DNx Coding	Pengodean DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Kompatibel dengan FFmpeg (untuk alat berbasis FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Mati: dienkode menurut SMPTE ST 2019-1. Nyala: dienkode seperti FFmpeg menulis DNx, untuk alat yang dibangun di atas FFmpeg.

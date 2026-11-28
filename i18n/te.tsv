@@ -4605,6 +4605,12 @@ export.summary	Low	తక్కువ
 	software backend: {reason}	సాఫ్ట్‌వేర్ బ్యాకెండ్: {reason}
 	Start studio	స్టూడియోను ప్రారంభించు
 	Stop studio	స్టూడియోను ఆపు
+	Live Studio	లైవ్ స్టూడియో
+	Live Studio…	లైవ్ స్టూడియో…
+	Scenes	సన్నివేశాలు
+	Sources	మూలాలు
+	Visible	కనిపిస్తుంది
+	Add a scene, then a source to it.	ఒక సన్నివేశాన్ని, ఆపై దానికి ఒక మూలాన్ని జోడించండి.
 	Add Studio Scene	స్టూడియో దృశ్యాన్ని జోడించు
 	Live	ప్రత్యక్షం
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
@@ -4972,3 +4978,32 @@ export.summary	Low	తక్కువ
 	Thresholds	ప్రవేశాలు
 	Trail	జాడ
 	Use gestures in the window	విండోలో సంజ్ఞలు వాడు
+	DVD-Video folder (VIDEO_TS)	DVD-Video ఫోల్డర్ (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video ఫోల్డర్ (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 అనామార్ఫిక్, 6 Mbps, GOP 15, AC-3 192 kbps, సీక్వెన్స్‌లోని చాప్టర్ మార్కర్ల నుండి చాప్టర్లు
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video ఫోల్డర్ (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 అనామార్ఫిక్, 6 Mbps, GOP 18, AC-3 192 kbps, సీక్వెన్స్‌లోని చాప్టర్ మార్కర్ల నుండి చాప్టర్లు
+
+# DCP package views (DCP-23)
+	Package	ప్యాకేజీ
+	Composition	కంపోజిషన్
+	Security	భద్రత
+	Save HTML…	HTML సేవ్ చేయండి…
+	Asset map	ఆస్తుల మ్యాప్
+	Packing list	ప్యాకింగ్ జాబితా
+	Track file	ట్రాక్ ఫైల్
+	Not a file	ఫైల్ కాదు
+	Unsafe path	సురక్షితం కాని మార్గం
+	Reel {n}	రీల్ {n}
+	Signed documents	సంతకం చేసిన పత్రాలు
+	Encrypted assets	ఎన్‌క్రిప్ట్ చేసిన ఆస్తులు
+	Key ID: {id}	కీ ID: {id}
+	Package structure unavailable: {error}	ప్యాకేజీ నిర్మాణం అందుబాటులో లేదు: {error}
+	DNx decoding:	DNx డీకోడింగ్:
+	As detected from the file ({detected})	ఫైల్ నుండి గుర్తించినట్లు ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (ప్రమాణం)
+	FFmpeg-compatible	FFmpeg అనుకూలం
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg కొన్ని DNx ఫైళ్లను ప్రమాణానికి భిన్నంగా చదువుతుంది (4:4:4 రంగులు, విలోమ క్వాంటైజేషన్). FFmpeg ఎన్‌కోడ్ చేసిన ఫుటేజ్ గుర్తించబడుతుంది; గుర్తింపు తప్పైతే ఇక్కడ ఎంచుకోండి.
+	DNx Coding	DNx ఎన్‌కోడింగ్
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg అనుకూలం (FFmpeg ఆధారిత సాధనాల కోసం)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	ఆఫ్: SMPTE ST 2019-1 ప్రకారం ఎన్‌కోడ్ అవుతుంది. ఆన్: FFmpeg DNx ను రాసే విధంగా ఎన్‌కోడ్ అవుతుంది, FFmpeg ఆధారిత సాధనాల కోసం.
