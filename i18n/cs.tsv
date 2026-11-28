@@ -4983,3 +4983,21 @@ export.summary	Low	nízká
 	DNx Coding	Kódování DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Kompatibilní s FFmpeg (pro nástroje založené na FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Vypnuto: kódování podle SMPTE ST 2019-1. Zapnuto: kódování tak, jak DNx zapisuje FFmpeg, pro nástroje postavené na FFmpeg.
+	Bi Linear X	Bilineární X
+	Bi Linear Y	Bilineární Y
+	Burst	Výbuch
+	Checkerboard Small	Malá šachovnice
+	Clock	Hodiny
+	Cloud	Mrak
+	Curtain	Opona
+	Diagonal (built in)	Úhlopříčka (vestavěná)
+	Horizontal Blinds	Vodorovné žaluzie
+	Linear X	Lineární X
+	Linear Y	Lineární Y
+	Luma Mask	Maska jasu
+	Radial Bars	Radiální pruhy
+	Spiral	Spirála
+	Spiral2	Spirála 2
+	Square2	Čtverec 2
+	Square2 Bars	Čtverec 2 pruhy
+	Symmetric Clock	Souměrné hodiny

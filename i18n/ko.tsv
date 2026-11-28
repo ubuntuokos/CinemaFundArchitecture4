@@ -4977,3 +4977,21 @@
 	DNx Coding	DNx 인코딩
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg 호환(FFmpeg 기반 도구용)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	끔: SMPTE ST 2019-1에 따라 인코딩합니다. 켬: FFmpeg가 DNx를 쓰는 방식으로 인코딩합니다(FFmpeg 기반 도구용).
+	Bi Linear X	바이리니어 X
+	Bi Linear Y	바이리니어 Y
+	Burst	폭발
+	Checkerboard Small	작은 체크무늬
+	Clock	시계
+	Cloud	구름
+	Curtain	커튼
+	Diagonal (built in)	대각선(내장)
+	Horizontal Blinds	가로 블라인드
+	Linear X	선형 X
+	Linear Y	선형 Y
+	Luma Mask	루마 마스크
+	Radial Bars	방사형 막대
+	Spiral	나선
+	Spiral2	나선 2
+	Square2	사각형 2
+	Square2 Bars	사각형 2 막대
+	Symmetric Clock	대칭 시계

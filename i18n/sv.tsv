@@ -4985,3 +4985,21 @@ export.summary	Low	låg
 	DNx Coding	DNx-kodning
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibel (för FFmpeg-baserade verktyg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Av: kodas enligt SMPTE ST 2019-1. På: kodas så som FFmpeg skriver DNx, för verktyg byggda på FFmpeg.
+	Bi Linear X	Bilinjär X
+	Bi Linear Y	Bilinjär Y
+	Burst	Utbrott
+	Checkerboard Small	Litet schackbräde
+	Clock	Klocka
+	Cloud	Moln
+	Curtain	Ridå
+	Diagonal (built in)	Diagonal (inbyggd)
+	Horizontal Blinds	Horisontella persienner
+	Linear X	Linjär X
+	Linear Y	Linjär Y
+	Luma Mask	Lumamask
+	Radial Bars	Radiella ränder
+	Spiral	Spiral
+	Spiral2	Spiral 2
+	Square2	Kvadrat 2
+	Square2 Bars	Kvadrat 2 ränder
+	Symmetric Clock	Symmetrisk klocka

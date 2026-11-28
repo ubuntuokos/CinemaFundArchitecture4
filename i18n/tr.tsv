@@ -4984,3 +4984,21 @@ export.summary	Low	düşük
 	DNx Coding	DNx kodlama
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg uyumlu (FFmpeg tabanlı araçlar için)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Kapalı: SMPTE ST 2019-1'e göre kodlanır. Açık: FFmpeg'in DNx yazdığı biçimde kodlanır, FFmpeg tabanlı araçlar için.
+	Bi Linear X	Çift doğrusal X
+	Bi Linear Y	Çift doğrusal Y
+	Burst	Patlama
+	Checkerboard Small	Küçük dama tahtası
+	Clock	Saat
+	Cloud	Bulut
+	Curtain	Perde
+	Diagonal (built in)	Çapraz (yerleşik)
+	Horizontal Blinds	Yatay jaluzi
+	Linear X	Doğrusal X
+	Linear Y	Doğrusal Y
+	Luma Mask	Parlaklık maskesi
+	Radial Bars	Radyal çubuklar
+	Spiral	Spiral
+	Spiral2	Spiral 2
+	Square2	Kare 2
+	Square2 Bars	Kare 2 çubuklar
+	Symmetric Clock	Simetrik saat

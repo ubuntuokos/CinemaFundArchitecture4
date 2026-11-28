@@ -5015,3 +5015,21 @@ export.summary	Low	alacsony
 	DNx Coding	DNx-kódolás
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-kompatibilis (FFmpeg-alapú eszközökhöz)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Ki: SMPTE ST 2019-1 szerinti kódolás. Be: úgy kódol, ahogy az FFmpeg írja a DNx-et, FFmpeg-re épülő eszközökhöz.
+	Bi Linear X	Bilineáris X
+	Bi Linear Y	Bilineáris Y
+	Burst	Robbanás
+	Checkerboard Small	Kis sakktábla
+	Clock	Óra
+	Cloud	Felhő
+	Curtain	Függöny
+	Diagonal (built in)	Átlós (beépített)
+	Horizontal Blinds	Vízszintes redőny
+	Linear X	Lineáris X
+	Linear Y	Lineáris Y
+	Luma Mask	Luma maszk
+	Radial Bars	Sugaras sávok
+	Spiral	Spirál
+	Spiral2	Spirál 2
+	Square2	Négyzet 2
+	Square2 Bars	Négyzet 2 sávok
+	Symmetric Clock	Szimmetrikus óra

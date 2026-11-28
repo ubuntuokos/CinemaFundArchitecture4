@@ -4985,3 +4985,21 @@ export.summary	Low	χαμηλή
 	DNx Coding	Κωδικοποίηση DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Συμβατό με FFmpeg (για εργαλεία βασισμένα στο FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Ανενεργό: κωδικοποίηση κατά SMPTE ST 2019-1. Ενεργό: κωδικοποίηση όπως γράφει το FFmpeg το DNx, για εργαλεία βασισμένα στο FFmpeg.
+	Bi Linear X	Διγραμμικό X
+	Bi Linear Y	Διγραμμικό Y
+	Burst	Έκρηξη
+	Checkerboard Small	Μικρή σκακιέρα
+	Clock	Ρολόι
+	Cloud	Σύννεφο
+	Curtain	Κουρτίνα
+	Diagonal (built in)	Διαγώνιο (ενσωματωμένο)
+	Horizontal Blinds	Οριζόντια στόρια
+	Linear X	Γραμμικό X
+	Linear Y	Γραμμικό Y
+	Luma Mask	Μάσκα φωτεινότητας
+	Radial Bars	Ακτινωτές ράβδοι
+	Spiral	Σπείρα
+	Spiral2	Σπείρα 2
+	Square2	Τετράγωνο 2
+	Square2 Bars	Τετράγωνο 2 ράβδοι
+	Symmetric Clock	Συμμετρικό ρολόι

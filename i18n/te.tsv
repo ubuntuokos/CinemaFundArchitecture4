@@ -4985,3 +4985,21 @@ export.summary	Low	తక్కువ
 	DNx Coding	DNx ఎన్‌కోడింగ్
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg అనుకూలం (FFmpeg ఆధారిత సాధనాల కోసం)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	ఆఫ్: SMPTE ST 2019-1 ప్రకారం ఎన్‌కోడ్ అవుతుంది. ఆన్: FFmpeg DNx ను రాసే విధంగా ఎన్‌కోడ్ అవుతుంది, FFmpeg ఆధారిత సాధనాల కోసం.
+	Bi Linear X	ద్విరేఖీయ X
+	Bi Linear Y	ద్విరేఖీయ Y
+	Burst	విస్ఫోటనం
+	Checkerboard Small	చిన్న చదరంగం బోర్డు
+	Clock	గడియారం
+	Cloud	మేఘం
+	Curtain	తెర
+	Diagonal (built in)	వికర్ణం (అంతర్నిర్మిత)
+	Horizontal Blinds	క్షితిజ సమాంతర బ్లైండ్లు
+	Linear X	రేఖీయ X
+	Linear Y	రేఖీయ Y
+	Luma Mask	లూమా మాస్క్
+	Radial Bars	వృత్తాకార పట్టీలు
+	Spiral	సర్పిలం
+	Spiral2	సర్పిలం 2
+	Square2	చతురస్రం 2
+	Square2 Bars	చతురస్రం 2 పట్టీలు
+	Symmetric Clock	సౌష్టవ గడియారం

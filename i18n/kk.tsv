@@ -4985,3 +4985,21 @@ export.summary	Low	төмен
 	DNx Coding	DNx кодтау
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-пен үйлесімді (FFmpeg негізіндегі құралдар үшін)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Өшірулі: SMPTE ST 2019-1 бойынша кодталады. Қосулы: FFmpeg DNx-ті қалай жазса, солай кодталады, FFmpeg негізіндегі құралдар үшін.
+	Bi Linear X	Билинеарлы X
+	Bi Linear Y	Билинеарлы Y
+	Burst	Жарылыс
+	Checkerboard Small	Кіші шахмат тақтасы
+	Clock	Сағат
+	Cloud	Бұлт
+	Curtain	Перде
+	Diagonal (built in)	Диагональ (кіріктірілген)
+	Horizontal Blinds	Көлденең жалюзи
+	Linear X	Сызықты X
+	Linear Y	Сызықты Y
+	Luma Mask	Люма маскасы
+	Radial Bars	Радиалды жолақтар
+	Spiral	Спираль
+	Spiral2	Спираль 2
+	Square2	Шаршы 2
+	Square2 Bars	Шаршы 2 жолақтар
+	Symmetric Clock	Симметриялы сағат

@@ -4966,3 +4966,21 @@
 	DNx Coding	Кодирование DNx
 	FFmpeg-compatible (for FFmpeg-based tools)	Совместимо с FFmpeg (для инструментов на основе FFmpeg)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Выкл.: кодирование по SMPTE ST 2019-1. Вкл.: кодирование так, как FFmpeg записывает DNx, для инструментов на основе FFmpeg.
+	Bi Linear X	Билинейный X
+	Bi Linear Y	Билинейный Y
+	Burst	Взрыв
+	Checkerboard Small	Мелкая шахматная доска
+	Clock	Часы
+	Cloud	Облако
+	Curtain	Занавес
+	Diagonal (built in)	Диагональ (встроенная)
+	Horizontal Blinds	Горизонтальные жалюзи
+	Linear X	Линейный X
+	Linear Y	Линейный Y
+	Luma Mask	Маска яркости
+	Radial Bars	Радиальные полосы
+	Spiral	Спираль
+	Spiral2	Спираль 2
+	Square2	Квадрат 2
+	Square2 Bars	Квадрат 2 полосы
+	Symmetric Clock	Симметричные часы

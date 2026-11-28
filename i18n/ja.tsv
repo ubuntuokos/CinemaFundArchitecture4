@@ -4992,3 +4992,21 @@
 	DNx Coding	DNx のエンコード
 	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg 互換 (FFmpeg ベースのツール向け)
 	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	オフ: SMPTE ST 2019-1 に従ってエンコードします。オン: FFmpeg が DNx を書き出す方法でエンコードします (FFmpeg ベースのツール向け)。
+	Bi Linear X	バイリニア X
+	Bi Linear Y	バイリニア Y
+	Burst	バースト
+	Checkerboard Small	小さい市松模様
+	Clock	時計
+	Cloud	雲
+	Curtain	カーテン
+	Diagonal (built in)	斜め（内蔵）
+	Horizontal Blinds	横ブラインド
+	Linear X	リニア X
+	Linear Y	リニア Y
+	Luma Mask	輝度マスク
+	Radial Bars	放射状バー
+	Spiral	スパイラル
+	Spiral2	スパイラル 2
+	Square2	スクエア 2
+	Square2 Bars	スクエア 2 バー
+	Symmetric Clock	対称時計
