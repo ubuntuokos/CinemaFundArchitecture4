@@ -203,12 +203,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Build tools
+      - name: Build tools and the libraries the prebuilt FFmpeg loads (its share/doc/ffmpeg/HOST)
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential pkg-config clang curl xz-utils
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config clang curl xz-utils \
+            zlib1g-dev libva-dev libdrm-dev libvpl-dev libvulkan-dev \
+            libdav1d-dev libvpx-dev libopus-dev libwebp-dev libmp3lame-dev
       - name: Install CFA4 FFmpeg (prebuilt, SHA-256 pinned)
-        id: ff
         run: |
           bash scripts/dev/fetch-ffmpeg.sh
           . packaging/ffmpeg-version.env
