@@ -71,6 +71,8 @@ overrides:
       - libva2
       - libva-drm2
       - mesa-vulkan-drivers
+      # Rendszerszintű beállítások (root): the system helper runs only through pkexec (ADR 0017).
+      - pkexec | policykit-1
       # Local HEIF/HEIC import/export via system libheif tools (not bundled).
       # GPL/LGPL redistribution remains a separate release audit gate.
       - libheif-examples
@@ -108,6 +110,13 @@ contents:
     type: tree
   - src: ${STAGE}/usr/lib/udev/rules.d/70-cfa4-surfaces.rules
     dst: /usr/lib/udev/rules.d/70-cfa4-surfaces.rules
+    file_info: { mode: 0644 }
+  # The system helper, the only program CFA4 starts as root, through pkexec (ADR 0017).
+  - src: ${DEB_ONLY}/usr/libexec/cfa4/cfa4-system-helper
+    dst: /usr/libexec/cfa4/cfa4-system-helper
+    file_info: { mode: 0755 }
+  - src: ${DEB_ONLY}/usr/share/polkit-1/actions/io.github.ubuntuokos.cfa4.system-helper.policy
+    dst: /usr/share/polkit-1/actions/io.github.ubuntuokos.cfa4.system-helper.policy
     file_info: { mode: 0644 }
 
 scripts:

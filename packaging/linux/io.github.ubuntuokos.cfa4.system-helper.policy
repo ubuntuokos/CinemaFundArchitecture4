@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<!-- CFA4 system helper (ADR 0017): the only program CFA4 starts as root. pkexec allows exactly this
+     path, and asks for an administrator password every time (auth_admin, CFA4-SETTINGS-HW-003 D4). -->
+<policyconfig>
+  <vendor>CFA4</vendor>
+  <vendor_url>https://github.com/ubuntuokos/CinemaFundArchitecture4</vendor_url>
+  <action id="io.github.ubuntuokos.cfa4.system-helper">
+    <description>Change system settings for CFA4 (GPU access, VA-API drivers)</description>
+    <description xml:lang="hu">Rendszerbeállítások módosítása a CFA4-hez (GPU-hozzáférés, VA-API-meghajtók)</description>
+    <message>CFA4 needs an administrator password to apply the change you approved.</message>
+    <message xml:lang="hu">A CFA4-nek rendszergazdai jelszó kell a jóváhagyott változtatáshoz.</message>
+    <icon_name>io.github.ubuntuokos.cfa4</icon_name>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/libexec/cfa4/cfa4-system-helper</annotate>
+  </action>
+</policyconfig>
