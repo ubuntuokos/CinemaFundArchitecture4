@@ -4602,6 +4602,12 @@ export.summary	Low	დაბალი
 	software backend: {reason}	პროგრამული ბექენდი: {reason}
 	Start studio	სტუდიის გაშვება
 	Stop studio	სტუდიის გაჩერება
+	Live Studio	ლაივ სტუდია
+	Live Studio…	ლაივ სტუდია…
+	Scenes	სცენები
+	Sources	წყაროები
+	Visible	ხილული
+	Add a scene, then a source to it.	დაამატეთ სცენა, შემდეგ მას წყარო.
 	Add Studio Scene	სტუდიის სცენის დამატება
 	Live	პირდაპირი
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
@@ -4978,6 +4984,22 @@ export.summary	Low	დაბალი
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video საქაღალდე (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 ანამორფული, 6 Mbps, GOP 15, AC-3 192 kbps, თავები მიმდევრობის თავის მარკერებიდან
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video საქაღალდე (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 ანამორფული, 6 Mbps, GOP 18, AC-3 192 kbps, თავები მიმდევრობის თავის მარკერებიდან
+
+# DCP package views (DCP-23)
+	Package	პაკეტი
+	Composition	კომპოზიცია
+	Security	უსაფრთხოება
+	Save HTML…	HTML-ის შენახვა…
+	Asset map	რესურსების რუკა
+	Packing list	შეფუთვის სია
+	Track file	ტრეკის ფაილი
+	Not a file	არ არის ფაილი
+	Unsafe path	სახიფათო გზა
+	Reel {n}	რგოლი {n}
+	Signed documents	ხელმოწერილი დოკუმენტები
+	Encrypted assets	დაშიფრული რესურსები
+	Key ID: {id}	გასაღების ID: {id}
+	Package structure unavailable: {error}	პაკეტის სტრუქტურა მიუწვდომელია: {error}
 	DNx decoding:	DNx-ის დეკოდირება:
 	As detected from the file ({detected})	ფაილიდან ამოცნობის მიხედვით ({detected})
 	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (სტანდარტი)

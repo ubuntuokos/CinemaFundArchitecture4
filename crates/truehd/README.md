@@ -47,7 +47,10 @@ allows.
   presentation and renders its beds and dynamic objects with the Object Audio Metadata (OAMD) to
   2.0, 5.1, 7.1 or 7.1.4 (`render.rs`, new for CFA4; the module notes list its rendering choices).
   Programs with intermediate spatial format objects fall back to the bed presentation. An object's
-  first state applies at once (no ramp in from silence); until then it is silent (#257). Checked
+  first state applies at once (no ramp in from silence). The audio before the first OAMD payload
+  (the start of a stream, or after a seek) is held back until it arrives and then rendered with
+  the objects' first states (at most 2 s; `Decoder::finish` flushes what a short stream still
+  holds), so there is no silent stretch (#257). Checked
   on synthetic OAMD and one real Atmos stream of 0.1 s (bed bit-exact to ffmpeg, one OAMD
   payload with a single update block, static objects); multi-block timing and moving objects
   still need a longer real stream (#124). Not rendered: binaural

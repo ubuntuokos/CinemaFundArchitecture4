@@ -181,3 +181,26 @@ fn volume_effect_becomes_the_audio_clips_volume_level() {
     assert!(warnings.contains("+15 dB"), "{warnings}");
     assert_eq!(warnings.matches("is not imported yet").count(), 1, "{warnings}");
 }
+
+/// KDN-46: a network resource is never opened or joined to the project folder; it is kept verbatim
+/// (the clip stays offline) and reported once, even when two clips use it.
+#[test]
+fn network_resource_is_reported_once_and_kept_verbatim() {
+    let doc = r#"<?xml version="1.0" encoding="utf-8"?>
+<mlt LC_NUMERIC="C" version="7.0.0" producer="main_bin">
+ <profile description="HD 1080p 25 fps" width="1920" height="1080" progressive="1" sample_aspect_num="1" sample_aspect_den="1" display_aspect_num="16" display_aspect_den="9" frame_rate_num="25" frame_rate_den="1" colorspace="709"/>
+ <producer id="remote" in="0" out="49"><property name="resource">https://example.com/clips/a.mp4</property><property name="mlt_service">avformat</property></producer>
+ <producer id="local" in="0" out="49"><property name="resource">b.mp4</property><property name="mlt_service">avformat</property></producer>
+ <playlist id="v1"><entry producer="remote" in="0" out="49"/><entry producer="remote" in="0" out="24"/><entry producer="local" in="0" out="49"/></playlist>
+ <tractor id="seq"><track producer="v1"/></tractor>
+</mlt>"#;
+    let (imp, rep) = import(doc.as_bytes(), Format::Mlt, Some(BASE)).unwrap_or_else(|e| panic!("{e}"));
+    let s = seq(&imp);
+    let keys: Vec<String> = non_empty(&s.video_tracks).iter().flat_map(|t| t.items.iter().map(|i| media_key(&imp.project, i.item))).collect();
+    assert_eq!(keys.len(), 3, "{rep}");
+    assert!(keys.iter().any(|k| k.contains("https://example.com/clips/a.mp4")), "{keys:?}");
+    assert!(!keys.iter().any(|k| k.contains("/proj/https")), "the URL was joined to the project folder: {keys:?}");
+    assert!(keys.iter().any(|k| k.ends_with("/proj/b.mp4")), "{keys:?}");
+    assert!(rep.mentions("network resource"), "{rep}");
+    assert_eq!(format!("{rep}").matches("network resource").count(), 1, "reported once: {rep}");
+}

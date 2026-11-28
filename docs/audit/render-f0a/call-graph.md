@@ -230,6 +230,7 @@ graph LR
 | `cfa4-engine/dcp_export.rs` | `cfa4-time` | `Tick` |
 | `cfa4-engine/dcp_import.rs` | `cfa4-project` | `BinId` |
 | `cfa4-engine/dcp_import.rs` | `cfa4-time` | `Tick` |
+| `cfa4-engine/dcp_repair.rs` | `cfa4-export` | `Progress`, `Report` |
 | `cfa4-engine/dcp_validation.rs` | `cfa4-export` | `Report` |
 | `cfa4-engine/dcpomatic.rs` | `cfa4-export` | `Report` |
 | `cfa4-engine/delivery_check.rs` | `cfa4-geom` | `Rect` |
@@ -452,6 +453,7 @@ graph LR
 | `cfa4-export/aac_out.rs` | `cfa4-time` | `TimeRange` |
 | `cfa4-export/as02_share.rs` | `cfa4-project` | `ItemId` |
 | `cfa4-export/as02_share.rs` | `cfa4-time` | `FrameRate` |
+| `cfa4-export/audio_copy.rs` | `cfa4-smart-edit` | `audio_index` |
 | `cfa4-export/audio_out.rs` | `cfa4-audio-dsp` | `AudioEffect`, `LoudnessMeter`, `channels`, `effects`, `normalize_gain_db` |
 | `cfa4-export/audio_out.rs` | `cfa4-project` | `ItemId` |
 | `cfa4-export/audio_out.rs` | `cfa4-render` | `SourceProvider`, `audio` |
@@ -473,6 +475,7 @@ graph LR
 | `cfa4-export/lib.rs` | `cfa4-project` | `ItemId`, `Marker`, `MarkerKind`, `validate_frame_size` |
 | `cfa4-export/lib.rs` | `cfa4-render` | `Image`, `RenderOptions`, `SourceProvider` |
 | `cfa4-export/lib.rs` | `cfa4-time` | `FrameRate`, `TICKS_PER_SECOND` |
+| `cfa4-export/mkv_source.rs` | `cfa4-smart-edit` | `av1_index`, `capabilities`, `h264_index`, `hevc_index`, `media_index`, `mpeg2_index`, `timestamp` |
 | `cfa4-export/mpeg_out.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-export/mxf_out.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-export/opus_out.rs` | `cfa4-project` | `ItemId` |
@@ -492,6 +495,8 @@ graph LR
 | `cfa4-export/raster.rs` | `cfa4-time` | `FrameRate`, `Tick`, `frames_to_fields` |
 | `cfa4-export/settings.rs` | `cfa4-time` | `FrameRate` |
 | `cfa4-export/smart_cut.rs` | `cfa4-smart-edit` | `av1_index`, `capabilities`, `media_index`, `plan`, `timestamp` |
+| `cfa4-export/smart_cut_cross.rs` | `cfa4-smart-edit` | `av1_index`, `capabilities`, `media_index`, `plan` |
+| `cfa4-export/smart_cut_mkv.rs` | `cfa4-smart-edit` | `audio_index`, `av1_index`, `capabilities`, `media_index`, `plan`, `timestamp` |
 | `cfa4-export/smart_cut_mpeg.rs` | `cfa4-smart-edit` | `capabilities`, `media_index`, `mpeg2_index`, `plan`, `timestamp` |
 | `cfa4-export/still.rs` | `cfa4-color` | `linear_to_srgb` |
 | `cfa4-export/still.rs` | `cfa4-media` | `still` |
@@ -842,7 +847,7 @@ graph LR
 
 ## 4. Nyilvános típusok osztályonként
 
-A többi 659 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
+A többi 663 nyilvános típus („other” osztály) csak a `call-graph.json`-ban szerepel.
 
 ### Képkocka, kép, pixel (32)
 
@@ -927,7 +932,7 @@ A többi 659 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-smart-edit` | `media_index.rs` | enum | `DependencyStatus` |
 | `cfa4-testkit` | `fixtures.rs` | enum | `Status` |
 
-### Hang (48)
+### Hang (55)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -958,6 +963,8 @@ A többi 659 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-export` | `settings.rs` | struct | `AudioSettings` |
 | `cfa4-export` | `settings.rs` | struct | `LoudnessNormalization` |
 | `cfa4-export` | `settings.rs` | enum | `SampleFormat` |
+| `cfa4-export` | `smart_cut_mkv.rs` | struct | `MkvAudio` |
+| `cfa4-export` | `smart_cut_mkv.rs` | struct | `MkvAudioCopy` |
 | `cfa4-export` | `smart_cut_mpeg.rs` | struct | `MpegAudioDrop` |
 | `cfa4-export` | `smart_cut_mpeg.rs` | struct | `MpegAudioReport` |
 | `cfa4-export` | `smart_cut_mpeg.rs` | struct | `MpegAudioTrack` |
@@ -978,6 +985,11 @@ A többi 659 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-project` | `object.rs` | struct | `ObjectSample` |
 | `cfa4-qc` | `audio.rs` | struct | `AudioFacts` |
 | `cfa4-render` | `preview.rs` | struct | `AudioSegment` |
+| `cfa4-smart-edit` | `audio_index.rs` | enum | `AudioCodec` |
+| `cfa4-smart-edit` | `audio_index.rs` | struct | `AudioConfig` |
+| `cfa4-smart-edit` | `audio_index.rs` | struct | `AudioIndex` |
+| `cfa4-smart-edit` | `audio_index.rs` | enum | `AudioIndexError` |
+| `cfa4-smart-edit` | `audio_index.rs` | struct | `AudioUnit` |
 | `cfa4-testkit` | `smk.rs` | enum | `AudioKind` |
 
 ### Szín (18)
@@ -1003,7 +1015,7 @@ A többi 659 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-gpu` | `lut.rs` | struct | `GpuLut` |
 | `cfa4-project` | `lib.rs` | struct | `ProjectLut` |
 
-### Render, kompozíció, előnézet, proxy (64)
+### Render, kompozíció, előnézet, proxy (66)
 
 | Crate | Modul | Fajta | Típus |
 |---|---|---|---|
@@ -1022,9 +1034,11 @@ A többi 659 nyilvános típus („other” osztály) csak a `call-graph.json`-b
 | `cfa4-export` | `as02_share.rs` | struct | `VersionPlan` |
 | `cfa4-export` | `dcp_iab.rs` | struct | `IabSourceInfo` |
 | `cfa4-export` | `lib.rs` | struct | `GpuRenderStats` |
+| `cfa4-export` | `mkv_source.rs` | enum | `MkvSourceError` |
 | `cfa4-export` | `settings.rs` | struct | `ExportEffects` |
 | `cfa4-export` | `settings.rs` | enum | `GpuRendering` |
 | `cfa4-export` | `smart_cut.rs` | struct | `Mp4CopySource` |
+| `cfa4-export` | `smart_cut_mkv.rs` | struct | `MkvCopySource` |
 | `cfa4-export` | `smart_cut_mpeg.rs` | struct | `MpegCopySource` |
 | `cfa4-export` | `timeline_render.rs` | struct | `RenderedPicture` |
 | `cfa4-export` | `timeline_render.rs` | struct | `TimelineSource` |

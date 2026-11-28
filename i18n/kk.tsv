@@ -4601,6 +4601,12 @@ export.summary	Low	төмен
 	software backend: {reason}	бағдарламалық бэкенд: {reason}
 	Start studio	Студияны іске қосу
 	Stop studio	Студияны тоқтату
+	Live Studio	Тікелей студия
+	Live Studio…	Тікелей студия…
+	Scenes	Көріністер
+	Sources	Көздер
+	Visible	Көрінетін
+	Add a scene, then a source to it.	Көрініс қосып, оған көз қосыңыз.
 	Add Studio Scene	Студия сахнасын қосу
 	Live	Тікелей
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
@@ -4977,6 +4983,22 @@ export.summary	Low	төмен
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video қалтасы (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 анаморфты, 6 Mbps, GOP 15, AC-3 192 kbps, тараулар реттіліктің Тарау белгілерінен
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video қалтасы (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 анаморфты, 6 Mbps, GOP 18, AC-3 192 kbps, тараулар реттіліктің Тарау белгілерінен
+
+# DCP package views (DCP-23)
+	Package	Пакет
+	Composition	Композиция
+	Security	Қауіпсіздік
+	Save HTML…	HTML сақтау…
+	Asset map	Ресурстар картасы
+	Packing list	Қаптама тізімі
+	Track file	Трек файлы
+	Not a file	Файл емес
+	Unsafe path	Қауіпті жол
+	Reel {n}	{n}-орам
+	Signed documents	Қол қойылған құжаттар
+	Encrypted assets	Шифрланған ресурстар
+	Key ID: {id}	Кілт идентификаторы: {id}
+	Package structure unavailable: {error}	Пакет құрылымы қолжетімсіз: {error}
 	DNx decoding:	DNx декодтау:
 	As detected from the file ({detected})	Файлдан анықталғандай ({detected})
 	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (стандарт)

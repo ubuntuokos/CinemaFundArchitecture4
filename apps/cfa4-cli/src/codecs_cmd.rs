@@ -231,6 +231,7 @@ const NOT_CODECS: &[&str] = &[
     "matroska",
     "media",
     "metrics",
+    "mi",
     "mpegts",
     "mxf",
     "objtrack",

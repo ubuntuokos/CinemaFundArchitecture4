@@ -321,6 +321,90 @@ jobs:
           CFA4_REQUIRE_ORACLES: "1"
         run: cargo test --workspace --exclude cfa4-ui --release --locked --timings
 
+  # P15 (docs/plans/CFA4-DATA-PG-001-1.0.md §10, PG-1/PG-2): the store's tests need a real
+  # PostgreSQL 18, the reference machine's major version (P11). Until this job existed every
+  # `cfa4-store` test skipped for want of a server, so the migrations (both ways), the queue's
+  # start and lease rules, the outbox relay, LISTEN/NOTIFY and the engine's write-behind mirror
+  # were never run in CI. `CFA4_PG_REQUIRE=1` turns a skip into a failure, and `CFA4_PG_BIN` pins
+  # the throw-away test clusters to 18 even when the image also ships another major version.
+  # The lib tests below block merging. `tests/setup_idempotent.rs` (the `cfa4-db-setup` twice gate)
+  # elevates only its own subprocesses through `sudo -n` (`pg_createcluster`, the `/etc/postgresql`
+  # reads, `runuser`), so the test binary stays the runner user and logs in as `cfa4_login` through
+  # the `cfa4map` peer map it just wrote; it creates the `cfa4` cluster and drops it again, and
+  # asserts the default cluster is unchanged. Owner decision 2026-11-26: it was reported but NOT
+  # blocking until it ran green once in CI; that happened on 2026-11-27 (#1865), so
+  # `rust-store-db-setup` now sits in `full-validation-gate`'s `needs`.
+  rust-store-postgres:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
+    needs: platform-scope
+    name: PostgreSQL 18 store tests (PG-1/PG-2)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    env:
+      CFA4_PG_REQUIRE: "1"
+      CFA4_PG_BIN: /usr/lib/postgresql/18/bin
+      # runs `tests/setup_idempotent.rs` (PG-1 gate 3): `cfa4-db-setup` twice, same state
+      CFA4_DB_SETUP: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: PostgreSQL 18 (the Ubuntu 26.04 package, the reference major version)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-18
+          /usr/lib/postgresql/18/bin/postgres --version
+          # P11: the CI major version must be the reference machine's, so never fall back to
+          # another installed cluster: the store's harness would skip it, and a skip is a failure.
+          if ! /usr/lib/postgresql/18/bin/initdb --version | grep -Eq '[[:space:]]18\.'; then
+            echo "::error::CFA4 CI needs PostgreSQL 18: /usr/lib/postgresql/18 is missing or is not 18."
+            exit 1
+          fi
+      - name: Rust toolchain from rust-toolchain.toml
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+      - name: cfa4-store tests on throw-away PostgreSQL 18 clusters
+        run: cargo test --locked -p cfa4-store --lib
+
+  # The `cfa4-db-setup` idempotence gate (PG-1 gate 3). Owner decision 2026-11-26: non-blocking
+  # until its first green CI run; that run happened on 2026-11-27 (#1865), so the job is now part
+  # of `full-validation-gate`'s `needs`.
+  rust-store-db-setup:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
+    needs: [platform-scope, rust-store-postgres]
+    name: cfa4-db-setup idempotence (PG-1 gate 3)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    env:
+      CFA4_PG_REQUIRE: "1"
+      CFA4_PG_BIN: /usr/lib/postgresql/18/bin
+      CFA4_DB_SETUP: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: PostgreSQL 18 and its cluster tools (postgresql-common)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-18
+          /usr/lib/postgresql/18/bin/postgres --version
+          if ! /usr/lib/postgresql/18/bin/initdb --version | grep -Eq '[[:space:]]18\.'; then
+            echo "::error::CFA4 CI needs PostgreSQL 18: /usr/lib/postgresql/18 is missing or is not 18."
+            exit 1
+          fi
+          command -v pg_lsclusters pg_createcluster pg_ctlcluster runuser psql
+      - name: Rust toolchain from rust-toolchain.toml
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+      - name: cfa4-db-setup twice leaves the same cluster, roles and files
+        run: cargo test --locked -p cfa4-store --test setup_idempotent
+
   python-qt6-linux:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
     needs: platform-scope
@@ -563,6 +647,8 @@ jobs:
       - vendored-ui
       - rust-architecture-assets
       - rust-release-tests
+      - rust-store-postgres
+      - rust-store-db-setup
       - python-qt6-linux
       - otio-oracle
       - parity

@@ -4607,6 +4607,12 @@
 	software backend: {reason}	backend perangkat lunak: {reason}
 	Start studio	Mulai studio
 	Stop studio	Hentikan studio
+	Live Studio	Studio Langsung
+	Live Studio…	Studio Langsung…
+	Scenes	Adegan
+	Sources	Sumber
+	Visible	Terlihat
+	Add a scene, then a source to it.	Tambahkan adegan, lalu sumber ke dalamnya.
 	Add Studio Scene	Tambah Adegan Studio
 	Live	Langsung
 # Credits: title, opening, chapter and lower-third pages filled from a graphics template (F10-C16)
@@ -4983,6 +4989,22 @@
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Folder DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfik, 6 Mbps, GOP 15, AC-3 192 kbps, bab dari penanda Chapter pada sequence
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Folder DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfik, 6 Mbps, GOP 18, AC-3 192 kbps, bab dari penanda Chapter pada sequence
+
+# DCP package views (DCP-23)
+	Package	Paket
+	Composition	Komposisi
+	Security	Keamanan
+	Save HTML…	Simpan HTML…
+	Asset map	Peta aset
+	Packing list	Daftar kemasan
+	Track file	File trek
+	Not a file	Bukan file
+	Unsafe path	Jalur tidak aman
+	Reel {n}	Gulungan {n}
+	Signed documents	Dokumen bertanda tangan
+	Encrypted assets	Aset terenkripsi
+	Key ID: {id}	ID kunci: {id}
+	Package structure unavailable: {error}	Struktur paket tidak tersedia: {error}
 	DNx decoding:	Dekode DNx:
 	As detected from the file ({detected})	Sesuai deteksi dari berkas ({detected})
 	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standar)

@@ -139,11 +139,11 @@ pub struct Mp4CopySource<'a, S: ByteSource + ?Sized> {
 }
 
 /// The source sample range a lossless plan copies, checked against the index and the track.
-struct CopyRange<'a> {
-    track: &'a cfa4_isobmff::Track,
-    first: usize,
-    last: usize,
-    entry: &'a SampleEntry,
+pub(crate) struct CopyRange<'a> {
+    pub track: &'a cfa4_isobmff::Track,
+    pub first: usize,
+    pub last: usize,
+    pub entry: &'a SampleEntry,
 }
 
 pub(crate) fn io(e: impl fmt::Display) -> SmartCutError {
@@ -163,6 +163,17 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
     index: &StreamIndex,
     source: &Mp4CopySource<'a, S>,
 ) -> Result<CopyRange<'a>, SmartCutError> {
+    mp4_copy_range(plan, index, source, brand(plan.output_container).is_some())
+}
+
+/// [`copy_range`] for any output: `output_ok` says whether the executor writes the plan's output
+/// container (MP4 / MOV here, Matroska / WebM for the cross-container copy).
+pub(crate) fn mp4_copy_range<'a, S: ByteSource + ?Sized>(
+    plan: &ExportExecutionPlan,
+    index: &StreamIndex,
+    source: &Mp4CopySource<'a, S>,
+    output_ok: bool,
+) -> Result<CopyRange<'a>, SmartCutError> {
     if plan.plan_version != PLAN_VERSION {
         return Err(SmartCutError::PlanVersion { found: plan.plan_version });
     }
@@ -174,11 +185,7 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
         return Err(SmartCutError::TimelinePlan);
     }
     let unsupported = SmartCutError::Unsupported { codec: plan.codec, source: plan.source_container, output: plan.output_container };
-    if !matches!(plan.codec, Codec::H264 | Codec::Hevc | Codec::Av1)
-        || brand(plan.source_container).is_none()
-        || brand(plan.output_container).is_none()
-        || index.codec != plan.codec
-    {
+    if !matches!(plan.codec, Codec::H264 | Codec::Hevc | Codec::Av1) || brand(plan.source_container).is_none() || !output_ok || index.codec != plan.codec {
         return Err(unsupported);
     }
     let track = source.file.tracks.get(source.track).ok_or(SmartCutError::NoTrack { track: source.track })?;
@@ -236,7 +243,7 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
 }
 
 /// Composition offset (PTS − DTS) of a source sample, as the output tables store it.
-fn composition_offset(s: &cfa4_isobmff::Sample, decode_index: usize) -> Result<i32, SmartCutError> {
+pub(crate) fn composition_offset(s: &cfa4_isobmff::Sample, decode_index: usize) -> Result<i32, SmartCutError> {
     s.pts.checked_sub(s.dts).and_then(|o| i32::try_from(o).ok()).ok_or(SmartCutError::Timestamps { decode_index: decode_index as u64 })
 }
 

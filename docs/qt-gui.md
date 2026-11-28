@@ -184,6 +184,7 @@ removed: `docs/plans/CFA4-QT6-FINISH-001.md`.
 | `python/cfa4_qt/status_bar.py`, `hot_number.py`, `calc.py`, `timecode.py`, `dialogs.py` | shared widgets and helpers |
 | `python/cfa4_qt/credits.py`, `export_summary.py` | About credits, export summary lines |
 | `python/cfa4_qt/panels/` | one module per panel or dialog (Project, Media Browser, Timeline, monitors, Effect Controls, mixers, Lumetri, Essential Graphics / Sound, Text, Export, Credits ([credits.md](credits.md)), Preferences, …) |
+| `python/cfa4_qt/panels/live_studio.py`, `live_studio_workspace.py` | Live Studio (CFA4-LIVE-STUDIO-001): the program preview of `cfa4-studio-host` (S0) and the Live Studio workspace (S1c): scene and source lists, properties and the preview in one window, opened by Graphics and Titles ▸ Live Studio… (`live.studio.window`); every edit is a `live.studio.scene.*` / `live.studio.source.*` command |
 | `python/cfa4_qt/i18n.py`, top-level `i18n/*.tsv` | translations: one catalog per language shared with egui (full Hungarian; the Qt-only strings in a "Qt GUI" section of the other ten) |
 | `python/tests/test_qt_gui.py` | framing, registry, i18n, window against a fake and the real engine |
 | `python/tests/test_qt_translations.py` | every finished language covers the Qt strings, placeholders kept |
