@@ -75,4 +75,5 @@ Register row: `docs/licensing.md` §5.
 - `tests/maul_oracle.rs`: the same moving source rendered by Maul Audio's C library
   (`tests/oracle/maul_harness.c`, never linked or shipped): bit-identical on 2026-11-27 for 48 kHz
   with and without the near field and for the set resampled to 44.1 kHz (48000 frames each); the
-  committed fixtures keep the first 4096 frames, compared within 1e-6.
+  committed fixtures keep the first 4096 frames, compared within 1e-6 (1e-5 resampled: libm rounding
+  of the resampler's f64 kernel differs by machine, 1.5e-6 on the CI runner).

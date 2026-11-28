@@ -4,8 +4,10 @@
 //! The Rust port against Maul Audio's C library (CFA4-BINAURAL-MONITOR-001 §7 2a): the same
 //! moving source rendered by `tests/oracle/maul_harness.c` (fixtures in `tests/data/`, the first
 //! 4096 stereo frames). On the machine that made the fixtures the full 48000-frame renders were
-//! bit-identical (2026-11-27, clang 18 -O2 against this crate in release); the test allows 1e-6 so
-//! that another compiler's rounding of the libm calls cannot fail it.
+//! bit-identical (2026-11-27, clang 18 -O2 against this crate in release). The tests allow 1e-6
+//! (1e-5 for the resampled set, whose kernel is thousands of f64 `sin`/`cos` calls) so that another
+//! machine's libm rounding cannot fail them: the CI runner's resampled render differed by 1.5e-6,
+//! about -110 dB below the signal.
 
 use std::sync::Arc;
 
@@ -40,24 +42,24 @@ fn fixture(bytes: &[u8]) -> Vec<f32> {
     bytes.chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect()
 }
 
-fn check(name: &str, want: &[u8], got: Vec<f32>) {
+fn check(name: &str, want: &[u8], got: Vec<f32>, tolerance: f32) {
     let want = fixture(want);
     assert_eq!(want.len(), got.len(), "{name}");
     let worst = want.iter().zip(&got).map(|(a, b)| (a - b).abs()).fold(0.0f32, f32::max);
-    assert!(worst < 1e-6, "{name}: largest difference from Maul Audio {worst:e}");
+    assert!(worst < tolerance, "{name}: largest difference from Maul Audio {worst:e}");
 }
 
 #[test]
 fn moving_near_source_matches_maul_audio() {
-    check("48 kHz, near field, 0.4 m", include_bytes!("data/maul-1_0.4_48000.f32"), scene(48_000, true, 0.4));
+    check("48 kHz, near field, 0.4 m", include_bytes!("data/maul-1_0.4_48000.f32"), scene(48_000, true, 0.4), 1e-6);
 }
 
 #[test]
 fn resampled_set_matches_maul_audio() {
-    check("44.1 kHz, near field, 0.4 m", include_bytes!("data/maul-1_0.4_44100.f32"), scene(44_100, true, 0.4));
+    check("44.1 kHz, near field, 0.4 m", include_bytes!("data/maul-1_0.4_44100.f32"), scene(44_100, true, 0.4), 1e-5);
 }
 
 #[test]
 fn far_source_without_near_field_matches_maul_audio() {
-    check("48 kHz, no near field, 2 m", include_bytes!("data/maul-0_2.0_48000.f32"), scene(48_000, false, 2.0));
+    check("48 kHz, no near field, 2 m", include_bytes!("data/maul-0_2.0_48000.f32"), scene(48_000, false, 2.0), 1e-6);
 }
