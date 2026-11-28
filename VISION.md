@@ -5,7 +5,7 @@
 > Ha egy terv, PR vagy audit ellentmond ennek a dokumentumnak, ez a dokumentum az irányadó,
 > és az ellentmondást jelezni kell a tulajdonosnak (`ubuntuokos`), nem csendben feloldani.
 
-**Utolsó módosítás:** 2026-11-13 · **Tulajdonos:** ubuntuokos
+**Utolsó módosítás:** 2026-11-28 · **Tulajdonos:** ubuntuokos
 
 ## 1. Mi a CFA4?
 
@@ -145,6 +145,7 @@ Tervezett irányok:
 - kép: objektum- és személymaszkolás, követés, jelenetfelismerés, automatikus színillesztés;
 - vágás: jelenetek és csendek felismerése, durva vágás átirat alapján;
 - konvertálás és publikálás: platformonkénti beállítás-javaslat.
+- ügynök-skillek kezelése: külső vagy saját MI-ügynök-skillek importálása, statikus és biztonsági vizsgálata helyben, minőségkapu (PASS/WARN/REVIEW/BLOCK), karantén és naplózott aktiválás; az import nem aktiválás, a vizsgált skill tartalma adat, nem utasítás; a skill kódját a CFA4 nem futtatja; semmi nem töltődik fel a felhasználó gépéről. Terv: CFA4-DEV-NVIDIA-SKILLEVALUATOR-001.
 
 Szabály: a modellek a felhasználó gépén futnak, bármely gyártó GPU-ján, illetve NPU-n, ha van (lásd
 2.4: gyártófüggetlen gyorsítás). Az AI-funkciók alsó határa legalább 12 GB-os GPU és 16 GB RAM
