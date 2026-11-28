@@ -166,6 +166,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("cinema-acceptance", 3),
     ("scopes", 3),
     ("qc", 3),
+    ("ingest", 3),
     ("playback", 3),
     ("export", 3),
     ("dcp-validate", 3),

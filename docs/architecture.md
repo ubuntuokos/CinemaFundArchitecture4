@@ -27,7 +27,7 @@ Design principles:
  L6  apps/cfa4 · apps/cfa4-cli · apps/cfa4-studio-host · apps/cfa4-fetch
  L5  ui-egui · automation · store (cfa4-store) · tcsync-io · surface · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
  L4  engine
- L3  render · render-contracts (cfa4-render-contracts) · gpu · export · smart-edit · qc · golden (test-only)
+ L3  render · render-contracts (cfa4-render-contracts) · gpu · export · smart-edit · qc · ingest · golden (test-only)
      DCP validation: dcp-validate · dcp-inspect · DCP mastering: dcpomatic · downloads: fetch-client
  L2  tasks (cfa4-tasks) · edit · objtrack · codecs · interchange · captions · credits · speech · tts · tts-text
  L1  frame · io-core · media · project · audio-dsp · hrtf · text · route (cfa4-route) · audit (cfa4-audit) · tcsync · surface-model · metrics · live · sandbox · surface-catalog
@@ -156,6 +156,7 @@ Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates ar
 | `golden` | L3 | test-only: golden-image tests of the CPU renderer and GPU-vs-CPU parity; empty library, dev-dependencies only |
 | `scopes` | L3 | video scope maths: waveform, parade, histogram, YUV / HLS vectorscopes, numeric summaries ([crates/scopes/README.md](../crates/scopes/README.md)) |
 | `qc` | L3 | media quality control: QC profiles (`cfa4-qc-profile/1`, TOML) with mandatory/optional checks and PASS/WARN/FAIL bounds, the versioned QC report (`cfa4-qc-report/1`, JSON) with SHA-256 file identities, tool versions and human review, input and integrity checks on a full decode, loudness / true peak / clipping / silence and black / luma-clipping / contact-sheet analysis, and a verdict that never passes a skipped or failed mandatory check ([media-qc.md](media-qc.md)) |
+| `ingest` | L3 | `cfa4-ingest`: shared recorder core ([plan `CFA4-TV-INGEST-RUNDOWN-001`](plans/CFA4-LIVE-STUDIO-001.md), IN-1): the recording contract (`RecordJob`, `Recorder`, `RecordReport`), the session state machine with journal, the read-only extent view for edit-while-record, typed events, a deterministic synthetic backend; no device or encoder code |
 | `export` | L3 | render → encode → mux pipeline, progress/cancel |
 | `dcp-validate` | L3 | DCP validation API (DCP-03): `DcpValidator` trait, seven result states and the package verdict, versioned profiles, `cfa4-dcp-report/1` JSON / Markdown report, safe package discovery, native backend ([README](../crates/dcp-validate/README.md)) |
 | `dcp-inspect` | L3 | DCP validation backend (DCP-04) that runs the isolated dcp_inspect reference engine as a separate process: argument array, own process group, private `HOME`/`TMPDIR`, timeout and cancel, `--dump-result` mapped onto the rule catalogue ([README](../crates/dcp-inspect/README.md)) |

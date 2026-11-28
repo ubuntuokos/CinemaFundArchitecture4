@@ -56,6 +56,7 @@ cfa4-tts = { workspace = true }
 cfa4-route = { workspace = true }
 cfa4-tcsync = { workspace = true }
 cfa4-qc = { workspace = true }
+cfa4-ingest = { workspace = true }
 cfa4-sandbox = { workspace = true }
 cfa4-vdb = { workspace = true }
 serde = { workspace = true }

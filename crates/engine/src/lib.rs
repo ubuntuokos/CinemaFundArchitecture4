@@ -42,6 +42,7 @@ pub mod gesture_runtime;
 pub mod gesture_ui;
 pub mod graphic_templates;
 pub mod graphics;
+pub mod ingest;
 pub mod interchange;
 mod kdm;
 pub mod keyboard;
@@ -531,6 +532,8 @@ pub struct Session {
     pub trim_play: trim::TrimPlayback,
     /// Live graphics: cues, preview, program, the live page and the OBS link (`live.*`).
     pub live: live::LiveState,
+    /// Recorder core (`ingest.*` commands; the synthetic backend only so far).
+    pub ingest: ingest::IngestState,
     /// Keyboard shortcuts (active bindings, presets; `shortcuts.*` commands).
     pub shortcuts: shortcuts::Shortcuts,
     /// Missing / offline media found by the last scan (Link Media dialog).
@@ -653,6 +656,7 @@ impl Session {
             tts_cache: Default::default(),
             trim_play: Default::default(),
             live: Default::default(),
+            ingest: Default::default(),
             shortcuts: shortcuts::Shortcuts::new(),
             offline: Default::default(),
             media_jobs: Vec::new(),
@@ -1453,6 +1457,8 @@ mod history_tests;
 mod image_sequence_tests;
 #[cfg(test)]
 mod individual_selection_tests;
+#[cfg(test)]
+mod ingest_tests;
 #[cfg(test)]
 mod interchange_auto_points_tests;
 #[cfg(test)]
