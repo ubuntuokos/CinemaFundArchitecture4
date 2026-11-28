@@ -4982,6 +4982,22 @@
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Carpeta DVD-Video (VIDEO_TS): MPEG-2 720×480 a 29,97 fps, 16:9 anamórfico, 6 Mbps, GOP 18, AC-3 a 192 kbps, capítulos a partir de los marcadores de capítulo de la secuencia
 	DVD-Video folder (VIDEO_TS)	Carpeta DVD-Video (VIDEO_TS)
+
+# DCP package views (DCP-23)
+	Package	Paquete
+	Composition	Composición
+	Security	Seguridad
+	Save HTML…	Guardar HTML…
+	Asset map	Mapa de activos
+	Packing list	Lista de empaquetado
+	Track file	Archivo de pista
+	Not a file	No es un archivo
+	Unsafe path	Ruta insegura
+	Reel {n}	Rollo {n}
+	Signed documents	Documentos firmados
+	Encrypted assets	Activos cifrados
+	Key ID: {id}	ID de clave: {id}
+	Package structure unavailable: {error}	Estructura del paquete no disponible: {error}
 	DNx decoding:	Descodificación DNx:
 	As detected from the file ({detected})	Según lo detectado en el archivo ({detected})
 	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (estándar)

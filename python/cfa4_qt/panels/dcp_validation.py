@@ -29,6 +29,8 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
+    QTreeWidget,
+    QTreeWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -59,6 +61,13 @@ COLORS = {
     "INCOMPLETE": "#7a7a7a",
     "INTERRUPTED": "#7a7a7a",
 }
+FILE_STATES = {
+    "file": N_("OK"),
+    "missing": N_("Missing"),
+    "noPath": N_("Missing"),
+    "notAFile": N_("Not a file"),
+    "unsafe": N_("Unsafe path"),
+}
 # worst first: the findings table lists what needs attention before what passed
 STATUS_ORDER = ("FAIL", "WARNING", "UNCHECKED", "INTERRUPTED", "SKIPPED", "NOT_APPLICABLE", "PASS")
 
@@ -82,6 +91,20 @@ def sorted_findings(findings: Any) -> list[dict[str, Any]]:
     items = [f for f in findings or [] if isinstance(f, dict)]
     rank = {s: i for i, s in enumerate(STATUS_ORDER)}
     return sorted(items, key=lambda f: rank.get(str(f.get("status")), len(rank)))
+
+
+def _tree(name: str, headers: list[str], parent: QWidget) -> QTreeWidget:
+    tree = QTreeWidget(parent)
+    tree.setObjectName(name)
+    tree.setColumnCount(len(headers))
+    tree.setHeaderLabels(headers)
+    tree.setUniformRowHeights(True)
+    return tree
+
+
+def _node(parent: QTreeWidget | QTreeWidgetItem, *cells: Any) -> QTreeWidgetItem:
+    item = QTreeWidgetItem(parent, ["" if c is None else str(c) for c in cells])
+    return item
 
 
 class DcpValidationDialog(QDialog):
@@ -140,6 +163,15 @@ class DcpValidationDialog(QDialog):
         self.rules.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.rules.horizontalHeader().setStretchLastSection(True)
 
+        # The structure views (plan DCP-F19) read ``dcp.package.info``; they never touch the package.
+        self.package = _tree("dcpval.package", [tr("Name"), tr("Type"), tr("Size"), tr("State")], self)
+        self.composition = _tree(
+            "dcpval.composition", [tr("Name"), tr("Type"), tr("Duration"), tr("Offset"), tr("Language")], self
+        )
+        self.security = _tree("dcpval.security", [tr("Name"), tr("Type")], self)
+        self._package_items: dict[str, QTreeWidgetItem] = {}
+        self.findings.cellDoubleClicked.connect(self._jump_to_finding)
+
         self.text = QPlainTextEdit(self)
         self.text.setObjectName("dcpval.markdown")
         self.text.setReadOnly(True)
@@ -148,6 +180,9 @@ class DcpValidationDialog(QDialog):
         self.tabs.setObjectName("dcpval.tabs")
         self.tabs.addTab(self.findings, tr("Findings"))
         self.tabs.addTab(self.rules, tr("Rules"))
+        self.tabs.addTab(self.package, tr("Package"))
+        self.tabs.addTab(self.composition, tr("Composition"))
+        self.tabs.addTab(self.security, tr("Security"))
         self.tabs.addTab(self.text, tr("Report"))
 
         self.save_json = QPushButton(tr("Save JSON…"), self)
@@ -156,6 +191,9 @@ class DcpValidationDialog(QDialog):
         self.save_md = QPushButton(tr("Save Markdown…"), self)
         self.save_md.setObjectName("dcpval.saveMarkdown")
         self.save_md.clicked.connect(lambda: self.save_report("md"))
+        self.save_html = QPushButton(tr("Save HTML…"), self)
+        self.save_html.setObjectName("dcpval.saveHtml")
+        self.save_html.clicked.connect(lambda: self.save_report("html"))
         self.message = QLabel(self)
         self.message.setObjectName("dcpval.message")
         self.message.setWordWrap(True)
@@ -174,6 +212,7 @@ class DcpValidationDialog(QDialog):
         bottom.addWidget(self.message, 1)
         bottom.addWidget(self.save_json)
         bottom.addWidget(self.save_md)
+        bottom.addWidget(self.save_html)
         bottom.addWidget(close)
         layout = QVBoxLayout(self)
         layout.addLayout(top)
@@ -228,6 +267,7 @@ class DcpValidationDialog(QDialog):
     def _set_saveable(self, on: bool) -> None:
         self.save_json.setEnabled(on)
         self.save_md.setEnabled(on)
+        self.save_html.setEnabled(on)
 
     def _current(self, handler: Callable[..., None]) -> Callable[..., None]:
         """``handler``, called only while no newer check has replaced the one it was sent for."""
@@ -271,6 +311,9 @@ class DcpValidationDialog(QDialog):
         self.summary.setText("")
         self.findings.setRowCount(0)
         self.rules.setRowCount(0)
+        for tree in (self.package, self.composition, self.security):
+            tree.clear()
+        self._package_items = {}
         self.text.clear()
         self.message.setText("")
         self._set_saveable(False)
@@ -351,6 +394,102 @@ class DcpValidationDialog(QDialog):
         self.text.setPlainText(self.markdown)
         self._set_saveable(True)
         self.message.setText(self.root)
+        self.engine.execute(
+            "dcp.package.info",
+            {"root": self.root},
+            on_reply=self._current(self._on_package),
+            on_error=self._current(self._package_failed),
+        )
+
+    # ----- structure views -----
+    def _package_failed(self, message: str) -> None:
+        # the findings already say what is wrong with the package; the views are just empty
+        self.message.setText(fmt("Package structure unavailable: {error}", error=message))
+
+    def _on_package(self, result: Any, _b: bytes | None) -> None:
+        if not isinstance(result, dict):
+            return
+        for tree in (self.package, self.composition, self.security):
+            tree.clear()
+        self._package_items = {}
+        self._show_package(result)
+        self._show_compositions(result.get("compositions"))
+        self._show_security(result.get("security"))
+
+    def _show_package(self, info: dict[str, Any]) -> None:
+        amap = info.get("assetMap") or {}
+        cpl_files = {c.get("file") for c in info.get("compositions") or [] if isinstance(c, dict)}
+        top = _node(self.package, amap.get("file"), tr("Asset map"))
+        self._package_items[str(amap.get("file") or "")] = top
+        for f in info.get("files") or []:
+            if not isinstance(f, dict):
+                continue
+            path = f.get("path") or f.get("id") or ""
+            if f.get("packingList"):
+                kind = tr("Packing list")
+            elif path in cpl_files:
+                kind = tr("Composition")
+            else:
+                kind = tr("Track file")
+            state = str(f.get("state") or "")
+            item = _node(top, path, kind, f.get("size"), tr(FILE_STATES.get(state, state)))
+            if state != "file":
+                item.setForeground(3, QColor(COLORS["FAIL"]))
+            if isinstance(path, str) and path:
+                self._package_items[path] = item
+        top.setExpanded(True)
+        self.package.resizeColumnToContents(0)
+
+    def _show_compositions(self, compositions: Any) -> None:
+        for c in compositions or []:
+            if not isinstance(c, dict):
+                continue
+            doc = c.get("document") or {}
+            node = _node(self.composition, doc.get("content_title") or c.get("file"), tr("Composition"))
+            for n, reel in enumerate(doc.get("reels") or [], 1):
+                if not isinstance(reel, dict):
+                    continue
+                rnode = _node(node, fmt("Reel {n}", n=n))
+                for a in reel.get("assets") or []:
+                    if not isinstance(a, dict):
+                        continue
+                    anode = _node(
+                        rnode, a.get("file") or a.get("id"), a.get("kind"), a.get("duration"), "", a.get("language")
+                    )
+                    for m in a.get("markers") or []:
+                        if isinstance(m, dict):
+                            _node(anode, m.get("label"), tr("Marker"), "", m.get("offset"))
+            node.setExpanded(True)
+        self.composition.expandAll()
+        self.composition.resizeColumnToContents(0)
+
+    def _show_security(self, security: Any) -> None:
+        sec = security if isinstance(security, dict) else {}
+        signed = _node(self.security, tr("Signed documents"))
+        for d in sec.get("signedDocuments") or []:
+            if isinstance(d, dict):
+                kind = tr("Packing list") if d.get("kind") == "packingList" else tr("Composition")
+                _node(signed, d.get("document"), kind)
+        encrypted = _node(self.security, tr("Encrypted assets"))
+        for e in sec.get("encryptedAssets") or []:
+            if isinstance(e, dict):
+                _node(encrypted, e.get("composition"), fmt("Key ID: {id}", id=e.get("keyId", "")))
+        signed.setExpanded(True)
+        encrypted.setExpanded(True)
+        self.security.resizeColumnToContents(0)
+
+    def _jump_to_finding(self, row: int, _column: int) -> None:
+        """Double-click a finding: show the file it names in the package tree."""
+        item = self.findings.item(row, 2)
+        if item is None:
+            return
+        path = item.text().split(" › ")[0].split(" (")[0]
+        target = self._package_items.get(path)
+        if target is None:
+            return
+        self.tabs.setCurrentWidget(self.package)
+        self.package.setCurrentItem(target)
+        self.package.scrollToItem(target)
 
     def _show_findings(self, findings: Any) -> None:
         items = sorted_findings(findings)
@@ -403,11 +542,11 @@ class DcpValidationDialog(QDialog):
 
     # ----- saving -----
     def save_report(self, fmt_id: str, path: str | None = None) -> None:
-        """Write the latest report as JSON or Markdown; the engine refuses a path inside the DCP."""
+        """Write the latest report as JSON, Markdown or HTML; the engine refuses a path inside the DCP."""
         if not self.report:
             return
         if path is None:
-            filt = "JSON (*.json)" if fmt_id == "json" else "Markdown (*.md)"
+            filt = {"json": "JSON (*.json)", "md": "Markdown (*.md)", "html": "HTML (*.html)"}.get(fmt_id, "*")
             path, _f = QFileDialog.getSaveFileName(
                 self, tr("Save report"), os.path.expanduser(f"~/dcp-report.{fmt_id}"), filt
             )

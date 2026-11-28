@@ -40,6 +40,7 @@ mod deflate;
 mod hls_out;
 mod imf_out;
 mod job;
+pub mod mkv_source;
 mod mpeg_out;
 mod mxf_out;
 mod opus_out;
@@ -50,6 +51,8 @@ pub mod presets;
 mod raster;
 pub mod settings;
 pub mod smart_cut;
+pub mod smart_cut_cross;
+pub mod smart_cut_mkv;
 pub mod smart_cut_mpeg;
 pub mod still;
 pub mod timeline_audio;
@@ -3745,6 +3748,8 @@ mod settings_tests;
 mod surround_tests;
 
 #[cfg(test)]
+mod audio_copy_bitstream_tests;
+#[cfg(test)]
 mod audio_copy_tests;
 #[cfg(test)]
 mod boundary_reencode_tests;
@@ -3759,9 +3764,15 @@ mod mxf_tests;
 #[cfg(test)]
 mod smart_cut_av1_tests;
 #[cfg(test)]
+mod smart_cut_cross_tests;
+#[cfg(test)]
 mod smart_cut_edge_tests;
 #[cfg(test)]
 mod smart_cut_hevc_tests;
+#[cfg(test)]
+mod smart_cut_mkv_copy_tests;
+#[cfg(test)]
+mod smart_cut_mkv_tests;
 #[cfg(test)]
 mod smart_cut_mpeg_tests;
 #[cfg(test)]

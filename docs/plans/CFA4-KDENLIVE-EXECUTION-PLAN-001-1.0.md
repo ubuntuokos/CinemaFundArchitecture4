@@ -2,8 +2,9 @@
 
 | Dokumentumadat | Érték |
 |---|---|
-| Verzió | 1.1 (jóváhagyva; a szűrés után) |
+| Verzió | 1.2 (a 2026-11-27-i duplikáció-átvezetés után; a fájlnév változatlan) |
 | Állapot | **Jóváhagyva** (István, 2026-11-22 22:44, „a tervet jóváhagyom, véglegesítsd és kezd el a fejlesztést”). A fejlesztés a 6. pont sorrendjében indul; a D-2 (KDN-11) és a D-4 (KDN-13) pontig az érintett KDN-pont áll |
+| Átvezetés | **2026-11-27 (István jóváhagyta, 22:04–22:06):** a 2026-11-23-i duplikáció-ellenőrzés eredménye és a `main` @ `9f38bfea` szerinti frissítés (W0). A W1-hez a kiegészítő tárolók és a forkok 2026-11-22-i befagyasztott állapota érvényes; W2–W5 előtt újra kell elemezni őket |
 | Dátum | 2026-11-22 |
 | Alap | CFA4 `main` @ `963b0313` (2026-11-22); `CFA4-AI_modules` @ `e2746cb` (2026-11-16) |
 | Módszer | Csak olvasás: a `main` fája és tervei, a nyitott PR-ok címei (a #1559 diffje), a `CFA4-AI_modules` ADR 0008-ja, a 11 kiegészítő tároló és a 7 Kdenlive-automatizálási fork. Kódot nem futtattam, tesztet nem indítottam |
@@ -15,10 +16,10 @@
 
 1. **A KDN-36 kapu elvégezve** (a tulajdonos elfogadására vár). Az 5B pontjai a 6. pont hullámai szerint adhatók ki.
 2. **Ami azóta megváltozott és a Kdenlive-tervet érinti:** (a) az MI-réteg ADR-je **ADR 0008** lett (régen 0006), kód még nincs, az F0 kapu (Qt6 kész, egui kint) még nem nyílt; (b) az MLT-olvasó **közös a Shotcut-importtal** (SC-5, tulajdonosi döntés 2026-11-22); (c) a VFX-terv 1.1 (jóváhagyva 2026-11-22) a KDN-20-táblát és a KDN-43-at hivatkozza; (d) a KDN-17 PostgreSQL-re és JSON-ra bomlott (D-8, 2026-11-15); (e) a Qt6 GUI 66 ✅ / 5 🟡 / 1 ❌ (volt 40/19/9); (f) az Event Fabric terv bekerült a repóba; (g) a jobtár, az erőforrás-kezelés és a render-feladatok közös infrastruktúrát kaptak (`cfa4-tasks`, `cfa4-store`, render C0), amelyre a KDN-14, KDN-16, KDN-34, KDN-39 épül.
-3. **Szűrés (István, 2026-11-22): csak az marad, ami még nincs a CFA4-ben és más tervben sem.** 62 KDN-pontból 28 kikerül (kész, vagy más terv hordozza; a KDN-42 az SC-5 része, a KDN-36 ez a dokumentum: 5A), 34 marad (5B), ebből öt szűkítve (KDN-10, KDN-11, KDN-15, KDN-18, KDN-37). Részletek: 5. pont.
+3. **Szűrés (István, 2026-11-22; frissítve 2026-11-27):** csak az marad, ami még nincs a CFA4-ben és más tervben sem. 62 KDN-pontból **37 kikerül** (kész, vagy más terv hordozza; a KDN-42 az SC-5 része, a KDN-36 ez a dokumentum: 5A), **25 marad** (5B), ebből tizenegy szűkítve (KDN-11, KDN-15, KDN-20, KDN-23, KDN-25, KDN-38, KDN-57, KDN-59, KDN-8, KDN-60 és a KDN-56, amely a VFX-katalógusba kerül, ezért az 5B táblájában nincs külön sora: a táblában 24 pont áll). Részletek: 5. pont.
 4. **A kiegészítő tárolók közül egy sem változott 2026-10-25 óta**, a `kdenlive` kivételével (261 commit; a `.kdenlive` formátum verziója változatlan, MLT 7.42 az új minimum). Nyolc tároló elavult vagy elhagyott, a működési elvük használható, a kódjuk nem (3. pont).
-5. **Az MI-pontok** (KDN-2 kivételével) továbbra is csak az ADR 0008 megfelelő kapuja után indulnak; a legtöbb ilyen pont más terv hordozza, ezért kikerült. Az **első indítható hullám MI nélküli**: a `.kdenlive`-dialektus az SC-5 közös magján, KDN-10-szűkítés, KDN-11-bővítés, KDN-12, KDN-37-szűkítés.
-6. **Tulajdonosi döntést igénylő pontok:** 7. pont (D-1…D-7), a legfontosabb: a KDN-43 (Lottie) gazdája jelenleg nincs, a KDN-13 (gyroflow-core) licencének tisztázása, és az ADR-számozás ütközése.
+5. **Az MI-pontok** (KDN-2 kivételével) továbbra is csak az ADR 0008 megfelelő kapuja után indulnak; a legtöbb ilyen pont más terv hordozza, ezért kikerült. Az **első indítható hullám MI nélküli**: a `.kdenlive`-dialektus az SC-5 közös magján (a mag, a KDN-20-tábla, a jelölők és csoportok már a `main`-ben vannak; hátra: az effekt- és átmenet-leképezés bekötése, KDN-25), a KDN-11-bővítés.
+6. **Tulajdonosi döntést igénylő pontok:** 7. pont (D-1…D-10), a legfontosabb: a KDN-43 (Lottie) gazdája jelenleg nincs, a KDN-13 (gyroflow-core) licencének tisztázása, és az ADR-számozás ütközése.
 
 ## 1. Mi változott a 2026-11-03-i FINAL 1.0 óta (delta a CFA4-ben)
 
@@ -85,7 +86,7 @@ A vizsgálat a README-ken, a fa- és commitlistákon, a tesztszerkezeten és a t
 | `0xmeowmeow/vibecut` | 2026-09-03 | GPL-3.0-only OR KDE-Accepted-GPL | C++ MI-panel a Kdenliveben (Anthropic SSE + Ollama), 10 belső eszköz, `DESIGN_SPECS.md` (terv → megerősítés → végrehajtás checkpointokkal) | **C** referencia (munkafolyamat-minta) |
 | `hive-agi/hive-kdenlive` | 2026-10-21 (v0.3.3) | **MIT** | Clojure; 5 MCP-eszköz, ~38 route; **fork nélkül** `.hkd.edn` + `melt`; byte-stabil `.kdenlive`/MLT XML olvasás-írás, ~142 teszt | **B** (a `.kdenlive`-olvasás és a fejetlen idővonal-logika Rustra átírható; a KDN-1 egyik forrása) |
 
-**Mit adnak a KDN-37–KDN-41-hez:**
+**Mit adnak a KDN-37–KDN-41-hez** (2026-11-27: a KDN-37 hiányzó eszközei elkészültek, lásd 5A):
 - **KDN-37 (hiányzó eszközök):** vágóműveletek (`ripple_delete`, `ripple_trim`, `roll_edit`, `slide_edit`), `extract_zone`, `render_contact_sheet`, `render_frame`, `detect_scenes`, `import_srt_as_titles`, `set_effect_expression`, `timeline_close_gaps`, `flow_delete_short_clips`, `flow_export_and_wait`, `render_start_with_guides`. A CFA4 parancsregiszterében sok megvan; a KDN-37 a lista és a regiszter **parancsonkénti összevetése** (alább, 6. pont W1).
 - **KDN-38 (szintek):** egyik fork sem ad valódi szinteket; minták: loopback + token, `PermissionDenied`, a vibecut plan→confirm kapuja, checkpoint mentés/visszaállítás. A szintek (olvasó/szerkesztő/romboló) tervezése a CFA4-re marad, az MCP-annotációkra építve.
 - **KDN-39 (események):** `render.progress`, `render.finished`, `project.modified`, `timeline.changed`, projekt megnyitva/zárva/mentve; az Event Fabric illesztési mellékletéhez igazítva.
@@ -120,28 +121,32 @@ A vizsgálat a README-ken, a fa- és commitlistákon, a tesztszerkezeten és a t
 | **KDN-44** | FFmpeg-szűrők a routeren át | `CFA4-FFMPEG-BACKEND-R1` (filter-interfész), ADR 0005 |
 | **KDN-62** | x264/x265/LAME felismerése, inaktív állapot | `CFA4-FFMPEG-BACKEND-R1` (`cfa4-restricted-extras` modell), ADR 0005 |
 | **KDN-36** | Ez a dokumentum | – |
+| **KDN-10** | Export külön folyamatban: atomi kimenet, megszakítás, SIGKILL-teszt, job API; a render C0 hordozza (beolvadt: `render.status/list/cancel`, 20 SIGKILL-ciklus) | render C0/F0V |
+| **KDN-12** | Kész: `crates/engine/src/camera_proxies.rs`, `media.findCameraProxies` | `main` |
+| **KDN-18** | A letöltő (`cfa4-fetch`) és a szolgáltatóleíró adatfájl az F3-é; a modellnyilvántartás az `ai.model` | `CFA4-VIDEO-EXTERNAL-SOURCES-001` F3, `CFA4-DATA-PG-001` D-7 |
+| **KDN-37** | Kész: `edit.deleteShortClips` (#1761), `export.queue.addFromMarkers` (#1765), `captions.importAsTitles` (#1773), `qc.contactSheet`; az `effects.setExpression` a VFX-4/X-sor | `main` (2026-11-24); VFX-4 |
+| **KDN-47** | Kész: `export.queue.add import:true` a Project panelbe teszi a kész fájlt | `main` (2026-11-24) |
+| **KDN-48** | Kész: `media.refreshChanged`, `media_watch.rs`, `edit.editOriginal` | `main` |
+| **KDN-52** | Kész: `clip.speedDuration` `clips:[id]` paraméter, alapérték a kijelölés | `main` |
+| **KDN-55** | Kész (SC-4): `effects.toggleEnabled` `clips`/`all`/`enabled`; legfeljebb egy `scope:"sequence"` paraméter, nem külön pont | `main` |
+| **KDN-61** | `Paused` állapot a `cfa4-tasks` sorállapotgépében; az `ExportQueue` szüneteltetése a VVC FR-6 | `CFA4-VVC-PLAN-001` FR-6, render C0 job API |
 
 ### 5B. Marad: új képesség, amelyet semmi más nem hordoz
 
 | K | Képesség | Állapot / megjegyzés | Hullám |
 |---|---|---|---|
-| **KDN-1** (Kdenlive-dialektus) + **KDN-20** + **KDN-25** | `.kdenlive` olvasása: `kdenlive:` tulajdonságok, effekt/átmenet-azonosítók → CFA4-effekt tábla (a VFX-katalógus `aliases`-ához igazítva), `melt`-összevetés CI-ben. A **mag és az általános leképezés (KDN-42) az SC-5 része**, nem készül kétszer | A `main`-en nincs `.kdenlive`-olvasó (csak OTIO). Közös PR-sorozat az SC-5.1-gyel | W1 |
-| **KDN-10** (szűkítve) | Export külön folyamatban (összeomlás-elszigetelés, JSON-soros előrehaladás, megszakítás félkész fájl nélkül). A `serve` és a képkocka-`render` megvan; az exportmunka külön folyamata ellenőrizendő | részben | W1 |
-| **KDN-11** (szűkítve) | A hiányzó platform-presetek: AV1, HEVC, iPhone, VA-API/GPU, archív (YouTube, WebM VP9, Social Deliverables megvan). **D-2 előbb** (licenc) | részben | W1 |
-| **KDN-12** | Kamerák saját proxyfájljainak felismerése (GoPro LRV, DJI LRF, Sony, Insta360), újrakódolás nélkül. A `camera-raw.md` csak metaadat/proxy-megjegyzés; az E12 (automatikus proxydöntés) más képesség | nincs | W1 |
-| **KDN-37** (szűkítve) | A forkok eszközlistájának parancsonkénti összevetése a regiszterrel; csak a hiányzó parancs készül (az E6 kis MCP-felületével egyeztetve) | nincs összevetés | W1 |
-| **KDN-15** (szűkítve) | Borítókép, YouTube-fejezetszöveg, felhasználói render utáni parancs (a fejezet az MP4/MOV/HLS/MKV exportban megvan) | részben | W2 |
+| **KDN-1** (Kdenlive-dialektus) + **KDN-20** + **KDN-25** | `.kdenlive` olvasása. **Állapot (2026-11-27):** a közös MLT-mag és a Kdenlive-import a `main`-ben (profil, sávok, klipek, rések, sebesség, színklipek, jelölők, A/V-csoportok, Volume-effekt; #1747 beolvadt). A KDN-20-tábla kész (`crates/interchange/data/kdenlive-effect-map.csv`, `…KDN20-EFFECT-MAP-001-1.0.md`). **Hátra:** az effekt- és átmenet-leképezés bekötése az importerbe (ma „not imported yet” figyelmeztetés), az SC-5.3 szűrőtáblájával egyeztetve; KDN-20 = csak a Kdenlive-azonosító-sorok (alias a VFX-katalógushoz); KDN-25 = csak a Kdenlive-mintaprojektek hozzáadása az SC-5 CI-hez, a `melt` verziójának rögzítésével (MLT ≥ 7.42) | részben kész | W1 |
+| **KDN-11** (szűkítve) | A hiányzó platform-presetek szoftveresen: HEVC, AV1, iPhone, archív (adat, kb. 3–6 ó). A VA-API/GPU-presetek a G5-ben és a `cfa4-route`-ban. **D-2 előbb** (licenc) | részben | W1 |
+| **KDN-15** (szűkítve) | Borítókép a kimeneti fájlba, YouTube-fejezetszöveg, felhasználói render utáni parancs (a fejezet és a `markers.exportCsv` megvan; a fejezetszöveg-rész kapunál ellenőrizendő) | részben | W2 |
 | **KDN-21** | CC0 lumák, LUT-ok, átmenet-előnézetek eszközként (`.attribution`) | nincs | W2 |
-| **KDN-23** | Projekt-ellenőrző (hiányzó források, proxyk, effektek, integritás); az SC-F0 terv is erre hivatkozik | nincs | W2 |
-| **KDN-38** | Jogosultsági szintek (olvasó/szerkesztő/romboló) az MCP-annotációkra építve; a **V3** (Unix socket, mozdulat alatti visszatartás) előfeltétele a `main`-en még nincs | nincs | W2 (V3 után) |
-| **KDN-45, KDN-46, KDN-47, KDN-48** | zip/tar projektarchívum; távoli erőforrás figyelmeztetés; renderelt fájl a Bin-be; külső szerkesztés visszatöltése | kapunál ellenőrizendő (a KDN-46-ot az SC-F0 és a VIDEO-EXTERNAL-SOURCES is említi) | W2 |
-| **KDN-61** | Render szüneteltetése és folytatása | kapunál ellenőrizendő (`serve.rs` említ szünetet) | W2 |
+| **KDN-23** (szűkítve) | Egy jelentés-parancs a meglévőkre (`project.inspect`, `sequence.checkDelivery`, `qc.run`, relink-jelentés, `tasks.check`): hiányzó forrás/proxy/effekt, integritás; új elemzőmotor nem készül; az SC-F0 terv is erre hivatkozik | nincs | W2 |
+| **KDN-38** (szűkítve) | A jogosultsági szintek (olvasó/szerkesztő/romboló) **kikényszerítése**; a vezérlőcsatorna már tokenes, az MCP `readOnlyHint`/`destructiveHint` megvan. **Közös `destructive` mező** a GESTURE-001 V-19/MG0 döntéssel: egyet kell kérni, nem kettőt; a **V3** előfeltétele a `main`-en még nincs | nincs | W2 (V3 után) |
+| **KDN-45, KDN-46** | zip/tar projektarchívum (a `project_manager` csak collect/consolidate); távoli erőforrás figyelmeztetés (KDN-46: #1881 nyitva; az SC-F0 és a VIDEO-EXTERNAL-SOURCES is említi) | KDN-45 nincs; KDN-46 folyamatban | W2 |
 | **KDN-13** | Giroszkópos stabilizálás `gyroflow-core`-ral; **D-4 előbb** (licenc) | nincs (G18 a 2-D/3-D stabilizátort fedi, a giroszkópot nem) | W3 |
 | **KDN-14** | Párhuzamos és hálózati render, render-only kliens; a render C0 worker-szerződésére és a `cfa4-tasks`-ra épül | semmi sem fedi (a render-terv helyi) | W3 |
 | **KDN-16** | Kötegelt átkódolás a közös feladatsoron; egyeztetni a `LOSSLESS-MEDIA-TOOLS-001`-gyel (#1124) és a VISION konvertálás-területtel | részben a VISION-ban, terv nincs | W3 |
-| **KDN-18** (szűkítve) | Szolgáltatói adatfájl (Hugging Face, Freesound, Pixabay), jóváhagyó felület; a letöltő maga (`cfa4-fetch`) megvan | részben | W3 |
-| **KDN-8** | Hangspektrum- és spektrogram-panel | nincs (a `speech/mel.rs` ASR-hez van) | W4 |
-| **KDN-49–KDN-53, KDN-55–KDN-60** | sávátrendezés; marker a résekbe; áttűnés-előnézet; több klip sebessége; rögzített lejátszófej; minden effekt ki/be; Delogo; lekerekített téglalap a címszerkesztőben; szóló Shift+kattintással; hanghullám beágyazott szekvencián; többmonitoros munka (a #466 lebegő ablakai részben fedik) | kapunál ellenőrizendő pontonként | W4 |
+| **KDN-8** (szűkítve) | Hangspektrum- és spektrogram-panel: **egy közös komponens** a Subtitle Studio 1.2 §4-gyel, kétszer nem készül (a `speech/mel.rs` ASR-hez van) | nincs | W4 |
+| **KDN-49, KDN-50, KDN-51, KDN-53, KDN-57, KDN-58, KDN-59, KDN-60** | sávátrendezés; marker a résekbe; áttűnés-előnézet; rögzített lejátszófej és középső gombos görgetés; igazítóvonalak a címszerkesztőben (KDN-57 szűkítve: a `cornerRadius` és a snap megvan); szóló Shift+kattintással; hanghullám beágyazott szekvencián (KDN-59: Qt6-port, QT6-FINISH hatókör); többmonitoros munka (KDN-60 szűkítve: a Program/Source monitor teljes képernyőn másik kijelzőn; a lebegő ablak a #466/QT6-FINISH, az SDI a DECKLINK). Az **KDN-56** (Delogo) a VFX-katalógusba kerül (`G-xx` bejegyzés), nem külön pont | kapunál ellenőrizendő pontonként (a Qt6-oldali „nincs” állítás keresésen alapul) | W4 |
 | **KDN-24** | Diavetítés-automatizálás (Ken Burns, ütemhez igazítás); licencellenőrzés előbb | nincs | W5 |
 | **KDN-34** | Figyelt mappa: bedobott médiából átirat és felirat automatikusan (KDN-16 feladatsor, AI-F5) | nincs; MI-kapu | W5 |
 
@@ -151,14 +156,14 @@ Minden hullám **külön tulajdonosi indítási engedélyt** igényel, és minde
 
 | Hullám | Tartalom | Előfeltétel | Becslés (ó) | Kilépési bizonyíték |
 |---|---|---|---|---|
-| **W0** | Terv elfogadása; D-1…D-7; az alapterv átvezetése (az 5A pontjainak törlése, hivatkozásra cserélve) | tulajdonosi jóváhagyás | – | jóváhagyás |
-| **W1 — `.kdenlive` és MI nélküli mag** | KDN-1 (Kdenlive-dialektus), KDN-20, KDN-25 az SC-5 közös magjára; KDN-10 (szűkítve); KDN-11 (szűkítve); KDN-12; KDN-37 (szűkítve) | W0; D-2; a #1559 beolvasztása; render C0 a KDN-10-hez | KDN-1+KDN-20+KDN-25 25–45 (a mag az SC-5-é), KDN-10 10–20, KDN-11 10–20, KDN-12 8–15, KDN-37 5–10 | a KDN-1 „Kész, ha”: mintaprojektek megnyílnak, vágópontok képkocka-pontosak, kompatibilitási jelentés, ellenséges bemenet nem pánik; `melt`-összevetés CI-ben |
-| **W2 — kicsi, motoros** | KDN-15 (szűkítve), KDN-21, KDN-23, KDN-45–KDN-48, KDN-61, KDN-38 (V3 után) | W1 KDN-1 a KDN-23-hoz; V3 a KDN-38-hoz | KDN-15 6–10, KDN-21 6–10, KDN-23 12–20, KDN-45–KDN-48 12–24, KDN-61 6–12, KDN-38 10–20 | pontonként a „Kész, ha” sor |
-| **W3 — közös infrastruktúrára épülők** | KDN-14, KDN-16, KDN-18 (szűkítve), KDN-13 | render F3/C0; ACS-8/`cfa4-tasks`; D-4 | KDN-14 70–120, KDN-16 25–40, KDN-18 8–15, KDN-13 35–55 | két gépen azonos kimenet (KDN-14); hash-ellenőrzött letöltés (KDN-18) |
-| **W4 — Qt6-felület és motor** | KDN-8, KDN-49–KDN-53, KDN-55–KDN-60 | a QT6-FINISH-001 kapui | 60–120 | Qt-teszt Wayland/X11 (KDN-60), automatizálási azonosítók |
+| **W0** | Terv elfogadása; D-1…D-7 (D-8…D-10 a 2026-11-27-i átvezetéssel jött); az alapterv átvezetése (az 5A pontjainak törlése, hivatkozásra cserélve) | tulajdonosi jóváhagyás | – | **Elvégezve 2026-11-27** (István jóváhagyta; a végrehajtási terv 1.2; az alapterv átvezetése ugyanebben a PR-ban) |
+| **W1 — `.kdenlive` és MI nélküli mag** | KDN-1 (hátralévő rész: effekt- és átmenet-leképezés), KDN-20 (bekötés), KDN-25 az SC-5 közös magjára; KDN-11 (szűkítve) | D-2 a KDN-11-hez; a mag és a KDN-20-tábla kész | KDN-1+KDN-20+KDN-25 25–45 felső korlát (a mag és a tábla kész, újrabecslendő a kapunál), KDN-11 3–6 | a KDN-1 „Kész, ha”: mintaprojektek megnyílnak, vágópontok képkocka-pontosak, kompatibilitási jelentés, ellenséges bemenet nem pánik; `melt`-összevetés CI-ben |
+| **W2 — kicsi, motoros** | KDN-15 (szűkítve), KDN-21, KDN-23 (szűkítve), KDN-45, KDN-46 (#1881), KDN-38 (szűkítve, V3 után) | W1 KDN-1 a KDN-23-hoz; V3 a KDN-38-hoz; a W2 előtt a forkok és kiegészítő tárolók újraelemzése | KDN-15 6–10, KDN-21 6–10, KDN-23 12–20, KDN-45 és KDN-46 6–12, KDN-38 10–20 | pontonként a „Kész, ha” sor |
+| **W3 — közös infrastruktúrára épülők** | KDN-14, KDN-16, KDN-13 | render F3/C0; ACS-8/`cfa4-tasks`; D-4; a KDN-16 előtt egyeztetés a `LOSSLESS-MEDIA-TOOLS-001`-gyel (#1124) | KDN-14 70–120, KDN-16 25–40, KDN-13 35–55 | két gépen azonos kimenet (KDN-14) |
+| **W4 — Qt6-felület és motor** | KDN-8, KDN-49, KDN-50, KDN-51, KDN-53, KDN-57–KDN-60 | a QT6-FINISH-001 kapui | 50–100 | Qt-teszt Wayland/X11 (KDN-60), automatizálási azonosítók |
 | **W5 — licenc- vagy MI-kapuhoz kötött** | KDN-24, KDN-34 | licenc-ellenőrzés; AI-F5; KDN-16 | 23–37 | az ADR 0008 kapuk kilépési feltételei |
 
-**Összes becslés:** kb. 330–590 ó (az alaptervi 610–1035 helyett; a különbség a kikerült, kész vagy más terv által hordozott pontok). A W1 a legnagyobb értékű és MI nélküli: a `.kdenlive` megnyitása a kötelező döntés (KDN-1), és az SC-5 ugyanazt a magot használja.
+**Összes becslés:** a 2026-11-22-i 330–590 óra a 2026-11-27-i átvezetéssel kb. 40–75 órával kisebb (KDN-10, KDN-12, KDN-18, KDN-48, KDN-52, KDN-55, KDN-61 és a KDN-11-szűkítés), ehhez jön a KDN-47 és a KDN-37 maradéka (becslés: 5–10 ó). A KDN-1 és KDN-20 haladását nem vontam le, az a W1 újrabecslésénél derül ki. A W1 a legnagyobb értékű és MI nélküli: a `.kdenlive` megnyitása a kötelező döntés (KDN-1), és az SC-5 ugyanazt a magot használja.
 
 ## 7. Tulajdonosi döntést igénylő pontok
 
@@ -170,7 +175,10 @@ Minden hullám **külön tulajdonosi indítási engedélyt** igényel, és minde
 | **D-4** | **`gyroflow-core` licence** (KDN-13): a licencet a `gyroflow-core` tárolójából nem ellenőriztük; ha GPL-3.0-**only**, a CFA4 „or-later” kikötésével szemben a VFX-terv Lumit-döntésének mintájára kell kezelni | A KDN-13 indítása előtt külön licenc-ellenőrzés; a Lumit-minta (fájlszintű „only” megjegyzés) csak a tulajdonos külön döntésével |
 | **D-5** | **A forkok és a kiegészítő tárolók a „mit integrálunk” listában** (tulajdonosi szabály, 2026-10-27) | Ez a terv a forrásokat felveszi (II. pont a frissített alaptervben); a `VISION.md` §4 Kdenlive-sorának bővítése a tulajdonos dolga |
 | **D-6** | **Pontjelölés-ütközés: ELDÖNTVE (István, 2026-11-23).** A `LOSSLESS-MEDIA-TOOLS-001` (PR #1124) K1–K16 jelölést használ, és előbb készült | A Kdenlive-pontok jele `KDN-<n>` (régen `K<n>`), a #1124 terve nem változik |
-| **D-7** | **Indítás:** a lekérdezéskor 60 körüli nyitott PR volt (`coordination.md` §2.6: 30 fölött csak a tulajdonos kérésére) | A W1 indítását a tulajdonos kérje; javasolt első PR: a KDN-1/SC-5.1 közös mag |
+| **D-7** | **Indítás:** 2026-11-27-én 56 nyitott PR van (`coordination.md` §2.6: 30 fölött csak a tulajdonos kérésére) | A W1 további indítását a tulajdonos kérje; a következő logikus lépés a KDN-20-tábla bekötése az importerbe |
+| **D-8** | **A kiegészítő tárolók és a forkok újraelemzése** (2026-11-27, **eldöntve a W1-re:** a 2026-11-22-i befagyasztott állapot érvényes) | W2–W5 előtt új elemzés; a `CFA4-AI_modules` ADR 0008 és `docs/ai/` szövege is ellenőrizendő |
+| **D-9** | **KDN-38 és GESTURE V-19/MG0:** a `CommandSpec`-nek nincs destruktív jelölője | Egy közös mező, egyeztetve a GESTURE-001 gazdájával |
+| **D-10** | **KDN-16 és #1124:** a LOSSLESS-MEDIA-TOOLS-001 nyitott, a kötegelt átkódolás átfedhet vele | Egyeztetés az #1124 gazdájával a KDN-16 indítása előtt |
 
 ## 8. Mit nem ellenőriztem
 
@@ -180,11 +188,13 @@ Minden hullám **külön tulajdonosi indítási engedélyt** igényel, és minde
 4. A forkoknál nem futtattam kódot; a két nagy fork diffje a hivatalos Kdenlive-hoz nem készült el; a D-Ogi D-Bus rétegének pontos helyét nem azonosítottuk.
 5. A `gyroflow-core`, a `semitable/easing-functions` és a kiegészítő tárolók GPL-szövegeinek „only/or-later” kikötését nem ellenőriztem.
 6. A `plan/` mappát (gép-lokális) nem láttam; a becslések nem mértek.
+7. (2026-11-27) A kiegészítő tárolók és a forkok mostani állapotát, valamint a `CFA4-AI_modules` tartalmát nem elemeztem újra (D-8). A „kész/nincs” besorolás a commitnaplón és kulcsszavas kódkeresésen alapul; a Qt6-oldali pontoknál (KDN-49, KDN-51, KDN-53, KDN-58, KDN-59) gyengébb a bizonyíték, kapunál ellenőrizendő. A nyitott PR-ok közül csak a címeket néztem.
 
 ## 9. Változásnapló
 
 | Dátum | Változás |
 |---|---|
+| 2026-11-27 | 1.2 (jóváhagyva, István 22:04–22:06): a 2026-11-23-i duplikáció-ellenőrzés átvezetése (W0) a `main` @ `9f38bfea` állapotával. 5A: +9 pont (KDN-10, 12, 18, 37, 47, 48, 52, 55, 61); 5B: tizenegy pont szűkítve/áthelyezve, a KDN-1 és KDN-20 állapota frissítve; hullámok és becslés újraszámolva; D-7 frissítve, D-8…D-10 új. A pontszámok és a fájlnév változatlanok |
 | 2026-11-23 | Jelölés: a Kdenlive-pontok `K<n>` jele `KDN-<n>` lett (ütközés a `LOSSLESS-MEDIA-TOOLS-001` K1–K16 jelölésével, D-6 eldöntve). Tartalmi változás nincs |
 | 2026-11-22 | 1.1 (jóváhagyva 22:44):  István kérésére az 5. pont szűrve: csak a CFA4-ben és más tervben nem szereplő képességek maradnak (5A kikerül, 5B marad); a hullámok ennek megfelelően újraszámolva |
 | 2026-11-22 | 1.0 (javaslat): KDN-36 elvégezve; delta, tárolók és forkok állapota, KDN-pontonkénti állapot, hullámok, nyitott döntések |

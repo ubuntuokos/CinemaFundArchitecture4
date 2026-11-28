@@ -69,11 +69,16 @@ fn baseline_decode_and_demux() {
     }
     assert!(r.decide(Key::in_container(Operation::Demux, Codec::Mpeg2Video, Container::MpegPs), STRICT).allowed);
     assert!(r.decide(Key::in_container(Operation::Demux, Codec::H264, Container::Mp4), STRICT).allowed);
+    // R2-03: Matroska demux has its oracle test (crates/export/src/smart_cut_mkv_tests.rs)
+    for codec in [Codec::H264, Codec::Hevc, Codec::Av1] {
+        assert!(r.decide(Key::in_container(Operation::Demux, codec, Container::Matroska), STRICT).allowed, "{codec:?}");
+    }
+    assert!(r.decide(Key::in_container(Operation::Demux, Codec::Av1, Container::WebM), STRICT).allowed);
     // implemented but without an oracle test: only for a lax policy
-    let mkv = Key::in_container(Operation::Demux, Codec::H264, Container::Matroska);
-    assert!(!r.decide(mkv, STRICT).allowed);
-    assert_eq!(r.decide(mkv, STRICT).level, SupportLevel::Experimental);
-    assert!(r.decide(mkv, LAX).allowed);
+    let mov = Key::in_container(Operation::Demux, Codec::Hevc, Container::Mov);
+    assert!(!r.decide(mov, STRICT).allowed);
+    assert_eq!(r.decide(mov, STRICT).level, SupportLevel::Experimental);
+    assert!(r.decide(mov, LAX).allowed);
 }
 
 #[test]
@@ -91,7 +96,10 @@ fn smart_cut_is_allowed_only_where_it_is_implemented() {
                     let d = r.smart_cut(codec, source, output, policy);
                     let demux = r.decide(Key::in_container(Operation::Demux, codec, source), policy).allowed;
                     let mpeg = matches!(output, Container::MpegPs | Container::MpegTs);
-                    let copy = (matches!(codec, Codec::H264 | Codec::Hevc | Codec::Av1) && mp4(output)) || (codec == Codec::Mpeg2Video && mpeg);
+                    // R2-04: H.264, HEVC, AV1 and MPEG-2 video into Matroska, AV1 into WebM
+                    let mkv =
+                        (output == Container::Matroska && codec != Codec::Aac && codec != Codec::Pcm) || (output == Container::WebM && codec == Codec::Av1);
+                    let copy = (matches!(codec, Codec::H264 | Codec::Hevc | Codec::Av1) && mp4(output)) || (codec == Codec::Mpeg2Video && mpeg) || mkv;
                     let expected = copy && demux;
                     assert_eq!(d.allowed, expected, "{codec:?} {source:?} → {output:?}");
                     assert_eq!(d.blockers().is_empty(), expected);
@@ -99,7 +107,7 @@ fn smart_cut_is_allowed_only_where_it_is_implemented() {
             }
         }
     }
-    let d = r.smart_cut(Codec::Mpeg2Video, Container::MpegTs, Container::Matroska, STRICT);
+    let d = r.smart_cut(Codec::Mpeg2Video, Container::MpegTs, Container::Mp4, STRICT);
     let blocked: Vec<Operation> = d.steps.iter().filter(|s| !s.allowed).map(|s| s.key.operation).collect();
     assert_eq!(blocked.first(), Some(&Operation::PacketCopy), "{blocked:?}");
     assert!(!blocked.contains(&Operation::Demux) && !blocked.contains(&Operation::GopIndex), "{blocked:?}");
