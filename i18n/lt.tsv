@@ -59,6 +59,7 @@
 	Arrange	Išdėstyti
 	Assembly	Surinkimas
 	Attach Proxies…	Prijungti tarpines kopijas…
+	Find Camera Proxies	Rasti kameros tarpines kopijas
 	Audio	Garsas
 	Audio Channels…	Garso kanalai…
 	Audio Clip Mixer	Garso klipų maišiklis
@@ -3953,7 +3954,7 @@
 	Six-Point Pin	Šešių taškų prisegimas
 	Upper Center	Viršuje centre
 	Lower Center	Apačioje centre
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Naudoti FFmpeg failams, kurių CFA4 variklis negali atidaryti (FFmpeg 9.0.2 ar naujesnis, GPL-3 versija)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Naudoti FFmpeg failams, kurių CFA4 variklis negali atidaryti (FFmpeg 9.1 ar naujesnis, GPL-3 versija)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Naudoti sistemos GStreamer failams, kurių negali atidaryti nei variklis, nei FFmpeg
 	Analyze Source for Smart Cut	Analizuoti šaltinį išmaniajam karpymui
 	Plan Smart Cut	Planuoti išmanųjį karpymą
@@ -4820,6 +4821,7 @@ export.summary	Low	žema
 	Datamosh Bloom	Datamosh žydėjimas
 	Start Time (seconds)	Pradžios laikas (sekundės)
 	Repeats	Pakartojimai
+	Clean Blocks	Švarūs blokai
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Taikyti neseniai naudotą efektą pasirinktiems klipams
@@ -4912,3 +4914,75 @@ export.summary	Low	žema
 	Voxel attributes	Vokselių atributai
 	Voxel size:	Vokselio dydis:
 	points	taškai
+
+# WP3 DPX bit depth
+	Bit Depth	Bitų gylis
+
+# AS-02 versions
+	AS-02 Versions	AS-02 versijos
+	Tick the sequences to write as further versions in the AS-02 bundle	Pažymėkite sekas, kurios bus įrašytos kaip papildomos AS-02 paketo versijos
+	Delete Short Clips	Ištrinti trumpus klipus
+	A stored combination does not run a command yet.	Įrašytas derinys dar nevykdo komandos.
+	Action hint	Veiksmo užuomina
+	Add combination	Pridėti derinį
+	Add mapping	Pridėti priskyrimą
+	Button Learn	Mygtuko mokymasis
+	Button Test	Mygtuko bandymas
+	Button name	Mygtuko pavadinimas
+	Cancel feedback	Atšaukimo pranešimas
+	Combination editor	Derinių rengyklė
+	Context	Kontekstas
+	Delete profile	Šalinti profilį
+	Detected buttons	Aptikti mygtukai
+	Draw the gesture with a button held.	Pieškite gestą laikydami mygtuką.
+	Error feedback	Klaidos pranešimas
+	Evdev device	Evdev įrenginys
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev skaito tik pasirinktą įrenginį ir tik kai vėlesnis etapas jį įjungia. Ši laida lieka Qt kelyje.
+	Execution feedback	Vykdymo pranešimas
+	Follow the system	Sekti sistemą
+	Gesture	Gestas
+	Gesture Learn	Gesto mokymasis
+	Gesture editor	Gestų rengyklė
+	Gesture profiles	Gestų profiliai
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Gestai lieka išjungti, kol jų neįjungsite. Įjungimas neužblokuoja skydelio meniu.
+	HUD	HUD
+	Hand	Ranka
+	High contrast	Didelis kontrastas
+	Hold time	Laikymo laikas
+	Input access	Įvesties prieiga
+	Left-handed	Kairiarankis
+	Mapping	Priskyrimas
+	Maximum length	Didžiausias ilgis
+	Maximum time	Didžiausias laikas
+	Minimum length	Mažiausias ilgis
+	Mirror ergonomic gestures	Veidrodinti ergonominius gestus
+	Mouse Gestures	Pelės gestai
+	Mouse Gestures…	Pelės gestai…
+	No buttons yet. Press one in Button Learn or Button Test.	Mygtukų dar nėra. Paspauskite vieną mokymesi arba bandyme.
+	Press	Paspaudimas
+	Qt pointer (this application)	Qt rodyklė (ši programa)
+	Recognition preview	Atpažinimo peržiūra
+	Reduced animation	Sumažinta animacija
+	Right-handed	Dešiniarankis
+	Roles	Vaidmenys
+	Save gesture	Įrašyti gestą
+	Save profile	Įrašyti profilį
+	Show the gesture HUD	Rodyti gestų HUD
+	Slop	Laisvumas
+	Spatial gesture	Erdvinis gestas
+	Thresholds	Slenksčiai
+	Trail	Pėdsakas
+	Use gestures in the window	Naudoti gestus lange
+	DVD-Video folder (VIDEO_TS)	DVD-Video aplankas (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video aplankas (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamorfinis, 6 Mbps, GOP 15, AC-3 192 kbps, skyriai iš sekos skyrių žymeklių
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video aplankas (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamorfinis, 6 Mbps, GOP 18, AC-3 192 kbps, skyriai iš sekos skyrių žymeklių
+	DNx decoding:	DNx dekodavimas:
+	As detected from the file ({detected})	Kaip aptikta faile ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (standartas)
+	FFmpeg-compatible	Suderinama su FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg kai kuriuos DNx failus skaito kitaip nei standartas (4:4:4 spalvos, atvirkštinis kvantavimas). FFmpeg užkoduota medžiaga aptinkama; pasirinkite čia, jei aptikimas klaidingas.
+	DNx Coding	DNx kodavimas
+	FFmpeg-compatible (for FFmpeg-based tools)	Suderinama su FFmpeg (FFmpeg pagrįstiems įrankiams)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Išjungta: koduojama pagal SMPTE ST 2019-1. Įjungta: koduojama taip, kaip FFmpeg rašo DNx, FFmpeg pagrįstiems įrankiams.

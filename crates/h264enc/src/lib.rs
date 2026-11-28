@@ -174,6 +174,11 @@ pub struct EncoderConfig {
     /// idr_pic_id of the first IDR picture (later IDRs alternate with it), so a spliced segment
     /// can differ from the IDR next to it.
     pub first_idr_pic_id: u16,
+    /// P and B pictures code no intra macroblocks: every block is predicted from a reference, so a
+    /// block the motion search matches poorly keeps (a warped copy of) the reference instead of
+    /// being refreshed. Meant for the datamosh, not for delivery: quality drops on new content.
+    /// IDR pictures are still intra. Off by default.
+    pub inter_only: bool,
 }
 
 impl EncoderConfig {
@@ -203,6 +208,7 @@ impl EncoderConfig {
             sps_id: 0,
             pps_id: 0,
             first_idr_pic_id: 0,
+            inter_only: false,
         }
     }
 }
@@ -401,6 +407,7 @@ impl Encoder {
                 decimate: true,
                 adaptive_t8: false,
                 always_intra: false,
+                no_inter_intra: cfg.inter_only,
                 cavlc_clamp: !cabac,
             },
             Preset::Balanced => EncParams {
@@ -419,6 +426,7 @@ impl Encoder {
                 decimate: true,
                 adaptive_t8: high,
                 always_intra: false,
+                no_inter_intra: cfg.inter_only,
                 cavlc_clamp: !cabac,
             },
             Preset::Quality => EncParams {
@@ -437,6 +445,7 @@ impl Encoder {
                 decimate: true,
                 adaptive_t8: high,
                 always_intra: true,
+                no_inter_intra: cfg.inter_only,
                 cavlc_clamp: !cabac,
             },
         };
@@ -1012,3 +1021,6 @@ fn jobs_stride_y(mbw: usize) -> usize {
 fn jobs_stride_c(mbw: usize) -> usize {
     mbw * 8 + 2 * CHROMA_PAD
 }
+
+#[cfg(test)]
+mod inter_only_tests;

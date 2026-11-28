@@ -102,14 +102,51 @@ jobs:
         run: |
           target/release/cfa4-cli --version
           target/release/cfa4-cli --demo inspect project
-      # The Qt GUI's tests that drive the real engine (`REAL` in test_qt_gui.py) need this build;
-      # the Qt 6 GUI job runs without it and skips them. Non-blocking, like that job, until the Qt6
-      # GUI is complete (docs/coordination.md §3.4).
+      # The Qt GUI's tests that drive the real engine run in their own job (qt-gui-real-engine) with
+      # this binary, so the gate does not wait for them (owner decision 2026-11-24).
+      - name: Keep the engine for the Qt GUI tests
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # an upload failure only costs the non-blocking qt-gui-real-engine job its binary: it
+        # must not fail this job, which the gate needs
+        continue-on-error: true
+        with:
+          name: cfa4-cli-release
+          path: target/release/cfa4-cli
+          retention-days: 1
+          if-no-files-found: error
+
+  # The Qt GUI's tests that drive the real engine (`REAL` in test_qt_gui.py), with the cfa4-cli of
+  # rust-cli-smoke. Non-blocking until the Qt6 GUI is complete (docs/coordination.md §3.4) and kept
+  # out of full-validation-gate's needs (owner decision 2026-11-24): a slow or hanging GUI test no
+  # longer holds the gate back.
+  qt-gui-real-engine:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
+    needs: rust-cli-smoke
+    name: Qt 6 GUI tests with the real engine (non-blocking)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 75
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: The engine built by rust-cli-smoke
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: cfa4-cli-release
+          path: target/release
       - name: Headless Qt runtime libraries
         run: |
+          chmod +x target/release/cfa4-cli
           # QtMultimedia (audio output choice) loads libpulse even with no sound server
+          sudo apt-get update
+          # and the shared libraries cfa4-cli was linked against in rust-cli-smoke (same packages)
           sudo apt-get install -y --no-install-recommends \
-            libegl1 libgl1 libopengl0 libxkbcommon0 libxcb-cursor0 libpulse0 libpulse-mainloop-glib0
+            libegl1 libgl1 libopengl0 libxkbcommon0 libxcb-cursor0 libpulse0 libpulse-mainloop-glib0 \
+            libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev
       - name: Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
@@ -119,8 +156,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --require-hashes -r requirements/linux-amd64.txt
           python -m pip install --no-deps -e .
-      - name: Qt 6 GUI tests with the real engine (non-blocking)
-        continue-on-error: true
+      - name: Qt 6 GUI tests with the real engine
         timeout-minutes: 60
         env:
           QT_QPA_PLATFORM: offscreen
@@ -233,26 +269,33 @@ jobs:
           persist-credentials: false
       - name: Native Linux dependencies and test oracles
         run: bash scripts/ci/install-ffmpeg-oracle-deps.sh
+      - name: Pinned FFmpeg version (packaging/ffmpeg-version.env)
+        id: ffv
+        run: |
+          . packaging/ffmpeg-version.env
+          echo "version=$CFA4_FFMPEG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "cache_rev=$CFA4_FFMPEG_CACHE_REV" >> "$GITHUB_OUTPUT"
       # Caches are written only on main by ci-cache-warm.yml: a cache saved in a merge-queue
       # or pull-request run is not visible to the next run, only one saved on main is. So
       # these steps only restore, and a miss falls back to building (as before).
-      - name: Restore FFmpeg 9.0.2 (saved on main by ci-cache-warm.yml)
+      - name: Restore the FFmpeg oracle (saved on main by ci-cache-warm.yml)
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7
-          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v7
-      - name: Install verified FFmpeg 9.0.2
-        run: bash scripts/ci/install-ffmpeg-9.0.2.sh
-      - name: Assert Ubuntu 26.04 and FFmpeg 9.0.2 versions
+          path: ~/.cache/cfa4/ffmpeg-${{ steps.ffv.outputs.version }}-linux-x86_64-${{ steps.ffv.outputs.cache_rev }}
+          key: cfa4-ffmpeg-${{ steps.ffv.outputs.version }}-ubuntu-26.04-linux-x86_64-${{ steps.ffv.outputs.cache_rev }}
+      - name: Install the verified FFmpeg oracle
+        run: bash scripts/ci/install-ffmpeg.sh
+      - name: Assert Ubuntu 26.04 and the pinned FFmpeg version
         run: |
+          . packaging/ffmpeg-version.env
           . /etc/os-release
           test "$ID" = "ubuntu" && test "$VERSION_ID" = "26.04"
           ffmpeg -version
           ffprobe -version
           ffmpeg_actual="$(ffmpeg -version | awk 'NR==1 {print $3}')"
           ffprobe_actual="$(ffprobe -version | awk 'NR==1 {print $3}')"
-          if [[ "$ffmpeg_actual" != "9.0.2" || "$ffprobe_actual" != "9.0.2" ]]; then
-            echo "::error::CFA4 CI requires ffmpeg and ffprobe 9.0.2 (got $ffmpeg_actual / $ffprobe_actual)."
+          if [[ "$ffmpeg_actual" != "$CFA4_FFMPEG_VERSION" || "$ffprobe_actual" != "$CFA4_FFMPEG_VERSION" ]]; then
+            echo "::error::CFA4 CI requires ffmpeg and ffprobe $CFA4_FFMPEG_VERSION (got $ffmpeg_actual / $ffprobe_actual)."
             exit 1
           fi
           if ! ffmpeg -hide_banner -decoders | grep -Eq '^[[:space:]]*V[^[:space:]]*[[:space:]]+apv([[:space:]]|$)'; then
@@ -277,6 +320,90 @@ jobs:
         env:
           CFA4_REQUIRE_ORACLES: "1"
         run: cargo test --workspace --exclude cfa4-ui --release --locked --timings
+
+  # P15 (docs/plans/CFA4-DATA-PG-001-1.0.md §10, PG-1/PG-2): the store's tests need a real
+  # PostgreSQL 18, the reference machine's major version (P11). Until this job existed every
+  # `cfa4-store` test skipped for want of a server, so the migrations (both ways), the queue's
+  # start and lease rules, the outbox relay, LISTEN/NOTIFY and the engine's write-behind mirror
+  # were never run in CI. `CFA4_PG_REQUIRE=1` turns a skip into a failure, and `CFA4_PG_BIN` pins
+  # the throw-away test clusters to 18 even when the image also ships another major version.
+  # The lib tests below block merging. `tests/setup_idempotent.rs` (the `cfa4-db-setup` twice gate)
+  # elevates only its own subprocesses through `sudo -n` (`pg_createcluster`, the `/etc/postgresql`
+  # reads, `runuser`), so the test binary stays the runner user and logs in as `cfa4_login` through
+  # the `cfa4map` peer map it just wrote; it creates the `cfa4` cluster and drops it again, and
+  # asserts the default cluster is unchanged. Owner decision 2026-11-26: it was reported but NOT
+  # blocking until it ran green once in CI; that happened on 2026-11-27 (#1865), so
+  # `rust-store-db-setup` now sits in `full-validation-gate`'s `needs`.
+  rust-store-postgres:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
+    needs: platform-scope
+    name: PostgreSQL 18 store tests (PG-1/PG-2)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    env:
+      CFA4_PG_REQUIRE: "1"
+      CFA4_PG_BIN: /usr/lib/postgresql/18/bin
+      # runs `tests/setup_idempotent.rs` (PG-1 gate 3): `cfa4-db-setup` twice, same state
+      CFA4_DB_SETUP: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: PostgreSQL 18 (the Ubuntu 26.04 package, the reference major version)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-18
+          /usr/lib/postgresql/18/bin/postgres --version
+          # P11: the CI major version must be the reference machine's, so never fall back to
+          # another installed cluster: the store's harness would skip it, and a skip is a failure.
+          if ! /usr/lib/postgresql/18/bin/initdb --version | grep -Eq '[[:space:]]18\.'; then
+            echo "::error::CFA4 CI needs PostgreSQL 18: /usr/lib/postgresql/18 is missing or is not 18."
+            exit 1
+          fi
+      - name: Rust toolchain from rust-toolchain.toml
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+      - name: cfa4-store tests on throw-away PostgreSQL 18 clusters
+        run: cargo test --locked -p cfa4-store --lib
+
+  # The `cfa4-db-setup` idempotence gate (PG-1 gate 3). Owner decision 2026-11-26: non-blocking
+  # until its first green CI run; that run happened on 2026-11-27 (#1865), so the job is now part
+  # of `full-validation-gate`'s `needs`.
+  rust-store-db-setup:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
+    needs: [platform-scope, rust-store-postgres]
+    name: cfa4-db-setup idempotence (PG-1 gate 3)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    env:
+      CFA4_PG_REQUIRE: "1"
+      CFA4_PG_BIN: /usr/lib/postgresql/18/bin
+      CFA4_DB_SETUP: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: PostgreSQL 18 and its cluster tools (postgresql-common)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-18
+          /usr/lib/postgresql/18/bin/postgres --version
+          if ! /usr/lib/postgresql/18/bin/initdb --version | grep -Eq '[[:space:]]18\.'; then
+            echo "::error::CFA4 CI needs PostgreSQL 18: /usr/lib/postgresql/18 is missing or is not 18."
+            exit 1
+          fi
+          command -v pg_lsclusters pg_createcluster pg_ctlcluster runuser psql
+      - name: Rust toolchain from rust-toolchain.toml
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+      - name: cfa4-db-setup twice leaves the same cluster, roles and files
+        run: cargo test --locked -p cfa4-store --test setup_idempotent
 
   python-qt6-linux:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
@@ -444,6 +571,67 @@ jobs:
           python -m unittest discover -s packaging/linux -p 'test_*.py' -v
           python -m cfa4_devtools.dependency_audit
 
+  # Measured parity (docs/plans/CFA4-PARITY-G7-2026-11-20.md, G7.10): the Qt 6 GUI's menus and
+  # panels against the committed references and xtask/parity/thresholds.json. The ratchet fails when
+  # a threshold is lowered or removed compared with the base; `--ci` fails below a threshold. The
+  # Qt dump needs the built engine and the Python environment (.venv, which `cargo xtask parity`
+  # looks for). The report is kept as an artifact.
+  parity:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
+    needs: platform-scope
+    name: Measured parity (G7)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 150
+    env:
+      QT_QPA_PLATFORM: offscreen
+      # the ratchet's base: the PR's base, or the commit the merge queue builds on; none for a manual run
+      PARITY_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config clang cmake ninja-build \
+            libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils \
+            libegl1 libgl1 libopengl0 libxkbcommon0 libxcb-cursor0 libpulse0 libpulse-mainloop-glib0
+      - name: Rust toolchain from rust-toolchain.toml
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+      - name: Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Python environment in .venv (the Qt dump runs .venv/bin/python)
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install --require-hashes -r requirements/linux-amd64.txt
+          .venv/bin/python -m pip install --no-deps -e .
+      - name: Thresholds never go down (ratchet against the base)
+        if: env.PARITY_BASE_SHA != ''
+        run: |
+          git fetch --no-tags --depth=1 origin "$PARITY_BASE_SHA"
+          cargo run --locked -q -p xtask -- parity --check-ratchet --base "$PARITY_BASE_SHA"
+      - name: Build the engine the Qt dump starts
+        run: cargo build --locked --release -p cfa4-cli
+      - name: Measure menus and panels against the committed references and thresholds
+        run: cargo run --locked -q -p xtask -- parity --ci
+      - name: Keep the parity report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: parity-report
+          path: target/parity/
+          if-no-files-found: warn
+
   # Required status check for main (owner decision 2026-10-31, docs/coordination.md §3.4):
   # green only if every blocking full-validation job really ran and succeeded on this head.
   # A skipped job (no `cfa4-full-validation` label / no workflow_dispatch) fails the gate.
@@ -459,8 +647,11 @@ jobs:
       - vendored-ui
       - rust-architecture-assets
       - rust-release-tests
+      - rust-store-postgres
+      - rust-store-db-setup
       - python-qt6-linux
       - otio-oracle
+      - parity
     name: full-validation-gate
     runs-on: ubuntu-26.04
     timeout-minutes: 5

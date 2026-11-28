@@ -217,3 +217,76 @@ lépcsőhöz.
 
 **Javaslat: PASS.** Új döntési kérdés nincs; a hierarchiatárolás: `ltree`. A 4. lépcső (Workflow Engine
 mag) G2-je következik.
+
+## 12. Megvalósítási pontosítások (ST-1)
+
+- **Tárolás:** a `0003` migráció az `ltree` kiterjesztést használja (PostgreSQL ≥ 13-tól megbízhatónak jelölt, nem kell
+  szuperfelhasználó). A címke az elem UUID-ja kötőjel nélkül (`ltree` nem fogad el kötőjelet); a `path` a szülő útja és a
+  saját címke. A `BEFORE` trigger a szabályt, a kört és a produkcióhatárt, az `AFTER ROW` trigger az út és a `parent_id`
+  egyezését ellenőrzi, így egy egész részfa egyetlen `UPDATE`-tel mozgatható (ST-2). SQLSTATE-ok: `BL101` szabály,
+  `BL102` kör, `BL103` másik produkció, `BL104` asset szülővel, `BL105` útegyezés, `BL106` időzítés.
+- **Típus és sablon:** 7 szerkezeti (season, unit, episode, spot, sequence, scene, shot) és 6 asset típus (character, prop,
+  set, vehicle, fx, environment) a kezdő adat; csak a `shot` típusnak van időzítése. Az öt sablon (film, series,
+  commercial, animation, vfx) szabályait a produkció létrehozásakor a `production_structure_rule` kapja meg másolatban;
+  a meglévő produkciókra a migráció visszatölti. Sablonmódosítás a már létező produkciót nem érinti.
+- **Parancsok (ST-1):** `backlot.structure.tree` (egy szint, `child_count`-tal; `kind=asset` laposan listáz),
+  `.entity.create/update/get`, `.link.add/remove/list`. A kód szülőn belül és típusonként egyedi (`ENTITY_CODE_TAKEN`);
+  az asset nem lehet szülő vagy gyerek (`STRUCTURE_ASSET_HAS_PARENT`). A `casting` kapcsolat jelenet, snitt vagy
+  sorozat felől karakterre, a `setting` díszletre mutat (`LINK_INVALID` egyébként); azonos él kétszer `LINK_DUPLICATE`.
+- **Metaadat:** lebegőpontmentes JSON, legfeljebb 64 KB. Az időzítés egész képkocka (`frame_in` ≤ `frame_out`).
+- **Audit:** minden módosítás pontosan egy esemény (`structure.entity.created/updated`, `structure.link.added/removed`),
+  a hatókörben `entity_path`; a hibás kérés nem ír eseményt.
+- **Későbbre marad:** az elem státusza (4. lépcső, Workflow Engine); `ENTITY_METADATA_INVALID` (22. lépcső). Az áthelyezés,
+  átrendezés, összevonás, megszüntetés, a hatáselemzés és a típus/sablon-beállítás parancsai, valamint az L-profil mérése
+  az ST-2 feladata.
+
+## 13. Megvalósítási pontosítások (ST-2)
+
+- **Áthelyezés (`entity.move`):** az elem és a részfája egy `UPDATE`-tel kerül az új szülő alá (`path = új szülőút ||
+  a régi útból az elem címkéjétől`), az elem a testvérek végére kerül, a `row_version`-je nő, a leszármazottaké nem. Egy
+  esemény (`structure.entity.moved`: régi és új szülő, út, részfaméret). Elutasítás: szabály (`STRUCTURE_RULE_VIOLATION`),
+  kör (`STRUCTURE_CYCLE`), másik produkció, asset, visszavont szülő vagy elem, azonos kód az új szülő alatt
+  (`ENTITY_CODE_TAKEN`). Ugyanaz a szülő: nincs változás, nincs esemény.
+- **Sorrend (`entity.reorder`):** a megadott pozíció (1-től) az azonos fajtájú testvérek között; a többi testvér egy
+  tranzakcióban újraszámozódik, a megváltozott sorok `row_version`-je nő. Egy esemény.
+- **Kivezetés (`entity.retire`):** a részfa minden aktív eleme azonos `retired_at`-et kap. `retired=false` csak azt hozza
+  vissza, ami az elemmel együtt lett kivezetve (az előbb külön kivezetett leszármazott kivezetett marad), és csak ha a
+  szülő nem kivezetett. Visszavont szülő alá nem jön létre elem.
+- **Összevonás (`entity.merge`):** azonos produkció és azonos típus; a forrás gyerekei a célelem alá kerülnek (előbb
+  minden kód ellenőrizve, ütközésnél semmi nem mozdul), a linkek a célra mutatnak át; a duplikálódó vagy önmagára
+  mutató link elmarad; a forrás kivezetett lesz. Egy esemény a darabszámokkal.
+- **Törlés (`entity.delete`):** csak gyerek és link nélküli elem; más modul `RESTRICT` idegen kulcsa az adatbázisban is
+  megakadályozza (`ENTITY_IN_USE`). Az esemény a törölt elem utolsó értékeit hordozza.
+- **Hatáselemzés (`structure.impact`):** a részfa típusonkénti darabszáma, és a linkeken át (mindkét irány, legfeljebb 5
+  ugrás, kérésre egy `link_type`) elérhető, a részfán kívüli elemek az ugrásszámmal; legfeljebb 500 elem listázva, a
+  teljes darabszámmal. Csak olvas, eseményt nem ír.
+- **Beállítás:** `entity_type.create/update/list` (a `kind` nem változik; `has_timing` csak amíg nincs ilyen típusú
+  elem, `ENTITY_TYPE_IN_USE`; a visszavont típusra nem jön létre új elem), `template.create/list`,
+  `template.rule.add/remove` (típusonként egy sablon; a meglévő produkciók másolata nem változik) és a produkció saját
+  szabályai: `rule.list/add/remove` (owner, producer; használatban lévő szabály nem törölhető,
+  `STRUCTURE_RULE_IN_USE`). A szabály csak szerkezeti típusok között áll fenn. Auditesemény: `config.*` (típus, sablon),
+  illetve `structure.rule.added/removed` a produkció hatókörével.
+- **Tulajdonságalapú teszt:** véletlenszerű létrehozás, áthelyezés, sorrend, kivezetés, visszaállítás, összevonás és
+  törlés három magértékkel; minden lépés után az út egyezik a szülőlánccal, nincs kör, minden pár szabályos, nincs
+  produkciókeresztező szülő.
+
+### 13.1 L-profil mérés (SC-02, 4 vCPU helyettesítő gép)
+
+`scripts/dev/structure-load-measure.py --productions 52`: 52 produkció × (10 000 snitt + 2 000 asset + a fölöttük lévő
+jelenetek és sorozatok) = **630 500 elem**, a tömeges betöltés után ellenőrizve (0 útegyezési hiba, az áthelyezések után
+sem). A betöltés tömeges SQL-lel, kikapcsolt sortriggerekkel történt; a mérés minden más lépése a valódi szolgáltatáson megy.
+
+| Művelet | Medián | p95 |
+|---|---|---|
+| Fa első szintje (5 elem, `child_count`-tal) | 3,1 ms | 3,5 ms |
+| Második szint | 4,3 ms | 5,0 ms |
+| Elem megnyitása | 2,8 ms | 4,4 ms |
+| Részfa-lekérdezés (2 025 elem) | 1,7 ms | 2,0 ms |
+| Elem létrehozása (audittal) | 7,9 ms | 11,2 ms |
+| **2 025 elemes részfa áthelyezése** (4 mérés) | **103 ms** | 145 ms (a legnagyobb) |
+| Részfa kivezetése / visszaállítása | 59 ms / 59 ms | |
+| Hatáselemzés egy 2 025 elemes részfára (linkekkel) | 78 ms | 94 ms |
+
+Méret: 800 bájt elemenként az indexekkel (kb. 500 MB az L-profilra). A célérték (G2-03 9.: a fanézet első szintje, részfa
+áthelyezése) a helyettesítő gépen teljesül; a **CFA4-MIN** gépen a mérést még meg kell ismételni (nyitott, mint az
+audit 50 milliós mérése).

@@ -55,6 +55,48 @@ fn foreign_idr_then_p_pictures_decodes_and_starts_from_a() {
     assert_eq!(mosh(&a, &b, 30).expect("again")[2].px, out[2].px);
 }
 
+/// Coarse random blocks (4 px): new content the motion search cannot find in the picture before.
+fn blocks(w: usize, h: usize, seed: u32) -> Image {
+    let mut img = Image::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let mut s = (((x / 4) * 7919 + (y / 4) * 104_729) as u32) ^ seed.wrapping_mul(0x9e37_79b9);
+            s ^= s << 13;
+            s ^= s >> 17;
+            s ^= s << 5;
+            let c = [(s & 255) as f32 / 255.0, ((s >> 8) & 255) as f32 / 255.0, ((s >> 16) & 255) as f32 / 255.0];
+            let i = (y * w + x) * 4;
+            img.px[i..i + 4].copy_from_slice(&[c[0], c[1], c[2], 1.0]);
+        }
+    }
+    img
+}
+
+#[test]
+fn without_clean_blocks_more_of_a_survives() {
+    // B cuts to new content after two pictures: with Clean Blocks the encoder refreshes the
+    // poorly predicted blocks with intra blocks of B, so B shows through cleanly; without them
+    // every block is moved from the moshed picture before and keeps more of A.
+    let (w, h) = (64, 48);
+    let a = scene(w, h, 0, [0.9, 0.1, 0.1]);
+    let b: Vec<Image> = (0..6).map(|i| if i < 2 { scene(w, h, i * 2, [0.1, 0.2, 0.9]) } else { blocks(w, h, 7) }).collect();
+    let run = |clean: bool| {
+        let mut s = Session::new(&a, &b[0], 30, clean).expect("session");
+        b[1..].iter().map(|f| s.push(f).expect("push")).collect::<Vec<_>>()
+    };
+    let (clean, dirty) = (run(true), run(false));
+    let (c, d) = (diff(&clean[1], &b[2]), diff(&dirty[1], &b[2]));
+    eprintln!("picture after the cut: mean |Δ| to B with clean blocks {c:.4}, without {d:.4}");
+    assert!(d > c * 1.2, "with clean blocks {c}, without {d}");
+    // the bloom takes the switch too: the motion into new content repeats differently
+    let r = scene(w, h, 0, [0.9, 0.1, 0.1]);
+    let step = |clean: bool| Bloom::new(&b[1], &b[2], 30, clean).expect("bloom").step(&r).expect("step");
+    let (sc, sd) = (step(true), step(false));
+    assert!(sd.px.iter().all(|v| v.is_finite()));
+    assert_ne!(sc.px, sd.px);
+    assert_eq!(step(false).px, sd.px);
+}
+
 #[test]
 fn odd_tiny_and_bad_inputs_never_panic() {
     for (w, h) in [(1, 1), (3, 5), (17, 9), (2, 2)] {
@@ -90,7 +132,7 @@ fn frame_times_1080p() {
         let a = scene(w, h, 0, [0.9, 0.1, 0.1]);
         let b: Vec<Image> = (0..25).map(|i| scene(w, h, i * 4 / d, [0.1, 0.2, 0.9])).collect();
         let t = Instant::now();
-        let mut s = Session::new(&a, &b[0], 30).expect("session");
+        let mut s = Session::new(&a, &b[0], 30, true).expect("session");
         let start = ms(t);
         let t = Instant::now();
         for f in &b[1..] {
@@ -98,7 +140,7 @@ fn frame_times_1080p() {
         }
         let push = ms(t) / 24.0;
         let t = Instant::now();
-        let bloom = Bloom::new(&b[0], &b[1], 30).expect("bloom");
+        let bloom = Bloom::new(&b[0], &b[1], 30, true).expect("bloom");
         let bloom_new = ms(t);
         let mut r = b[1].clone();
         let t = Instant::now();

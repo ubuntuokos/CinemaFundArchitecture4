@@ -13,6 +13,8 @@ workspace = true
 default = []
 # Speech-to-text with Whisper (candle, CPU). Off by default and in wasm builds.
 whisper = ["cfa4-speech/whisper"]
+# Speech detection with the Silero VAD model (tract, CPU); the model is downloaded by the user.
+silero = ["cfa4-speech/silero"]
 # Speech-model downloads, run by the confined cfa4-fetch process (CFA4-SECURITY-001 D5): the
 # engine itself has no network code.
 speech-download = []
@@ -70,6 +72,7 @@ cfa4-testkit = { workspace = true }
 cfa4-h264enc = { workspace = true }
 cfa4-hevc = { workspace = true }
 cfa4-mpeg2v = { workspace = true }
+cfa4-dnx = { workspace = true }
 cfa4-dng = { workspace = true, features = ["writer"] }
 cfa4-iab = { workspace = true }
 cfa4-auro = { workspace = true, features = ["test-util"] }

@@ -1,6 +1,6 @@
 //! The FFmpeg media source and the engine fallback (ADR 0005 step 1), against the FFmpeg this
 //! test binary links (`--features ffmpeg`). Fixtures are made by the ffmpeg CLI oracle
-//! (`cfa4_testkit::oracle`, the pinned 9.0.2 in CI) into Cargo's temporary directory, and every
+//! (`cfa4_testkit::oracle`, the pinned version of packaging/ffmpeg-version.env in CI) into Cargo's temporary directory, and every
 //! decoded frame is compared byte for byte with the oracle's own decoding of the same frame. A
 //! machine without the oracle, or whose oracle lacks an encoder a fixture needs, skips with a
 //! message (`CFA4_REQUIRE_ORACLES=1` turns skips into failures).

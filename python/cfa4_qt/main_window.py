@@ -36,12 +36,14 @@ from PySide6.QtWidgets import (
 )
 
 from . import __version__, crash, dock_commands, theme
+from .gesture_hud import GestureLayer
 from .commands import Command, CommandRegistry, qt_shortcut
 from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
 from .dock_gutters import DockGutters
 from .engine import EngineClient, EngineError
 from .i18n import LANGUAGES, N_, TR, fmt, tr
 from .i18n import system_language as i18n_system_language
+from .render_notices import new_notices
 from .media_backends import MediaBackendsDialog
 from .panels.about import AboutDialog
 from .panels.clip_dialogs import DIALOGS as CLIP_DIALOGS
@@ -145,7 +147,7 @@ LAYOUT_VERSION = 21  # 2: Source monitor; 3: Effect Controls; 4: Properties (egu
 # commands that can change which media an item shows, done or undone
 SOURCE_COMMANDS = frozenset({
     "media.relink", "media.replaceFootage", "media.makeOffline", "media.offlineAll", "media.autoRelink", "media.linkMedia",
-    "media.findMissing", "media.refreshChanged", "media.refreshGrowingFiles", "media.attachProxies", "media.detachProxies",
+    "media.findMissing", "media.refreshChanged", "media.refreshGrowingFiles", "media.attachProxies", "media.findCameraProxies", "media.detachProxies",
     "media.toggleProxies", "media.enableProxies", "media.reconnectFullRes", "clip.interpretFootage", "edit.undo", "edit.redo",
     "dcp.loadKdm", "dcp.clearKeys",
 })
@@ -471,6 +473,7 @@ class MainWindow(QMainWindow):
         self.job_watch.timeout.connect(self.watch_jobs)
         self._watched_render: tuple[int, int] | None = None  # (job, where playback starts after it)
         self._new_jobs: set[int] = set()
+        self._render_seen: set[tuple[str, str, str]] = set()  # warning/fallback events already announced
 
         for panel in (
             self.monitor,
@@ -575,6 +578,7 @@ class MainWindow(QMainWindow):
 
         engine.started.connect(self._on_started)
         engine.event.connect(self._on_event)
+        self.gestures = GestureLayer(self, engine)
         engine.job.connect(self._job_started)
         engine.failure.connect(lambda m: self.events.log(m, error=True))
         engine.stopped.connect(self._on_engine_stopped)
@@ -2502,7 +2506,7 @@ class MainWindow(QMainWindow):
     def interpret_footage(self, cid: str, params: dict[str, Any]) -> bool:
         """Interpret Footage without settings opens its dialog (egui's), for the items given or
         the Project panel's selection. True when it did."""
-        if cid != "clip.interpretFootage" or "colorSpace" in params or "pixelAspect" in params:
+        if cid != "clip.interpretFootage" or any(k in params for k in ("colorSpace", "pixelAspect", "dnxConventions")):
             return False
         items = [i for i in params.get("items") or self.project_panel.selected_items() or self.selected_clip_items() if isinstance(i, int)]
         dialog = InterpretFootageDialog(self, self.engine, items, self.execute)
@@ -3064,6 +3068,13 @@ class MainWindow(QMainWindow):
             got(jobs, b)
 
         self.engine.execute("jobs.list", {}, on_reply=got_all, on_error=lambda _m: self.job_watch.stop())
+        # warning and fallback events of the render job API (A4: nothing degrades quietly)
+        self.engine.execute("render.list", {}, on_reply=self._render_notices, on_error=lambda _m: None)
+
+    def _render_notices(self, reply: Any, _b: bytes | None) -> None:
+        for text, error in new_notices(reply, self._render_seen):
+            self.events.log(text, error=error, source="render")
+            self.statusBar().showMessage(text, 8000)
 
     def _after_render(self, jobs: Any) -> None:
         if self._watched_render is None or not isinstance(jobs, list):
@@ -3174,6 +3185,7 @@ class MainWindow(QMainWindow):
             self.export_dialog = ExportDialog(self.engine, self)
             self.export_dialog.finished_export.connect(self._export_finished)
         path = (self.project or {}).get("path")
+        self.export_dialog.set_project_sequences(sequences_of((self.project or {}).get("root")))
         self.export_dialog.open_for(self.sequence, path if isinstance(path, str) else None)
 
     def _media_backends(self) -> MediaBackendsDialog:

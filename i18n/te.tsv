@@ -62,6 +62,7 @@
 	Arrange	అమర్చు
 	Assembly	అసెంబ్లీ
 	Attach Proxies…	ప్రాక్సీలను జతచేయి…
+	Find Camera Proxies	కెమెరా ప్రాక్సీలను కనుగొనండి
 	Audio	ఆడియో
 	Audio Channels…	ఆడియో ఛానెల్‌లు…
 	Audio Clip Mixer	ఆడియో క్లిప్ మిక్సర్
@@ -3917,7 +3918,7 @@
 	Six-Point Pin	ఆరు-బిందువుల పిన్
 	Upper Center	పైన మధ్య
 	Lower Center	కింద మధ్య
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	CFA4 ఇంజిన్ తెరవలేని ఫైల్‌ల కోసం FFmpeg ఉపయోగించు (FFmpeg 9.0.2 లేదా తర్వాతి, GPL-3 బిల్డ్)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	CFA4 ఇంజిన్ తెరవలేని ఫైల్‌ల కోసం FFmpeg ఉపయోగించు (FFmpeg 9.1 లేదా తర్వాతి, GPL-3 బిల్డ్)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	ఇంజిన్ లేదా FFmpeg తెరవలేని ఫైల్‌ల కోసం సిస్టమ్ GStreamer ఉపయోగించు
 	Analyze Source for Smart Cut	స్మార్ట్ కట్ కోసం సోర్స్‌ను విశ్లేషించు
 	Plan Smart Cut	స్మార్ట్ కట్ ప్రణాళిక
@@ -4823,6 +4824,7 @@ export.summary	Low	తక్కువ
 	Datamosh Bloom	డేటామోష్ బ్లూమ్
 	Start Time (seconds)	ప్రారంభ సమయం (సెకన్లు)
 	Repeats	పునరావృత్తులు
+	Clean Blocks	శుభ్రమైన బ్లాక్‌లు
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	ఇటీవల ఉపయోగించిన ఎఫెక్ట్‌ను ఎంచుకున్న క్లిప్‌లకు వర్తింపజేయండి
@@ -4911,3 +4913,75 @@ export.summary	Low	తక్కువ
 	Voxel attributes	వాక్సెల్ లక్షణాలు
 	Voxel size:	వాక్సెల్ పరిమాణం:
 	points	బిందువులు
+
+# WP3 DPX bit depth
+	Bit Depth	బిట్ లోతు
+
+# AS-02 versions
+	AS-02 Versions	AS-02 వెర్షన్లు
+	Tick the sequences to write as further versions in the AS-02 bundle	AS-02 బండిల్‌లో అదనపు వెర్షన్లుగా రాయవలసిన సీక్వెన్స్‌లను ఎంచుకోండి
+	Delete Short Clips	చిన్న క్లిప్‌లను తొలగించండి
+	A stored combination does not run a command yet.	నిల్వ చేసిన కలయిక ఇంకా ఆదేశాన్ని నడపదు.
+	Action hint	చర్య సూచన
+	Add combination	కలయికను జోడించు
+	Add mapping	కేటాయింపును జోడించు
+	Button Learn	బటన్ నేర్చుకోండి
+	Button Test	బటన్ పరీక్ష
+	Button name	బటన్ పేరు
+	Cancel feedback	రద్దు సూచన
+	Combination editor	కలయిక సవరణ
+	Context	సందర్భం
+	Delete profile	ప్రొఫైల్‌ను తొలగించు
+	Detected buttons	గుర్తించిన బటన్లు
+	Draw the gesture with a button held.	బటన్‌ను నొక్కి ఉంచి సంజ్ఞను గీయండి.
+	Error feedback	దోష సూచన
+	Evdev device	Evdev పరికరం
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev ఎంచుకున్న పరికరాన్ని మాత్రమే చదువుతుంది, తర్వాతి దశ దాన్ని ఆన్ చేసిన తర్వాత మాత్రమే. ఈ వెర్షన్ Qt మార్గంలోనే ఉంటుంది.
+	Execution feedback	అమలు సూచన
+	Follow the system	వ్యవస్థను అనుసరించు
+	Gesture	సంజ్ఞ
+	Gesture Learn	సంజ్ఞ నేర్చుకోండి
+	Gesture editor	సంజ్ఞ సవరణ
+	Gesture profiles	సంజ్ఞ ప్రొఫైల్‌లు
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	మీరు ఆన్ చేసే వరకు సంజ్ఞలు ఆఫ్‌లోనే ఉంటాయి. ఆన్ చేయడం ప్యానెల్ మెనూను ఆపదు.
+	HUD	HUD
+	Hand	చేయి
+	High contrast	అధిక కాంట్రాస్ట్
+	Hold time	నొక్కి ఉంచే సమయం
+	Input access	ఇన్‌పుట్ ప్రాప్యత
+	Left-handed	ఎడమచేతి
+	Mapping	కేటాయింపు
+	Maximum length	గరిష్ఠ పొడవు
+	Maximum time	గరిష్ఠ సమయం
+	Minimum length	కనిష్ఠ పొడవు
+	Mirror ergonomic gestures	ఎర్గానామిక్ సంజ్ఞలను అద్దం చేయి
+	Mouse Gestures	మౌస్ సంజ్ఞలు
+	Mouse Gestures…	మౌస్ సంజ్ఞలు…
+	No buttons yet. Press one in Button Learn or Button Test.	ఇంకా బటన్లు లేవు. నేర్చుకోవడంలో లేదా పరీక్షలో ఒకదాన్ని నొక్కండి.
+	Press	నొక్కడం
+	Qt pointer (this application)	Qt పాయింటర్ (ఈ అనువర్తనం)
+	Recognition preview	గుర్తింపు మునుజూపు
+	Reduced animation	తగ్గించిన యానిమేషన్
+	Right-handed	కుడిచేయి
+	Roles	పాత్రలు
+	Save gesture	సంజ్ఞను సేవ్ చేయి
+	Save profile	ప్రొఫైల్‌ను సేవ్ చేయి
+	Show the gesture HUD	సంజ్ఞ HUD చూపు
+	Slop	సడలింపు
+	Spatial gesture	ప్రాదేశిక సంజ్ఞ
+	Thresholds	ప్రవేశాలు
+	Trail	జాడ
+	Use gestures in the window	విండోలో సంజ్ఞలు వాడు
+	DVD-Video folder (VIDEO_TS)	DVD-Video ఫోల్డర్ (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video ఫోల్డర్ (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 అనామార్ఫిక్, 6 Mbps, GOP 15, AC-3 192 kbps, సీక్వెన్స్‌లోని చాప్టర్ మార్కర్ల నుండి చాప్టర్లు
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video ఫోల్డర్ (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 అనామార్ఫిక్, 6 Mbps, GOP 18, AC-3 192 kbps, సీక్వెన్స్‌లోని చాప్టర్ మార్కర్ల నుండి చాప్టర్లు
+	DNx decoding:	DNx డీకోడింగ్:
+	As detected from the file ({detected})	ఫైల్ నుండి గుర్తించినట్లు ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (ప్రమాణం)
+	FFmpeg-compatible	FFmpeg అనుకూలం
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg కొన్ని DNx ఫైళ్లను ప్రమాణానికి భిన్నంగా చదువుతుంది (4:4:4 రంగులు, విలోమ క్వాంటైజేషన్). FFmpeg ఎన్‌కోడ్ చేసిన ఫుటేజ్ గుర్తించబడుతుంది; గుర్తింపు తప్పైతే ఇక్కడ ఎంచుకోండి.
+	DNx Coding	DNx ఎన్‌కోడింగ్
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg అనుకూలం (FFmpeg ఆధారిత సాధనాల కోసం)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	ఆఫ్: SMPTE ST 2019-1 ప్రకారం ఎన్‌కోడ్ అవుతుంది. ఆన్: FFmpeg DNx ను రాసే విధంగా ఎన్‌కోడ్ అవుతుంది, FFmpeg ఆధారిత సాధనాల కోసం.

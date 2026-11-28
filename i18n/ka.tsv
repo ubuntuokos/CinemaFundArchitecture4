@@ -56,6 +56,7 @@
 	Apply Video Transition	ვიდეო გადასვლის გამოყენება
 	Assembly	აწყობა
 	Attach Proxies…	პროქსების მიბმა…
+	Find Camera Proxies	კამერის პროქსების პოვნა
 	Audio	აუდიო
 	Audio Channels…	აუდიო არხები…
 	Audio Clip Mixer	აუდიო კლიპების მიქსერი
@@ -3704,7 +3705,7 @@
 	Six-Point Pin	ექვსწერტილიანი მიმაგრება
 	Upper Center	ზედა ცენტრი
 	Lower Center	ქვედა ცენტრი
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	FFmpeg-ის გამოყენება ფაილებისთვის, რომლებსაც CFA4-ის ძრავა ვერ ხსნის (FFmpeg 9.0.2 ან უფრო ახალი, GPL-3 აწყობა)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	FFmpeg-ის გამოყენება ფაილებისთვის, რომლებსაც CFA4-ის ძრავა ვერ ხსნის (FFmpeg 9.1 ან უფრო ახალი, GPL-3 აწყობა)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	სისტემის GStreamer-ის გამოყენება ფაილებისთვის, რომლებსაც ვერც ძრავა და ვერც FFmpeg ვერ ხსნის
 	Analyze Source for Smart Cut	წყაროს ანალიზი ჭკვიანი ჭრისთვის
 	Plan Smart Cut	ჭკვიანი ჭრის დაგეგმვა
@@ -4820,6 +4821,7 @@ export.summary	Low	დაბალი
 	Datamosh Bloom	Datamosh-ის აყვავება
 	Start Time (seconds)	დაწყების დრო (წამი)
 	Repeats	გამეორებები
+	Clean Blocks	სუფთა ბლოკები
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	ბოლოს გამოყენებული ეფექტის გამოყენება არჩეულ კლიპებზე
@@ -4912,3 +4914,75 @@ export.summary	Low	დაბალი
 	Voxel attributes	ვოქსელის ატრიბუტები
 	Voxel size:	ვოქსელის ზომა:
 	points	წერტილი
+
+# WP3 DPX bit depth
+	Bit Depth	ბიტური სიღრმე
+
+# AS-02 versions
+	AS-02 Versions	AS-02 ვერსიები
+	Tick the sequences to write as further versions in the AS-02 bundle	მონიშნეთ მიმდევრობები, რომლებიც AS-02 პაკეტში დამატებით ვერსიებად ჩაიწერება
+	Delete Short Clips	მოკლე კლიპების წაშლა
+	A stored combination does not run a command yet.	შენახული კომბინაცია ჯერ არ ასრულებს ბრძანებას.
+	Action hint	მოქმედების მინიშნება
+	Add combination	კომბინაციის დამატება
+	Add mapping	მინიჭების დამატება
+	Button Learn	ღილაკის სწავლა
+	Button Test	ღილაკის შემოწმება
+	Button name	ღილაკის სახელი
+	Cancel feedback	გაუქმების შეტყობინება
+	Combination editor	კომბინაციების რედაქტორი
+	Context	კონტექსტი
+	Delete profile	პროფილის წაშლა
+	Detected buttons	აღმოჩენილი ღილაკები
+	Draw the gesture with a button held.	დახატეთ ჟესტი ღილაკის დაჭერით.
+	Error feedback	შეცდომის შეტყობინება
+	Evdev device	Evdev მოწყობილობა
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev კითხულობს მხოლოდ არჩეულ მოწყობილობას და მხოლოდ მას შემდეგ, რაც შემდეგი ფაზა ჩართავს. ეს ვერსია Qt გზაზე რჩება.
+	Execution feedback	შესრულების შეტყობინება
+	Follow the system	სისტემის მიყოლა
+	Gesture	ჟესტი
+	Gesture Learn	ჟესტის სწავლა
+	Gesture editor	ჟესტების რედაქტორი
+	Gesture profiles	ჟესტის პროფილები
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	ჟესტები გამორთული რჩება, სანამ არ ჩართავთ. ჩართვა პანელის მენიუს არ ბლოკავს.
+	HUD	HUD
+	Hand	ხელი
+	High contrast	მაღალი კონტრასტი
+	Hold time	დაჭერის დრო
+	Input access	შეყვანის წვდომა
+	Left-handed	მემარცხენე
+	Mapping	მინიჭება
+	Maximum length	უდიდესი სიგრძე
+	Maximum time	უდიდესი დრო
+	Minimum length	უმცირესი სიგრძე
+	Mirror ergonomic gestures	ერგონომიული ჟესტების სარკე
+	Mouse Gestures	მაუსის ჟესტები
+	Mouse Gestures…	მაუსის ჟესტები…
+	No buttons yet. Press one in Button Learn or Button Test.	ღილაკი ჯერ არ არის. დააჭირეთ ერთს სწავლაში ან შემოწმებაში.
+	Press	დაჭერა
+	Qt pointer (this application)	Qt მაჩვენებელი (ეს პროგრამა)
+	Recognition preview	ამოცნობის გადახედვა
+	Reduced animation	შემცირებული ანიმაცია
+	Right-handed	მემარჯვენე
+	Roles	როლები
+	Save gesture	ჟესტის შენახვა
+	Save profile	პროფილის შენახვა
+	Show the gesture HUD	ჟესტის HUD-ის ჩვენება
+	Slop	თავისუფალი სვლა
+	Spatial gesture	სივრცითი ჟესტი
+	Thresholds	ზღურბლები
+	Trail	კვალი
+	Use gestures in the window	ჟესტები ფანჯარაში
+	DVD-Video folder (VIDEO_TS)	DVD-Video საქაღალდე (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video საქაღალდე (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 ანამორფული, 6 Mbps, GOP 15, AC-3 192 kbps, თავები მიმდევრობის თავის მარკერებიდან
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video საქაღალდე (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 ანამორფული, 6 Mbps, GOP 18, AC-3 192 kbps, თავები მიმდევრობის თავის მარკერებიდან
+	DNx decoding:	DNx-ის დეკოდირება:
+	As detected from the file ({detected})	ფაილიდან ამოცნობის მიხედვით ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (სტანდარტი)
+	FFmpeg-compatible	FFmpeg-თან თავსებადი
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg ზოგიერთ DNx ფაილს სტანდარტისგან განსხვავებულად კითხულობს (4:4:4 ფერები, შებრუნებული კვანტირება). FFmpeg-ით კოდირებული მასალა ამოიცნობა; აირჩიეთ აქ, თუ ამოცნობა მცდარია.
+	DNx Coding	DNx-ის კოდირება
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg-თან თავსებადი (FFmpeg-ზე დაფუძნებული ხელსაწყოებისთვის)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	გამორთული: კოდირება SMPTE ST 2019-1-ის მიხედვით. ჩართული: კოდირება ისე, როგორც FFmpeg წერს DNx-ს, FFmpeg-ზე აგებული ხელსაწყოებისთვის.

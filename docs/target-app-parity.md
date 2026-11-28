@@ -48,7 +48,8 @@ issues now document. That is new evidence, not drift: see [Calibration](#calibra
   Exchange plug-in entries. A label match is presence only, and can over-count (a label that
   exists in a different place); it is a lower bound on misses, not proof of behaviour. The script
   was ad hoc; `cargo xtask parity` now measures the shipped menu bar against the snapshot,
-  reporting presence and placement separately (not yet re-run for this figure); the other areas
+  reporting presence and placement separately (not yet re-run for this figure); the committed
+  checklist of the references is [parity-checklist.md](parity-checklist.md); the other areas
   are gap [G7](gaps.md#g7-no-measured-parity-tool-in-ci).
 - **Effects (measured by tests).** `premiere_26_video_effects_catalogue`,
   `premiere_audio_set_is_complete_and_foldered` and `premiere_26_transition_tree` check the

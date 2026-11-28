@@ -26,6 +26,7 @@ repository = "https://github.com/ubuntuokos/CinemaFundArchitecture4"
 cfa4-time = { path = "crates/time" }
 cfa4-route = { path = "crates/route" }
 cfa4-tasks = { path = "crates/tasks" }
+cfa4-store = { path = "crates/store" }
 cfa4-geom = { path = "crates/geom" }
 cfa4-color = { path = "crates/color" }
 cfa4-bitstream = { path = "crates/bitstream" }
@@ -35,6 +36,7 @@ cfa4-matroska = { path = "crates/matroska" }
 cfa4-mxf = { path = "crates/mxf" }
 cfa4-cfb = { path = "crates/cfb" }
 cfa4-mpegts = { path = "crates/mpegts" }
+cfa4-dvd = { path = "crates/dvd" }
 cfa4-st2110 = { path = "crates/st2110" }
 cfa4-io-core = { path = "crates/io-core" }
 cfa4-mpeg2v = { path = "crates/mpeg2v" }
@@ -78,6 +80,8 @@ cfa4-theora = { path = "crates/theora" }
 cfa4-sstp = { path = "crates/sstp" }
 cfa4-evc = { path = "crates/evc" }
 cfa4-cavs = { path = "crates/cavs" }
+cfa4-avs2 = { path = "crates/avs2" }
+cfa4-avs3 = { path = "crates/avs3" }
 cfa4-dirac = { path = "crates/dirac" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }
@@ -85,6 +89,7 @@ cfa4-dnx = { path = "crates/dnx" }
 cfa4-cineform = { path = "crates/cineform" }
 cfa4-j2k = { path = "crates/j2k" }
 cfa4-iab = { path = "crates/iab" }
+cfa4-hrtf = { path = "crates/hrtf" }
 cfa4-dcp = { path = "crates/dcp" }
 cfa4-dcp-validate = { path = "crates/dcp-validate" }
 cfa4-dcp-inspect = { path = "crates/dcp-inspect" }
@@ -285,6 +290,12 @@ opt-level = 3
 [profile.dev.package.cfa4-sstp]
 opt-level = 3
 
+[profile.dev.package.cfa4-avs3]
+opt-level = 3
+
+[profile.dev.package.cfa4-avs2]
+opt-level = 3
+
 [profile.dev.package.cfa4-cavs]
 opt-level = 3
 
@@ -358,6 +369,10 @@ opt-level = 3
 
 # Audio effects: realtime-factor tests and long convolution / spectral runs.
 [profile.dev.package.cfa4-audio-dsp]
+opt-level = 3
+
+# Binaural rendering: realtime and long sweep tests.
+[profile.dev.package.cfa4-hrtf]
 opt-level = 3
 
 [profile.dev.package.cfa4-mxf]

@@ -39,6 +39,7 @@ mod serve_graphics;
 mod serve_live;
 mod serve_lumetri;
 mod serve_media_browser;
+mod serve_monitor;
 mod serve_multicam;
 mod serve_project;
 mod serve_scopes;
@@ -315,7 +316,7 @@ fn register_gpu_frame_renderer() {
 /// Make GStreamer the fallback media backend (ADR 0002) when this build has the `gstreamer`
 /// feature and the system has GStreamer; otherwise the built-in openers work alone, as before.
 /// Make FFmpeg the first fallback media backend (ADR 0005), before GStreamer, when this build has
-/// the `ffmpeg` feature and a GPL-3 FFmpeg 9.0.2 or later is linked; otherwise the built-in openers
+/// the `ffmpeg` feature and a GPL-3 FFmpeg of at least `cfa4_ffmpeg::MIN_VERSION` is linked; otherwise the built-in openers
 /// (and GStreamer) work as before. Its report is registered either way, for Settings ▸ Media
 /// Backends.
 fn register_ffmpeg() {
@@ -609,7 +610,7 @@ async fn cli() {
             diag(format_args!("rendered {}x{} in {:.1} ms → {out}", img.w, img.h, dt.as_secs_f64() * 1000.0));
         }
         "serve" => {
-            if let Some(opt) = a.unknown_opt(&["--project", "--demo", "--data-dir", "--autosave"]) {
+            if let Some(opt) = a.unknown_opt(&["--project", "--demo", "--data-dir", "--autosave", "--no-db"]) {
                 usage(format!("unknown serve option `{opt}`"));
             }
             let Backend::Local(mut s) = Backend::open(&a) else { usage("serve is headless; it cannot use --bridge") };
@@ -621,6 +622,13 @@ async fn cli() {
                         }
                     }
                     None => diag(format_args!("cfa4-cli serve: no data directory; auto-save is off")),
+                }
+            }
+            if !a.flag("--no-db") {
+                // the task queue stays in memory; PostgreSQL only keeps a record of it (PG-001 §6)
+                match cfa4_store::StoreConfig::load().and_then(|c| cfa4_store::mirror::SessionMirror::start(c, std::time::Duration::from_secs(5))) {
+                    Ok(mirror) => s.tasks.set_journal(Box::new(mirror)),
+                    Err(e) => diag(format_args!("cfa4-cli serve: the task record in PostgreSQL is off ({e}); tasks run as before")),
                 }
             }
             serve::run(*s);

@@ -70,7 +70,7 @@ covered by the GPL and may only be used unmodified to identify CFA4
 ([assets/cfa4/LICENSE-logo.txt](assets/cfa4/LICENSE-logo.txt)); modified versions must use
 their own logo. The code is GPL-3.0-or-later.
 
-Media: CFA4's own Rust engine is the base; FFmpeg (≥ 9.0.2, GPL-3 build) and GStreamer
+Media: CFA4's own Rust engine is the base; FFmpeg (≥ `CFA4_FFMPEG_MIN_VERSION` (`packaging/ffmpeg-version.env`), GPL-3 build) and GStreamer
 (LGPL-2.1-or-later, dynamically linked) are supplementary backends picked by an automatic task
 router. The system GStreamer from Ubuntu's repositories is the default; an isolated CFA4-owned
 runtime is used only when a feature needs a newer version. See

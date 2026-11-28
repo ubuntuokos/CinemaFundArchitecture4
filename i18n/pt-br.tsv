@@ -46,6 +46,7 @@
 	Arrange	Organizar
 	Assembly	Montagem
 	Attach Proxies…	Anexar proxies…
+	Find Camera Proxies	Localizar proxies da câmera
 	Audio Channels…	Canais de áudio…
 	Audio Clip Mixer	Misturador de clipes de áudio
 	Audio Gain…	Ganho de áudio…
@@ -4134,7 +4135,7 @@
 	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 a 25 fps, 16:9 anamórfico, 6 Mbps, GOP 15, LPCM 16 bits 48 kHz, .mpg (fluxo pronto para DVD; sem autoria de VIDEO_TS)
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Vídeo MPEG-2 (Main Profile 4:2:0, 0,4 bit por pixel) no tamanho e na taxa de quadros da sequência, LPCM 16 bits 48 kHz, .mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Vídeo MPEG-2 1920×1080, 18 Mbps em média, AAC 192 kbps, .ts
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Usar o FFmpeg para arquivos que o mecanismo do CFA4 não consegue abrir (FFmpeg 9.0.2 ou posterior, compilação GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Usar o FFmpeg para arquivos que o mecanismo do CFA4 não consegue abrir (FFmpeg 9.1 ou posterior, compilação GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Usar o GStreamer do sistema para arquivos que nem o mecanismo nem o FFmpeg conseguem abrir
 
 # Language names in the language menu: the English variants keep their English names.
@@ -4827,6 +4828,7 @@
 	Datamosh Bloom	Florescimento datamosh
 	Start Time (seconds)	Tempo inicial (segundos)
 	Repeats	Repetições
+	Clean Blocks	Blocos limpos
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Aplicar um efeito usado recentemente aos clipes selecionados
@@ -4919,3 +4921,75 @@
 	Voxel attributes	Atributos de voxel
 	Voxel size:	Tamanho do voxel:
 	points	pontos
+
+# WP3 DPX bit depth
+	Bit Depth	Profundidade de bits
+
+# AS-02 versions
+	AS-02 Versions	Versões AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Marque as sequências a gravar como versões adicionais no pacote AS-02
+	Delete Short Clips	Excluir clipes curtos
+	A stored combination does not run a command yet.	Uma combinação salva ainda não executa um comando.
+	Action hint	Dica da ação
+	Add combination	Adicionar combinação
+	Add mapping	Adicionar mapeamento
+	Button Learn	Aprender botão
+	Button Test	Teste de botão
+	Button name	Nome do botão
+	Cancel feedback	Retorno de cancelamento
+	Combination editor	Editor de combinações
+	Context	Contexto
+	Delete profile	Excluir perfil
+	Detected buttons	Botões detectados
+	Draw the gesture with a button held.	Desenhe o gesto com um botão pressionado.
+	Error feedback	Retorno de erro
+	Evdev device	Dispositivo evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	O evdev lê só o dispositivo escolhido, e só quando uma fase posterior o ligar. Esta versão permanece no caminho Qt.
+	Execution feedback	Retorno de execução
+	Follow the system	Seguir o sistema
+	Gesture	Gesto
+	Gesture Learn	Aprender gesto
+	Gesture editor	Editor de gestos
+	Gesture profiles	Perfis de gesto
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Os gestos ficam desligados até você ligá-los. Ligá-los não bloqueia o menu do painel.
+	HUD	HUD
+	Hand	Mão
+	High contrast	Alto contraste
+	Hold time	Tempo de pressão
+	Input access	Acesso de entrada
+	Left-handed	Canhoto
+	Mapping	Mapeamento
+	Maximum length	Comprimento máximo
+	Maximum time	Tempo máximo
+	Minimum length	Comprimento mínimo
+	Mirror ergonomic gestures	Espelhar os gestos ergonômicos
+	Mouse Gestures	Gestos do mouse
+	Mouse Gestures…	Gestos do mouse…
+	No buttons yet. Press one in Button Learn or Button Test.	Nenhum botão ainda. Pressione um em Aprender botão ou em Teste de botão.
+	Press	Pressionar
+	Qt pointer (this application)	Ponteiro Qt (este aplicativo)
+	Recognition preview	Prévia do reconhecimento
+	Reduced animation	Animação reduzida
+	Right-handed	Destro
+	Roles	Papéis
+	Save gesture	Salvar gesto
+	Save profile	Salvar perfil
+	Show the gesture HUD	Mostrar o HUD de gestos
+	Slop	Folga
+	Spatial gesture	Gesto espacial
+	Thresholds	Limiares
+	Trail	Rastro
+	Use gestures in the window	Usar gestos na janela
+	DVD-Video folder (VIDEO_TS)	Pasta DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Pasta DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 anamórfico, 6 Mbps, GOP 15, AC-3 192 kbps, capítulos a partir dos marcadores de capítulo da sequência
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Pasta DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 anamórfico, 6 Mbps, GOP 18, AC-3 192 kbps, capítulos a partir dos marcadores de capítulo da sequência
+	DNx decoding:	Decodificação DNx:
+	As detected from the file ({detected})	Conforme detectado no arquivo ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (padrão)
+	FFmpeg-compatible	Compatível com FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	O FFmpeg lê alguns arquivos DNx de forma diferente do padrão (cores 4:4:4, quantização inversa). O material codificado pelo FFmpeg é detectado; escolha aqui quando a detecção estiver errada.
+	DNx Coding	Codificação DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Compatível com FFmpeg (para ferramentas baseadas em FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Desligado: codificado conforme SMPTE ST 2019-1. Ligado: codificado como o FFmpeg grava DNx, para ferramentas baseadas em FFmpeg.

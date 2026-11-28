@@ -6,6 +6,7 @@ cargo test -p cfa4-h264                    # one crate
 cargo test --release -p cfa4-hevc          # codec tests are much faster in release
 cargo xtask ci                                  # gates fmt, clippy, layers, assets (not tests, not wasm)
 cargo xtask fixtures                            # pre-generate the ffmpeg fixture matrix
+cargo xtask parity --ci                         # measured parity vs the committed references and thresholds (needs a built cfa4-cli and .venv); `--check-ratchet --base REF`, `--check-checklist`; CI: the `parity` job of full validation
 CFA4_REQUIRE_ORACLES=1 cargo test --workspace   # CI: missing ffmpeg fails instead of skipping
 ```
 
@@ -35,7 +36,7 @@ CFA4_REQUIRE_ORACLES=1 cargo test --workspace   # CI: missing ffmpeg fails inste
 | Remix | `crates/audio-dsp/src/remix.rs`, `crates/render/src/remix.rs`, `crates/engine/src/remix_tests.rs`, `crates/ui-egui/tests/remix_ui.rs` | generated rhythmic music (Rust-synthesised drums, bass, chord sections at 90–128 BPM, 22.05/44.1/48 kHz): tempo within 0.3 BPM, every beat within 10 ms (measured ≤ 8.9 ms); remix targets from 0.4× to 2.2× the source within one beat (measured ≤ 12 ms at default sliders), every cut on a detected beat, intro and outro kept, pieces ≥ 4 beats, deterministic; silence, tone and noise refused; rendering independent of request cuts, source-exact outside the 20 ms equal-power crossfades, no clicks; the engine's mix equals the source pieces (< 1e-5); undo, redo and revert exact; overlaps refused; Remix Properties dialog and Remix tool drag driven by automation id |
 | Oracle | `crates/*/tests/*oracle*.rs`, `conformance.rs` | compare with ffmpeg/ffprobe (§2) |
 | Robustness / fuzz | `*/tests/robustness.rs`, `*/tests/fuzz.rs` | seeded mutation and truncation of real and synthetic files; nothing may panic |
-| Coverage-guided fuzzing (CFA4-SECURITY-001 B2) | `fuzz/` (own workspace: `fuzz/src/lib.rs` harnesses, `fuzz/fuzz_targets/`), `.github/workflows/cfa4-fuzz.yml` (every 4th night, six shards) | libFuzzer on every L0 parser and the project, interchange, caption and credits readers (`cargo +nightly fuzz run <target>`, `fuzz/run.sh`); seeds from `fuzz/seeds.sh` (the pinned FFmpeg 9.0.2 oracle, never committed); `cargo test --lib` in `fuzz/` is the stable smoke run; `cargo xtask fuzz-targets` checks every L0 parser has a target; a finding becomes a regression test in the crate ([fuzz/README.md](../fuzz/README.md)) |
+| Coverage-guided fuzzing (CFA4-SECURITY-001 B2) | `fuzz/` (own workspace: `fuzz/src/lib.rs` harnesses, `fuzz/fuzz_targets/`), `.github/workflows/cfa4-fuzz.yml` (every 4th night, six shards) | libFuzzer on every L0 parser and the project, interchange, caption and credits readers (`cargo +nightly fuzz run <target>`, `fuzz/run.sh`); seeds from `fuzz/seeds.sh` (the pinned FFmpeg oracle, never committed); `cargo test --lib` in `fuzz/` is the stable smoke run; `cargo xtask fuzz-targets` checks every L0 parser has a target; a finding becomes a regression test in the crate ([fuzz/README.md](../fuzz/README.md)) |
 | Program monitor while dragging | `crates/ui-egui/tests/perf_ui.rs` | headless: a parameter changed on every UI pass (a value dragged in Effect Controls or Properties) and a backward scrub leave the Program monitor's picture at most one step behind (it shows the frame asked for the pass before while the frame due renders; it used to freeze until the mouse rested); a frame still rendering is kept when the same frame is asked for at a newer revision, so frames slower than a refresh (CPU effects) are shown too; `perf.stats` reports the picture's frame and revision against the playhead and the project |
 | Performance | `*/tests/perf.rs` (`#[ignore]`) | §5 |
 
@@ -86,7 +87,7 @@ with NVENC (H.265: when the HEVC probe says there is no HEVC encoder; Main 10: w
 there is no 10-bit encoder; on a machine that has one, a configuration NVENC refuses fails the test). The FFI layout tests in
 `crates/platform/src/nvenc/abi_tests.rs` were generated from a C program (upstream built it with MSVC; the
 fixed-width layouts are the same on x86_64 Linux, so build it with `cc` there) against NVIDIA's
-MIT-licensed `nvEncodeAPI.h` (12.1); the header and the program are not in the repository. To regenerate them, put the header in a scratch directory and
+MIT-licensed `nvEncodeAPI.h` (12.1; the 13.1 additions come from the 13.1 header the same way); the header and the program are not in the repository. To regenerate them, put the header in a scratch directory and
 write a program that prints, for every type, field, constant and GUID of `src/nvenc/ffi.rs` that the
 asserts name (H.264, HEVC and the HEVC picture parameters with their SEI payload array), `sizeof` / `alignof` / `offsetof`, the enum and macro values cast to
 64-bit integers and the GUIDs as 128-bit hex; for the bit-fields of the `flags` words, which
@@ -106,7 +107,7 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
 - `python3 scripts/dev/av2-oracle.py build [--ref av2-normative]` builds `avmenc`/`avmdec` at the
   pinned commit into `target/av2-oracle/avm-<ref>/bin` with an `AVM_COMMIT` stamp (nothing is
   installed system-wide). `python3 scripts/dev/av2-oracle.py corpus` makes the sources with the
-  pinned FFmpeg 9.0.2 (it refuses any other ffmpeg on `PATH`), encodes the vectors into
+  pinned FFmpeg (`packaging/ffmpeg-version.env`; it refuses any other ffmpeg on `PATH`), encodes the vectors into
   `target/fixtures/av2/vectors` and removes any bitstream whose SHA-256 differs from the manifest. `manifest --from <AV2-00 evidence>` refreshes the hashes. A new
   vector goes into the manifest with empty hashes; `corpus --allow-drift` encodes it, then
   `hash NAME...` fills its reference from `avmdec` v1.0.0 and refuses it unless the

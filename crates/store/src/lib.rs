@@ -25,7 +25,10 @@ pub mod ai;
 pub mod backend;
 pub mod cache;
 pub mod dbtoml;
+pub mod listen;
 pub mod migrate;
+pub mod mirror;
+pub mod outbox;
 pub(crate) mod role;
 pub mod setup;
 pub mod tasks;
@@ -304,6 +307,7 @@ impl std::error::Error for StoreError {}
 #[derive(Clone)]
 pub struct Store {
     pool: Pool,
+    config: StoreConfig,
 }
 
 impl Store {
@@ -324,7 +328,7 @@ impl Store {
         let pool = pg.create_pool(Some(Runtime::Tokio1), NoTls).map_err(StoreError::unavailable)?;
         let client = pool.get().await.map_err(StoreError::unavailable)?;
         client.simple_query("SELECT 1").await.map_err(StoreError::unavailable)?;
-        Ok(Store { pool })
+        Ok(Store { pool, config: config.clone() })
     }
 
     pub(crate) async fn client(&self) -> Result<deadpool_postgres::Object, StoreError> {
@@ -340,6 +344,17 @@ impl Store {
     /// was applied.
     pub async fn rollback(&self, component: &str) -> Result<Option<u32>, StoreError> {
         migrate::down(self, component).await
+    }
+
+    /// A connection of its own that listens for task changes (the scheduler's wake-up).
+    pub async fn listen(&self) -> Result<listen::Listener, StoreError> {
+        let mut pg = tokio_postgres::Config::new();
+        pg.host(&self.config.host).port(self.config.port).user(&self.config.user).dbname(&self.config.dbname).application_name("cfa4-listen");
+        pg.connect_timeout(Duration::from_millis(self.config.connect_timeout_ms.max(1)));
+        if let Some(p) = &self.config.password {
+            pg.password(p);
+        }
+        listen::Listener::connect(&pg).await
     }
 
     /// The AI job store, model registry and licence acceptances in the `ai` schema.

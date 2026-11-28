@@ -11,14 +11,16 @@ use crate::{ChromaFormat, Error, Frame, Interlace, Result};
 pub struct DecodeOptions {
     /// Decode macroblock scan lines in parallel (needs the `threads` feature).
     pub threads: bool,
-    /// Use the standard's integer inverse quantisation (equation 8.1) instead of the
-    /// ffmpeg-compatible reconstruction (default false; see the README).
-    pub spec_dequant: bool,
+    /// Decode as FFmpeg does (for files FFmpeg wrote) instead of by SMPTE ST 2019-1: the `(A + ¾)`
+    /// reconstruction instead of equation (8.1), and FFmpeg's 4:4:4 signalling (RGB with CLF = 0 in
+    /// G, B, R order; CLF = 1 with ACF = 1 everywhere returned as Y′CbCr). Default false: the
+    /// standard (CFA4-DNX-SPEC-001; see the README).
+    pub ffmpeg_compat: bool,
 }
 
 impl Default for DecodeOptions {
     fn default() -> Self {
-        DecodeOptions { threads: true, spec_dequant: false }
+        DecodeOptions { threads: true, ffmpeg_compat: false }
     }
 }
 
@@ -98,16 +100,14 @@ struct CodedPlanes {
     /// Y / Cb / Cr / A (or R / G / B / A).
     planes: [Vec<u16>; 4],
     strides: [usize; 4],
-    /// An RGB-signalled stream whose macroblocks are all coded as Y'CbCr.
-    ycbcr: bool,
+    /// The planes are R′G′B′ (in the `Frame` order G, B, R); otherwise Y′CbCr.
+    rgb: bool,
 }
 
 impl CodedPlanes {
     /// Crop into `f`, writing coded line `i` to frame line `first + i·step`.
     fn copy_into(&self, f: &mut Frame, first: usize, step: usize) {
-        if self.ycbcr {
-            f.rgb = false;
-        }
+        f.rgb = self.rgb;
         let cw = f.chroma_width() as usize;
         let w = f.width as usize;
         let ch = f.chroma_height() as usize;
@@ -155,7 +155,10 @@ struct Ctx<'a> {
     p_bits: u32,
     p_shift: u32,
     p_half: u32,
-    spec_dequant: bool,
+    /// [`DecodeOptions::ffmpeg_compat`].
+    compat: bool,
+    /// The coded channels are R′G′B′ (CLF = 1; with `compat` also every 4:4:4 stream).
+    rgb: bool,
     /// `1 / (4p)`
     inv_4p: f32,
     /// IDCT output scale (4 at 12 bits, see README) and level offset.
@@ -186,7 +189,8 @@ fn decode_unit(h: &FrameHeader, data: &[u8], opts: &DecodeOptions) -> Result<Cod
         p_bits: if h.bit_depth == 8 { 4 } else { 6 },
         p_shift: info.p.trailing_zeros(),
         p_half: info.p / 2,
-        spec_dequant: opts.spec_dequant,
+        compat: opts.ffmpeg_compat,
+        rgb: if opts.ffmpeg_compat { h.rgb_planes() } else { h.rgb },
         inv_4p: 1.0 / (4 * info.p) as f32,
         scale: if h.bit_depth == 12 { 4.0 } else { 1.0 },
         mid: (1u32 << (h.bit_depth - 1)) as f32,
@@ -246,23 +250,35 @@ fn decode_unit(h: &FrameHeader, data: &[u8], opts: &DecodeOptions) -> Result<Cod
         let _ = opts;
         rows.into_iter().map(run).collect::<Result<_>>()?
     };
-    // RGB streams (CLF = 1) choose RGB or Y'CbCr per macroblock (ACF). A stream whose
-    // macroblocks are all Y'CbCr is returned as Y'CbCr 4:4:4; mixed streams are converted to RGB
-    // macroblock by macroblock (ConvertMacroblockColor, 8.1.1).
+    // RGB streams (CLF = 1) choose RGB or Y'CbCr per macroblock (ACF); an ACF = 1 macroblock is
+    // converted to RGB (ConvertMacroblockColor, 8.1.1). The standard always returns RGB. FFmpeg
+    // (compat) returns a stream whose macroblocks are all Y'CbCr as Y'CbCr 4:4:4.
     let n_acf: usize = acf.iter().map(|r| r.iter().filter(|&&a| a).count()).sum();
-    let ycbcr = h.rgb_planes() && n_acf == nw * ns;
-    if h.rgb_planes() && n_acf > 0 && !ycbcr && h.color_volume != crate::ColorVolume::OutOfBand {
-        let [py, pcb, pcr, _] = &mut planes;
-        for (s, row) in acf.iter().enumerate() {
-            for (mb, &a) in row.iter().enumerate() {
-                if a {
-                    let o = s * band[0];
-                    convert_mb_to_rgb(&ctx, [&mut py[o..o + band[0]], &mut pcb[o..o + band[0]], &mut pcr[o..o + band[0]]], mb);
+    let all_ycbcr = ctx.compat && ctx.rgb && n_acf == nw * ns;
+    if ctx.rgb && n_acf > 0 && !all_ycbcr {
+        if h.color_volume == crate::ColorVolume::OutOfBand {
+            if !ctx.compat {
+                // §7.3.1.1: ACF = 1 is not permitted with an out-of-band colour volume (CLV = 11b)
+                return Err(Error::Invalid("ACF = 1 with an out-of-band colour volume"));
+            }
+        } else {
+            let [py, pcb, pcr, _] = &mut planes;
+            for (s, row) in acf.iter().enumerate() {
+                for (mb, &a) in row.iter().enumerate() {
+                    if a {
+                        let o = s * band[0];
+                        convert_mb_to_rgb(&ctx, [&mut py[o..o + band[0]], &mut pcb[o..o + band[0]], &mut pcr[o..o + band[0]]], mb);
+                    }
                 }
             }
         }
     }
-    Ok(CodedPlanes { planes, strides, ycbcr })
+    let rgb = ctx.rgb && !all_ycbcr;
+    if rgb && !ctx.compat {
+        // the standard's channel order Ch1/Ch2/Ch3 = R, G, B → the Frame order G, B, R
+        planes[..3].rotate_left(1);
+    }
+    Ok(CodedPlanes { planes, strides, rgb })
 }
 
 /// Decode one macroblock scan line into the 16-line bands of each plane.
@@ -271,7 +287,7 @@ fn decode_row(ctx: &Ctx<'_>, data: &[u8], bands: [&mut [u16]; 4]) -> Result<Vec<
     let mut r = Reader::new(data);
     // DC predictors: Y/Ch1, Cb, Cr, R, G, B, A
     let mut pred = [0i32; 7];
-    let rgb = h.rgb_planes();
+    let rgb = ctx.rgb;
     let mff_cid = ctx.info.cid == 1260;
     let mut block = [0f32; 64];
     let mut acfs = Vec::new();
@@ -379,14 +395,13 @@ fn decode_block(ctx: &Ctx<'_>, r: &mut Reader<'_>, pred: &mut i32, wq: &[(u32, u
         }
         let z = ZIGZAG[pos] as usize;
         let (wqs, w) = wq[z];
-        // inverse quantisation (8.2.7)
-        // Reconstruction at (|X̂| + 3/4)·W·qsf/p, as ffmpeg's decoder does (see README); the
-        // standard's equation 8.1 rounds to an integer near (|X̂| + 1/2)·W·qsf/p.
-        let mag = if ctx.spec_dequant {
+        // inverse quantisation (8.2.7): equation (8.1), an integer near (|X̂| + 1/2)·W·qsf/p;
+        // FFmpeg (compat) reconstructs at (|X̂| + 3/4)·W·qsf/p (see README)
+        let mag = if ctx.compat {
+            ((4 * a as u64 + 3) * wqs as u64) as f32 * ctx.inv_4p
+        } else {
             let add = if w != ctx.info.p { ctx.p_half } else { 0 };
             ((a as u64 * wqs as u64 + (wqs >> 1) as u64 + add as u64) >> ctx.p_shift) as f32
-        } else {
-            ((4 * a as u64 + 3) * wqs as u64) as f32 * ctx.inv_4p
         };
         block[z] = if neg { -mag } else { mag };
     }
@@ -430,10 +445,11 @@ fn convert_mb_to_rgb(ctx: &Ctx<'_>, bands: [&mut [u16]; 3], mb: usize) {
             let r = yy + 2.0 * (1.0 - kr) * c * cr;
             let b = yy + 2.0 * (1.0 - kb) * c * cb;
             let g = (yy - kr * r - kb * b) / kg;
-            // RGB planes are stored in coded channel order G, B, R
-            bands[0][i] = (g + 0.5).floor().clamp(0.0, ctx.max) as u16;
-            bands[1][i] = (b + 0.5).floor().clamp(0.0, ctx.max) as u16;
-            bands[2][i] = (r + 0.5).floor().clamp(0.0, ctx.max) as u16;
+            // into the coded channel order: R, G, B by the standard, G, B, R as FFmpeg codes it
+            let (c1, c2, c3) = if ctx.compat { (g, b, r) } else { (r, g, b) };
+            bands[0][i] = (c1 + 0.5).floor().clamp(0.0, ctx.max) as u16;
+            bands[1][i] = (c2 + 0.5).floor().clamp(0.0, ctx.max) as u16;
+            bands[2][i] = (c3 + 0.5).floor().clamp(0.0, ctx.max) as u16;
         }
     }
 }

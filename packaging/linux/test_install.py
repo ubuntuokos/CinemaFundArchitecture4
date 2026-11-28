@@ -12,6 +12,18 @@ import unittest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+
+
+def pinned_ffmpeg_version() -> str:
+    """CFA4_FFMPEG_VERSION from packaging/ffmpeg-version.env (CFA4-FFMPEG-9.1-001 R1)."""
+    for line in (HERE.parents[1] / "packaging/ffmpeg-version.env").read_text(encoding="utf-8").splitlines():
+        name, sep, value = line.partition("=")
+        if sep and name.strip() == "CFA4_FFMPEG_VERSION":
+            return value.strip()
+    raise KeyError("CFA4_FFMPEG_VERSION")
+
+
+FFMPEG_VERSION = pinned_ffmpeg_version()
 APP_ID = "io.github.ubuntuokos.cfa4"
 
 
@@ -250,21 +262,42 @@ class InstallTests(unittest.TestCase):
         self.assertFalse(prefix.exists(), "refused before anything is written")
 
     def test_ffmpeg_libraries_install_beside_the_binaries_and_replace_older_ones(self):
-        ffmpeg = self.bundle / "lib/cfa4/ffmpeg-9.0.2"
+        ffmpeg = self.bundle / f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}"
         (ffmpeg / "lib").mkdir(parents=True)
         (ffmpeg / "share/doc/ffmpeg").mkdir(parents=True)
         (ffmpeg / "lib/libavcodec.so.62").write_text("new\n")
-        (ffmpeg / "share/doc/ffmpeg/BUILDINFO").write_text("FFmpeg 9.0.2\n")
+        (ffmpeg / "share/doc/ffmpeg/BUILDINFO").write_text(f"FFmpeg {FFMPEG_VERSION}\n")
         prefix = self.root / "destination"
-        stale = prefix / "lib/cfa4/ffmpeg-9.0.2/lib/libavcodec.so.61"
+        stale = prefix / f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}/lib/libavcodec.so.61"
         stale.parent.mkdir(parents=True)
         stale.write_text("old\n")
         result = self.install("--prefix", prefix)
         self.assertEqual(result.returncode, 0, result.stderr)
-        installed = prefix / "lib/cfa4/ffmpeg-9.0.2"
+        installed = prefix / f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}"
         self.assertEqual((installed / "lib/libavcodec.so.62").read_text(), "new\n")
         self.assertTrue((installed / "share/doc/ffmpeg/BUILDINFO").is_file())
         self.assertFalse(stale.exists(), "a library of an older release stays behind")
+
+    def test_an_older_bundled_ffmpeg_is_removed_on_upgrade(self):
+        ffmpeg = self.bundle / f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}"
+        (ffmpeg / "lib").mkdir(parents=True)
+        (ffmpeg / "lib/libavcodec.so.63").write_text("new\n")
+        prefix = self.root / "destination"
+        older = prefix / "lib/cfa4/ffmpeg-0.0.1"
+        (older / "lib").mkdir(parents=True)
+        (older / "lib/libavcodec.so.62").write_text("old\n")
+        result = self.install("--prefix", prefix)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((prefix / f"lib/cfa4/ffmpeg-{FFMPEG_VERSION}/lib/libavcodec.so.63").is_file())
+        self.assertFalse(older.exists(), "the FFmpeg of an earlier release stays behind")
+        self.assertTrue((prefix / "lib/cfa4/python/cfa4_qt").is_dir())
+
+    def test_a_tarball_with_two_ffmpeg_builds_is_refused(self):
+        for name in (f"ffmpeg-{FFMPEG_VERSION}", "ffmpeg-0.0.1"):
+            (self.bundle / "lib/cfa4" / name / "lib").mkdir(parents=True)
+        result = self.install("--prefix", self.root / "destination")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("more than one FFmpeg", result.stderr)
 
     def test_release_package_refuses_without_ffmpeg_for_other_formats(self):
         result = subprocess.run(

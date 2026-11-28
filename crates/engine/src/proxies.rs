@@ -234,7 +234,7 @@ pub fn unique_path(dir: &Path, stem: &str, suffix: &str, ext: &str, taken: &[Str
     }
 }
 
-fn media_path(p: &Project, item: ItemId) -> Option<(MediaClip, String, String)> {
+pub(crate) fn media_path(p: &Project, item: ItemId) -> Option<(MediaClip, String, String)> {
     let it = p.item(item)?;
     let m = it.as_media()?;
     match &m.media {
@@ -243,7 +243,7 @@ fn media_path(p: &Project, item: ItemId) -> Option<(MediaClip, String, String)> 
     }
 }
 
-fn items_param(s: &Session, p: &Value) -> Vec<ItemId> {
+pub(crate) fn items_param(s: &Session, p: &Value) -> Vec<ItemId> {
     match p.get("items").and_then(Value::as_array) {
         Some(a) => a.iter().filter_map(Value::as_u64).map(ItemId).collect(),
         None => u64_p(p, "item").map(|i| vec![ItemId(i)]).unwrap_or_else(|| s.state.project_selection.clone()),
@@ -348,7 +348,7 @@ pub fn poll(s: &mut Session) {
 }
 
 /// Check a proxy file against its clip: duration within one frame, same frame rate.
-fn check_proxy(s: &Session, item: ItemId, path: &str) -> Result<()> {
+pub(crate) fn check_proxy(s: &Session, item: ItemId, path: &str) -> Result<()> {
     let (clip, _, name) = media_path(&s.project, item).ok_or_else(|| bad("media.attachProxies", format!("item {} is not file media", item.0)))?;
     let src = s.media.open_file(path, &*s.services).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     let pi = src.info();
@@ -715,7 +715,7 @@ pub fn commands() -> Vec<CommandSpec> {
     ]
 }
 
-fn has_file_media(s: &Session) -> std::result::Result<(), String> {
+pub(crate) fn has_file_media(s: &Session) -> std::result::Result<(), String> {
     if s.project.items.values().any(|i| i.as_media().is_some_and(|m| matches!(m.media, MediaRef::File { .. }))) {
         Ok(())
     } else {

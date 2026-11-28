@@ -74,7 +74,7 @@ other binary, including upstream's own release download. Bump all four values in
 
 **Package contents (#220).** `scripts/release/verify_cfa4_packages.py` lists the real `.deb`
 (`dpkg-deb --contents`) and the AppImage's squashfs (`unsquashfs`, at the offset after the runtime
-ELF, without running it) and requires in each the programs, the Qt GUI, the FFmpeg 9.0.2 libraries
+ELF, without running it) and requires in each the programs, the Qt GUI, the FFmpeg libraries
 with their licences and every licence/attribution file of `scripts/ci/check-package-docs.sh`
 (including `THIRD-PARTY-LICENSES.txt` and the `cfa4.cdx.json` SBOM); the AppImage also needs its
 PySide6 / Qt licences. The self-hosted four-formats job applies it to the real packages. On every
@@ -92,14 +92,14 @@ Run the installer again to update. For a system-wide installation, use
 its `share` directory must be in the desktop's data search path to appear in the menu.
 Prefixes containing `=`, `%` or control characters are rejected for desktop-launcher compatibility.
 
-**FFmpeg 9.0.2 ([ADR 0005](adr/ADR-0005-media-backends.md) step 4).** Every package carries CFA4's
-own FFmpeg build, made beforehand on the packaging host with `scripts/dev/build-ffmpeg-9.0.2.sh`
+**FFmpeg ([ADR 0005](adr/ADR-0005-media-backends.md) step 4).** Every package carries CFA4's
+own FFmpeg build (VERSION: `packaging/ffmpeg-version.env`), made beforehand on the packaging host with `scripts/dev/build-ffmpeg.sh`
 (GPL-3, never `nonfree`, no x264/x265; `CFA4_FFMPEG_BUILD` points `package.sh` at another prefix).
 `package.sh` links the binaries against it with the `ffmpeg` feature and checks their RUNPATH;
 `packaging/linux/stage-ffmpeg.sh` copies only the run-time libraries, under their SONAMEs, with
-`$ORIGIN` as their RUNPATH. The `.deb` installs them into `/opt/cfa4/ffmpeg-9.0.2` and lists the
+`$ORIGIN` as their RUNPATH. The `.deb` installs them into `/opt/cfa4/ffmpeg-VERSION` and lists the
 Ubuntu packages they load as `Depends`; the tarball, the AppImage and the Flatpak carry them in
-`lib/cfa4/ffmpeg-9.0.2` next to the binaries, together with the third-party libraries they load
+`lib/cfa4/ffmpeg-VERSION` next to the binaries, together with the third-party libraries they load
 (except glibc, libstdc++, zlib, VA-API, DRM and the display stack) and those libraries' copyright
 files. `share/doc/ffmpeg` holds FFmpeg's licences and `BUILDINFO` (upstream source, checksum or
 commit, configure flags): publish that unmodified upstream source next to each release, as GPL-3

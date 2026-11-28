@@ -126,13 +126,26 @@ async fn migrations_go_up_once_and_back_one_step() {
         assert!((180000..190000).contains(&version), "CI requires PostgreSQL 18, server_version_num={version}");
     }
     assert_eq!(count(&store, "SELECT count(*) FROM tasks.task").await, 0);
+    assert_eq!(store.rollback("tasks").await.unwrap(), Some(6));
+    assert_eq!(store.rollback("tasks").await.unwrap(), Some(5));
+    assert_eq!(store.rollback("tasks").await.unwrap(), Some(4));
     assert_eq!(store.rollback("tasks").await.unwrap(), Some(3));
     assert_eq!(store.rollback("tasks").await.unwrap(), Some(2));
     assert_eq!(count(&store, "SELECT count(*) FROM pg_indexes WHERE indexname = 'task_open' AND indexdef LIKE '%cancelling%'").await, 0);
     assert_eq!(store.rollback("tasks").await.unwrap(), Some(1));
     assert_eq!(count(&store, "SELECT count(*) FROM information_schema.schemata WHERE schema_name = 'tasks'").await, 0);
     assert_eq!(store.rollback("tasks").await.unwrap(), None);
-    assert_eq!(store.migrate().await.unwrap(), vec![("tasks".to_owned(), 1), ("tasks".to_owned(), 2), ("tasks".to_owned(), 3)]);
+    assert_eq!(
+        store.migrate().await.unwrap(),
+        vec![
+            ("tasks".to_owned(), 1),
+            ("tasks".to_owned(), 2),
+            ("tasks".to_owned(), 3),
+            ("tasks".to_owned(), 4),
+            ("tasks".to_owned(), 5),
+            ("tasks".to_owned(), 6)
+        ]
+    );
     assert_eq!(count(&store, "SELECT count(*) FROM pg_indexes WHERE indexname = 'task_open' AND indexdef LIKE '%cancelling%'").await, 1);
     assert!(store.rollback("nope").await.is_err());
 }
@@ -155,7 +168,7 @@ async fn two_schedulers_start_a_task_exactly_once() {
     let t = a.get("t1").await.unwrap().unwrap();
     assert_eq!((t.state, t.attempts), (State::Running, 1));
     assert_eq!(count(&store, "SELECT count(*) FROM tasks.transition WHERE task_id = 't1'").await, 1);
-    assert_eq!(count(&store, "SELECT count(*) FROM tasks.outbox WHERE subject = 'cfa4.execution.job.running'").await, 1);
+    assert_eq!(count(&store, "SELECT count(*) FROM tasks.outbox WHERE subject = 'cfa4.execution.job.started'").await, 1);
 }
 
 #[tokio::test]
@@ -277,11 +290,14 @@ async fn the_time_columns_are_timestamptz_and_migrate_both_ways_keeping_the_mill
     assert_eq!(t.submitted_at, 1_700_000_123_456);
     let ms = |col: &'static str| format!("SELECT (extract(epoch from {col}) * 1000)::bigint FROM tasks.task WHERE id = 't-time'");
     assert_eq!(count(&store, &ms("submitted_at")).await, 1_700_000_123_456);
-    assert_eq!(count(&store, "SELECT count(*) FROM information_schema.columns WHERE table_schema = 'tasks' AND column_name IN ('submitted_at', 'start_at', 'lease_until', 'at') AND data_type = 'timestamp with time zone'").await, 4);
+    assert_eq!(count(&store, "SELECT count(*) FROM information_schema.columns WHERE table_schema = 'tasks' AND table_name IN ('task', 'transition') AND column_name IN ('submitted_at', 'start_at', 'lease_until', 'at') AND data_type = 'timestamp with time zone'").await, 4);
     // back to the bigint columns of step 2 and forward again: the stored values survive
+    assert_eq!(store.rollback("tasks").await.expect("down"), Some(6));
+    assert_eq!(store.rollback("tasks").await.expect("down"), Some(5));
+    assert_eq!(store.rollback("tasks").await.expect("down"), Some(4));
     assert_eq!(store.rollback("tasks").await.expect("down"), Some(3));
     assert_eq!(count(&store, "SELECT submitted_at FROM tasks.task WHERE id = 't-time'").await, 1_700_000_123_456);
-    assert_eq!(store.migrate().await.expect("up"), vec![("tasks".to_owned(), 3)]);
+    assert_eq!(store.migrate().await.expect("up"), vec![("tasks".to_owned(), 3), ("tasks".to_owned(), 4), ("tasks".to_owned(), 5), ("tasks".to_owned(), 6)]);
     assert_eq!(count(&store, &ms("submitted_at")).await, 1_700_000_123_456);
     // the queue still runs on the converted columns
     let mut manager = manager();
@@ -289,4 +305,78 @@ async fn the_time_columns_are_timestamptz_and_migrate_both_ways_keeping_the_mill
     let events = tasks.tick(1_700_000_200_000, "w1", &mut manager, &snap(), &monitor).await.expect("tick");
     assert!(!events.is_empty() || tasks.get("t-time").await.expect("get").is_some());
     assert!(count(&store, "SELECT count(*) FROM tasks.transition WHERE at IS NOT NULL").await >= 0);
+}
+
+#[tokio::test]
+async fn the_schedule_follows_the_task_and_checkpoints_estimates_and_runs_are_recorded() {
+    use super::{EstimateBasis, RunRecord};
+    use cfa4_tasks::Confidence;
+    let Some((_db, store)) = setup().await else { return };
+    let tasks = store.tasks(QueueConfig::default());
+    let mut at = task("t-sched", 1);
+    at.start = StartMode::At { at: 2_000_000_000_000 };
+    at.missed = MissedStart::NextSlot;
+    at.time_zone = Some("Europe/Budapest".into());
+    let t = tasks.submit(at, 1_700_000_000_000).await.expect("submit");
+    let row = |col: &str| format!("SELECT {col} FROM tasks.schedule WHERE task_id = 't-sched'");
+    assert_eq!(
+        count(
+            &store,
+            "SELECT count(*) FROM tasks.schedule WHERE task_id = 't-sched' AND mode = 'at' AND if_missed = 'next_slot' AND time_zone = 'Europe/Budapest'"
+        )
+        .await,
+        1
+    );
+    assert_eq!(count(&store, &row("(extract(epoch from start_at) * 1000)::bigint")).await, 2_000_000_000_000);
+    tasks.reschedule("t-sched", t.version, 2_100_000_000_000, 1_700_000_001_000).await.expect("reschedule");
+    assert_eq!(count(&store, &row("(extract(epoch from start_at) * 1000)::bigint")).await, 2_100_000_000_000);
+
+    // estimates: the newest is the current one; an inverted range is refused
+    assert_eq!(tasks.current_estimate("t-sched").await.expect("none"), None);
+    tasks.record_estimate("t-sched", 60, 120, Confidence::Low, EstimateBasis::Manifest).await.expect("first");
+    tasks.record_estimate("t-sched", 80, 90, Confidence::Medium, EstimateBasis::History).await.expect("second");
+    let e = tasks.current_estimate("t-sched").await.expect("get").expect("there");
+    assert_eq!((e.min_s, e.max_s, e.confidence, e.basis), (80, 90, Confidence::Medium, EstimateBasis::History));
+    assert!(tasks.record_estimate("t-sched", 10, 5, Confidence::Low, EstimateBasis::Manifest).await.is_err());
+    assert!(tasks.record_estimate("unknown-task", 1, 2, Confidence::Low, EstimateBasis::Manifest).await.is_err(), "an unknown task has no estimate");
+
+    // run history: newest first, by implementation and hardware
+    let run = |n: u64, hw: &str| RunRecord {
+        task_id: "t-sched".into(),
+        implementation: "whisper".into(),
+        path: "gpu".into(),
+        hardware: hw.into(),
+        input_bytes: n,
+        duration_ms: n * 10,
+        peak_ram_bytes: 1 << 30,
+        peak_vram_bytes: 2 << 30,
+    };
+    for n in 1..=3 {
+        tasks.record_run(&run(n, "rtx3060")).await.expect("run");
+    }
+    tasks.record_run(&run(9, "other")).await.expect("run");
+    let runs = tasks.runs_for("whisper", "rtx3060", 2).await.expect("runs");
+    assert_eq!(runs.iter().map(|r| r.input_bytes).collect::<Vec<_>>(), [3, 2]);
+    assert!(tasks.record_run(&RunRecord { implementation: String::new(), ..run(1, "x") }).await.is_err());
+    assert!(tasks.record_run(&RunRecord { duration_ms: u64::MAX, ..run(1, "x") }).await.is_err());
+}
+
+#[tokio::test]
+async fn a_stage_is_recorded_once_with_its_cache_key_and_deleting_a_task_removes_its_rows() {
+    let Some((_db, store)) = setup().await else { return };
+    let tasks = store.tasks(QueueConfig::default());
+    let (mut manager, monitor) = (manager(), Monitor::default());
+    tasks.submit(task("t-stage", 1), 1_700_000_000_000).await.expect("submit");
+    tasks.tick(1_700_000_000_000, "w1", &mut manager, &snap(), &monitor).await.expect("tick");
+    tasks.checkpoint_keyed("t-stage", "w1", 0, Some("blake3-abc")).await.expect("stage 0");
+    tasks.checkpoint_keyed("t-stage", "w1", 0, Some("other")).await.expect("stage 0 again is harmless");
+    tasks.checkpoint("t-stage", "w1", 1).await.expect("stage 1");
+    assert_eq!(count(&store, "SELECT count(*) FROM tasks.checkpoint WHERE task_id = 't-stage'").await, 2);
+    assert_eq!(count(&store, "SELECT count(*) FROM tasks.checkpoint WHERE task_id = 't-stage' AND stage = 0 AND cache_key = 'blake3-abc'").await, 1);
+    assert!(tasks.checkpoint_keyed("t-stage", "w1", 2, Some("")).await.is_err());
+    assert!(tasks.checkpoint_keyed("t-stage", "someone-else", 3, None).await.is_err(), "only the lease owner records a stage");
+    assert_eq!(count(&store, "SELECT count(*) FROM tasks.checkpoint WHERE task_id = 't-stage'").await, 2);
+    let client = store.client().await.expect("client");
+    client.execute("DELETE FROM tasks.task WHERE id = 't-stage'", &[]).await.expect("delete");
+    assert_eq!(count(&store, "SELECT (SELECT count(*) FROM tasks.checkpoint) + (SELECT count(*) FROM tasks.schedule WHERE task_id = 't-stage')").await, 0);
 }

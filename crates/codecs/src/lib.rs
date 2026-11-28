@@ -21,6 +21,8 @@
 //! - [`RmSource`]: RealMedia (`.rm`, `.rmvb`) with RealVideo 1.0 / 2.0 / 3.0 / 4.0 video and Cook, ATRAC3, SIPR or RealAudio 1.0 / 2.0 audio.
 //! - [`SmkSource`]: Smacker (`.smk`, SMK2 and SMK4) with palette video and up to seven audio tracks.
 //! - [`EvcSource`]: raw MPEG-5 EVC Baseline (`.evc`) streams, pictures shown in their order count.
+//! - [`Avs2Source`]: raw AVS2-P2 (IEEE 1857.4) Main / Main 10 streams (`.avs2`).
+//! - [`Avs3Source`]: raw AVS3-P2 (IEEE 1857.10) baseline streams (`.avs3`).
 //! - [`CavsSource`]: raw AVS1-P2 (Chinese AVS, Jizhun profile) streams (`.avs`, `.cavs`).
 //! - [`SstpSource`]: MPEG-4 Simple Studio Profile (Sony SR) elementary streams (`.m4v`), every picture intra.
 //! - [`FlicSource`]: Autodesk Animator FLI / FLC (`.fli`, `.flc`) 8-bit animations.
@@ -43,6 +45,8 @@ pub mod av2;
 #[cfg(feature = "av2-external")]
 pub mod av2_external;
 pub mod avi;
+pub mod avs2;
+pub mod avs3;
 pub mod bink;
 pub mod canopus;
 pub mod cavs;
@@ -85,6 +89,7 @@ pub mod svq1;
 pub mod svq3;
 pub mod theora;
 pub mod thp;
+pub mod truehd_objects;
 pub mod twinvq;
 pub mod utvideo;
 pub mod video;
@@ -97,6 +102,8 @@ pub use amv::AmvSource;
 pub use apv::ApvSource;
 pub use audio::AudioFileSource;
 pub use avi::AviSource;
+pub use avs2::Avs2Source;
+pub use avs3::Avs3Source;
 pub use bink::BinkSource;
 pub use cavs::CavsSource;
 pub use dif::DifSource;
@@ -242,6 +249,8 @@ pub fn openers() -> Vec<cfa4_media::Opener> {
         ogg_video::opener,
         sstp::opener,
         evc::opener,
+        avs2::opener,
+        avs3::opener,
         cavs::opener,
         mpeg::opener,
         apv::opener,
@@ -275,6 +284,8 @@ fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
             ogg_video::reader_opener,
             sstp::reader_opener,
             evc::reader_opener,
+            avs2::reader_opener,
+            avs3::reader_opener,
             cavs::reader_opener,
             mpeg::reader_opener,
             apv::reader_opener,

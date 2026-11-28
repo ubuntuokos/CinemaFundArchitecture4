@@ -427,6 +427,227 @@ pub(crate) fn encode(q: &[i32], w: usize, h: usize) -> Result<Option<Vec<u8>>> {
     Ok(Some(out))
 }
 
+/// A forward bit writer for the SigProp segment: bits LSB first, a byte after 0xFF holding 7.
+struct FwdBits {
+    buf: Vec<u8>,
+    cur: u32,
+    n: u32,
+    cap: u32,
+}
+
+impl FwdBits {
+    fn new() -> Self {
+        FwdBits { buf: Vec::new(), cur: 0, n: 0, cap: 8 }
+    }
+
+    fn put(&mut self, bit: bool) {
+        self.cur |= u32::from(bit) << self.n;
+        self.n += 1;
+        if self.n == self.cap {
+            self.buf.push(self.cur as u8);
+            self.cap = if self.cur == 0xFF { 7 } else { 8 };
+            self.cur = 0;
+            self.n = 0;
+        }
+    }
+
+    /// The bytes, the last partial one padded with zeros; never ending in 0xFF.
+    fn finish(mut self) -> Vec<u8> {
+        if self.n > 0 {
+            self.buf.push(self.cur as u8);
+        } else if self.buf.last() == Some(&0xFF) {
+            self.buf.push(0);
+        }
+        self.buf
+    }
+}
+
+/// The MagRef bit writer: bits LSB first in the order the decoder reads them from the end of the
+/// segment backwards, so the bytes come out reversed; a byte after one above 0x8F whose low
+/// seven bits are all ones holds only seven bits, and the first byte counts as such a byte.
+struct RevBits {
+    buf: Vec<u8>,
+    cur: u32,
+    n: u32,
+    unstuff: bool,
+}
+
+impl RevBits {
+    fn new() -> Self {
+        RevBits { buf: Vec::new(), cur: 0, n: 0, unstuff: true }
+    }
+
+    fn emit(&mut self) {
+        self.buf.push(self.cur as u8);
+        self.unstuff = self.cur > 0x8F;
+        self.cur = 0;
+        self.n = 0;
+    }
+
+    fn put(&mut self, bit: bool) {
+        self.cur |= u32::from(bit) << self.n;
+        self.n += 1;
+        if (self.n == 7 && self.unstuff && self.cur == 0x7F) || self.n == 8 {
+            self.emit();
+        }
+    }
+
+    /// The bytes in segment order (the first one written last).
+    fn finish(mut self) -> Vec<u8> {
+        if self.n > 0 {
+            self.emit();
+        }
+        self.buf.reverse();
+        self.buf
+    }
+}
+
+/// An HT code-block coded as a cleanup pass at bit-plane `s + 1` plus the SigProp and MagRef
+/// passes of plane `s`.
+pub(crate) struct Refined {
+    /// The cleanup segment, of the indices with their `s + 1` lowest bits dropped.
+    pub cleanup: Vec<u8>,
+    /// The SigProp segment.
+    pub spp: Vec<u8>,
+    /// The MagRef bytes, in segment order.
+    pub mrp: Vec<u8>,
+    /// Samples the SigProp pass made significant.
+    pub newly: Vec<bool>,
+}
+
+/// Encodes `q` (a `w` × `h` block, raster order) as an HT cleanup pass at plane `s + 1` followed
+/// by the refinement passes of plane `s`, mirroring [`crate::ht`]'s decoder (no vertically
+/// causal contexts). `None` when the cleanup pass codes nothing (every index below 2^(s+1)).
+pub(crate) fn encode_refined(q: &[i32], w: usize, h: usize, s: u32) -> Result<Option<Refined>> {
+    if s >= 29 || w == 0 || h == 0 || q.len() < w * h {
+        return Err(Error::Invalid("HT refinement plane"));
+    }
+    let coarse: Vec<i32> = q
+        .iter()
+        .map(|&v| {
+            let m = (v.unsigned_abs() >> (s + 1)) as i32;
+            if v < 0 { -m } else { m }
+        })
+        .collect();
+    let Some(cleanup) = encode(&coarse, w, h)? else { return Ok(None) };
+    let plane = |x: usize, y: usize| q.get(y * w + x).is_some_and(|&v| v.unsigned_abs() >> s & 1 == 1);
+    let negative = |x: usize, y: usize| q.get(y * w + x).is_some_and(|&v| v < 0);
+    let mstr = ((((w + 3) >> 2) + 2) + 7) & !7;
+    let rows = h.div_ceil(4) + 1;
+    let mut sigma = vec![0u16; mstr * rows + 2];
+    for y in 0..h {
+        for x in 0..w {
+            if coarse.get(y * w + x).is_some_and(|&v| v != 0)
+                && let Some(b) = sigma.get_mut((y >> 2) * mstr + (x >> 2))
+            {
+                *b |= 1 << (((x & 3) << 2) | (y & 3));
+            }
+        }
+    }
+    let pair = |a: &[u16], i: usize| u32::from(a.get(i).copied().unwrap_or(0)) | (u32::from(a.get(i + 1).copied().unwrap_or(0)) << 16);
+    let mut newly = vec![false; w * h];
+    let mut sp = FwdBits::new();
+    let mut prev_row_sig = vec![0u16; (w >> 2) + 10];
+    for y in (0..h).step_by(4) {
+        let mut pattern: u32 = match h - y {
+            1 => 0x1111,
+            2 => 0x3333,
+            3 => 0x7777,
+            _ => 0xFFFF,
+        };
+        let mut prev = 0u32;
+        let cur_row = (y >> 2) * mstr;
+        for (g, x) in (0..w).step_by(4).enumerate() {
+            let sh = (x + 4).saturating_sub(w) as u32;
+            pattern >>= sh * 4;
+            let ps = pair(&prev_row_sig, g);
+            let ns = pair(&sigma, cur_row + mstr + g);
+            let u = ((ps & 0x8888_8888) >> 3) | ((ns & 0x1111_1111) << 3);
+            let cs = pair(&sigma, cur_row + g);
+            let mut mbr = cs;
+            mbr |= (cs & 0x7777_7777) << 1;
+            mbr |= (cs & 0xEEEE_EEEE) >> 1;
+            mbr |= u;
+            let t = mbr;
+            mbr |= t << 4;
+            mbr |= t >> 4;
+            mbr |= prev >> 12;
+            mbr &= pattern;
+            mbr &= !cs;
+            let mut new_sig = mbr;
+            if new_sig != 0 {
+                let inv_sig = !cs & pattern;
+                for i in (0..16).step_by(4) {
+                    let col_mask = 0xFu32 << i;
+                    if col_mask & new_sig == 0 {
+                        continue;
+                    }
+                    let mut sample_mask = 0x1111u32 & col_mask;
+                    for (r, spread) in [0x33u32, 0x76, 0xEC, 0xC8].into_iter().enumerate() {
+                        if new_sig & sample_mask != 0 {
+                            new_sig &= !sample_mask;
+                            let bit = plane(x + i / 4, y + r);
+                            sp.put(bit);
+                            if bit {
+                                new_sig |= (spread << i) & inv_sig;
+                            }
+                        }
+                        sample_mask <<= 1;
+                    }
+                }
+                for i in 0..4 {
+                    let col_mask = 0xFu32 << (4 * i);
+                    if col_mask & new_sig == 0 {
+                        continue;
+                    }
+                    let mut sample_mask = 0x1111u32 & col_mask;
+                    for r in 0..4 {
+                        if new_sig & sample_mask != 0 {
+                            sp.put(negative(x + i, y + r));
+                            if let Some(n) = newly.get_mut((y + r) * w + x + i) {
+                                *n = true;
+                            }
+                        }
+                        sample_mask <<= 1;
+                    }
+                }
+            }
+            new_sig |= cs;
+            if let Some(b) = prev_row_sig.get_mut(g) {
+                *b = new_sig as u16;
+            }
+            let t = new_sig;
+            new_sig |= (t & 0x7777) << 1;
+            new_sig |= (t & 0xEEEE) >> 1;
+            prev = (new_sig | u) & 0xF000;
+        }
+    }
+    let mut mrp = RevBits::new();
+    for y in (0..h).step_by(4) {
+        let row = (y >> 2) * mstr;
+        for (k, i) in (0..w).step_by(8).enumerate() {
+            let sig = pair(&sigma, row + 2 * k);
+            if sig == 0 {
+                continue;
+            }
+            for j in 0..8 {
+                let col_mask = 0xFu32 << (4 * j);
+                if sig & col_mask == 0 {
+                    continue;
+                }
+                let mut sample_mask = 0x1111_1111u32 & col_mask;
+                for r in 0..4 {
+                    if sig & sample_mask != 0 {
+                        mrp.put(plane(i + j, y + r));
+                    }
+                    sample_mask <<= 1;
+                }
+            }
+        }
+    }
+    Ok(Some(Refined { cleanup, spp: sp.finish(), mrp: mrp.finish(), newly }))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -503,5 +724,66 @@ mod tests {
         assert!(encode(&[0; 16], 4, 4).expect("zero block").is_none());
         assert!(encode(&[1 << 30], 1, 1).is_err());
         assert!(encode(&[1; 8192], 128, 64).is_err());
+    }
+
+    /// The refinement passes: encode at plane `s + 1` with SigProp (and MagRef), decode, and
+    /// compare with what each pass leaves (midpoints of the intervals the passes decide).
+    fn refined_roundtrip(q: &[i32], w: usize, h: usize, s: u32) {
+        let mb = 32 - q.iter().map(|v| v.unsigned_abs()).max().unwrap_or(0).leading_zeros();
+        let Some(r) = encode_refined(q, w, h, s).expect("encodes") else {
+            assert!(q.iter().all(|&v| v.unsigned_abs() >> (s + 1) == 0));
+            return;
+        };
+        let zero = mb - 2 - s;
+        for passes in [1u32, 2, 3] {
+            let mut segments = vec![(r.cleanup.clone(), 1)];
+            let mut seg = r.spp.clone();
+            if passes == 3 {
+                seg.extend_from_slice(&r.mrp);
+            }
+            if passes > 1 && !seg.is_empty() {
+                segments.push((seg, passes - 1));
+            }
+            let used = segments.len() as u32 + u32::from(segments.len() > 1 && passes == 3);
+            let b = Block { w, h, orient: 0, style: STYLE_HT, mb, zero, segments: &segments };
+            let got = decode(&b).expect("decodes");
+            for (i, (&g, &v)) in got.iter().zip(q).enumerate() {
+                let m = v.unsigned_abs();
+                let c = m >> (s + 1);
+                let bit = m >> s & 1;
+                let mag = if c > 0 {
+                    if passes == 3 && used == 3 { (4 * c + 2 * bit + 1) << s } else { (2 * c + 1) << (s + 1) }
+                } else if r.newly[i] && passes > 1 && used >= 2 {
+                    3 << s
+                } else {
+                    0
+                };
+                let want = if v < 0 { -(mag as i32) } else { mag as i32 };
+                assert_eq!(g, want, "{w}x{h} s={s} passes={passes} sample {i} (q={v})");
+            }
+        }
+    }
+
+    #[test]
+    fn refinement_passes_round_trip_through_the_decoder() {
+        let mut rnd = noise(0xC0FF_EE11);
+        for (w, h) in [(1, 1), (2, 3), (4, 4), (5, 7), (8, 8), (9, 5), (16, 16), (33, 17), (64, 64), (128, 32)] {
+            for bits in [3u32, 5, 8, 12, 20] {
+                for density in [4u32, 30, 100] {
+                    let q: Vec<i32> = (0..w * h)
+                        .map(|_| {
+                            if rnd() % 100 >= density {
+                                return 0;
+                            }
+                            let m = (rnd() & ((1u32 << bits) - 1)) as i32;
+                            if rnd() & 1 == 1 { -m } else { m }
+                        })
+                        .collect();
+                    for s in [0, 1, 2, bits.saturating_sub(3)] {
+                        refined_roundtrip(&q, w, h, s);
+                    }
+                }
+            }
+        }
     }
 }

@@ -37,6 +37,7 @@
 	Arrange	Упорядочить
 	Assembly	Сборка
 	Attach Proxies…	Прикрепить прокси…
+	Find Camera Proxies	Найти прокси камеры
 	Audio	Аудио
 	Audio Channels…	Аудиоканалы…
 	Audio Clip Mixer	Микшер аудиоклипов
@@ -3703,7 +3704,7 @@
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Видео MPEG-2 (Main Profile 4:2:0, 0,4 бита на пиксель) с размером кадра и частотой секвенции, LPCM 16 бит 48 кГц, .mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Видео MPEG-2 1920×1080, в среднем 18 Мбит/с, AAC 192 кбит/с, .ts
 	Media Backends	Медиабэкенды
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Использовать FFmpeg для файлов, которые движок CFA4 не открывает (FFmpeg 9.0.2 или новее, сборка GPL-3)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	Использовать FFmpeg для файлов, которые движок CFA4 не открывает (FFmpeg 9.1 или новее, сборка GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Использовать системный GStreamer для файлов, которые не открывают ни движок, ни FFmpeg
 	Analyze Source for Smart Cut	Анализ источника для Smart Cut
 	Plan Smart Cut	Спланировать Smart Cut
@@ -4800,6 +4801,7 @@
 	Datamosh Bloom	Datamosh-расцвет
 	Start Time (seconds)	Время начала (секунды)
 	Repeats	Повторы
+	Clean Blocks	Чистые блоки
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	Применить недавно использованный эффект к выбранным клипам
@@ -4892,3 +4894,75 @@
 	Voxel attributes	Атрибуты вокселей
 	Voxel size:	Размер вокселя:
 	points	точки
+
+# WP3 DPX bit depth
+	Bit Depth	Разрядность
+
+# AS-02 versions
+	AS-02 Versions	Версии AS-02
+	Tick the sequences to write as further versions in the AS-02 bundle	Отметьте последовательности, которые будут записаны как дополнительные версии в пакете AS-02
+	Delete Short Clips	Удалить короткие клипы
+	A stored combination does not run a command yet.	Сохранённая комбинация пока не запускает команду.
+	Action hint	Подсказка действия
+	Add combination	Добавить комбинацию
+	Add mapping	Добавить назначение
+	Button Learn	Обучение кнопки
+	Button Test	Проверка кнопки
+	Button name	Имя кнопки
+	Cancel feedback	Сигнал отмены
+	Combination editor	Редактор комбинаций
+	Context	Контекст
+	Delete profile	Удалить профиль
+	Detected buttons	Обнаруженные кнопки
+	Draw the gesture with a button held.	Нарисуйте жест, удерживая кнопку.
+	Error feedback	Сигнал ошибки
+	Evdev device	Устройство evdev
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	Evdev читает только выбранное устройство и только после того, как более поздний этап его включит. Эта версия остаётся на пути Qt.
+	Execution feedback	Сигнал выполнения
+	Follow the system	Как в системе
+	Gesture	Жест
+	Gesture Learn	Обучение жеста
+	Gesture editor	Редактор жестов
+	Gesture profiles	Профили жестов
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	Жесты выключены, пока вы их не включите. Включение не блокирует меню панели.
+	HUD	HUD
+	Hand	Рука
+	High contrast	Высокий контраст
+	Hold time	Время удержания
+	Input access	Доступ к вводу
+	Left-handed	Левша
+	Mapping	Назначение
+	Maximum length	Наибольшая длина
+	Maximum time	Наибольшее время
+	Minimum length	Наименьшая длина
+	Mirror ergonomic gestures	Отразить эргономичные жесты
+	Mouse Gestures	Жесты мыши
+	Mouse Gestures…	Жесты мыши…
+	No buttons yet. Press one in Button Learn or Button Test.	Кнопок пока нет. Нажмите одну в обучении или в проверке.
+	Press	Нажатие
+	Qt pointer (this application)	Указатель Qt (это приложение)
+	Recognition preview	Предпросмотр распознавания
+	Reduced animation	Уменьшенная анимация
+	Right-handed	Правша
+	Roles	Роли
+	Save gesture	Сохранить жест
+	Save profile	Сохранить профиль
+	Show the gesture HUD	Показывать HUD жестов
+	Slop	Люфт
+	Spatial gesture	Пространственный жест
+	Thresholds	Пороги
+	Trail	След
+	Use gestures in the window	Жесты в окне
+	DVD-Video folder (VIDEO_TS)	Папка DVD-Video (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 анаморфное, 6 Mbps, GOP 15, AC-3 192 kbps, главы из маркеров глав последовательности
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 анаморфное, 6 Mbps, GOP 18, AC-3 192 kbps, главы из маркеров глав последовательности
+	DNx decoding:	Декодирование DNx:
+	As detected from the file ({detected})	Как определено по файлу ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (стандарт)
+	FFmpeg-compatible	Совместимо с FFmpeg
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg читает некоторые файлы DNx не так, как предписывает стандарт (цвета 4:4:4, обратное квантование). Материал, закодированный FFmpeg, определяется автоматически; выберите здесь, если определение неверно.
+	DNx Coding	Кодирование DNx
+	FFmpeg-compatible (for FFmpeg-based tools)	Совместимо с FFmpeg (для инструментов на основе FFmpeg)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	Выкл.: кодирование по SMPTE ST 2019-1. Вкл.: кодирование так, как FFmpeg записывает DNx, для инструментов на основе FFmpeg.

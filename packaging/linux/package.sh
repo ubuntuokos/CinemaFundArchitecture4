@@ -9,11 +9,12 @@
 # plus CFA4_APPIMAGETOOL_SHA256, and CFA4_PYSIDE6_WHEELS (a local wheelhouse with the PySide6 6.12
 # wheels pinned in requirements/linux-amd64.txt, for the Qt GUI); optional zsyncmake. Never
 # auto-download tools.
-# FFmpeg (ADR 0005 step 4): CFA4's own FFmpeg 9.0.2 build from scripts/dev/build-ffmpeg-9.0.2.sh
-# (CFA4_FFMPEG_BUILD, default /opt/cfa4/ffmpeg-9.0.2) ships in every format: the .deb installs it
-# into /opt/cfa4/ffmpeg-9.0.2, the tarball/AppImage/Flatpak carry it in lib/cfa4/ffmpeg-9.0.2.
+# FFmpeg (ADR 0005 step 4): CFA4's own FFmpeg build from scripts/dev/build-ffmpeg.sh (VERSION:
+# packaging/ffmpeg-version.env; CFA4_FFMPEG_BUILD, default /opt/cfa4/ffmpeg-VERSION) ships in every
+# format: the .deb installs it into /opt/cfa4/ffmpeg-VERSION, the tarball/AppImage/Flatpak carry it
+# in lib/cfa4/ffmpeg-VERSION.
 # `restricted` (not a default format) builds cfa4-restricted-extras, the separate .deb with the same
-# FFmpeg plus x264/x265 (`--restricted` build) in /opt/cfa4/ffmpeg-9.0.2-restricted (Ubuntu
+# FFmpeg plus x264/x265 (`--restricted` build) in /opt/cfa4/ffmpeg-VERSION-restricted (Ubuntu
 # model, docs/licensing.md §7). --without-ffmpeg is for local tests of the tarball only.
 set -euo pipefail
 # CFA4 LICENSE/IDENTITY GATE: packaging is developer-only until the CFA4 icons,
@@ -52,7 +53,7 @@ for format in "${requested_formats[@]}"; do
     *) echo "error: unsupported CFA4 package format: $format (supported: appimage deb tar restricted; Flatpak uses flatpak-bundle.sh)" >&2; exit 2 ;;
   esac
   if [[ "$WITH_FFMPEG" == 0 && "$format" != tar ]]; then
-    echo "error: --without-ffmpeg is for local tarball tests only; release formats ship FFmpeg 9.0.2 (ADR 0005)" >&2
+    echo "error: --without-ffmpeg is for local tarball tests only; release formats ship CFA4's FFmpeg (ADR 0005)" >&2
     exit 2
   fi
 done
@@ -70,7 +71,9 @@ ARCH=x86_64
 export CFA4_MAINTAINER="${CFA4_MAINTAINER:-CFA4 contributors}"
 BASENAME="cfa4-$VERSION-linux-$ARCH"
 
-FFMPEG_VERSION=9.0.2
+# shellcheck source=packaging/ffmpeg-version.env
+. "$ROOT/packaging/ffmpeg-version.env"
+FFMPEG_VERSION="$CFA4_FFMPEG_VERSION"
 FFMPEG_BUILD="${CFA4_FFMPEG_BUILD:-/opt/cfa4/ffmpeg-$FFMPEG_VERSION}"
 # the run-time search path the binaries must carry (apps/*/build.rs with the default prefix)
 FFMPEG_RUNPATH="/opt/cfa4/ffmpeg-$FFMPEG_VERSION-restricted/lib:/opt/cfa4/ffmpeg-$FFMPEG_VERSION/lib:\$ORIGIN/../lib/cfa4/ffmpeg-$FFMPEG_VERSION/lib"
@@ -79,7 +82,7 @@ if [[ "$WITH_FFMPEG" == 1 ]]; then
   builds=("$FFMPEG_BUILD")
   if has restricted; then builds+=("$FFMPEG_BUILD-restricted"); fi
   for build in "${builds[@]}"; do
-    [ -x "$build/bin/ffmpeg" ] || { echo "error: no FFmpeg $FFMPEG_VERSION build in $build (scripts/dev/build-ffmpeg-9.0.2.sh$([[ "$build" == *-restricted ]] && echo ' --restricted'); CFA4_FFMPEG_BUILD moves it)" >&2; exit 1; }
+    [ -x "$build/bin/ffmpeg" ] || { echo "error: no FFmpeg $FFMPEG_VERSION build in $build (scripts/dev/build-ffmpeg.sh$([[ "$build" == *-restricted ]] && echo ' --restricted'); CFA4_FFMPEG_BUILD moves it)" >&2; exit 1; }
   done
 else
   warn "--without-ffmpeg: a local test tarball without the FFmpeg backend, not a release package"
@@ -137,8 +140,8 @@ cp "$ROOT"/i18n/*.tsv "$ROOT"/i18n/*.tsv.attribution "$QT_PY/cfa4_qt/i18n/"
 # the About window's credits, as egui bakes them in (crates/ui-egui/build.rs)
 mkdir -p "$QT_PY/cfa4_qt/credits"
 cp "$ROOT/contributors/contributors.json" "$ROOT/contributors/people.toml" "$QT_PY/cfa4_qt/credits/"
-# FFmpeg 9.0.2 (ADR 0005 step 4). Relocatable formats: the libraries with the third-party ones they
-# load, beside the binaries ($ORIGIN RUNPATH). The .deb: /opt/cfa4/ffmpeg-9.0.2, its dependencies
+# CFA4's FFmpeg (ADR 0005 step 4). Relocatable formats: the libraries with the third-party ones they
+# load, beside the binaries ($ORIGIN RUNPATH). The .deb: /opt/cfa4/ffmpeg-VERSION, its dependencies
 # from Ubuntu's archive as Depends.
 FFMPEG_DEB="$WORK/deb-ffmpeg"
 if [[ "$WITH_FFMPEG" == 1 ]]; then
@@ -286,8 +289,8 @@ def walk(v):
     elif isinstance(v, list):
         for x in v: yield from walk(x)
 ff = [d for d in walk(json.loads(sys.argv[1])) if d.get("id") == "ffmpeg" and "version" in d]
-assert ff and ff[0].get("available") and "9.0.2" in str(ff[0]["version"]), ff
-' "$backends" || { echo "error: the staged cfa4-cli does not report FFmpeg 9.0.2 as available" >&2; exit 1; }
+assert ff and ff[0].get("available") and sys.argv[2] in str(ff[0]["version"]), ff
+' "$backends" "$FFMPEG_VERSION" || { echo "error: the staged cfa4-cli does not report FFmpeg $FFMPEG_VERSION as available" >&2; exit 1; }
 fi
 # -P: the staged package, never a checkout's python/ that the caller's directory would put first
 PYTHONPATH="$QT_PY" python3 -P -c 'import cfa4_qt.i18n as i; assert i.CATALOG_DIR == i.PACKAGED_CATALOGS and (i.CATALOG_DIR / "hu.tsv").is_file()' \

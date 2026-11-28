@@ -50,6 +50,7 @@ from PySide6.QtWidgets import (
 
 from .. import theme
 from ..i18n import N_, fmt, tr
+from .gesture_settings import gesture_page
 
 LIST_W = 216
 LABEL_W = 250
@@ -1021,6 +1022,7 @@ class PreferencesDialog(QDialog):
         col.setContentsMargins(0, 0, 0, 0)
         col.addWidget(self._surface_devices(page))
         col.addWidget(self._assignments(page))
+        col.addWidget(gesture_page(self, page))
         col.addWidget(self._profile_editor(page))
         col.addWidget(self._profile_warnings_box(page))
         col.addWidget(self._midi_monitor(page))

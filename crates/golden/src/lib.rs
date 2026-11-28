@@ -11,4 +11,5 @@
 //! (frames, presentation times, audio) with a reference under measured thresholds and proves its own
 //! detection power with a mutation self-test (CFA4-RENDER-INTEGRATION-PLAN-001, F0V).
 
+pub mod range_meter;
 pub mod validation;

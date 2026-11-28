@@ -16,11 +16,11 @@
 # combined with CFA4 under GPL-3.0-or-later; the corresponding source is the unmodified upstream
 # release named in share/doc/libobs/BUILDINFO.
 #
-# FFmpeg: libobs 33 needs FFmpeg >= 8.0; it is built against CFA4's own FFmpeg 9.0.2
-# (scripts/dev/build-ffmpeg-9.0.2.sh, ADR 0005), so there is one FFmpeg in a CFA4 installation.
+# FFmpeg: libobs 33 needs FFmpeg >= 8.0; it is built against CFA4's own FFmpeg
+# (scripts/dev/build-ffmpeg.sh, ADR 0005), so there is one FFmpeg in a CFA4 installation.
 #
 # Environment: CFA4_LIBOBS_PREFIX (install prefix), CFA4_FFMPEG_PREFIX (default
-# /opt/cfa4/ffmpeg-9.0.2), CFA4_LIBOBS_JOBS (parallel jobs), CFA4_LIBOBS_SOURCE (`tarball`, the
+# /opt/cfa4/ffmpeg-VERSION, packaging/ffmpeg-version.env), CFA4_LIBOBS_JOBS (parallel jobs), CFA4_LIBOBS_SOURCE (`tarball`, the
 # default, or `git`).
 #
 # Build dependencies (Ubuntu): build-essential cmake ninja-build pkg-config extra-cmake-modules
@@ -51,14 +51,16 @@ for arg in "$@"; do
 done
 
 prefix="${CFA4_LIBOBS_PREFIX:-/opt/cfa4/libobs-${version}}"
-ffmpeg_prefix="${CFA4_FFMPEG_PREFIX:-/opt/cfa4/ffmpeg-9.0.2}"
+# shellcheck source=packaging/ffmpeg-version.env
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/packaging/ffmpeg-version.env"
+ffmpeg_prefix="${CFA4_FFMPEG_PREFIX:-/opt/cfa4/ffmpeg-$CFA4_FFMPEG_VERSION}"
 jobs="${CFA4_LIBOBS_JOBS:-$(nproc)}"
 
 for tool in cmake ninja pkg-config curl tar cc c++ sha256sum; do
   command -v "$tool" >/dev/null || { echo "missing build tool: $tool (see the dependency list in --help)" >&2; exit 1; }
 done
 if [[ ! -f "${ffmpeg_prefix}/lib/pkgconfig/libavcodec.pc" ]]; then
-  echo "CFA4 FFmpeg 9.0.2 not found in ${ffmpeg_prefix}: run scripts/dev/build-ffmpeg-9.0.2.sh first (libobs 33 needs FFmpeg >= 8.0)" >&2
+  echo "CFA4 FFmpeg $CFA4_FFMPEG_VERSION not found in ${ffmpeg_prefix}: run scripts/dev/build-ffmpeg.sh first (libobs 33 needs FFmpeg >= 8.0)" >&2
   exit 1
 fi
 

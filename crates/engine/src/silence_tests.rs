@@ -276,7 +276,6 @@ fn unsupported_clips_and_hostile_parameters_are_errors_not_panics() {
     assert_ne!(spd, saved(&s));
     assert_eq!(saved(&s), before);
     for bad in [
-        json!({"detector": "silero"}),
         json!({"detector": "nope"}),
         json!({"mode": "nope"}),
         json!({"scope": "nope"}),
@@ -354,6 +353,14 @@ fn mix_left(s: &Session) -> Vec<f32> {
 /// removed samples taken out, and what was taken out was silent.
 #[test]
 fn v1_silence_removal_acceptance() {
+    let detect = PARAMS();
+    acceptance(speech(), 5, detect, |regions| assert_eq!(regions, 3), 0.001);
+}
+
+/// The acceptance checks (a), (b), (c) on `audio` (`seconds` long, a whole number) with the given
+/// `audio.detectSpeech` parameters; `regions` checks how many regions were found, and what is
+/// removed must stay below `silent_peak` in level.
+fn acceptance(audio_bytes: Arc<[u8]>, seconds: i64, detect: Value, regions: impl Fn(usize), silent_peak: f32) {
     use cfa4_media::{Generator, generators::GeneratorSource};
     use cfa4_project::Label;
     use cfa4_time::FrameRate;
@@ -361,12 +368,12 @@ fn v1_silence_removal_acceptance() {
     // 25 fps at 48 kHz is 1920 samples per frame: every cut falls on a whole sample
     let mut s = Session::default();
     s.execute("file.newSequence", json!({"name": "acceptance", "width": 64, "height": 36, "fps": 25.0, "audio": 2, "video": 1})).unwrap();
-    let audio = place(&mut s, "/speech.wav", speech(), "A1");
+    let audio = place(&mut s, "/speech.wav", audio_bytes, "A1");
     let mut p = (*s.project).clone();
     let matte = crate::demo::add_generator(
         &mut p,
         &s.media,
-        GeneratorSource::new(Generator::ColorMatte { color: [0.2, 0.5, 0.8, 1.0] }, 64, 36, FrameRate::FPS_25, Tick(5 * TICKS_PER_SECOND)),
+        GeneratorSource::new(Generator::ColorMatte { color: [0.2, 0.5, 0.8, 1.0] }, 64, 36, FrameRate::FPS_25, Tick(seconds * TICKS_PER_SECOND)),
         "Matte",
         Label::Iris,
         None,
@@ -374,11 +381,12 @@ fn v1_silence_removal_acceptance() {
     s.project = Arc::new(p);
     s.execute("timeline.place", json!({"item": matte.0, "videoTrack": "V1", "seconds": 0.0})).unwrap();
     s.execute("timeline.select", json!({"clips": [audio.0]})).unwrap();
-    assert_eq!(seq_len(&s), 5 * TICKS_PER_SECOND);
+    assert_eq!(seq_len(&s), seconds * TICKS_PER_SECOND);
 
-    s.execute("audio.detectSpeech", PARAMS()).unwrap();
-    let regions = silence_markers(&s);
-    assert_eq!(regions.len(), 3);
+    s.execute("audio.detectSpeech", detect).unwrap();
+    let regions_found = silence_markers(&s);
+    regions(regions_found.len());
+    let regions = regions_found;
     let removed_ticks: i64 = regions.iter().map(|m| m.2).sum();
     let sr = 48_000i64;
     let ranges: Vec<(usize, usize)> = regions.iter().map(|m| (Tick(m.1).to_units_floor(sr) as usize, Tick(m.1 + m.2).to_units_floor(sr) as usize)).collect();
@@ -390,7 +398,7 @@ fn v1_silence_removal_acceptance() {
 
     // (a) sync: the picture was cut with the sound, the length is exact
     assert_eq!(s.history.undo.len(), steps + 1, "one undo step");
-    assert_eq!(seq_len(&s), 5 * TICKS_PER_SECOND - removed_ticks);
+    assert_eq!(seq_len(&s), seconds * TICKS_PER_SECOND - removed_ticks);
     let seq = s.active_sequence().unwrap();
     let span = |t: &cfa4_project::Track| t.items.iter().map(|i| (i.start.0, i.duration.0)).collect::<Vec<_>>();
     assert!(!seq.video_tracks[0].items.is_empty());
@@ -403,7 +411,7 @@ fn v1_silence_removal_acceptance() {
     let mut at = 0usize;
     for &(a, b) in &ranges {
         expected.extend_from_slice(&before_mix[at..a]);
-        assert!(before_mix[a..b].iter().all(|v| v.abs() < 0.001), "what is removed was silent");
+        assert!(before_mix[a..b].iter().all(|v| v.abs() < silent_peak), "what is removed was silent");
         at = b;
     }
     expected.extend_from_slice(&before_mix[at..]);
@@ -416,6 +424,56 @@ fn v1_silence_removal_acceptance() {
     assert_eq!(mix_left(&s), before_mix);
     s.execute("edit.redo", json!({})).unwrap();
     assert_eq!(saved(&s), after_state);
+}
+
+/// The built-in voice at 48 kHz (linear resampling) for the Silero tests.
+#[cfg(feature = "silero")]
+fn voice_48k() -> Vec<f32> {
+    let voice = cfa4_tts::voice(cfa4_tts::default_voice_id()).expect("built-in voice");
+    let a = voice.synthesize(cfa4_tts::SAMPLE_SENTENCE, &cfa4_tts::Params::default()).expect("synthesis");
+    let ratio = f64::from(a.sample_rate) / f64::from(SR);
+    let n = (a.samples.len() as f64 / ratio) as usize;
+    (0..n)
+        .map(|i| {
+            let x = i as f64 * ratio;
+            let (i0, f) = (x as usize, (x - x.floor()) as f32);
+            let (a0, a1) = (a.samples.get(i0).copied().unwrap_or(0.0), a.samples.get(i0 + 1).copied().unwrap_or(0.0));
+            a0 + (a1 - a0) * f
+        })
+        .collect()
+}
+
+/// `1 s` silence, the voice, `2 s` silence, the voice, silence up to a whole number of seconds.
+#[cfg(feature = "silero")]
+fn voice_and_silence() -> (Arc<[u8]>, i64) {
+    let v = voice_48k();
+    let mut a = vec![0.0f32; SR as usize];
+    a.extend(&v);
+    a.extend(vec![0.0f32; 2 * SR as usize]);
+    a.extend(&v);
+    let seconds = (a.len() as i64 + 2 * SR as i64 + SR as i64 - 1) / SR as i64; // at least 2 s of tail
+    a.resize(seconds as usize * SR as usize, 0.0);
+    let st: Vec<f32> = a.iter().flat_map(|x| [*x, *x]).collect();
+    (crate::previews::write_wav_f32(&st, SR).into(), seconds)
+}
+
+/// V1-B acceptance (plan CFA4-V1-SILENCE-REMOVAL-001, 12.4): the same checks (a), (b), (c) with
+/// the Silero detector on the built-in voice. The model is never downloaded by a test: it runs
+/// when the model is in `<data dir>/models` (`CFA4_DATA_DIR=<dir>`, see `docs/testing.md`) and
+/// prints SKIPPED otherwise.
+#[cfg(feature = "silero")]
+#[test]
+fn v1_silence_removal_acceptance_with_the_speech_model() {
+    let installed = crate::transcript::models_dir().is_some_and(|d| cfa4_speech::vad::silero::installed(&d));
+    if !installed {
+        eprintln!("SKIPPED: the Silero VAD model is not in the model store (set CFA4_DATA_DIR to a directory with models/silero-vad/)");
+        return;
+    }
+    let (bytes, seconds) = voice_and_silence();
+    let detect = json!({"detector": "silero", "minSilence": TICKS_PER_SECOND / 2, "padding": TICKS_PER_SECOND / 10});
+    // the leading second, the 2 s gap and the tail are silence to the model; the voice's own
+    // breathy fade-out may count as speech or not, so what is removed only has to be quiet
+    acceptance(bytes, seconds, detect, |n| assert!((2..=4).contains(&n), "{n} silent regions"), 0.05);
 }
 
 /// Wait for a job to finish; its `result` as JSON.
@@ -472,4 +530,31 @@ fn a_cancelled_analysis_leaves_the_sequence_alone_and_cannot_be_marked() {
     assert!(s.execute("silence.mark", json!({"job": job})).is_err());
     assert_eq!(saved(&s), before);
     assert!(silence_markers(&s).is_empty());
+}
+
+#[test]
+fn silero_model_is_shown_first_and_downloaded_only_after_acceptance() {
+    let mut s = new_session();
+    let info = s.execute("speech.vadModel", json!({})).unwrap();
+    assert_eq!(info["id"], "silero-vad");
+    assert!(info["license"].as_str().unwrap().starts_with("MIT"));
+    assert!(info["size"].as_u64().unwrap() > 1_000_000);
+    assert!(info["source"].as_str().unwrap().starts_with("https://github.com/snakers4/silero-vad"));
+    // the licence is not accepted: no download, whatever the build, and nothing else downloads
+    for p in [json!({}), json!({"licenseAccepted": false}), json!({"licenseAccepted": "yes"})] {
+        let e = s.execute("speech.downloadVadModel", p.clone()).unwrap_err().to_string();
+        assert!(e.contains("licence") || e.contains("not available"), "{p}: {e}");
+    }
+}
+
+/// Without the model (or the feature) `silero` is an error that says what to do; it never falls
+/// back to the energy detector silently.
+#[cfg(not(feature = "silero"))]
+#[test]
+fn silero_detector_without_the_feature_is_an_error_not_a_fallback() {
+    let (mut s, c) = one_clip();
+    let before = saved(&s);
+    let e = s.execute("audio.detectSpeech", json!({"clips": [c.0], "detector": "silero"})).unwrap_err().to_string();
+    assert!(e.contains("silero"), "{e}");
+    assert_eq!(saved(&s), before);
 }

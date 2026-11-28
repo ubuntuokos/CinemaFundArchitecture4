@@ -2424,6 +2424,7 @@ EGUI_EXPORT_IDS: frozenset[str] = frozenset({
     "export.range.end", "export.range.start", "export.scaling", "export.sendToQueue", "export.summary",
     "export.video.alpha", "export.video.apvProfile", "export.video.aspect", "export.video.bitrateMode",
     "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dashManifest", "export.video.dnxProfile",
+    "export.video.dpxBitDepth",
     "export.video.exrCompression", "export.video.fieldOrder", "export.video.fixedBitrate", "export.video.fps",
     "export.video.hardwareEncoding", "export.video.height", "export.video.keyframe", "export.video.keyframeOn",
     "export.video.level", "export.video.matchRate", "export.video.matchSize", "export.video.max",
@@ -2813,6 +2814,104 @@ def test_qc_window_drops_stale_replies_and_reports_failures(app):
         dlg.close()
 
 
+def test_qc_window_shows_the_frame_at_a_flagged_time_code(app):
+    """4.14 (Q1b): Show Frame asks the engine for a read-only preview of the export at the time
+    code of the selected event or finding; the project is not touched (no import, no Source item),
+    a stale or failed answer is a message, never a crash."""
+    from cfa4_qt.panels.qc import QcDialog, position_tick
+
+    class Engine:
+        running = True
+
+        def __init__(self):
+            self.sent = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.sent.append(("execute", command, dict(params or {}), on_reply, on_error))
+            return 0
+
+        def call(self, method, params=None, on_reply=None, on_error=None):
+            self.sent.append(("call", method, dict(params or {}), on_reply, on_error))
+            return 0
+
+        def take(self, name):
+            for i, item in enumerate(self.sent):
+                if item[1] == name:
+                    del self.sent[i]
+                    return item
+            raise AssertionError(f"nothing sent for {name}")
+
+    assert position_tick({"tick": 7}, None) == 7
+    assert position_tick({"frame": 50}, (25, 1)) == 2 * TICKS_PER_SECOND
+    assert position_tick({"timecode": "00:00:01:00"}, (25, 1)) == TICKS_PER_SECOND
+    assert position_tick({"timecode": "00:00:01:00"}, None) is None
+    assert position_tick({"tick": -1}, (25, 1)) is None and position_tick(None, (25, 1)) is None
+
+    duration = 10 * TICKS_PER_SECOND
+    full = {"profile": {"id": "delivery-web", "version": 1}, "output": {"path": "a.mp4"},
+            "checks": [{"id": "probe.video", "status": "PASS", "detail": {"frameRate": "25/1"}},
+                       {"id": "integrity.frames", "status": "WARN",
+                        "events": [{"message": "flash", "at": {"timecode": "00:00:02:00", "frame": 50}}]}]}
+    engine = Engine()
+    dlg = QcDialog(engine)  # type: ignore[arg-type]
+    try:
+        dlg.open_for("a.mp4")
+        engine.take("qc.report.get")[3]({"full": full, "verdict": "WARN", "summary": {}, "questions": [], "report": "a.cfa4qc.json"}, None)
+
+        dlg.show_event_frame()  # nothing selected
+        assert not engine.sent and dlg.message.text() == "Select an event first."
+        dlg.events_table.selectRow(0)
+        dlg.show_event_frame()
+        _kind, _cmd, params, ok, err = engine.take("mediaBrowser.probe")
+        assert params == {"path": "a.mp4"}
+        ok({"path": "a.mp4", "media": True, "info": {"duration": duration}}, None)
+        _kind, _cmd, params, ok, err = engine.take("mediaBrowser.thumbnail")
+        assert params["path"] == "a.mp4" and params["width"] == 640
+        # 2 s of 10 s, half a frame in so the engine's rounding cannot pick the neighbour
+        assert abs(params["fraction"] - (2 * TICKS_PER_SECOND + TICKS_PER_SECOND // 50) / duration) < 1e-9
+        ok({"w": 2, "h": 1, "format": "rgba8"}, bytes([255, 0, 0, 255, 0, 255, 0, 255]))
+        assert dlg.frame_label.pixmap().width() == 2 and dlg.frame_time.text() == "Time code 00:00:02:00"
+        assert dlg.tabs.currentWidget() is dlg._frame_page
+
+        # the duration is remembered: the second request goes straight to the picture
+        dlg.show_event_frame()
+        assert [c for _k, c, *_ in engine.sent] == ["mediaBrowser.thumbnail"]
+        engine.take("mediaBrowser.thumbnail")[4]("not a readable media file")
+        assert dlg.message.text() == "not a readable media file"
+
+        # a finding is read from its (typed) time code; a time that is no picture is refused
+        dlg.add_finding("dip", "minor", "00:00:03:00")
+        dlg.findings.selectRow(0)
+        dlg.show_finding_frame()
+        assert abs(engine.take("mediaBrowser.thumbnail")[2]["fraction"] - 0.3) < 0.01
+        dlg.findings.item(0, 2).setText("00:00:03:99")
+        dlg.show_finding_frame()
+        assert not engine.sent and "HH:MM:SS:FF" in dlg.message.text()
+
+        # a late answer for the file the window showed before is dropped
+        dlg.findings.item(0, 2).setText("00:00:03:00")
+        dlg.show_finding_frame()
+        late = engine.take("mediaBrowser.thumbnail")[3]
+        dlg.open_for("b.mp4")
+        before = dlg.frame_label.text()
+        late({"w": 1, "h": 1}, bytes([1, 2, 3, 255]))
+        assert dlg.frame_label.pixmap().isNull() and dlg.frame_label.text() == before
+
+        # no probe answer, no length: a message, nothing drawn
+        dlg.report = full
+        dlg.show_frame({"tick": TICKS_PER_SECOND})
+        engine.take("mediaBrowser.probe")[3]({"path": "b.mp4", "media": False, "info": None}, None)
+        assert dlg.message.text() == "The file's length is unknown."
+        assert not [c for _k, c, *_ in engine.sent if c.startswith("mediaBrowser.")]
+
+        engine.running = False
+        dlg.show_frame({"tick": 1})
+        assert dlg.message.text() == "The engine is not running."
+    finally:
+        dlg._poll.stop()
+        dlg.close()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_quality_check_through_the_export_window(app, tmp_path: Path):
     """Media QC stage E: export with "Check quality after export", read the report in the QC
@@ -2867,6 +2966,11 @@ def test_real_engine_quality_check_through_the_export_window(app, tmp_path: Path
         combo.setCurrentIndex(combo.findData("no"))
         row = qc.add_finding("flash frame", "major", "00:00:00:12", "check the source")
         assert row == 0
+        # Show Frame: the finding's time code is drawn from the export itself, read-only
+        qc.findings.selectRow(0)
+        qc.show_finding_frame()
+        assert wait_until(app, lambda: qc.frame_label.pixmap() is not None and not qc.frame_label.pixmap().isNull(), 30_000), qc.message.text()
+        assert qc.frame_time.text() == "Time code 00:00:00:12" and qc.tabs.currentWidget() is qc._frame_page
         qc.reviewer.setText("QC tester")
         qc.review_done.setChecked(True)
         saved: list[str] = []
@@ -2922,6 +3026,12 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         dlg.container.setCurrentIndex(dlg.container.findData("ts"))
         assert dlg.path.text().endswith(".ts") and dlg.audio.isEnabled() and dlg.audio_codec.isEnabled()
         assert dlg.params()["mpeg2Container"] == "ts"
+        # a DVD-Video disc is a folder (no extension) and keeps its audio
+        dlg.container.setCurrentIndex(dlg.container.findData("dvd"))
+        assert dlg._package() and dlg._extension() == "" and dlg.audio.isEnabled()
+        assert dlg.params()["mpeg2Container"] == "dvd"
+        dlg.container.setCurrentIndex(dlg.container.findData("ts"))
+        assert not dlg._package() and dlg.path.text().endswith(".ts")
         # AC-3 instead of the container's own audio (#268)
         dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("ac3"))
         assert dlg.params()["audioCodec"] == "ac3"
@@ -4315,6 +4425,80 @@ def test_real_engine_program_monitor_crop_handles(app, tmp_path: Path):
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_interpret_footage_chooses_dnx_conventions(app):
+    """Interpret Footage shows the DNx conventions for DNx footage only (CFA4-DNX-SPEC-001 R5);
+    OK sends ``dnxConventions`` only when it changed, and leaves mixed settings alone."""
+    from cfa4_qt.dialogs import InterpretFootageDialog
+
+    sent: list = []
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    auto = d.findChild(QtWidgets.QRadioButton, "interpretFootage.dnx.auto")
+    smpte = d.findChild(QtWidgets.QRadioButton, "interpretFootage.dnx.smpte")
+    assert auto is not None and smpte is not None and auto.isHidden()
+    for answer in (None, {"dnx": False}, "x"):
+        d._dnx_info(answer)
+        assert auto.isHidden()
+    d._dnx_info({"dnx": True, "setting": "auto", "detected": "ffmpeg", "effective": "ffmpeg"})
+    assert not auto.isHidden() and auto.isChecked() and "FFmpeg-compatible" in auto.text()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7]})
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    d._dnx_info({"dnx": True, "setting": "auto", "detected": "ffmpeg", "effective": "ffmpeg"})
+    d.findChild(QtWidgets.QRadioButton, "interpretFootage.dnx.smpte").setChecked(True)
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "dnxConventions": "smpte", "items": [7]})
+    # mixed settings: nothing chosen and nothing sent, unless one value is picked
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    d._dnx_info({"dnx": True, "setting": "smpte", "detected": "smpte", "effective": "smpte"})
+    d._dnx_info({"dnx": True, "setting": "ffmpeg", "detected": "smpte", "effective": "ffmpeg"})
+    assert d.chosen_dnx() is None
+    assert "SMPTE" in d.dnx_choices["auto"].text() and "FFmpeg" not in d.dnx_choices["auto"].text()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7, 8]})
+    # items detected differently name both; a later reply keeps the user's pick
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    d._dnx_info({"dnx": True, "setting": "auto", "detected": "smpte", "effective": "smpte"})
+    d.dnx_choices["ffmpeg"].click()
+    d._dnx_info({"dnx": True, "setting": "auto", "detected": "ffmpeg", "effective": "ffmpeg"})
+    assert "SMPTE" in d.dnx_choices["auto"].text() and "FFmpeg-compatible" in d.dnx_choices["auto"].text()
+    assert d.chosen_dnx() == "ffmpeg"
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "dnxConventions": "ffmpeg", "items": [7, 8]})
+
+
+def test_export_dnx_ffmpeg_compat_switch_only_for_dnx(app):
+    """CFA4-DNX-SPEC-001 D3: the FFmpeg-compatible DNx switch shows for DNxHR (also in MXF) and is
+    sent as ``dnxFfmpegCompat`` once changed."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "dnxhr", "label": "DNxHR"}, {"id": "mxf-op1a", "label": "MXF OP1a"}], None)
+    box = dlg.findChild(QtWidgets.QCheckBox, "export.video.dnxFfmpegCompat")
+    assert box is dlg.dnx_ffmpeg
+    dlg.format.setCurrentIndex(dlg.format.findData("h264"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "dnxFfmpegCompat" not in dlg.params()
+    dlg.format.setCurrentIndex(dlg.format.findData("dnxhr"))
+    dlg._sync_format_rows()
+    assert not box.isHidden() and "dnxFfmpegCompat" not in dlg.params()
+    box.setChecked(True)
+    assert dlg.params()["dnxFfmpegCompat"] is True
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-op1a"))
+    dlg._sync_format_rows()
+    assert not box.isHidden()
+    codec = dlg.format_choices["mxfVideoCodec"]
+    codec.setCurrentIndex(codec.findData("proRes"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "dnxFfmpegCompat" not in dlg.params()
+    dlg.deleteLater()
 
 
 def test_interpret_footage_turns_auro_decoding_off(app):
@@ -8440,6 +8624,7 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
     assert supports_alpha("exr", "", "") and supports_alpha("prores", "4444xq", "") and not supports_alpha("prores", "hq", "")
     assert supports_alpha("cineform", "", "4444") and not supports_alpha("mxf-op1a", "4444", "")
     assert supports_alpha("gif", "", ""), "GIF keeps binary transparency, as the engine says (#3423)"
+    assert supports_alpha("dpx", "", "", "16") and supports_alpha("dpx", "", "", "12") and not supports_alpha("dpx", "", "")
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
     win = MainWindow(engine, settings)
@@ -15667,4 +15852,39 @@ def test_export_mxf_as02_switch_only_for_op1a_without_interleaved_codecs(app):
     dlg.format.setCurrentIndex(dlg.format.findData("mxf-opatom"))
     dlg._sync_format_rows()
     assert box.isHidden() and "mxfAs02" not in dlg.params()
+    dlg.deleteLater()
+
+
+def test_export_mxf_as02_versions_list_by_name_only_with_as02_on(app):
+    """#1724: the AS-02 switch reveals a list of the project's other sequences by name; the ticked
+    ones go out as ``mxfAs02Versions`` (sequence ids) only once changed."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "mxf-op1a", "label": "MXF OP1a"}], None)
+    dlg.sequence = {"id": 7, "name": "Main"}
+    dlg.set_project_sequences([(7, "Main"), (8, "Hungarian"), (9, "German")])
+    lst = dlg.findChild(QtWidgets.QListWidget, "export.video.mxfAs02Versions")
+    assert lst is dlg.as02_versions
+    # the open sequence is not offered; the others are listed by name
+    assert [lst.item(i).text() for i in range(lst.count())] == ["Hungarian", "German"]
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-op1a"))
+    dlg._sync_format_rows()
+    assert lst.isHidden()  # AS-02 is off
+    dlg.mxf_as02.setChecked(True)
+    assert not lst.isHidden()
+    assert "mxfAs02Versions" not in dlg.params()  # nothing changed in the list yet
+    lst.item(1).setCheckState(QtCore.Qt.CheckState.Checked)
+    assert dlg.params()["mxfAs02Versions"] == [9]
+    # a refresh keeps the ticks of the sequences still there
+    dlg.set_project_sequences([(7, "Main"), (9, "German")])
+    assert dlg.params()["mxfAs02Versions"] == [9]
+    dlg.mxf_as02.setChecked(False)
+    assert lst.isHidden() and "mxfAs02Versions" not in dlg.params()
     dlg.deleteLater()

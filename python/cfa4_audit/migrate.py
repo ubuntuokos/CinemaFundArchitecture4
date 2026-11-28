@@ -18,7 +18,13 @@ from .canonical import GENESIS_PREV_HASH, event_hash
 from .errors import AuditError
 from .event import ActorKind, AuditEvent, Outcome, uuid7
 
-SCHEMA_VERSION = 1
+# (version, file in cfa4_audit/migrations). A new schema change is a new file and a new row; installed migrations are
+# never edited.
+MIGRATIONS: tuple[tuple[int, str], ...] = (
+    (1, "0001_audit_schema.sql"),
+    (2, "0002_audit_checkpoint_functions.sql"),
+)
+SCHEMA_VERSION = MIGRATIONS[-1][0]
 _GENESIS_SUBJECT = uuid.UUID("00000000-0000-7000-8000-000000000001")
 
 
@@ -28,38 +34,50 @@ class SchemaInstallFailed(AuditError):
     code = "AUDIT_SCHEMA_INSTALL_FAILED"
 
 
-def migration_sql() -> str:
-    """The text of migration 1."""
-    return resources.files("cfa4_audit").joinpath("migrations/0001_audit_schema.sql").read_text(encoding="utf-8")
+def migration_sql(version: int = 1) -> str:
+    """The text of one migration (default: migration 1)."""
+    name = dict(MIGRATIONS)[version]
+    return resources.files("cfa4_audit").joinpath(f"migrations/{name}").read_text(encoding="utf-8")
 
 
-def is_installed(conn: psycopg.Connection) -> bool:
-    """Whether the schema and its version row exist."""
+def installed_version(conn: psycopg.Connection) -> int:
+    """The highest applied migration version; 0 when the schema is not installed."""
     with conn.cursor() as cur:
         cur.execute("SELECT to_regclass('cfa4_audit.schema_version') IS NOT NULL")
         row = cur.fetchone()
         if row is None or not row[0]:
-            return False
-        cur.execute("SELECT 1 FROM cfa4_audit.schema_version WHERE version = %s", (SCHEMA_VERSION,))
-        return cur.fetchone() is not None
+            return 0
+        cur.execute("SELECT coalesce(max(version), 0) FROM cfa4_audit.schema_version")
+        row = cur.fetchone()
+        return int(row[0]) if row is not None else 0
+
+
+def is_installed(conn: psycopg.Connection) -> bool:
+    """Whether the schema is installed at the current version."""
+    return installed_version(conn) >= SCHEMA_VERSION
 
 
 def install(conn: psycopg.Connection) -> bool:
-    """Apply migration 1 and append the genesis event in ONE transaction; True if it did something.
+    """Apply every pending migration (and, with migration 1, the genesis event); True if it did something.
 
-    Idempotent: when the version row exists nothing changes. On any error the transaction is rolled back, so a
-    half-installed schema is never left behind.
+    Each migration runs in ONE transaction together with its version row, so a half-applied migration is never left
+    behind. Idempotent: at the current version nothing changes.
     """
-    if is_installed(conn):
-        return False
-    try:
-        with conn.transaction():
-            conn.execute(migration_sql())  # a multi-statement script without parameters
-            _append_genesis(conn)
-            conn.execute("INSERT INTO cfa4_audit.schema_version (version) VALUES (%s)", (SCHEMA_VERSION,))
-    except psycopg.Error as exc:
-        raise SchemaInstallFailed(str(exc).splitlines()[0]) from exc
-    return True
+    done = installed_version(conn)
+    applied = False
+    for version, _name in MIGRATIONS:
+        if version <= done:
+            continue
+        try:
+            with conn.transaction():
+                conn.execute(migration_sql(version))  # a multi-statement script without parameters
+                if version == 1:
+                    _append_genesis(conn)
+                conn.execute("INSERT INTO cfa4_audit.schema_version (version) VALUES (%s)", (version,))
+        except psycopg.Error as exc:
+            raise SchemaInstallFailed(f"migration {version}: {str(exc).splitlines()[0]}") from exc
+        applied = True
+    return applied
 
 
 def _append_genesis(conn: psycopg.Connection) -> None:

@@ -248,6 +248,7 @@
 	At Unnumbered Markers	번호 없는 마커에
 	Att	어택
 	Attach Proxies…	프록시 연결…
+	Find Camera Proxies	카메라 프록시 찾기
 	Attack	어택
 	Attempt to force hardware to document sample rate	하드웨어를 문서 샘플 속도로 강제 시도
 	Audio	오디오
@@ -4118,7 +4119,7 @@
 	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576, 25fps, 16:9 아나모픽, 6Mbps, GOP 15, 16비트 48kHz LPCM, .mpg(DVD용 스트림, VIDEO_TS 저작 없음)
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	시퀀스의 프레임 크기와 프레임 속도의 MPEG-2 비디오(Main Profile 4:2:0, 픽셀당 0.4비트), 16비트 48kHz LPCM, .mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2 비디오 1920×1080, 평균 18Mbps, AAC 192kbps, .ts
-	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	CFA4 엔진이 열 수 없는 파일에 FFmpeg 사용(FFmpeg 9.0.2 이상, GPL-3 빌드)
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.1 or later, GPL-3 build)	CFA4 엔진이 열 수 없는 파일에 FFmpeg 사용(FFmpeg 9.1 이상, GPL-3 빌드)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	엔진과 FFmpeg 모두 열 수 없는 파일에 시스템의 GStreamer 사용
 
 # Language names in the language menu: the English variants keep their English names.
@@ -4811,6 +4812,7 @@
 	Datamosh Bloom	데이터모시 블룸
 	Start Time (seconds)	시작 시간(초)
 	Repeats	반복 횟수
+	Clean Blocks	깨끗한 블록
 
 # Recent effects, per-channel waveform, white balance selector (SC-2/SC-3/SC-4, #1419 #1420 #1421)
 	Apply a recently used effect to the selected clips	최근 사용한 효과를 선택한 클립에 적용
@@ -4903,3 +4905,75 @@
 	Voxel attributes	복셀 속성
 	Voxel size:	복셀 크기:
 	points	점
+
+# WP3 DPX bit depth
+	Bit Depth	비트 심도
+
+# AS-02 versions
+	AS-02 Versions	AS-02 버전
+	Tick the sequences to write as further versions in the AS-02 bundle	AS-02 번들에 추가 버전으로 쓸 시퀀스를 선택하세요
+	Delete Short Clips	짧은 클립 삭제
+	A stored combination does not run a command yet.	저장된 조합은 아직 명령을 실행하지 않습니다.
+	Action hint	동작 힌트
+	Add combination	조합 추가
+	Add mapping	매핑 추가
+	Button Learn	버튼 학습
+	Button Test	버튼 시험
+	Button name	버튼 이름
+	Cancel feedback	취소 표시
+	Combination editor	조합 편집기
+	Context	컨텍스트
+	Delete profile	프로필 삭제
+	Detected buttons	감지된 버튼
+	Draw the gesture with a button held.	버튼을 누른 채 제스처를 그립니다.
+	Error feedback	오류 표시
+	Evdev device	evdev 장치
+	Evdev reads the selected device only, and only after a later phase turns it on. This version keeps the Qt path.	evdev는 고른 장치만 읽으며, 나중 단계가 켤 때까지 쓰이지 않습니다. 이 판은 Qt 경로를 유지합니다.
+	Execution feedback	실행 표시
+	Follow the system	시스템을 따름
+	Gesture	제스처
+	Gesture Learn	제스처 학습
+	Gesture editor	제스처 편집기
+	Gesture profiles	제스처 프로필
+	Gestures stay off until you turn them on. Turning them on does not block the panel menu.	제스처는 켜기 전까지 꺼져 있습니다. 켜도 패널 메뉴는 막지 않습니다.
+	HUD	HUD
+	Hand	손
+	High contrast	고대비
+	Hold time	누름 시간
+	Input access	입력 접근
+	Left-handed	왼손잡이
+	Mapping	매핑
+	Maximum length	최대 길이
+	Maximum time	최대 시간
+	Minimum length	최소 길이
+	Mirror ergonomic gestures	인체공학 제스처 좌우 반전
+	Mouse Gestures	마우스 제스처
+	Mouse Gestures…	마우스 제스처…
+	No buttons yet. Press one in Button Learn or Button Test.	아직 버튼이 없습니다. 버튼 학습이나 버튼 시험에서 누르십시오.
+	Press	누름
+	Qt pointer (this application)	Qt 포인터(이 응용 프로그램)
+	Recognition preview	인식 미리보기
+	Reduced animation	애니메이션 줄이기
+	Right-handed	오른손잡이
+	Roles	역할
+	Save gesture	제스처 저장
+	Save profile	프로필 저장
+	Show the gesture HUD	제스처 HUD 표시
+	Slop	유격
+	Spatial gesture	공간 제스처
+	Thresholds	임계값
+	Trail	궤적
+	Use gestures in the window	창에서 제스처 사용
+	DVD-Video folder (VIDEO_TS)	DVD-Video 폴더 (VIDEO_TS)
+	DVD-Video PAL 16:9	DVD-Video PAL 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 폴더 (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 아나모픽, 6 Mbps, GOP 15, AC-3 192 kbps, 시퀀스의 챕터 마커로 챕터 생성
+	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
+	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	DVD-Video 폴더 (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 아나모픽, 6 Mbps, GOP 18, AC-3 192 kbps, 시퀀스의 챕터 마커로 챕터 생성
+	DNx decoding:	DNx 디코딩:
+	As detected from the file ({detected})	파일에서 감지한 대로 ({detected})
+	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (표준)
+	FFmpeg-compatible	FFmpeg 호환
+	FFmpeg reads some DNx files differently from the standard (4:4:4 colours, inverse quantisation). Footage FFmpeg encoded is detected; choose here when the detection is wrong.	FFmpeg는 일부 DNx 파일을 표준과 다르게 읽습니다(4:4:4 색상, 역양자화). FFmpeg로 인코딩한 영상은 감지됩니다. 감지가 잘못된 경우 여기에서 선택하십시오.
+	DNx Coding	DNx 인코딩
+	FFmpeg-compatible (for FFmpeg-based tools)	FFmpeg 호환(FFmpeg 기반 도구용)
+	Off: coded by SMPTE ST 2019-1. On: coded as FFmpeg writes DNx, for tools built on FFmpeg.	끔: SMPTE ST 2019-1에 따라 인코딩합니다. 켬: FFmpeg가 DNx를 쓰는 방식으로 인코딩합니다(FFmpeg 기반 도구용).

@@ -143,12 +143,27 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   `cfa4-project`) against a reference of folder paths or bare names (default the local
   `plan/premiere/effects.json` / `transitions.json`), placement by folder, Presets and the other
   area out of scope.
-- **Missing:** the other areas (commands, panels, preferences, formats), fidelity tiers (exact,
-  approximate, stub), a CI job, and a committed `docs/parity-checklist.md`.
-- **Evidence:** the 92% menu figure in this pass came from an ad hoc label-matching script; it has
-  not yet been re-measured with the tool.
-- **Estimate:** 8–17 h left (the menu snapshot is local-only, so CI needs a committed, Adobe-free
-  list of menu paths for `--reference`, or the check runs only where `plan/` exists).
+- **Also done (CFA4-PARITY-G7, [plan](plans/CFA4-PARITY-G7-2026-11-20.md)):** the menu measurement
+  reads the live Qt 6 GUI (`--area menus`; `menus-egui` keeps the frozen egui bar), plus
+  `--area commands` (the engine registry), `--area panels` (Qt docks) and `--area all` (one report,
+  summary table first, every failure listed). Fidelity tiers (exact, approximate, stub, unrated; an
+  item with no annotation is *unrated*, `exact` needs evidence) come from `xtask/parity/fidelity.json`
+  and automatic panel stubs. Committed, text-only references (schema 1, every item names the
+  `docs/**/*.md` it comes from; `--check-reference` is part of `cargo xtask ci`) exist for **panels and
+  menus**. `xtask/parity/thresholds.json` holds the least present and exact *counts* per area;
+  `cargo xtask parity --ci` fails below them and hints when one can be raised;
+  `--check-ratchet --base REF` fails when a count is lowered or removed; `docs/parity-checklist.md` is
+  generated from the committed references (`--write-checklist`; `--check-checklist` is part of
+  `cargo xtask ci`). The `parity` job in `ci-linux.yml` (full validation: label, merge queue or manual run;
+  part of `full-validation-gate`) runs the ratchet against the base and `--ci`, and keeps the report as
+  the `parity-report` artifact.
+- **Measured (committed references, 2026-11-23):** panels 24/28 present (1 stub, 23 unrated), menus
+  16/17 present (16 unrated); no item is rated exact yet.
+- **Missing:** committed references for **commands, effects and transitions** (they stay "not
+  measured" under `--committed` / `--ci`: the committed docs do not hold the full lists, so the owner
+  decides whether to add the names to docs or commit names-only lists), preferences and formats, and
+  behaviour tests (G1): a tier is an annotation, not a behaviour test.
+- **Estimate:** 3–6 h left (references for the other areas).
 
 ## G8. UI fidelity: monitor handles, Effect Controls, docking
 
@@ -372,8 +387,8 @@ distributions are not targets.
   Shift constrains vertex and whole-mask drags to 45° steps from the press point (#1408); a real
   codec datamosh with CFA4's own H.264 encoder and decoder, as the Datamosh transition (Grunge &
   Distort: B's P pictures decoded onto A; #1409) and the Datamosh Bloom effect (Glitch: one P
-  picture repeated; #1430), with no codec changed and no FFmpeg. Not yet: an encoder switch that
-  bans intra macroblocks in P pictures, which would give a "dirtier" mosh (a codec-crate change).
+  picture repeated; #1430), and the encoder's `inter_only` switch (no intra macroblocks in P
+  pictures) behind both as Clean Blocks off, for a "dirtier" mosh; no FFmpeg.
 - **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): clean-room OpenFX effects with the openfx-misc capability list (keyers,
   colour, tracking, retime; ADR 0003 §14: no Natron code), Rubber Band (GPL-2.0-or-later) for audio time-stretch and pitch shift,
   frei0r effects. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
@@ -404,3 +419,4 @@ distributions are not targets.
 | 2026-10-26 | minor | G12: AI candidates from the repository reviews (word-highlight captions, low light, face detection, background matting, foley) |
 | 2026-11-11 | minor | G1: `cfa4-metrics` (CIEDE2000 ΔE, SSIM) as the harness's scoring layer |
 | 2026-11-21 | minor | G18: real codec datamosh (Datamosh transition, Datamosh Bloom effect) |
+| 2026-11-23 | minor | G18: encoder `inter_only` switch, Clean Blocks on the datamosh |

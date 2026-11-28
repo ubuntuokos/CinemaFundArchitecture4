@@ -139,8 +139,10 @@ fn from_picture(p: &cfa4_h264::Picture, w: usize, h: usize) -> Option<Image> {
 }
 
 /// The encoder configuration both encoders share (so their SPS / PPS are identical): P pictures
-/// only, one slice, a fixed QP.
-fn config(w: usize, h: usize, qp: u8) -> EncoderConfig {
+/// only, one slice, a fixed QP. `clean` lets the encoder refresh poorly predicted blocks with
+/// intra blocks of the new picture; without it every block is moved from the reference, so the
+/// mosh stays dirtier for longer.
+fn config(w: usize, h: usize, qp: u8, clean: bool) -> EncoderConfig {
     let mut cfg = EncoderConfig::new(w as u32, h as u32, 25, 1);
     cfg.profile = Profile::High;
     cfg.preset = Preset::Speed;
@@ -154,6 +156,7 @@ fn config(w: usize, h: usize, qp: u8) -> EncoderConfig {
     cfg.aq_strength = 0.0;
     cfg.format = PacketFormat::AnnexB;
     cfg.color.full_range = true;
+    cfg.inter_only = !clean;
     cfg
 }
 
@@ -175,14 +178,15 @@ pub struct Session {
 
 impl Session {
     /// Start a mosh of `b0` (B's first picture, the key frame that gets dropped) onto `a`.
-    pub fn new(a: &Image, b0: &Image, qp: u8) -> Result<Self, MoshError> {
+    /// `clean`: B's P pictures may carry intra blocks (see [`config`]).
+    pub fn new(a: &Image, b0: &Image, qp: u8, clean: bool) -> Result<Self, MoshError> {
         let (w, h) = (a.w, a.h);
         if (b0.w, b0.h) != (w, h) {
             return Err(MoshError::BadInput);
         }
         let ya = to_yuv(a).ok_or(MoshError::BadInput)?;
         let yb = to_yuv(b0).ok_or(MoshError::BadInput)?;
-        let cfg = config(ya.w, ya.h, qp);
+        let cfg = config(ya.w, ya.h, qp, clean);
         let enc_err = |e: cfa4_h264enc::Error| MoshError::Encode(e.to_string());
         // A's key frame from its own encoder (same configuration, so the same SPS / PPS)
         let mut ea = Encoder::new(cfg.clone()).map_err(enc_err)?;
@@ -248,13 +252,14 @@ pub struct Bloom {
 }
 
 impl Bloom {
-    pub fn new(prev: &Image, cur: &Image, qp: u8) -> Result<Self, MoshError> {
+    /// `clean`: the P picture may carry intra blocks (see [`config`]).
+    pub fn new(prev: &Image, cur: &Image, qp: u8, clean: bool) -> Result<Self, MoshError> {
         let (w, h) = (cur.w, cur.h);
         if (prev.w, prev.h) != (w, h) {
             return Err(MoshError::BadInput);
         }
         let (y0, y1) = (to_yuv(prev).ok_or(MoshError::BadInput)?, to_yuv(cur).ok_or(MoshError::BadInput)?);
-        let cfg = config(y0.w, y0.h, qp);
+        let cfg = config(y0.w, y0.h, qp, clean);
         let enc_err = |e: cfa4_h264enc::Error| MoshError::Encode(e.to_string());
         let mut enc = Encoder::new(cfg.clone()).map_err(enc_err)?;
         let first = enc.try_encode(&yuv_frame(&y0), 0).map_err(enc_err)?;
@@ -308,7 +313,7 @@ pub fn mosh(a: &Image, b: &[Image], qp: u8) -> Result<Vec<Image>, MoshError> {
     if b.len() < 2 || b.len() > MAX_FRAMES || b.iter().any(|f| f.w != w || f.h != h) {
         return Err(MoshError::BadInput);
     }
-    let mut s = Session::new(a, &b[0], qp)?;
+    let mut s = Session::new(a, &b[0], qp, true)?;
     b[1..].iter().map(|f| s.push(f)).collect()
 }
 

@@ -15,7 +15,7 @@
 //!
 //! Unencrypted and unsigned. The composition edit rate is the App 2E rate nearest the export's.
 
-use std::io::{Read, Write};
+use std::io::Read;
 
 use cfa4_mxf::{
     FrameInfo, J2kSubDescriptor, McaLabel, McaTitles, MxfWriter, PackageIds, Pattern, PictureCoding, PictureDesc, Rational, SoundDesc, StartTimecode,
@@ -311,9 +311,8 @@ fn finish_track(out: Out, settings: &ExportSettings, path: &str) -> Result<(u64,
             let prefix = data.get(..data.len().min(HEADER_PREFIX)).unwrap_or_default().to_vec();
             Ok((crate::write_output(settings, path, data)?, hash, prefix))
         }
-        Out::File(mut w) => {
-            w.flush().map_err(io)?;
-            drop(w);
+        file @ (Out::File(_) | Out::Atomic(_)) => {
+            file.publish(path)?;
             let mut f = std::fs::File::open(path).map_err(|e| io(format!("{path}: {e}")))?;
             let mut s = Sha1::new();
             let mut buf = vec![0u8; 1 << 20];

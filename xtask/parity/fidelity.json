@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "items": [
+    {
+      "area": "effects",
+      "id": "warp_stabilizer",
+      "tier": "approximate",
+      "note": "No rolling-shutter model; the Perspective method is a RANSAC homography, not Premiere's solver (docs/gaps.md G18)."
+    },
+    {
+      "area": "effects",
+      "id": "lumetri",
+      "tier": "approximate",
+      "note": "No HDR-aware Lumetri maths yet (docs/gaps.md G18)."
+    },
+    {
+      "area": "transitions",
+      "id": "morph_cut",
+      "tier": "approximate",
+      "note": "Morphs along CPU optical flow with no face tracking; occlusion edges are soft (docs/gaps.md G18)."
+    }
+  ]
+}

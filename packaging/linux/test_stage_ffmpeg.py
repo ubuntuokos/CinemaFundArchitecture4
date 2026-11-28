@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""stage-ffmpeg.sh with a synthetic FFmpeg 9.0.2 prefix (small shared libraries built with cc).
+"""stage-ffmpeg.sh with a synthetic FFmpeg prefix of the pinned version (small shared libraries built with cc).
 
 No FFmpeg is built or downloaded: the libraries only carry the SONAMEs and NEEDED entries the
 script reads, and bin/ffmpeg is a shell script answering -version and -buildconf.
@@ -14,6 +14,18 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 STAGE = HERE / "stage-ffmpeg.sh"
+
+
+def pinned_ffmpeg_version() -> str:
+    """CFA4_FFMPEG_VERSION from packaging/ffmpeg-version.env (CFA4-FFMPEG-9.1-001 R1)."""
+    for line in (HERE.parents[1] / "packaging/ffmpeg-version.env").read_text(encoding="utf-8").splitlines():
+        name, sep, value = line.partition("=")
+        if sep and name.strip() == "CFA4_FFMPEG_VERSION":
+            return value.strip()
+    raise KeyError("CFA4_FFMPEG_VERSION")
+
+
+FFMPEG_VERSION = pinned_ffmpeg_version()
 
 
 def system_library(soname: str) -> str | None:
@@ -56,7 +68,7 @@ class StageFfmpegTests(unittest.TestCase):
         # the development symlink the real install has too
         (directory / soname.split(".so")[0]).with_suffix(".so").symlink_to(soname)
 
-    def fake_build(self, name="ffmpeg-9.0.2", *, version="9.0.2", nonfree=False, restricted=False):
+    def fake_build(self, name=f"ffmpeg-{FFMPEG_VERSION}", *, version=FFMPEG_VERSION, nonfree=False, restricted=False):
         build = self.root / name
         lib = build / "lib"
         self.library(lib, "libavutil.so.60")
@@ -81,7 +93,7 @@ class StageFfmpegTests(unittest.TestCase):
         ffmpeg.chmod(0o755)
         doc = build / "share/doc/ffmpeg"
         doc.mkdir(parents=True)
-        for file in ("LICENSE.md", "COPYING.GPLv3", "BUILDINFO"):
+        for file in ("LICENSE.md", "COPYING.GPLv3", "BUILDINFO", "AMF-LICENSE.txt"):
             (doc / file).write_text("fixture\n")
         return build
 
@@ -118,7 +130,7 @@ class StageFfmpegTests(unittest.TestCase):
         self.assertFalse((self.root / "dest").exists(), "refused before anything is written")
 
     def test_restricted_build_needs_x264_and_x265(self):
-        result = self.stage(self.fake_build("ffmpeg-9.0.2-restricted"), "--restricted")
+        result = self.stage(self.fake_build(f"ffmpeg-{FFMPEG_VERSION}-restricted"), "--restricted")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("not linked with libx264", result.stderr)
         # With both linked the codec check passes; the fixture codecs then fail the next check,
@@ -128,7 +140,7 @@ class StageFfmpegTests(unittest.TestCase):
 
     def test_nonfree_or_other_version_is_refused(self):
         for build, message in ((self.fake_build("nonfree", nonfree=True), "non-free"),
-                               (self.fake_build("old", version="8.0.1"), "CFA4 ships 9.0.2")):
+                               (self.fake_build("old", version="8.0.1"), f"CFA4 ships {FFMPEG_VERSION}")):
             with self.subTest(message=message):
                 result = self.stage(build)
                 self.assertNotEqual(result.returncode, 0)
