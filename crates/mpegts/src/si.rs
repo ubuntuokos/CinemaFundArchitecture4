@@ -138,7 +138,12 @@ impl TsParams {
             }
             // a PCR on an elementary stream's PID is allowed: that stream then carries it
         }
-        let len = encode_text(&self.service_name, "service name")?.len() + encode_text(&self.service_provider, "service provider")?.len();
+        for (what, text) in [("service name", &self.service_name), ("service provider", &self.service_provider)] {
+            if text.chars().any(char::is_control) {
+                return Err(SiError::NameControl { what });
+            }
+        }
+        let len = text_len(&self.service_name).saturating_add(text_len(&self.service_provider));
         if len > MAX_NAME_BYTES {
             return Err(SiError::NamesTooLong(len));
         }
@@ -146,29 +151,30 @@ impl TsParams {
     }
 }
 
+/// Bytes of a DVB string as written, without building it: the text itself, plus the 0x15
+/// selector when it is not printable ASCII.
+fn text_len(s: &str) -> usize {
+    if s.bytes().all(|b| (0x20..0x7F).contains(&b)) { s.len() } else { s.len() + 1 }
+}
+
 /// A DVB string (EN 300 468 annex A): printable ASCII as it is (the default table's ASCII
-/// subset), anything else as UTF-8 after the 0x15 selector.
-fn encode_text(s: &str, what: &'static str) -> Result<Vec<u8>, SiError> {
-    if s.chars().any(char::is_control) {
-        return Err(SiError::NameControl { what });
-    }
-    let bytes = if s.bytes().all(|b| (0x20..0x7F).contains(&b)) {
-        s.as_bytes().to_vec()
-    } else {
-        let mut v = Vec::with_capacity(s.len() + 1);
+/// subset), anything else as UTF-8 after the 0x15 selector. The caller has checked the length
+/// ([`TsParams::validate`]), so what is allocated is bounded by [`MAX_NAME_BYTES`].
+fn encode_text(s: &str) -> Vec<u8> {
+    let mut v = Vec::with_capacity(text_len(s));
+    if text_len(s) != s.len() {
         v.push(0x15);
-        v.extend_from_slice(s.as_bytes());
-        v
-    };
-    Ok(bytes)
+    }
+    v.extend_from_slice(s.as_bytes());
+    v
 }
 
 /// The SDT actual section (table_id 0x42) of the one service, CRC-32 included. `streams` is the
 /// number of elementary streams, for the validation.
 pub fn sdt_section(params: &TsParams, streams: usize) -> Result<Vec<u8>, SiError> {
     params.validate(streams)?;
-    let provider = encode_text(&params.service_provider, "service provider")?;
-    let name = encode_text(&params.service_name, "service name")?;
+    let provider = encode_text(&params.service_provider);
+    let name = encode_text(&params.service_name);
     // service_descriptor: tag, length, service_type, provider, name
     let mut desc = vec![0x48, 0, params.service_type.code(), provider.len() as u8];
     desc.extend_from_slice(&provider);
@@ -234,7 +240,7 @@ pub fn sdt_packets(params: &TsParams, streams: usize, cc: &mut u8) -> Result<Vec
         p[1] = (if k == 0 { 0x40 } else { 0 }) | ((SDT_PID >> 8) as u8 & 0x1F);
         p[2] = SDT_PID as u8;
         p[3] = 0x10 | (*cc & 0x0F);
-        *cc = (*cc + 1) & 0x0F;
+        *cc = ((*cc & 0x0F) + 1) & 0x0F;
         if let Some(dst) = p.get_mut(4..4 + chunk.len()) {
             dst.copy_from_slice(chunk);
         }

@@ -86,6 +86,23 @@ fn packets_carry_the_section_on_pid_0x11_with_continuity() {
 }
 
 #[test]
+fn continuity_counter_survives_any_start_value() {
+    for start in [0u8, 14, 15, 16, 255] {
+        let mut cc = start;
+        let pk = sdt_packets(&dvb(), 1, &mut cc).unwrap();
+        assert_eq!(pk[0][3], 0x10 | (start & 0x0F));
+        assert_eq!(cc, (start & 0x0F).wrapping_add(pk.len() as u8) & 0x0F);
+    }
+}
+
+#[test]
+fn huge_names_are_refused_without_being_copied() {
+    let huge = TsParams { service_name: "x".repeat(16 << 20), ..dvb() };
+    assert!(matches!(huge.validate(1), Err(SiError::NamesTooLong(n)) if n > 16 << 20));
+    assert!(sdt_section(&huge, 1).is_err());
+}
+
+#[test]
 fn invalid_parameters_are_refused() {
     let bad = |p: TsParams, streams: usize| p.validate(streams).unwrap_err();
     assert_eq!(bad(dvb(), 0), SiError::StreamCount(0));
