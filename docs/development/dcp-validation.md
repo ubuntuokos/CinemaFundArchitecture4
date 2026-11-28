@@ -124,6 +124,24 @@ material). It reads only the XML documents under the `cfa4-dcp` limits, opens no
 runs no program, so it answers at once and is not a job. Not in it yet: the certificate chain of the
 signatures (DCP-23 follows with the Qt tabs; the chain view needs its own step).
 
+Qt6 (DCP-23): after a check the window reads `dcp.package.info` and fills the **Package** (asset map, files with
+their state), **Composition** (reels, assets, markers) and **Security** (signed documents, encrypted assets by
+KeyId) tabs; double-clicking a finding that names a file shows it in the Package tree; **Save HTML…** writes the
+HTML report. The window only shows what the engine sends; it never reads the package itself.
+
+## Snapshot, manifest and repair log (DCP-24)
+
+Every repair starts from an exact, traceable copy (owner decision 2026-11-25). `dcp.snapshot {root, dest, wait}` copies the
+package byte for byte to the **new** folder `dest` outside it (`dest/package/`), writes `dest/manifest.json`
+(`cfa4-dcp-manifest/1`: path, size, SHA-256, SHA-1 and modification time of every file; links and devices are listed
+as `skipped`, never copied), reads the copy back against the manifest, and starts `dest/repair-log.jsonl`
+(`cfa4-dcp-repair-log/1`, JSON lines, append only: time, action, rule, the manifest's SHA-256, the SHA-256 of the report
+before and after, the result). A `dest` inside the package, one that exists, or one with `..` is refused; a cancelled or
+failed snapshot removes what it made. `dcp.manifest.verify {root, manifest, wait}` compares a package with a manifest
+(`same`, `changed`, `missing`, `extra`), so it can be shown that a package is the same before and after.
+`dcp.repair.job {job}` reads the answer of either background job, `dcp.repair.log {path}` the log. The re-export that
+uses this (DCP-25) and the Qt dialog (DCP-26) follow.
+
 ## Repair proposals (DCP-14)
 
 `dcp.repair.plan {root}` turns the latest report of a package into `cfa4-dcp-repair/1`: every failure or
@@ -166,7 +184,7 @@ The plan's §12 list is covered elsewhere for: subtitle timing, fonts and PNG re
 (`tests/subtitles.rs`), signatures and certificate identity (`tests/signatures.rs`), audio channels and
 format (`src/tests.rs`), a cancelled run and bad paths (`src/tests.rs`), and a valid Interop package
 (`src/tests.rs`). **Not covered yet:** an encrypted DCP, a package with several composition or packing lists
-(a stray PKL and CPL the asset map does not list change nothing in the result; whether that should be a finding is open),
+(a stray PKL or CPL the asset map does not list is now a warning, `DCP.AM.007`, in `full-integrity` v2 and the cinema and preflight profiles v3; older versions stay as they were),
 a very large DCP, and the host-application, packaging and leak checks of the plan's
 second list.
 

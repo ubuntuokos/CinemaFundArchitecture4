@@ -4958,6 +4958,22 @@
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 анаморфне, 6 Mbps, GOP 15, AC-3 192 kbps, розділи з маркерів розділів послідовності
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 анаморфне, 6 Mbps, GOP 18, AC-3 192 kbps, розділи з маркерів розділів послідовності
+
+# DCP package views (DCP-23)
+	Package	Пакет
+	Composition	Композиція
+	Security	Безпека
+	Save HTML…	Зберегти HTML…
+	Asset map	Карта ресурсів
+	Packing list	Пакувальний список
+	Track file	Файл доріжки
+	Not a file	Не файл
+	Unsafe path	Небезпечний шлях
+	Reel {n}	Бобіна {n}
+	Signed documents	Підписані документи
+	Encrypted assets	Зашифровані ресурси
+	Key ID: {id}	ID ключа: {id}
+	Package structure unavailable: {error}	Структура пакета недоступна: {error}
 	DNx decoding:	Декодування DNx:
 	As detected from the file ({detected})	Як визначено з файлу ({detected})
 	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (стандарт)

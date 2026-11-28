@@ -4978,6 +4978,22 @@ export.summary	Low	ниско
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×576, 25 fps, 16:9 анаморфно, 6 Mbps, GOP 15, AC-3 192 kbps, глави от маркерите за глави на последователността
 	DVD-Video NTSC 16:9	DVD-Video NTSC 16:9
 	DVD-Video folder (VIDEO_TS): MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, AC-3 192 kbps, chapters from the sequence's Chapter markers	Папка DVD-Video (VIDEO_TS): MPEG-2 720×480, 29.97 fps, 16:9 анаморфно, 6 Mbps, GOP 18, AC-3 192 kbps, глави от маркерите за глави на последователността
+
+# DCP package views (DCP-23)
+	Package	Пакет
+	Composition	Композиция
+	Security	Сигурност
+	Save HTML…	Запазване на HTML…
+	Asset map	Карта на ресурсите
+	Packing list	Опис на пакета
+	Track file	Файл на тракa
+	Not a file	Не е файл
+	Unsafe path	Опасен път
+	Reel {n}	Ролка {n}
+	Signed documents	Подписани документи
+	Encrypted assets	Криптирани ресурси
+	Key ID: {id}	Идентификатор на ключ: {id}
+	Package structure unavailable: {error}	Структурата на пакета не е налична: {error}
 	DNx decoding:	Декодиране на DNx:
 	As detected from the file ({detected})	Както е разпознато от файла ({detected})
 	SMPTE ST 2019-1 (standard)	SMPTE ST 2019-1 (стандарт)
