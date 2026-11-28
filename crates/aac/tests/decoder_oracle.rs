@@ -86,7 +86,8 @@ fn matches_ffmpeg_decoder() {
     assert!(fails.is_empty(), "decoder mismatches: {fails:?}");
 }
 
-/// PNS output is random by design, and ffmpeg's encoder does not emit it: build noise-substituted
+/// PNS output is random by design (older ffmpeg encoders do not emit it; the pinned one does, see
+/// `matches_ffmpeg_decoder_with_pns_in_band_power`): build noise-substituted
 /// access units by hand (mono, and a common-window pair with M/S = correlated noise) and compare
 /// per-frame energies and the L/R correlation with ffmpeg's decode.
 #[test]
@@ -172,4 +173,145 @@ fn pns_matches_ffmpeg() {
             assert!(c_ours > 0.99);
         }
     }
+}
+
+/// `CFA4_FFMPEG_MIN_VERSION` from `packaging/ffmpeg-version.env` as (major, minor).
+fn min_ffmpeg_version() -> (String, u32, u32) {
+    let env = std::fs::read_to_string(cfa4_testkit::workspace_root().join("packaging/ffmpeg-version.env")).expect("read packaging/ffmpeg-version.env");
+    let v = env
+        .lines()
+        .find_map(|l| l.trim().strip_prefix("CFA4_FFMPEG_MIN_VERSION="))
+        .map(|v| v.trim().trim_matches('"').to_owned())
+        .expect("CFA4_FFMPEG_MIN_VERSION in packaging/ffmpeg-version.env");
+    let mut p = v.split('.').map(|x| x.parse::<u32>().unwrap_or(0));
+    let (major, minor) = (p.next().unwrap_or(0), p.next().unwrap_or(0));
+    (v, major, minor)
+}
+
+/// ffmpeg at the pinned minimum or newer (its AAC encoder has the NMR coder, `-aac_rc` and
+/// `-aac_nmr_speed`), else `None` after a skip.
+fn pinned_ffmpeg(context: &str) -> Option<std::path::PathBuf> {
+    let ff = cfa4_testkit::ffmpeg_or_skip(context)?;
+    let (v, major, minor) = min_ffmpeg_version();
+    if !cfa4_testkit::oracle::ffmpeg_at_least(&ff, major, minor) {
+        let have = cfa4_testkit::oracle::ffmpeg_version(&ff).unwrap_or_default();
+        cfa4_testkit::skip(context, &format!("ffmpeg {have} predates the pinned AAC encoder (needs {v}+)"));
+        return None;
+    }
+    Some(ff)
+}
+
+/// The pinned FFmpeg's AAC encoder modes, without PNS: our decoder must match ffmpeg's sample
+/// by sample, like the cases above.
+#[test]
+fn matches_ffmpeg_decoder_on_the_pinned_encoder_modes() {
+    if pinned_ffmpeg("aac decoder oracle (pinned encoder modes)").is_none() {
+        return;
+    }
+    let cases = [
+        Case { name: "pin_stereo_44k_128k_nmr", rate: 44100, channels: 2, args: &["-b:a", "128k", "-aac_coder", "nmr", "-aac_pns", "0"] },
+        Case { name: "pin_stereo_44k_128k_twoloop", rate: 44100, channels: 2, args: &["-b:a", "128k", "-aac_coder", "twoloop", "-aac_pns", "0"] },
+        Case { name: "pin_stereo_48k_96k_abr", rate: 48000, channels: 2, args: &["-b:a", "96k", "-aac_rc", "abr", "-aac_pns", "0"] },
+        Case { name: "pin_stereo_48k_96k_speed4", rate: 48000, channels: 2, args: &["-b:a", "96k", "-aac_nmr_speed", "4", "-aac_pns", "0"] },
+        Case { name: "pin_stereo_32k_40k_is_ms", rate: 32000, channels: 2, args: &["-b:a", "40k", "-aac_is", "1", "-aac_ms", "1", "-aac_pns", "0"] },
+        Case { name: "pin_mono_16k_20k_abr", rate: 16000, channels: 1, args: &["-b:a", "20k", "-aac_rc", "abr", "-aac_pns", "0"] },
+        Case { name: "pin_c51_48k_256k", rate: 48000, channels: 6, args: &["-b:a", "256k", "-aac_pns", "0"] },
+        Case { name: "pin_c71_48k_384k_abr", rate: 48000, channels: 8, args: &["-b:a", "384k", "-aac_rc", "abr", "-aac_pns", "0"] },
+    ];
+    println!("{:<30} {:>10} {:>12}", "stream", "samples/ch", "max |err|");
+    let mut fails = Vec::new();
+    for c in &cases {
+        let (err, n) = compare(c).unwrap();
+        println!("{:<30} {:>10} {:>12.3e}", c.name, n, err);
+        if err >= 1e-3 {
+            fails.push((c.name, err));
+        }
+    }
+    assert!(fails.is_empty(), "decoder mismatches: {fails:?}");
+}
+
+/// Band edges (Hz) for [`band_db`]: third-octave-like, 100 Hz up to Nyquist.
+fn band_edges(rate: u32) -> Vec<f64> {
+    let nyq = f64::from(rate) / 2.0;
+    let mut e = vec![100.0];
+    while *e.last().unwrap() * 1.26 < nyq {
+        let next = e.last().unwrap() * 1.26;
+        e.push(next);
+    }
+    e.push(nyq);
+    e
+}
+
+/// Mean power per band in dB over Hann-windowed 2048-sample frames (hop 1024), from a direct DFT.
+fn band_db(x: &[f32], rate: u32) -> Vec<f64> {
+    const N: usize = 2048;
+    let edges = band_edges(rate);
+    let win: Vec<f64> = (0..N).map(|i| 0.5 - 0.5 * (2.0 * std::f64::consts::PI * i as f64 / N as f64).cos()).collect();
+    let (cos, sin): (Vec<f64>, Vec<f64>) = (0..N).map(|i| (2.0 * std::f64::consts::PI * i as f64 / N as f64).sin_cos()).map(|(s, c)| (c, s)).unzip();
+    let mut power = vec![0f64; N / 2];
+    let mut frames = 0;
+    for start in (0..x.len().saturating_sub(N)).step_by(N / 2) {
+        let f: Vec<f64> = x[start..start + N].iter().zip(&win).map(|(s, w)| f64::from(*s) * w).collect();
+        for (k, p) in power.iter_mut().enumerate().skip(1) {
+            let (mut re, mut im) = (0f64, 0f64);
+            for (n, v) in f.iter().enumerate() {
+                let i = (k * n) % N;
+                re += v * cos[i];
+                im -= v * sin[i];
+            }
+            *p += re * re + im * im;
+        }
+        frames += 1;
+    }
+    let bin_hz = f64::from(rate) / N as f64;
+    edges
+        .windows(2)
+        .map(|w| {
+            let s: f64 = power.iter().enumerate().filter(|(k, _)| (*k as f64 * bin_hz) >= w[0] && (*k as f64 * bin_hz) < w[1]).map(|(_, p)| p).sum();
+            10.0 * (s / frames.max(1) as f64 + 1e-30).log10()
+        })
+        .collect()
+}
+
+/// The pinned FFmpeg's AAC encoder with its defaults, PNS included. Noise-substituted bands are
+/// random, so the decoders are compared by power per band (within 1 dB wherever a band is within
+/// 60 dB of the loudest); where the stream carries no PNS the samples still match.
+#[test]
+fn matches_ffmpeg_decoder_with_pns_in_band_power() {
+    let Some(ff) = pinned_ffmpeg("aac decoder oracle (PNS)") else { return };
+    let cases = [
+        Case { name: "pin_pns_stereo_44k_48k", rate: 44100, channels: 2, args: &["-b:a", "48k"] },
+        Case { name: "pin_pns_stereo_48k_64k_abr", rate: 48000, channels: 2, args: &["-b:a", "64k", "-aac_rc", "abr"] },
+        Case { name: "pin_pns_mono_32k_24k", rate: 32000, channels: 1, args: &["-b:a", "24k"] },
+        Case { name: "pin_pns_mono_44k_32k_twoloop", rate: 44100, channels: 1, args: &["-b:a", "32k", "-aac_coder", "twoloop"] },
+        Case { name: "pin_pns_stereo_44k_64k_fast", rate: 44100, channels: 2, args: &["-b:a", "64k", "-aac_coder", "fast"] },
+    ];
+    println!("{:<30} {:>12} {:>14}", "stream", "max |err|", "max band dB");
+    let mut fails = Vec::new();
+    for case in &cases {
+        let path = fixtures().join(format!("ffenc_{}.aac", case.name));
+        ffmpeg_encode(&ff, &input(case.rate, case.channels), case.rate, case.args, &path);
+        let data = std::fs::read(&path).unwrap();
+        let (ref_pcm, err) = ffmpeg_decode(&ff, &path, case.channels);
+        assert!(err.trim().is_empty(), "{err}");
+        let ours = our_decode(&data);
+        assert_eq!(ours.len(), case.channels);
+        let (mut worst_err, mut worst_db) = (0f32, 0f64);
+        for c in 0..case.channels {
+            assert_eq!(ours[c].len(), ref_pcm[c].len(), "{}: length", case.name);
+            worst_err = worst_err.max(max_abs_diff(&ours[c], &ref_pcm[c]));
+            let (a, b) = (band_db(&ours[c], case.rate), band_db(&ref_pcm[c], case.rate));
+            let loudest = b.iter().copied().fold(f64::MIN, f64::max);
+            for (x, y) in a.iter().zip(&b) {
+                if *y > loudest - 60.0 {
+                    worst_db = worst_db.max((x - y).abs());
+                }
+            }
+        }
+        println!("{:<30} {:>12.3e} {:>14.2}", case.name, worst_err, worst_db);
+        if worst_db > 1.0 {
+            fails.push((case.name, worst_db));
+        }
+    }
+    assert!(fails.is_empty(), "band power mismatches (dB): {fails:?}");
 }
