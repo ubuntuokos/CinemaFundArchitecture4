@@ -11,6 +11,7 @@ Media Intelligence core (layer L2): pure logic with no database. Plan:
   query planner needs (`overlaps`, `within`, `before`, `after`, `before_within`, `intersection`).
 - `provenance`: the eight provenance classes (`HUMAN`, `AI_GENERATED`, …). Machine data is never
   shown as verified.
+- `state`: `IndexState`, the index state of an asset (`pending_hash`, `pending`, `indexing`, `indexed`, `failed`).
 - `error`: `MiError`; every failure is a value, never a panic.
 
 The `mi` PostgreSQL schema will live in `cfa4-store` and implement the traits this crate grows; the

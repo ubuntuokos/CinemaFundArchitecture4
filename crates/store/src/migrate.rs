@@ -17,7 +17,7 @@ pub struct Step {
 
 /// Every component and its steps, in the order they are applied.
 pub fn components() -> &'static [(&'static str, &'static [Step])] {
-    &[("tasks", TASKS), ("ai", AI), ("cache", CACHE)]
+    &[("tasks", TASKS), ("ai", AI), ("cache", CACHE), ("mi", MI)]
 }
 
 const TASKS: &[Step] = &[
@@ -250,6 +250,133 @@ CREATE TABLE cache.entry (
 CREATE INDEX entry_lru ON cache.entry (last_used_at, key);
 "#,
     down: "DROP SCHEMA cache CASCADE;",
+}];
+
+/// The Media Intelligence index (CFA4-MEDIA-INTELLIGENCE-001 F1, DATA-PG 4.5, F0.4). Purely derived
+/// data (P9): the `.fcproj` wins, and the whole schema can be dropped and rebuilt. No foreign key
+/// leaves the schema (one migration owner per schema); `model_id` and `weight_sha256` name rows of
+/// `ai.model` by value. Time is `cfa4_time::Tick` as `bigint`. `mi.embedding` needs pgvector and is
+/// created by a later step that tolerates a cluster without the extension.
+const MI: &[Step] = &[Step {
+    version: 1,
+    up: r#"
+CREATE SCHEMA mi;
+-- one row per media file, identified by its content hash, never by its path (R1: `sha256s1`);
+-- until the background indexer has computed the hash the asset is `pending_hash` and has none
+CREATE TABLE mi.asset (
+    id uuid PRIMARY KEY,
+    hash_alg text CHECK (hash_alg IN ('sha256s1', 'sha256')),
+    content_hash bytea CHECK (length(content_hash) = 32),
+    last_path text CHECK (length(last_path) BETWEEN 1 AND 4096),
+    duration_ticks bigint CHECK (duration_ticks >= 0),
+    index_state text NOT NULL CHECK (index_state IN ('pending_hash', 'pending', 'indexing', 'indexed', 'failed')),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (hash_alg, content_hash),
+    CHECK ((hash_alg IS NULL) = (content_hash IS NULL)),
+    CHECK (index_state = 'pending_hash' OR content_hash IS NOT NULL)
+);
+-- which project files use an asset; `project_id` stays empty until the `.fcproj` has a stable id
+CREATE TABLE mi.project_link (
+    asset_id uuid NOT NULL REFERENCES mi.asset (id) ON DELETE CASCADE,
+    project_path text NOT NULL CHECK (length(project_path) BETWEEN 1 AND 4096),
+    project_id uuid,
+    media_item_ref text NOT NULL CHECK (length(media_item_ref) BETWEEN 1 AND 256),
+    seen_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (asset_id, project_path, media_item_ref)
+);
+-- a rebuild writes a new generation next to the active one and swaps them in one transaction
+-- (AC-09): the old generation stays searchable until the new one is complete
+CREATE TABLE mi.index_generation (
+    asset_id uuid NOT NULL REFERENCES mi.asset (id) ON DELETE CASCADE,
+    generation bigint NOT NULL CHECK (generation >= 1),
+    state text NOT NULL CHECK (state IN ('building', 'active', 'retired')),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (asset_id, generation)
+);
+CREATE UNIQUE INDEX index_generation_active ON mi.index_generation (asset_id) WHERE state = 'active';
+CREATE TABLE mi.segment (
+    id uuid PRIMARY KEY,
+    asset_id uuid NOT NULL,
+    generation bigint NOT NULL,
+    start_tick bigint NOT NULL CHECK (start_tick >= 0),
+    end_tick bigint NOT NULL,
+    kind text NOT NULL CHECK (kind IN ('shot', 'scene', 'speech', 'silence', 'music')),
+    provenance text NOT NULL CHECK (provenance IN ('HUMAN', 'AI_GENERATED', 'AI_TRANSFORMED', 'AI_DERIVED_HUMAN_EDITED', 'SOURCE_DERIVED', 'MACHINE_EXTRACTED', 'MIXED', 'UNKNOWN')),
+    CHECK (start_tick < end_tick),
+    FOREIGN KEY (asset_id, generation) REFERENCES mi.index_generation (asset_id, generation) ON DELETE CASCADE
+);
+CREATE INDEX segment_asset ON mi.segment (asset_id, generation, start_tick);
+-- the text is derived (P8); the language-neutral `simple` configuration, because one film mixes languages
+CREATE TABLE mi.transcript (
+    segment_id uuid PRIMARY KEY REFERENCES mi.segment (id) ON DELETE CASCADE,
+    text text NOT NULL CHECK (length(text) <= 65536),
+    lang text CHECK (length(lang) BETWEEN 2 AND 35),
+    speaker integer CHECK (speaker >= 0),
+    speaker_name text CHECK (length(speaker_name) <= 256),
+    confidence real CHECK (confidence BETWEEN 0 AND 1),
+    source_rev text CHECK (length(source_rev) <= 256),
+    tsv tsvector GENERATED ALWAYS AS (to_tsvector('simple', text)) STORED
+);
+CREATE INDEX transcript_tsv ON mi.transcript USING gin (tsv);
+CREATE TABLE mi.tag (
+    id bigserial PRIMARY KEY,
+    segment_id uuid NOT NULL REFERENCES mi.segment (id) ON DELETE CASCADE,
+    label text NOT NULL CHECK (length(label) BETWEEN 1 AND 256),
+    confidence real CHECK (confidence BETWEEN 0 AND 1),
+    implementation text NOT NULL CHECK (length(implementation) BETWEEN 1 AND 128),
+    model_id uuid,
+    provenance text NOT NULL CHECK (provenance IN ('HUMAN', 'AI_GENERATED', 'AI_TRANSFORMED', 'AI_DERIVED_HUMAN_EDITED', 'SOURCE_DERIVED', 'MACHINE_EXTRACTED', 'MIXED', 'UNKNOWN'))
+);
+CREATE INDEX tag_label ON mi.tag (label);
+CREATE INDEX tag_segment ON mi.tag (segment_id);
+-- the proof behind every machine finding (AC-08); a score is never shown as fact
+CREATE TABLE mi.evidence (
+    id bigserial PRIMARY KEY,
+    segment_id uuid NOT NULL REFERENCES mi.segment (id) ON DELETE CASCADE,
+    kind text NOT NULL CHECK (length(kind) BETWEEN 1 AND 64),
+    model_id uuid,
+    confidence real CHECK (confidence BETWEEN 0 AND 1),
+    provenance_class text NOT NULL CHECK (provenance_class IN ('HUMAN', 'AI_GENERATED', 'AI_TRANSFORMED', 'AI_DERIVED_HUMAN_EDITED', 'SOURCE_DERIVED', 'MACHINE_EXTRACTED', 'MIXED', 'UNKNOWN')),
+    review_state text NOT NULL DEFAULT 'unreviewed' CHECK (review_state IN ('unreviewed', 'confirmed', 'rejected')),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX evidence_segment ON mi.evidence (segment_id);
+-- an embedding model; `vector` indexes up to 2000 dimensions, `halfvec` up to 4000 (pgvector 0.8 HNSW, P10)
+CREATE TABLE mi.embedding_model (
+    id uuid PRIMARY KEY,
+    implementation text NOT NULL CHECK (length(implementation) BETWEEN 1 AND 128),
+    weight_sha256 text NOT NULL CHECK (weight_sha256 ~ '^[0-9a-f]{64}$'),
+    dims integer NOT NULL CHECK (dims >= 1),
+    metric text NOT NULL CHECK (metric IN ('cosine', 'l2', 'ip')),
+    storage text NOT NULL CHECK (storage IN ('vector', 'halfvec')),
+    modality text NOT NULL CHECK (modality IN ('image', 'text', 'audio')),
+    index_name text CHECK (length(index_name) <= 63),
+    state text NOT NULL CHECK (state IN ('new', 'indexing', 'ready', 'failed')),
+    CHECK ((storage = 'vector' AND dims <= 2000) OR (storage = 'halfvec' AND dims <= 4000)),
+    UNIQUE (implementation, weight_sha256, modality)
+);
+-- face embeddings only after the person switched them on for the project
+CREATE TABLE mi.face_consent (
+    project_ref text PRIMARY KEY CHECK (length(project_ref) BETWEEN 1 AND 4096),
+    enabled boolean NOT NULL DEFAULT false,
+    enabled_at timestamptz,
+    enabled_by text CHECK (length(enabled_by) <= 256),
+    CHECK (NOT enabled OR (enabled_at IS NOT NULL AND enabled_by IS NOT NULL))
+);
+-- where an `index` task stopped: one row per finished stage; the queue's own `tasks.checkpoint`
+-- stays in the `tasks` schema (one schema, one migration owner)
+CREATE TABLE mi.job_checkpoint (
+    task_id text NOT NULL CHECK (length(task_id) BETWEEN 1 AND 256),
+    stage bigint NOT NULL CHECK (stage >= 0),
+    asset_id uuid NOT NULL,
+    generation bigint NOT NULL,
+    detail jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (pg_column_size(detail) <= 65536),
+    at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (task_id, stage),
+    FOREIGN KEY (asset_id, generation) REFERENCES mi.index_generation (asset_id, generation) ON DELETE CASCADE
+);
+"#,
+    down: "DROP SCHEMA mi CASCADE;",
 }];
 
 const LEDGER: &str = "CREATE SCHEMA IF NOT EXISTS cfa4_store;
