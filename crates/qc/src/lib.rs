@@ -19,7 +19,8 @@
 //!
 //! QC only reads media and writes its own report: it never changes a project, a timeline or
 //! render settings, and it has no cloud service. Measurements use CFA4's own decoders; an
-//! FFmpeg cross-check stays NOT_RUN until the `cfa4-ffmpeg` backend exists (ADR 0005).
+//! FFmpeg cross-check stays NOT_RUN: `cfa4-ffmpeg` exists now (ADR 0005), but wiring it in
+//! (layers, router) needs its own owner-approved plan.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 

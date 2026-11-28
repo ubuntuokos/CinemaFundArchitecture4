@@ -6,11 +6,12 @@ L3). Plan and owner decisions: [plans/MEDIA-QC-2026-10-27.md](plans/MEDIA-QC-202
 QC reads media and writes its own report. It never changes a project, a timeline or render
 settings, needs no cloud service, and runs on the CPU (a GPU path is optional). Measurements
 use CFA4's own demuxers and decoders; an FFmpeg cross-check stays `NOT_RUN` until the
-`cfa4-ffmpeg` backend exists ([ADR 0005](adr/ADR-0005-media-backends.md)).
+`cfa4-ffmpeg` backend is wired in. The backend exists now, but the wiring (layers, router) needs its
+own owner-approved plan ([ADR 0005](adr/ADR-0005-media-backends.md)).
 
-Status: stages B–E (report schema, profiles, input, integrity, audio and picture checks,
+Status: stages A–G of the plan are on `main` (report schema, profiles, input, integrity, audio and picture checks,
 `cfa4-cli qc`, the engine's `qc.*` commands, the export queue's QC state and the Qt 6 Quality
-Check window, [qt-gui.md](qt-gui.md#export-window)). `video.referenceSsim` reports NOT_RUN until
+Check window, [qt-gui.md](qt-gui.md#export-window), the end-to-end test and the packaging check). `video.referenceSsim` reports NOT_RUN until
 the engine supplies preview references.
 
 ## Command line
